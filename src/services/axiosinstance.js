@@ -1,20 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {API} from './apiConstent';
+import {logoutUser} from '../helper/commonFunctions';
 
 const axiosInstance = axios.create({
   baseURL: API.BASE_URL,
 });
 
-export const setupAxiosInterceptors = (showToast, navigation) => {
+export const setupAxiosInterceptors = showToast => {
   axiosInstance.interceptors.request.use(
     async config => {
       const user = await AsyncStorage.getItem('userData');
       const parsedUser = JSON.parse(user);
       if (parsedUser?.token) {
-        config.headers.Authorization = parsedUser?.token;
+        config.headers.Authorization = `Bearer ${parsedUser?.token}`;
       }
-      // console.log('parsedUser?.token ', parsedUser?.token);
       return config;
     },
     error => {
@@ -46,7 +46,7 @@ export const setupAxiosInterceptors = (showToast, navigation) => {
         showToast({type: 'error', title: error.response?.data?.message});
         console.log('error33', error.response?.data?.message);
         setTimeout(() => {
-          // logoutUser(navigation)
+          logoutUser();
         }, 1000);
       }
       return Promise.reject(error);

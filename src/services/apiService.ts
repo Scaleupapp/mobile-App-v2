@@ -1,3 +1,4 @@
+import axios from 'axios';
 import {API} from './apiConstent';
 import axiosInstance from './axiosinstance';
 
@@ -27,4 +28,8 @@ export const otpPassword = (payload: any) => {
 
 export const resetMyPassword = (payload: any) => {
   return axiosInstance.post(API.AUTH_RESET, payload);
+};
+
+export const getHomePageData = (payload: any) => {
+  return axiosInstance.get(`${API.HOMEPAGE}?page=${payload}&pageSize=10`);
 };
