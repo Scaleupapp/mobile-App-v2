@@ -15,15 +15,22 @@ export const Story = () => {
         <FlatList
           data={['', '', '', '', '', '', '', '', '', '', '', '', '', '']}
           horizontal
-          contentContainerStyle={{paddingLeft: nw(16), marginTop: nh(15)}}
+          keyExtractor={(_, index) => index.toString()}
+          contentContainerStyle={{
+            paddingLeft: nw(16),
+            marginTop: nh(15),
+            paddingRight: nw(9),
+          }}
           showsHorizontalScrollIndicator={false}
-          renderItem={({}) => {
+          renderItem={({item, index}) => {
             return (
               <Image
+                key={index}
                 source={images.ciclelogo}
                 style={{
                   height: nh(50),
                   width: nw(50),
+                  marginRight: nw(7),
                 }}
                 resizeMode="contain"
               />

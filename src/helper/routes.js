@@ -10,6 +10,7 @@ const Routes = {
   BasicDetails: 'BasicDetails',
   Home: 'Home',
   Notifications: 'Notifications',
+  Preferences: 'Preferences',
 };
 
 export default Routes;

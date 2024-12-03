@@ -28,6 +28,7 @@ const Home = ({navigation, route}) => {
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
 
   useFocusEffect(
@@ -112,7 +113,14 @@ const Home = ({navigation, route}) => {
             </View>
           );
         }}
-        renderItem={({item, index}) => <PostView item={item} index={index} />}
+        renderItem={({item, index}) => (
+          <PostView
+            item={item}
+            index={index}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+          />
+        )}
         ListFooterComponent={() =>
           loading && (
             <View
@@ -143,7 +151,7 @@ const Home = ({navigation, route}) => {
             )}
           </>
         }
-        onEndReached={handleOnReachEnd}
+        // onEndReached={handleOnReachEnd}
         onEndReachedThreshold={0.5}
       />
     </SafeAreaView>

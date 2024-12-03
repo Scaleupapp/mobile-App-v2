@@ -112,15 +112,16 @@ const BasicDetails = ({navigation, route}) => {
     if (validateFields()) {
       try {
         const params = {
-          firstName: form.firstName,
-          lastName: form.lastName,
+          firstname: form.firstName,
+          lastname: form.lastName,
           username: form.userName,
           email: form.email,
           password: form.password,
         };
+        console.log({params});
         const {data} = await registerApi(params);
         showToast({type: 'success', title: data?.message});
-        navigation.navigate(Routes.Login);
+        navigation.navigate(Routes.Preferences);
         setForm({
           firstName: '',
           lastName: '',

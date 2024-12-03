@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   Text as RNText,
+  Alert,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -51,6 +52,7 @@ const Login = ({navigation}) => {
 
   const [resendTimer, setResendTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(false);
+  const [phoneNumberData, setphoneNumberData] = useState(false);
 
   useEffect(() => {
     let timer;
@@ -73,10 +75,28 @@ const Login = ({navigation}) => {
     }
   };
 
-  const handleResendClick = () => {
-    setIsResendDisabled(true);
-    setResendTimer(59);
-    loginUser();
+  const handleResendClick = async () => {
+    const newErrors = {};
+    if (!state.mobileNumber) {
+      newErrors.mobileNumber = 'Mobile number is required';
+      setErrors(newErrors);
+    } else if (state.mobileNumber.length !== 10) {
+      newErrors.mobileNumber = 'Mobile number must be 10 digits';
+      setErrors(newErrors);
+    } else if (!isvalidMobileNumber(state.mobileNumber)) {
+      newErrors.mobileNumber = 'Enter valid Mobile number';
+      setErrors(newErrors);
+    } else {
+      try {
+        const {data} = await getOtp({phoneNumber: state.mobileNumber});
+        showToast({type: 'success', title: data?.message});
+        setphoneNumberData(data);
+        setIsResendDisabled(true);
+        setResendTimer(59);
+      } catch (error) {
+        console.log('Get OTP Error:', error);
+      }
+    }
   };
 
   const toggleSecureEntry = () => {
@@ -163,13 +183,24 @@ const Login = ({navigation}) => {
             userOTP: state.otp,
           });
           showToast({type: 'success', title: data?.message});
+          const stringifiedUserData = JSON.stringify(data);
+          AsyncStorage.setItem('userData', stringifiedUserData);
+          dispatch(actions.setUserData(stringifiedUserData));
+          if (phoneNumberData?.isPhoneNumberVerified) {
+            navigation.navigate(Routes.Home);
+          } else {
+            navigation.navigate(Routes.BasicDetails);
+          }
         } catch (error) {
           console.log('Verify OTP Error:', error);
         }
       } else {
         try {
           const {data} = await getOtp({phoneNumber: state.mobileNumber});
+          setphoneNumberData(data);
           showToast({type: 'success', title: data?.message});
+          setIsResendDisabled(true);
+          setResendTimer(59);
           setState(prev => ({...prev, requestedOtp: true}));
         } catch (error) {
           console.log('Get OTP Error:', error);
@@ -300,13 +331,18 @@ const Login = ({navigation}) => {
             onPress={loginUser}
           />
           <SocialLogin />
-
+          {phoneNumberData?.loginOtp ? (
+            <View
+              style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
+              <Text style={{color: 'red', fontSize: 20}}>
+                test otp: {phoneNumberData?.loginOtp}
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don’t have an account! </Text>
             <RNText
-              //   onPress={() => navigation.navigate('SignUp')}
-              onPress={() => navigation.navigate('Home')}
-              //   Preferences
+              onPress={() => navigation.navigate('SignUp')}
               style={styles.signupLink}>
               Sign up
             </RNText>

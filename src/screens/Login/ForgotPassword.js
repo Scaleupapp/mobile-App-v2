@@ -25,13 +25,13 @@ const ForgotPassword = ({navigation, route}) => {
   const [emailErr, setEmailErr] = useState('');
 
   const validation = () => {
-    if (email === '') {
-      setEmailErr('Please Enter email.');
-    } else if (!isValidEmail(email)) {
-      setEmailErr('Please Enter valid email address');
-    } else {
-      sendOtpToEmail();
-    }
+    // if (email === '') {
+    //   setEmailErr('Please Enter email.');
+    // } else if (!isValidEmail(email)) {
+    //   setEmailErr('Please Enter valid email address');
+    // } else {
+    sendOtpToEmail();
+    // }
   };
 
   const sendOtpToEmail = async () => {
