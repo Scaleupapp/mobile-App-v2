@@ -192,6 +192,7 @@ const SignUp = ({navigation, route}) => {
                 value={state.otp}
                 onChangeText={value => handleInputChange('otp', value)}
                 errorMessage={errors.otp}
+                maxLength={6}
               />
               {/* <View style={styles.otpResendContainer}>
                 <Text style={styles.otpText}>Didn’t receive OTP? </Text>

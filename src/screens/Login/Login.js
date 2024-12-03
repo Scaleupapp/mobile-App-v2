@@ -302,6 +302,7 @@ const Login = ({navigation}) => {
                     value={state.otp}
                     onChangeText={value => handleInputChange('otp', value)}
                     errorMessage={errors.otp}
+                    maxLength={6}
                   />
                   <View style={styles.resendContainer}>
                     <Text style={styles.resendText}>Didn’t receive OTP? </Text>
