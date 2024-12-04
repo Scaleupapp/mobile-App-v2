@@ -26,7 +26,7 @@ export const API = {
   AUTH_OTP: 'auth/otp-gen',
   OTP_VERIFY: 'auth/otp-verify',
   OTP_PASSWORD: 'auth/password-gen',
-  AUTH_RESET: 'auth/resetpassword',
+  AUTH_RESET: 'auth/reset-password',
   MARK_READ: 'content/notifications/mark-as-read',
   COMMENT_PRIVILEGE: 'users/updateCommentPrivileges',
   DELETE_ACCOUNT: 'auth/delete-account',

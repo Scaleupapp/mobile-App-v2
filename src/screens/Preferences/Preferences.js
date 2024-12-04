@@ -17,6 +17,7 @@ import Button from '../../components/Button';
 import CustomTextInput from '../../components/TextInput';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Routes from '../../helper/routes';
 const Preferences = ({navigation, route}) => {
   const [visible, setVisible] = useState(false);
   const [questions, setQuestions] = useState([
@@ -94,7 +95,8 @@ const Preferences = ({navigation, route}) => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      alert('Survey Complete!');
+      navigation.navigate(Routes.Home);
+      // alert('Survey Complete!');
     }
   };
 

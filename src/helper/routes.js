@@ -11,6 +11,11 @@ const Routes = {
   Home: 'Home',
   Notifications: 'Notifications',
   Preferences: 'Preferences',
+  EditProfile: 'EditProfile',
+  WorkExperience: 'WorkExperience',
+  Education: 'Education',
+  Certifications: 'Certifications',
+  Projects: 'Projects',
 };
 
 export default Routes;

@@ -44,11 +44,7 @@ const LoginNavigator = ({route}) => {
         component={SignUp}
         options={{headerShown: false}}
       />
-      <LoginStack.Screen
-        name={Routes.BasicDetails}
-        component={BasicDetails}
-        options={{headerShown: false}}
-      />
+
       <LoginStack.Screen
         name={Routes.Login}
         component={Login}
@@ -64,37 +60,7 @@ const LoginNavigator = ({route}) => {
         component={Verification}
         options={{headerShown: false}}
       />
-      <LoginStack.Screen
-        name={'Preferences'}
-        component={Preferences}
-        options={{headerShown: false}}
-      />
 
-      <LoginStack.Screen
-        name={'EditProfile'}
-        component={EditProfile}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'WorkExperience'}
-        component={WorkExperience}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'Education'}
-        component={Education}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'Certifications'}
-        component={Certifications}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'Projects'}
-        component={Projects}
-        options={{headerShown: false}}
-      />
       <LoginStack.Screen
         name={Routes.SetNewPassword}
         component={SetNewPassword}
@@ -123,15 +89,49 @@ export const RootNavigator = () => {
         component={LoginNavigator}
         options={{headerShown: false}}
       />
-
+      <Stack.Screen
+        name={Routes.Preferences}
+        component={Preferences}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.BasicDetails}
+        component={BasicDetails}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name={Routes.Home}
         component={Home}
         options={{headerShown: false}}
       />
-      <LoginStack.Screen
+      <Stack.Screen
         name={Routes.Notifications}
         component={Notifications}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditProfile}
+        component={EditProfile}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.WorkExperience}
+        component={WorkExperience}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Education}
+        component={Education}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Certifications}
+        component={Certifications}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Projects}
+        component={Projects}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

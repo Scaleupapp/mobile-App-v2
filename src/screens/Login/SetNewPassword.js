@@ -71,13 +71,13 @@ const SetNewPassword = ({navigation, route}) => {
     let isValid = true;
     const newErrors = {};
 
-    if (!form.email) {
-      newErrors.email = 'Email is required';
-      isValid = false;
-    } else if (!isValidEmail(form.email)) {
-      newErrors.email = 'Please Enter valid email address';
-      isValid = false;
-    }
+    // if (!form.email) {
+    //   newErrors.email = 'Email is required';
+    //   isValid = false;
+    // } else if (!isValidEmail(form.email)) {
+    //   newErrors.email = 'Please Enter valid email address';
+    //   isValid = false;
+    // }
 
     if (!form.code) {
       newErrors.code = 'Code is required';
@@ -114,6 +114,7 @@ const SetNewPassword = ({navigation, route}) => {
         otp: form.code,
         newPassword: form.password,
       };
+      console.log({params});
       const {data} = await resetMyPassword(params);
       showToast({type: 'success', title: data?.message});
       navigation.navigate(Routes.Login);
