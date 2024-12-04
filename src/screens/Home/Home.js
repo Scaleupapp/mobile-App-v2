@@ -63,6 +63,7 @@ const Home = ({navigation, route}) => {
               }}
             />
           </View>
+          <Text variant="semibold16">Post</Text>
           <Post />
         </View>
       </View>

@@ -3,6 +3,7 @@ import {TouchableOpacity, Text, StyleSheet, View, Image} from 'react-native';
 import {COLORS} from '../helper/colors';
 import {APP_FONTS} from '../assets/fonts';
 import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
+import Icon from '../helper/icon';
 // import { Ionicons } from '@expo/vector-icons'; // Replace with your icon library if needed.
 
 const Button = ({
@@ -41,12 +42,21 @@ const Button = ({
       ]}
       onPress={onPress}>
       <View style={styles.content}>
-        {/* {justIcon && <Ionicons name={justIcon} size={20} color={isSolid ? textColor : outlineColor} />} */}
+        {justIcon && (
+          <Icon
+            name={justIcon}
+            size={26}
+            color={isSolid ? textColor : outlineColor}
+            type="ionicon"
+          />
+        )}
         {leftIcon && (
-          <Image
-            source={leftIcon}
-            style={styles.leftIcon}
-            resizeMode="contain"
+          <Icon
+            name={leftIcon}
+            size={20}
+            color={isSolid ? textColor : outlineColor}
+            type="feather"
+            style={{marginRight: 5}}
           />
         )}
         {text ? (

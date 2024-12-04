@@ -10,6 +10,23 @@ const Routes = {
   BasicDetails: 'BasicDetails',
   Home: 'Home',
   Notifications: 'Notifications',
+  MyProfile: 'MyProfile',
+  MyPlaylist: 'MyPlaylist',
+  EditPlayList: 'EditPlayList',
+  NewPlayList: 'NewPlayList',
+  SavePost: 'SavePost',
+  DraftPost: 'DraftPost',
+  VerifiedPost: 'VerifiedPost',
+  PendingPost: 'PendingPost',
+  DeclinedPost: 'DeclinedPost',
+  CreatePost: 'CreatePost',
+  InnerCircleRequest: 'InnerCircleRequest',
+  InnerCircle: 'InnerCircle',
+  Followers: 'Followers',
+  Following: 'Following',
+  Likes: 'Likes',
+  BlockUsers: 'BlockUsers',
+  EditProfile: 'EditProfile',
 };
 
 export default Routes;

@@ -34,6 +34,14 @@ const useTextVariants = () => {
             fontWeight: '500',
 
         },
+        medium16: {
+            fontSize: nh(16),
+            fontFamily: APP_FONTS.PoppinsMedium,
+            lineHeight: nh(24),
+            letterSpacing: nw(0.25),
+            fontWeight: '500',
+
+        },
         semibold12: {
             fontSize: nh(12),
             fontFamily: APP_FONTS.PoppinsSemiBold,

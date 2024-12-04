@@ -21,6 +21,22 @@ import SetNewPassword from './screens/Login/SetNewPassword';
 import Home from './screens/Home/Home';
 import BasicDetails from './screens/Signup/BasicDetails';
 import Notifications from './screens/Notification/Notification';
+import MyProfile from './screens/MyProfile/MyProfile';
+import MyPlaylist from './screens/MyProfile/MyPlayList';
+import EditPlayList from './screens/MyProfile/EditPlaylist';
+import NewPlayList from './screens/MyProfile/NewPlayList';
+import SavePost from './screens/Post/SavedPost';
+import DraftPost from './screens/Post/DraftPost';
+import VerifiedPost from './screens/Post/VerifiedPost';
+import PendingPost from './screens/Post/PendingPost';
+import DeclinedPost from './screens/Post/DeclinedPost';
+import CreatePost from './screens/Post/CreatePost';
+import InnerCircleRequest from './screens/InnerCircle/InnerCircleRequest';
+import InnerCircle from './screens/InnerCircle/MyInnerCircle';
+import Followers from './screens/MyProfile/Followers';
+import Following from './screens/MyProfile/Following';
+import Likes from './screens/MyProfile/Likes';
+import BlockUsers from './screens/MyProfile/BlockUser';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -64,37 +80,7 @@ const LoginNavigator = ({route}) => {
         component={Verification}
         options={{headerShown: false}}
       />
-      <LoginStack.Screen
-        name={'Preferences'}
-        component={Preferences}
-        options={{headerShown: false}}
-      />
 
-      <LoginStack.Screen
-        name={'EditProfile'}
-        component={EditProfile}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'WorkExperience'}
-        component={WorkExperience}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'Education'}
-        component={Education}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'Certifications'}
-        component={Certifications}
-        options={{headerShown: false}}
-      />
-      <LoginStack.Screen
-        name={'Projects'}
-        component={Projects}
-        options={{headerShown: false}}
-      />
       <LoginStack.Screen
         name={Routes.SetNewPassword}
         component={SetNewPassword}
@@ -129,9 +115,122 @@ export const RootNavigator = () => {
         component={Home}
         options={{headerShown: false}}
       />
-      <LoginStack.Screen
+      <Stack.Screen
         name={Routes.Notifications}
         component={Notifications}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyProfile}
+        component={MyProfile}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyPlaylist}
+        component={MyPlaylist}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditPlayList}
+        component={EditPlayList}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.NewPlayList}
+        component={NewPlayList}
+        options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name={Routes.SavePost}
+        component={SavePost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DraftPost}
+        component={DraftPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.VerifiedPost}
+        component={VerifiedPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.PendingPost}
+        component={PendingPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DeclinedPost}
+        component={DeclinedPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CreatePost}
+        component={CreatePost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.InnerCircleRequest}
+        component={InnerCircleRequest}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.InnerCircle}
+        component={InnerCircle}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Followers}
+        component={Followers}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Following}
+        component={Following}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Likes}
+        component={Likes}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.BlockUsers}
+        component={BlockUsers}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditProfile}
+        component={EditProfile}
+        options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name={'Preferences'}
+        component={Preferences}
+        options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name={'WorkExperience'}
+        component={WorkExperience}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={'Education'}
+        component={Education}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={'Certifications'}
+        component={Certifications}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={'Projects'}
+        component={Projects}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

@@ -12,10 +12,13 @@ import {icons} from '../assets/icons';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Text from './Text';
 import {nh, nw} from '../helper/scales';
+import {navigationRef} from '../../App';
 
 const Header = ({
   title = 'Header Title', // Default title
-  onBackPress = () => {}, // Callback for back arrow press
+  onBackPress = () => {
+    navigationRef.goBack();
+  }, // Callback for back arrow press
   onRightIconPress = () => {}, // Callback for right icon press
   backIcon = icons.backarrow, // Back arrow icon source
   rightIcon = true, // Right icon source
