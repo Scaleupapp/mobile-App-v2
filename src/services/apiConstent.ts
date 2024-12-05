@@ -38,4 +38,5 @@ export const API = {
   POST_FEEDBACK: 'users/submitfeedback',
   GET_FEEDBACK: 'users/feedback/status',
   DELETE_COMMENT: 'content/comments',
+  PREFERENCES: 'auth/preferences',
 };

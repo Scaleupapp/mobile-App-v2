@@ -10,6 +10,72 @@ import Button from '../../components/Button';
 
 const Certifications = ({navigation, route}) => {
   const [isChecked, setIsChecked] = useState(false);
+  const [state, setState] = useState({
+    name: '',
+    issuedBy: '',
+    startDate: '',
+    endDate: '',
+    idCredentials: '',
+  });
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (field, value) => {
+    setState({...state, [field]: value});
+
+    if (errors[field]) {
+      setErrors({...errors, [field]: ''});
+    }
+  };
+
+  const validateFields = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // Name validation
+    if (!state.name) {
+      newErrors.name = 'Name is required';
+      isValid = false;
+    }
+
+    // Issued By validation
+    if (!state.issuedBy) {
+      newErrors.issuedBy = 'Issued by is required';
+      isValid = false;
+    }
+
+    // Start Date validation
+    if (!state.startDate) {
+      newErrors.startDate = 'Start Date is required';
+      isValid = false;
+    }
+
+    // End Date validation
+    if (!state.endDate && !isChecked) {
+      newErrors.endDate = 'End Date is required';
+      isValid = false;
+    }
+
+    // ID Credentials validation
+    if (!state.idCredentials) {
+      newErrors.idCredentials = 'ID Credentials are required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const saveCertification = () => {
+    if (validateFields()) {
+      console.log(
+        'Certification details:',
+        state,
+        'Currently pursuing:',
+        isChecked,
+      );
+      // Perform your API call or other actions here
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -18,26 +84,50 @@ const Certifications = ({navigation, route}) => {
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header
-        title="Certifications"
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        // rightIcon={icons.menu} // Provide your right icon
-        onBackPress={() => navigation.goBack()}
-        // onRightIconPress={handleRightIconPress}
-      />
+      <Header title="Certifications" onBackPress={() => navigation.goBack()} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          <CustomTextInput label="Name" />
-          <CustomTextInput label="Issued by" />
+          <CustomTextInput
+            label="Name"
+            placeholder="Enter Certification Name"
+            value={state.name}
+            onChangeText={value => handleInputChange('name', value)}
+            errorMessage={errors.name}
+          />
+          <CustomTextInput
+            label="Issued by"
+            placeholder="Enter Issuing Organization"
+            value={state.issuedBy}
+            onChangeText={value => handleInputChange('issuedBy', value)}
+            errorMessage={errors.issuedBy}
+          />
 
           <View style={styles.input}>
             <CustomTextInput
               width={(DEVICE_WIDTH - 55) / 2}
               label="Start Date"
+              placeholder="Enter Start Date"
+              value={state.startDate}
+              onChangeText={value => handleInputChange('startDate', value)}
+              errorMessage={errors.startDate}
             />
-            <CustomTextInput width={(DEVICE_WIDTH - 55) / 2} label="End Date" />
+            <CustomTextInput
+              width={(DEVICE_WIDTH - 55) / 2}
+              label="End Date"
+              placeholder="Enter End Date"
+              value={state.endDate}
+              onChangeText={value => handleInputChange('endDate', value)}
+              errorMessage={errors.endDate}
+              disabled={isChecked} // Disable if currently pursuing
+            />
           </View>
-          <CustomTextInput label="ID Credentials" />
+          <CustomTextInput
+            label="ID Credentials"
+            placeholder="Enter ID Credentials"
+            value={state.idCredentials}
+            onChangeText={value => handleInputChange('idCredentials', value)}
+            errorMessage={errors.idCredentials}
+          />
           <View style={styles.checkboxContainer}>
             <CheckBox
               checkedIcon="check-box"
@@ -64,6 +154,7 @@ const Certifications = ({navigation, route}) => {
               width={nw(63)}
               height={nh(35)}
               textStyle={{fontSize: 14}}
+              onPress={saveCertification}
             />
           </View>
         </View>

@@ -10,6 +10,72 @@ import Button from '../../components/Button';
 
 const WorkExperience = ({navigation, route}) => {
   const [isChecked, setIsChecked] = useState(false);
+  const [state, setState] = useState({
+    designation: '',
+    companyName: '',
+    startDate: '',
+    endDate: '',
+    rolesResponsibilities: '',
+  });
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (field, value) => {
+    setState({...state, [field]: value});
+
+    if (errors[field]) {
+      setErrors({...errors, [field]: ''});
+    }
+  };
+
+  const validateFields = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // Designation validation
+    if (!state.designation) {
+      newErrors.designation = 'Designation is required';
+      isValid = false;
+    }
+
+    // Company Name validation
+    if (!state.companyName) {
+      newErrors.companyName = 'Company Name is required';
+      isValid = false;
+    }
+
+    // Start Date validation
+    if (!state.startDate) {
+      newErrors.startDate = 'Start Date is required';
+      isValid = false;
+    }
+
+    // End Date validation
+    if (!state.endDate && !isChecked) {
+      newErrors.endDate = 'End Date is required';
+      isValid = false;
+    }
+
+    // Roles & Responsibilities validation
+    if (!state.rolesResponsibilities) {
+      newErrors.rolesResponsibilities = 'Roles & Responsibilities are required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const saveWorkExperience = () => {
+    if (validateFields()) {
+      console.log(
+        'Work experience details:',
+        state,
+        'Currently working:',
+        isChecked,
+      );
+      // Perform your API call or other actions here
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -18,33 +84,56 @@ const WorkExperience = ({navigation, route}) => {
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header
-        title="Work Experience"
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        // rightIcon={icons.menu} // Provide your right icon
-        onBackPress={() => navigation.goBack()}
-        // onRightIconPress={handleRightIconPress}
-      />
+      <Header title="Work Experience" onBackPress={() => navigation.goBack()} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <View style={styles.input}>
             <CustomTextInput
               width={(DEVICE_WIDTH - 55) / 2}
               label="Designation"
+              placeholder="Enter Designation"
+              value={state.designation}
+              onChangeText={value => handleInputChange('designation', value)}
+              errorMessage={errors.designation}
             />
             <CustomTextInput
               width={(DEVICE_WIDTH - 55) / 2}
               label="Company Name"
+              placeholder="Enter Company Name"
+              value={state.companyName}
+              onChangeText={value => handleInputChange('companyName', value)}
+              errorMessage={errors.companyName}
             />
           </View>
           <View style={styles.input}>
             <CustomTextInput
               width={(DEVICE_WIDTH - 55) / 2}
               label="Start Date"
+              placeholder="Enter Start Date"
+              value={state.startDate}
+              onChangeText={value => handleInputChange('startDate', value)}
+              errorMessage={errors.startDate}
             />
-            <CustomTextInput width={(DEVICE_WIDTH - 55) / 2} label="End Date" />
+            <CustomTextInput
+              width={(DEVICE_WIDTH - 55) / 2}
+              label="End Date"
+              placeholder="Enter End Date"
+              value={state.endDate}
+              onChangeText={value => handleInputChange('endDate', value)}
+              errorMessage={errors.endDate}
+              disabled={isChecked} // Disable if currently working
+            />
           </View>
-          <CustomTextInput label="Roles & Responsibilities" textinputType="L" />
+          <CustomTextInput
+            label="Roles & Responsibilities"
+            placeholder="Enter Roles & Responsibilities"
+            textinputType="L"
+            value={state.rolesResponsibilities}
+            onChangeText={value =>
+              handleInputChange('rolesResponsibilities', value)
+            }
+            errorMessage={errors.rolesResponsibilities}
+          />
           <View style={styles.checkboxContainer}>
             <CheckBox
               checkedIcon="check-box"
@@ -71,6 +160,7 @@ const WorkExperience = ({navigation, route}) => {
               width={nw(63)}
               height={nh(35)}
               textStyle={{fontSize: 14}}
+              onPress={saveWorkExperience}
             />
           </View>
         </View>

@@ -10,6 +10,65 @@ import Button from '../../components/Button';
 
 const Education = ({navigation, route}) => {
   const [isChecked, setIsChecked] = useState(false);
+  const [state, setState] = useState({
+    degree: '',
+    university: '',
+    startDate: '',
+    endDate: '',
+  });
+  const [errors, setErrors] = useState({});
+
+  const handleInputChange = (field, value) => {
+    setState({...state, [field]: value});
+
+    if (errors[field]) {
+      setErrors({...errors, [field]: ''});
+    }
+  };
+
+  const validateFields = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // Degree validation
+    if (!state.degree) {
+      newErrors.degree = 'Degree is required';
+      isValid = false;
+    }
+
+    // University validation
+    if (!state.university) {
+      newErrors.university = 'University is required';
+      isValid = false;
+    }
+
+    // Start Date validation
+    if (!state.startDate) {
+      newErrors.startDate = 'Start Date is required';
+      isValid = false;
+    }
+
+    // End Date validation
+    if (!state.endDate && !isChecked) {
+      newErrors.endDate = 'End Date is required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const saveEducation = () => {
+    if (validateFields()) {
+      console.log(
+        'Education details:',
+        state,
+        'Currently pursuing:',
+        isChecked,
+      );
+      // Perform your API call or other actions here
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -20,26 +79,46 @@ const Education = ({navigation, route}) => {
       />
       <Header
         title="Educational Info"
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        // rightIcon={icons.menu} // Provide your right icon
         onBackPress={() => navigation.goBack()}
-        // onRightIconPress={handleRightIconPress}
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <View style={styles.input}>
-            <CustomTextInput width={(DEVICE_WIDTH - 55) / 2} label="Degree" />
+            <CustomTextInput
+              width={(DEVICE_WIDTH - 55) / 2}
+              label="Degree"
+              placeholder="Enter Degree"
+              value={state.degree}
+              onChangeText={value => handleInputChange('degree', value)}
+              errorMessage={errors.degree}
+            />
             <CustomTextInput
               width={(DEVICE_WIDTH - 55) / 2}
               label="University"
+              placeholder="Enter University"
+              value={state.university}
+              onChangeText={value => handleInputChange('university', value)}
+              errorMessage={errors.university}
             />
           </View>
           <View style={styles.input}>
             <CustomTextInput
               width={(DEVICE_WIDTH - 55) / 2}
               label="Start Date"
+              placeholder="Enter Start Date"
+              value={state.startDate}
+              onChangeText={value => handleInputChange('startDate', value)}
+              errorMessage={errors.startDate}
             />
-            <CustomTextInput width={(DEVICE_WIDTH - 55) / 2} label="End Date" />
+            <CustomTextInput
+              width={(DEVICE_WIDTH - 55) / 2}
+              label="End Date"
+              placeholder="Enter End Date"
+              value={state.endDate}
+              onChangeText={value => handleInputChange('endDate', value)}
+              errorMessage={errors.endDate}
+              disabled={isChecked} // Disable if currently pursuing
+            />
           </View>
           <View style={styles.checkboxContainer}>
             <CheckBox
@@ -67,6 +146,7 @@ const Education = ({navigation, route}) => {
               width={nw(63)}
               height={nh(35)}
               textStyle={{fontSize: 14}}
+              onPress={saveEducation}
             />
           </View>
         </View>

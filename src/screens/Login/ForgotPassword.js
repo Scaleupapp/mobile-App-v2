@@ -36,9 +36,12 @@ const ForgotPassword = ({navigation, route}) => {
 
   const sendOtpToEmail = async () => {
     try {
-      const {data} = await otpPassword({loginIdentifier: email});
+      const {data} = await otpPassword({loginIdentifier: email?.toLowerCase()});
       showToast({type: 'success', title: data?.message});
-      navigation.navigate(Routes.SetNewPassword, {email: email});
+      navigation.navigate(Routes.SetNewPassword, {
+        email: email,
+        testOtp: data?.testOtp,
+      });
     } catch (error) {
       console.log('Get OTP Error:', error);
     }
@@ -65,7 +68,7 @@ const ForgotPassword = ({navigation, route}) => {
           </Text>
 
           <CustomTextInput
-            placeholder="Email"
+            placeholder="Email / Mobile number / User name"
             onChangeText={val => {
               setEmail(val);
               if (emailErr) setEmailErr('');

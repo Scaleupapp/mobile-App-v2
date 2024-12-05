@@ -33,3 +33,7 @@ export const resetMyPassword = (payload: any) => {
 export const getHomePageData = (payload: any) => {
   return axiosInstance.get(`${API.HOMEPAGE}?page=${payload}&pageSize=10`);
 };
+
+export const savePreferences = (payload: any) => {
+  return axiosInstance.post(API.PREFERENCES, payload);
+};

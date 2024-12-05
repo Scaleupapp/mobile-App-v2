@@ -60,10 +60,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 60, // Adjust header height as needed
-    paddingHorizontal: 16, // Add horizontal padding
+    // height: 60, // Adjust header height as needed
+    paddingHorizontal: nw(16), // Add horizontal padding
+    paddingTop: nh(2),
     backgroundColor: COLORS.yellowF5BE00, // Set background color
-
     // Optional border for the header
   },
   subcontainer: {
