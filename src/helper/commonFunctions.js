@@ -33,3 +33,24 @@ export const isvalidPassword = pass => {
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
   return passwordRegex.test(pass);
 };
+
+// Debounce Function
+export const debounce = (func, delay) => {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func?.(...args), delay);
+  };
+};
+
+// Throttle Function
+export const throttle = (func, limit) => {
+  let lastCall = 0;
+  return (...args) => {
+    const now = Date.now();
+    if (now - lastCall >= limit) {
+      lastCall = now;
+      func?.(...args);
+    }
+  };
+};

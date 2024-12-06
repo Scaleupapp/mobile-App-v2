@@ -16,12 +16,16 @@ import Button from '../../components/Button';
 import {APP_FONTS} from '../../assets/fonts';
 import Routes from '../../helper/routes';
 import {useToast} from '../../components/CustomToast';
-import {registerApi} from '../../services/apiService';
+import {getOtp, verifyOtp} from '../../services/apiService';
 import {isvalidMobileNumber} from '../../helper/commonFunctions';
 import {images} from '../../assets/images';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {actions} from '../../redux/reducers';
+import {useDispatch} from 'react-redux';
 
 const SignUp = ({navigation, route}) => {
   const {showToast} = useToast();
+  const dispatch = useDispatch();
   const [state, setState] = useState({
     mobileNumber: '',
     otp: '',
@@ -37,6 +41,7 @@ const SignUp = ({navigation, route}) => {
 
   const [resendTimer, setResendTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(false);
+  const [phoneNumberData, setphoneNumberData] = useState(false);
 
   useEffect(() => {
     let timer;
@@ -46,15 +51,34 @@ const SignUp = ({navigation, route}) => {
       }, 1000);
     } else if (resendTimer === 0) {
       setIsResendDisabled(false);
-      setResendTimer(60); // Reset timer
+      setResendTimer(59); // Reset timer
     }
 
     return () => clearInterval(timer);
   }, [resendTimer, isResendDisabled]);
 
-  const handleResendClick = () => {
-    setIsResendDisabled(true);
-    setResendTimer(60);
+  const handleResendClick = async () => {
+    const newErrors = {};
+    if (!state.mobileNumber) {
+      newErrors.mobileNumber = 'Mobile number is required';
+      setErrors(newErrors);
+    } else if (state.mobileNumber.length !== 10) {
+      newErrors.mobileNumber = 'Mobile number must be 10 digits';
+      setErrors(newErrors);
+    } else if (!isvalidMobileNumber(state.mobileNumber)) {
+      newErrors.mobileNumber = 'Enter valid Mobile number';
+      setErrors(newErrors);
+    } else {
+      try {
+        const {data} = await getOtp({phoneNumber: state.mobileNumber});
+        showToast({type: 'success', title: data?.message});
+        setphoneNumberData(data);
+        setIsResendDisabled(true);
+        setResendTimer(59);
+      } catch (error) {
+        console.log('Get OTP Error:', error);
+      }
+    }
     console.log('Resend email logic triggered');
     // Add resend email API call logic here
   };
@@ -100,25 +124,34 @@ const SignUp = ({navigation, route}) => {
   const registerUser = async () => {
     if (validateFields()) {
       if (state.requestedOtp) {
-        navigation.navigate(Routes.BasicDetails);
-        // try {
-        //   const {data} = await verifyOtp({
-        //     phoneNumber: state.mobileNumber,
-        //     userOTP: state.otp,
-        //   });
-        //   showToast({type: 'success', title: data?.message});
-        // } catch (error) {
-        //   console.log('Verify OTP Error:', error);
-        // }
+        try {
+          const {data} = await verifyOtp({
+            phoneNumber: state.mobileNumber,
+            userOTP: state.otp,
+          });
+          showToast({type: 'success', title: data?.message});
+          const stringifiedUserData = JSON.stringify(data);
+          AsyncStorage.setItem('userData', stringifiedUserData);
+          dispatch(actions.setUserData(stringifiedUserData));
+          if (phoneNumberData?.isPhoneNumberVerified) {
+            navigation.navigate(Routes.Home);
+          } else {
+            navigation.navigate(Routes.BasicDetails);
+          }
+        } catch (error) {
+          console.log('Verify OTP Error:', error);
+        }
       } else {
-        setState(prev => ({...prev, requestedOtp: true}));
-        // try {
-        //   const {data} = await getOtp({phoneNumber: state.mobileNumber});
-        //   showToast({type: 'success', title: data?.message});
-        //   setState(prev => ({...prev, requestedOtp: true}));
-        // } catch (error) {
-        //   console.log('Get OTP Error:', error);
-        // }
+        try {
+          const {data} = await getOtp({phoneNumber: state.mobileNumber});
+          showToast({type: 'success', title: data?.message});
+          setphoneNumberData(data);
+          setIsResendDisabled(true);
+          setResendTimer(59);
+          setState(prev => ({...prev, requestedOtp: true}));
+        } catch (error) {
+          console.log('Get OTP Error:', error);
+        }
       }
     }
   };
@@ -159,6 +192,7 @@ const SignUp = ({navigation, route}) => {
                 value={state.otp}
                 onChangeText={value => handleInputChange('otp', value)}
                 errorMessage={errors.otp}
+                maxLength={6}
               />
               {/* <View style={styles.otpResendContainer}>
                 <Text style={styles.otpText}>Didn’t receive OTP? </Text>
@@ -207,7 +241,14 @@ const SignUp = ({navigation, route}) => {
             text={state.requestedOtp ? 'Login' : 'Request OTP'}
             onPress={registerUser}
           />
-
+          {phoneNumberData?.loginOtp ? (
+            <View
+              style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
+              <Text style={{color: 'red', fontSize: 20}}>
+                test otp: {phoneNumberData?.loginOtp}
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account! </Text>
             <RNText

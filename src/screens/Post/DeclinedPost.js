@@ -32,7 +32,7 @@ const DeclinedPost = ({navigation, route}) => {
         style={styles.semicirlce}
         resizeMode="stretch">
         <Header
-          title="Pending Post"
+          title="Declined Post"
           // backIcon={icons.backArrow} // Provide your back arrow icon
           rightIcon={false} // Provide your right icon
           // onBackPress={handleBackPress}

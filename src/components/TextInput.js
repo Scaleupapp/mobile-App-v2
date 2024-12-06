@@ -19,8 +19,6 @@ const CustomTextInput = ({
   onRightIconPress = () => {}, // Callback for right icon press
   marginBottom = 15,
   dropDown = false,
-  secureTextEntry = false,
-  keyboardType = 'default',
   label = '',
   textinputType = '',
   width = '',

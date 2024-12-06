@@ -16,11 +16,14 @@ import {APP_FONTS} from '../../assets/fonts';
 import {images} from '../../assets/images';
 import {icons} from '../../assets/icons';
 import Routes from '../../helper/routes';
+import {otpPassword, resetMyPassword} from '../../services/apiService';
+import {useToast} from '../../components/CustomToast';
 import {isValidEmail} from '../../helper/commonFunctions';
 
-const SetNewPassword = ({navigation}) => {
+const SetNewPassword = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [form, setForm] = useState({
-    email: '',
+    email: route.params?.email,
     code: '',
     password: '',
     confirmPassword: '',
@@ -44,7 +47,7 @@ const SetNewPassword = ({navigation}) => {
       }, 1000);
     } else if (resendTimer === 0) {
       setIsResendDisabled(false);
-      setResendTimer(60); // Reset timer
+      setResendTimer(59); // Reset timer
     }
 
     return () => clearInterval(timer);
@@ -52,9 +55,8 @@ const SetNewPassword = ({navigation}) => {
 
   const handleResendClick = () => {
     setIsResendDisabled(true);
-    setResendTimer(60);
-    console.log('Resend email logic triggered');
-    // Add resend email API call logic here
+    setResendTimer(59);
+    reSendOtpToEmail();
   };
 
   const handleInputChange = (field, value) => {
@@ -101,7 +103,31 @@ const SetNewPassword = ({navigation}) => {
 
   const handleSubmit = () => {
     if (validateFields()) {
-      console.log('Password reset successfully');
+      resetPasswordApi();
+    }
+  };
+
+  const resetPasswordApi = async () => {
+    try {
+      const params = {
+        loginIdentifier: form.email,
+        otp: form.code,
+        newPassword: form.password,
+      };
+      const {data} = await resetMyPassword(params);
+      showToast({type: 'success', title: data?.message});
+      navigation.navigate(Routes.Login);
+    } catch (error) {
+      console.log('Get OTP Error:', error);
+    }
+  };
+
+  const reSendOtpToEmail = async () => {
+    try {
+      const {data} = await otpPassword({loginIdentifier: form.email});
+      showToast({type: 'success', title: data?.message});
+    } catch (error) {
+      console.log('Get OTP Error:', error);
     }
   };
 

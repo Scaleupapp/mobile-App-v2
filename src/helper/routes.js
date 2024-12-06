@@ -27,6 +27,7 @@ const Routes = {
   Likes: 'Likes',
   BlockUsers: 'BlockUsers',
   EditProfile: 'EditProfile',
+  Preferences: 'Preferences',
 };
 
 export default Routes;
