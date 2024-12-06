@@ -17,6 +17,8 @@ import Button from '../../components/Button';
 import CustomTextInput from '../../components/TextInput';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Routes from '../../helper/routes';
+import {savePreferences} from '../../services/apiService';
 const Preferences = ({navigation, route}) => {
   const [visible, setVisible] = useState(false);
   const [questions, setQuestions] = useState([
@@ -90,11 +92,24 @@ const Preferences = ({navigation, route}) => {
     setQuestions(updatedQuestions); // Update state
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      alert('Survey Complete!');
+      const params = {
+        learningGoals: ['Skill Development', 'Career Advancement'],
+        preferedWay: [
+          'Visual: Videos, Infographics',
+          'Interactive: Quizzes, Hands-on Projects',
+        ],
+        topicsOfInterest: ['aws', 'java'],
+      };
+      try {
+        const {data} = await savePreferences(params);
+        navigation.navigate(Routes.Home);
+      } catch (error) {
+        console.log('🚀 ~ handleNext ~ error:', error);
+      }
     }
   };
 

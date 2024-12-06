@@ -194,10 +194,6 @@ const SignUp = ({navigation, route}) => {
                 errorMessage={errors.otp}
                 maxLength={6}
               />
-              {/* <View style={styles.otpResendContainer}>
-                <Text style={styles.otpText}>Didn’t receive OTP? </Text>
-                <Text style={styles.resendText}>Resend Code</Text>
-              </View> */}
               <View style={styles.resendContainer}>
                 <Text style={styles.resendText}>Didn’t receive OTP? </Text>
                 {isResendDisabled ? (
@@ -238,7 +234,7 @@ const SignUp = ({navigation, route}) => {
           )}
 
           <Button
-            text={state.requestedOtp ? 'Login' : 'Request OTP'}
+            text={state.requestedOtp ? 'Sign up' : 'Request OTP'}
             onPress={registerUser}
           />
           {phoneNumberData?.loginOtp ? (

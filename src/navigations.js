@@ -60,11 +60,7 @@ const LoginNavigator = ({route}) => {
         component={SignUp}
         options={{headerShown: false}}
       />
-      <LoginStack.Screen
-        name={Routes.BasicDetails}
-        component={BasicDetails}
-        options={{headerShown: false}}
-      />
+
       <LoginStack.Screen
         name={Routes.Login}
         component={Login}
@@ -109,7 +105,16 @@ export const RootNavigator = () => {
         component={LoginNavigator}
         options={{headerShown: false}}
       />
-
+      <Stack.Screen
+        name={Routes.Preferences}
+        component={Preferences}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.BasicDetails}
+        component={BasicDetails}
+        options={{headerShown: false}}
+      />
       <Stack.Screen
         name={Routes.Home}
         component={Home}
@@ -121,115 +126,27 @@ export const RootNavigator = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={Routes.MyProfile}
-        component={MyProfile}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.MyPlaylist}
-        component={MyPlaylist}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.EditPlayList}
-        component={EditPlayList}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.NewPlayList}
-        component={NewPlayList}
-        options={{headerShown: false}}
-      />
-
-      <Stack.Screen
-        name={Routes.SavePost}
-        component={SavePost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.DraftPost}
-        component={DraftPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.VerifiedPost}
-        component={VerifiedPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.PendingPost}
-        component={PendingPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.DeclinedPost}
-        component={DeclinedPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.CreatePost}
-        component={CreatePost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.InnerCircleRequest}
-        component={InnerCircleRequest}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.InnerCircle}
-        component={InnerCircle}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Followers}
-        component={Followers}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Following}
-        component={Following}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Likes}
-        component={Likes}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.BlockUsers}
-        component={BlockUsers}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
         name={Routes.EditProfile}
         component={EditProfile}
         options={{headerShown: false}}
       />
-
       <Stack.Screen
-        name={'Preferences'}
-        component={Preferences}
-        options={{headerShown: false}}
-      />
-
-      <Stack.Screen
-        name={'WorkExperience'}
+        name={Routes.WorkExperience}
         component={WorkExperience}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={'Education'}
+        name={Routes.Education}
         component={Education}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={'Certifications'}
+        name={Routes.Certifications}
         component={Certifications}
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={'Projects'}
+        name={Routes.Projects}
         component={Projects}
         options={{headerShown: false}}
       />

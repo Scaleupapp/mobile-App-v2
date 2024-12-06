@@ -37,7 +37,8 @@ const SetNewPassword = ({navigation, route}) => {
   });
 
   const [resendTimer, setResendTimer] = useState(60);
-  const [isResendDisabled, setIsResendDisabled] = useState(false);
+  const [isResendDisabled, setIsResendDisabled] = useState(true);
+  const [otp, setOtp] = useState(route?.params?.testOtp || '');
 
   useEffect(() => {
     let timer;
@@ -71,13 +72,13 @@ const SetNewPassword = ({navigation, route}) => {
     let isValid = true;
     const newErrors = {};
 
-    if (!form.email) {
-      newErrors.email = 'Email is required';
-      isValid = false;
-    } else if (!isValidEmail(form.email)) {
-      newErrors.email = 'Please Enter valid email address';
-      isValid = false;
-    }
+    // if (!form.email) {
+    //   newErrors.email = 'Email is required';
+    //   isValid = false;
+    // } else if (!isValidEmail(form.email)) {
+    //   newErrors.email = 'Please Enter valid email address';
+    //   isValid = false;
+    // }
 
     if (!form.code) {
       newErrors.code = 'Code is required';
@@ -110,7 +111,7 @@ const SetNewPassword = ({navigation, route}) => {
   const resetPasswordApi = async () => {
     try {
       const params = {
-        loginIdentifier: form.email,
+        loginIdentifier: form.email?.toLowerCase(),
         otp: form.code,
         newPassword: form.password,
       };
@@ -118,14 +119,17 @@ const SetNewPassword = ({navigation, route}) => {
       showToast({type: 'success', title: data?.message});
       navigation.navigate(Routes.Login);
     } catch (error) {
-      console.log('Get OTP Error:', error);
+      console.log('Get OTP Error:', error?.response?.data);
     }
   };
 
   const reSendOtpToEmail = async () => {
     try {
-      const {data} = await otpPassword({loginIdentifier: form.email});
+      const {data} = await otpPassword({
+        loginIdentifier: form.email?.toLowerCase(),
+      });
       showToast({type: 'success', title: data?.message});
+      setOtp(data?.testOtp);
     } catch (error) {
       console.log('Get OTP Error:', error);
     }
@@ -155,6 +159,7 @@ const SetNewPassword = ({navigation, route}) => {
             value={form.email}
             onChangeText={value => handleInputChange('email', value)}
             errorMessage={errors.email}
+            editable={false}
           />
 
           <CustomTextInput
@@ -165,7 +170,7 @@ const SetNewPassword = ({navigation, route}) => {
           />
 
           <View style={styles.resendContainer}>
-            <Text style={styles.resendText}>Didn’t receive the email? </Text>
+            <Text style={styles.resendText}>Didn’t receive the OTP? </Text>
             {isResendDisabled ? (
               <Text style={styles.timerText}>Resend in {resendTimer}s</Text>
             ) : (
@@ -192,7 +197,12 @@ const SetNewPassword = ({navigation, route}) => {
           />
           <View style={{marginBottom: nh(20)}} />
           <Button text={'Reset password'} onPress={handleSubmit} />
-
+          {otp ? (
+            <View
+              style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
+              <Text style={{color: 'red', fontSize: 20}}>test otp: {otp}</Text>
+            </View>
+          ) : null}
           <View style={styles.backToLogin}>
             <Text style={styles.backToLoginText}>Back to </Text>
             <RNText

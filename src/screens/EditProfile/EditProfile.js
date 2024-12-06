@@ -18,66 +18,156 @@ import {images} from '../../assets/images';
 import Icon from '../../helper/icon';
 import CustomTextInput from '../../components/TextInput';
 import Button from '../../components/Button';
+import {isValidEmail, isvalidMobileNumber} from '../../helper/commonFunctions';
+
+const professionData = [
+  {
+    image: images.preference,
+    title: 'Preferences',
+    subtitle: 'Update choices for recommendations',
+    nav: 'Preferences',
+  },
+  {
+    image: images.education,
+    title: 'Educational Information',
+    subtitle: 'Add your academic details',
+    nav: 'Education',
+  },
+  {
+    image: images.work,
+    title: 'Work Experience',
+    subtitle: 'Add your past work details',
+    nav: 'WorkExperience',
+  },
+  {
+    image: images.certification,
+    title: 'Certifications',
+    subtitle: 'Add your certificates',
+    nav: 'Certifications',
+  },
+  {
+    image: images.project,
+    title: 'Projects',
+    subtitle: 'Add the projects details you worked on',
+    nav: 'Projects',
+  },
+];
 
 const EditProfile = ({navigation, route}) => {
   const [selected, setSelected] = useState(0);
+
+  // Form State
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    mobile: '',
+    location: '',
+    dob: '',
+    about: '',
+  });
+
+  // Error State
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    mobile: '',
+    location: '',
+    dob: '',
+    about: '',
+  });
+
   const onSelect = number => {
     setSelected(number);
   };
-  let professionData = [
-    {
-      image: images.preference,
-      title: 'Preferences',
-      subtitle: 'Update choices for recommendations',
-      nav: 'Preferences',
-    },
 
-    {
-      image: images.education,
-      title: 'Educational Information',
-      subtitle: 'Add your academic details',
-      nav: 'Education',
-    },
-    {
-      image: images.work,
-      title: 'Work Experience',
-      subtitle: 'Add your past work details',
-      nav: 'WorkExperience',
-    },
-    {
-      image: images.certification,
-      title: 'Certifications',
-      subtitle: 'Add your certificates',
-      nav: 'Certifications',
-    },
-    {
-      image: images.project,
-      title: 'Projects',
-      subtitle: 'Add the projects details you worked on',
-      nav: 'Projects',
-    },
-  ];
+  // Validate fields
+  const validateFields = () => {
+    let isValid = true;
+    const newErrors = {};
+
+    // Name validation
+    if (!form.name) {
+      newErrors.name = 'Name is required';
+      isValid = false;
+    }
+
+    // Email validation
+    if (!form.email) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (isValidEmail(form.email)) {
+      newErrors.email = 'Enter a valid email address';
+      isValid = false;
+    }
+
+    // Mobile Number validation
+    if (!form.mobile) {
+      newErrors.mobile = 'Mobile number is required';
+      isValid = false;
+    } else if (form.mobile.length !== 10) {
+      newErrors.mobile = 'Mobile number must be 10 digits';
+      isValid = false;
+    } else if (isvalidMobileNumber(form.mobile)) {
+      newErrors.mobile = 'Enter a valid mobile number';
+      isValid = false;
+    }
+
+    if (!form.location) {
+      newErrors.location = 'Location is required';
+      isValid = false;
+    }
+
+    // Date of Birth validation
+    if (!form.dob) {
+      newErrors.dob = 'Date of Birth is required';
+      isValid = false;
+    }
+
+    // About validation
+    if (!form.about) {
+      newErrors.about = 'About section cannot be empty';
+      isValid = false;
+    }
+
+    // Update errors state
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  // Register user or perform API call
+  const handleSave = async () => {
+    if (validateFields()) {
+      try {
+        console.log('API call with form:', form);
+        // Perform your API call here
+      } catch (error) {
+        console.error('Error registering user:', error);
+      }
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setForm({...form, [field]: value});
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors({...errors, [field]: ''});
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header
-        title="Edit Profile"
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        // rightIcon={icons.menu} // Provide your right icon
-        onBackPress={() => navigation.goBack()}
-        // onRightIconPress={handleRightIconPress}
-      />
+      <Header title="Edit Profile" onBackPress={() => navigation.goBack()} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <SquareToggle
             options={['Personal', 'Professional']}
             selected={selected}
-            onToggle={number => onSelect(number)}
+            onToggle={onSelect}
           />
           <ScrollView>
             {selected == 0 && (
@@ -107,12 +197,51 @@ const EditProfile = ({navigation, route}) => {
                   </View>
                 </View>
 
-                <CustomTextInput label="Name" />
-                <CustomTextInput label="Email" />
-                <CustomTextInput label="Mobile No" />
-                <CustomTextInput label="Location" />
-                <CustomTextInput label="Date of Birth" />
-                <CustomTextInput label="About" textinputType="L" />
+                {/* Form Fields */}
+                <CustomTextInput
+                  label="Name"
+                  placeholder="Enter Name"
+                  value={form.name}
+                  onChangeText={value => handleInputChange('name', value)}
+                  errorMessage={errors.name}
+                />
+                <CustomTextInput
+                  label="Email"
+                  placeholder="Enter Email"
+                  value={form.email}
+                  onChangeText={value => handleInputChange('email', value)}
+                  errorMessage={errors.email}
+                />
+                <CustomTextInput
+                  label="Mobile No"
+                  placeholder="Enter Mobile No"
+                  value={form.mobile}
+                  onChangeText={value => handleInputChange('mobile', value)}
+                  errorMessage={errors.mobile}
+                />
+                <CustomTextInput
+                  label="Location"
+                  placeholder="Enter Location"
+                  value={form.location}
+                  onChangeText={value => handleInputChange('location', value)}
+                  errorMessage={errors.location}
+                />
+                <CustomTextInput
+                  label="Date of Birth"
+                  placeholder="Enter Date of Birth"
+                  value={form.dob}
+                  onChangeText={value => handleInputChange('dob', value)}
+                  errorMessage={errors.dob}
+                />
+                <CustomTextInput
+                  label="About"
+                  placeholder="Enter About Yourself"
+                  textinputType="L"
+                  value={form.about}
+                  onChangeText={value => handleInputChange('about', value)}
+                  errorMessage={errors.about}
+                />
+
                 <View
                   style={{
                     marginTop: 30,
@@ -121,6 +250,7 @@ const EditProfile = ({navigation, route}) => {
                   }}>
                   <Button
                     text="Save"
+                    onPress={handleSave}
                     width={nw(63)}
                     height={nh(35)}
                     textStyle={{fontSize: 14}}

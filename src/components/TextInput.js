@@ -50,12 +50,12 @@ const CustomTextInput = ({
           {
             marginBottom: marginBottom,
             height: textinputType == 'L' ? nh(150) : nh(height),
-          },
-          width && {
-            width: width,
             borderColor: errorMessage
               ? COLORS.redEA4335
               : 'rgba(214, 214, 214, 0.2)',
+          },
+          width && {
+            width: width,
           },
         ]}>
         {/* Country Dropdown */}

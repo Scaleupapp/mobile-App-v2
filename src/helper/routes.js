@@ -28,6 +28,11 @@ const Routes = {
   BlockUsers: 'BlockUsers',
   EditProfile: 'EditProfile',
   Preferences: 'Preferences',
+  EditProfile: 'EditProfile',
+  WorkExperience: 'WorkExperience',
+  Education: 'Education',
+  Certifications: 'Certifications',
+  Projects: 'Projects',
 };
 
 export default Routes;

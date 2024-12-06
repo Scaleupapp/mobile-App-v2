@@ -169,7 +169,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         numberOfLines={2}
         style={styles.textStyle}
         expandOnly
-        seeMoreText="more">
+        seeMoreText="more"
+        seeMoreStyle={{
+          color: COLORS.grey333333,
+          fontFamily: APP_FONTS.PoppinsMedium,
+          fontWeight: '500',
+        }}>
         {item?.captions}
       </ReadMore>
       {/* <Text
@@ -227,7 +232,7 @@ const styles = StyleSheet.create({
     fontFamily: APP_FONTS.PoppinsMedium,
     lineHeight: nh(18),
     letterSpacing: nw(0.3),
-    fontWeight: '500',
+    fontWeight: '400',
     marginTop: nh(10),
     color: COLORS.grey333333,
   },

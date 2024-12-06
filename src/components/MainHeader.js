@@ -28,7 +28,8 @@ const MainHeader = () => {
       />
       <View style={styles.subcontainer}>
         <Icon
-          onPress={logoutUser}
+          // onPress={logoutUser}
+          onPress={() => navigation.navigate(Routes.EditProfile)}
           type="material-community"
           name="dots-horizontal-circle"
           color={COLORS.whiteFFFFFF}

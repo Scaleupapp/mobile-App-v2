@@ -4,7 +4,6 @@ import {
   SafeAreaView,
   StatusBar,
   View,
-  Text as RNText,
   ScrollView,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
@@ -12,7 +11,6 @@ import {nh, nw} from '../../helper/scales';
 import Text from '../../components/Text';
 import CustomTextInput from '../../components/TextInput';
 import {icons} from '../../assets/icons';
-import {CheckBox} from 'react-native-elements';
 import Button from '../../components/Button';
 import SocialLogin from '../../components/socialauth';
 import {APP_FONTS} from '../../assets/fonts';
@@ -41,7 +39,6 @@ const BasicDetails = ({navigation, route}) => {
     confirmPassword: '',
   });
 
-  const [isChecked, setIsChecked] = useState(false);
   const [secureText, setSecureText] = useState(true);
   const [secureText1, setSecureText1] = useState(true);
 
@@ -96,11 +93,6 @@ const BasicDetails = ({navigation, route}) => {
 
     if (form.password !== form.confirmPassword) {
       newErrors.confirmPassword = 'Password does not match';
-      isValid = false;
-    }
-
-    if (!isChecked) {
-      showToast({title: 'Please agree to the terms'});
       isValid = false;
     }
 
@@ -208,44 +200,10 @@ const BasicDetails = ({navigation, route}) => {
               secureTextEntry={secureText1}
               errorMessage={errors.confirmPassword}
             />
-
-            <View style={styles.container1}>
-              <CheckBox
-                checkedIcon="check-box"
-                uncheckedIcon="check-box-outline-blank"
-                iconType="material"
-                checked={isChecked}
-                onPress={() => setIsChecked(!isChecked)}
-                containerStyle={styles.checkboxContainer}
-                checkedColor={COLORS.blue043142}
-                uncheckedColor={COLORS.blue043142}
-              />
-              <Text variant="medium12" color={COLORS.blue043142}>
-                I agree to{' '}
-              </Text>
-              <Text variant="bold12" color={COLORS.yellowF5BE00}>
-                Terms of Service{' '}
-              </Text>
-              <Text variant="medium12" color={COLORS.blue043142}>
-                and{' '}
-              </Text>
-              <Text variant="bold12" color={COLORS.yellowF5BE00}>
-                Privacy Policy
-              </Text>
-            </View>
-
             <Button text="Submit" onPress={registerUser} />
-            <SocialLogin />
+            <SocialLogin signup={true} />
             <View style={{height: nh(50)}} />
           </ScrollView>
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account! </Text>
-            <RNText
-              onPress={() => navigation.navigate(Routes.Login)}
-              style={styles.footerLink}>
-              Login
-            </RNText>
-          </View>
         </View>
       </View>
     </SafeAreaView>

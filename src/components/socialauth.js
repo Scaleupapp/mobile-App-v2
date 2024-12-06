@@ -7,14 +7,14 @@ import {icons} from '../assets/icons';
 import Text from './Text';
 import {COLORS} from '../helper/colors';
 
-const SocialLogin = () => {
+const SocialLogin = ({signup = false}) => {
   return (
-    <View>
+    <View style={{marginTop: signup ? nh(60) : 0}}>
       <Text
         variant="medium12"
         color={COLORS.grey333333}
         style={{textAlign: 'center', marginVertical: nh(15)}}>
-        {'Or continue with'}
+        {signup ? 'Connect to your social media handles' : 'Or continue with'}
       </Text>
       <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
         <Button
