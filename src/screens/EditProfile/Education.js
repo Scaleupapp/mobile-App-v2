@@ -1,5 +1,11 @@
 import React, {useState} from 'react';
-import {StyleSheet, SafeAreaView, StatusBar, View} from 'react-native';
+import {
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  View,
+  FlatList,
+} from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
@@ -7,9 +13,12 @@ import CustomTextInput from '../../components/TextInput';
 import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
+import {Card} from '../../components/Card';
 
 const Education = ({navigation, route}) => {
   const [isChecked, setIsChecked] = useState(false);
+  const [education, setEducation] = useState([]);
+  console.log(education);
   const [state, setState] = useState({
     degree: '',
     university: '',
@@ -66,10 +75,13 @@ const Education = ({navigation, route}) => {
         'Currently pursuing:',
         isChecked,
       );
+
+      setEducation([...education, state]);
+      setSaved(true);
       // Perform your API call or other actions here
     }
   };
-
+  const [saved, setSaved] = useState(false);
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -83,72 +95,78 @@ const Education = ({navigation, route}) => {
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          <View style={styles.input}>
-            <CustomTextInput
-              width={(DEVICE_WIDTH - 55) / 2}
-              label="Degree"
-              placeholder="Enter Degree"
-              value={state.degree}
-              onChangeText={value => handleInputChange('degree', value)}
-              errorMessage={errors.degree}
-            />
-            <CustomTextInput
-              width={(DEVICE_WIDTH - 55) / 2}
-              label="University"
-              placeholder="Enter University"
-              value={state.university}
-              onChangeText={value => handleInputChange('university', value)}
-              errorMessage={errors.university}
-            />
-          </View>
-          <View style={styles.input}>
-            <CustomTextInput
-              width={(DEVICE_WIDTH - 55) / 2}
-              label="Start Date"
-              placeholder="Enter Start Date"
-              value={state.startDate}
-              onChangeText={value => handleInputChange('startDate', value)}
-              errorMessage={errors.startDate}
-            />
-            <CustomTextInput
-              width={(DEVICE_WIDTH - 55) / 2}
-              label="End Date"
-              placeholder="Enter End Date"
-              value={state.endDate}
-              onChangeText={value => handleInputChange('endDate', value)}
-              errorMessage={errors.endDate}
-              disabled={isChecked} // Disable if currently pursuing
-            />
-          </View>
-          <View style={styles.checkboxContainer}>
-            <CheckBox
-              checkedIcon="check-box"
-              uncheckedIcon="check-box-outline-blank"
-              iconType="material"
-              checked={isChecked}
-              onPress={() => setIsChecked(!isChecked)}
-              containerStyle={styles.checkboxStyle}
-              checkedColor={COLORS.grey999999}
-              uncheckedColor={COLORS.grey999999}
-            />
-            <Text variant="medium12" color={COLORS.grey999999}>
-              Currently pursuing
-            </Text>
-          </View>
-          <View
-            style={{
-              marginTop: 30,
-              marginLeft: DEVICE_WIDTH - 105,
-              marginBottom: nh(100),
-            }}>
-            <Button
-              text="Save"
-              width={nw(63)}
-              height={nh(35)}
-              textStyle={{fontSize: 14}}
-              onPress={saveEducation}
-            />
-          </View>
+          {!saved ? (
+            <>
+              <View style={styles.input}>
+                <CustomTextInput
+                  width={(DEVICE_WIDTH - 55) / 2}
+                  label="Degree"
+                  placeholder="Enter Degree"
+                  value={state.degree}
+                  onChangeText={value => handleInputChange('degree', value)}
+                  errorMessage={errors.degree}
+                />
+                <CustomTextInput
+                  width={(DEVICE_WIDTH - 55) / 2}
+                  label="University"
+                  placeholder="Enter University"
+                  value={state.university}
+                  onChangeText={value => handleInputChange('university', value)}
+                  errorMessage={errors.university}
+                />
+              </View>
+              <View style={styles.input}>
+                <CustomTextInput
+                  width={(DEVICE_WIDTH - 55) / 2}
+                  label="Start Date"
+                  placeholder="Enter Start Date"
+                  value={state.startDate}
+                  onChangeText={value => handleInputChange('startDate', value)}
+                  errorMessage={errors.startDate}
+                />
+                <CustomTextInput
+                  width={(DEVICE_WIDTH - 55) / 2}
+                  label="End Date"
+                  placeholder="Enter End Date"
+                  value={state.endDate}
+                  onChangeText={value => handleInputChange('endDate', value)}
+                  errorMessage={errors.endDate}
+                  disabled={isChecked} // Disable if currently pursuing
+                />
+              </View>
+              <View style={styles.checkboxContainer}>
+                <CheckBox
+                  checkedIcon="check-box"
+                  uncheckedIcon="check-box-outline-blank"
+                  iconType="material"
+                  checked={isChecked}
+                  onPress={() => setIsChecked(!isChecked)}
+                  containerStyle={styles.checkboxStyle}
+                  checkedColor={COLORS.grey999999}
+                  uncheckedColor={COLORS.grey999999}
+                />
+                <Text variant="medium12" color={COLORS.grey999999}>
+                  Currently pursuing
+                </Text>
+              </View>
+              <View
+                style={{
+                  marginTop: 30,
+                  marginLeft: DEVICE_WIDTH - 105,
+                  marginBottom: nh(100),
+                }}>
+                <Button
+                  text="Save"
+                  width={nw(63)}
+                  height={nh(35)}
+                  textStyle={{fontSize: 14}}
+                  onPress={saveEducation}
+                />
+              </View>
+            </>
+          ) : (
+            <FlatList data={education} renderItem={() => <Card />} />
+          )}
         </View>
       </View>
     </SafeAreaView>

@@ -92,6 +92,29 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             // alignContent: 'center',
             // justifyContent: 'center',
           }}>
+          {item?.isVerified && (
+            <View
+              style={{
+                height: nh(30),
+                width: nw(30),
+                borderRadius: 15,
+                backgroundColor: COLORS.blue043142,
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                right: 10,
+                top: 10,
+                zIndex: 1,
+                // Centers vertically
+              }}>
+              <Icon
+                type="material-community"
+                name="check-decagram"
+                color={COLORS.yellowF5BE00}
+                size={20} // Ensure the icon size is appropriate
+              />
+            </View>
+          )}
           <Video
             paused={isPlaying != index}
             controls
@@ -177,6 +200,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         }}>
         {item?.captions}
       </ReadMore>
+      <Text color={COLORS.blue043142}>{item.hashtags}</Text>
       {/* <Text
         variant="medium12"
         color={COLORS.grey333333}
