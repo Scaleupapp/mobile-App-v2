@@ -15,7 +15,7 @@ import {COLORS} from '../../helper/colors';
 import ReadMore from '@fawazahmed/react-native-read-more';
 import {APP_FONTS} from '../../assets/fonts';
 import Video from 'react-native-video';
-import convertToProxyURL from 'react-native-video-cache';
+// import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   console.log({item});
@@ -92,11 +92,35 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             // alignContent: 'center',
             // justifyContent: 'center',
           }}>
+          {item?.isVerified && (
+            <View
+              style={{
+                height: nh(30),
+                width: nw(30),
+                borderRadius: 15,
+                backgroundColor: COLORS.blue043142,
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                right: 10,
+                top: 10,
+                zIndex: 1,
+                // Centers vertically
+              }}>
+              <Icon
+                type="material-community"
+                name="check-decagram"
+                color={COLORS.yellowF5BE00}
+                size={20} // Ensure the icon size is appropriate
+              />
+            </View>
+          )}
           <Video
             paused={isPlaying != index}
             controls
             onLoad={onLoad}
-            source={{uri: convertToProxyURL(item?.contentURL)}}
+            // source={{uri: convertToProxyURL(item?.contentURL)}}
+            source={{uri: item?.contentURL}}
             style={
               videoDimensions?.height
                 ? {
@@ -176,6 +200,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         }}>
         {item?.captions}
       </ReadMore>
+      <Text color={COLORS.blue043142}>{item.hashtags}</Text>
       {/* <Text
         variant="medium12"
         color={COLORS.grey333333}

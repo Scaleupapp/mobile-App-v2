@@ -18,8 +18,8 @@ export const Story = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const usersResponse = await axios.get('http://192.168.155.240:5000/api/user');
-        const storiesResponse = await axios.get('http://192.168.155.240:5000/api/stories');
+        const usersResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user');
+        const storiesResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories');
   
         const users = usersResponse.data;
         const stories = storiesResponse.data;

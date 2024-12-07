@@ -172,7 +172,7 @@ const EditProfile = ({navigation, route}) => {
           <ScrollView>
             {selected == 0 && (
               <>
-                <Text variant="semibold16" color={COLORS.green34A853}>
+                {/* <Text variant="semibold16" color={COLORS.green34A853}>
                   You only need 20% more
                 </Text>
                 <Text variant="medium14" color={COLORS.grey999999}>
@@ -195,7 +195,7 @@ const EditProfile = ({navigation, route}) => {
                       size={16}
                     />
                   </View>
-                </View>
+                </View> */}
 
                 {/* Form Fields */}
                 <CustomTextInput

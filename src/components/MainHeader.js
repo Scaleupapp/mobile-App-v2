@@ -44,7 +44,7 @@ const MainHeader = () => {
             color={COLORS.whiteFFFFFF}
             size={nh(24)}
             style={{marginRight: nw(14)}}
-            onPress={() => navigation.navigate(Routes.Notifications)}
+            // onPress={() => navigation.navigate(Routes.Notifications)}
           />
           <Icon
             type="material-community"
@@ -52,6 +52,7 @@ const MainHeader = () => {
             color={COLORS.whiteFFFFFF}
             size={nh(24)}
             style={{marginRight: nw(14)}}
+            onPress={() => navigation.navigate(Routes.EditProfile)}
           />
           <Icon
             type="font-awesome"

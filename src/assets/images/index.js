@@ -22,4 +22,5 @@ export const images = {
   project: require('../images/project.png'),
   ellipse: require('../images/Ellipse.png'),
   notification: require('../images/notification.png'),
+  profilebaground: require('../images/profilebaground.png'),
 };

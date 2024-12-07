@@ -54,7 +54,7 @@ export const AddStory = ({ onStoryAdded }) => {
 
       try {
         const response = await axios.post(
-          'http://192.168.155.240:5000/api/stories',
+          'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories',
           formData,
           {
             headers: { 'Content-Type': 'multipart/form-data' },

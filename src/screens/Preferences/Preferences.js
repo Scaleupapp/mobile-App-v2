@@ -21,6 +21,20 @@ import Routes from '../../helper/routes';
 import {savePreferences} from '../../services/apiService';
 const Preferences = ({navigation, route}) => {
   const [visible, setVisible] = useState(false);
+  const [input, setInput] = useState('');
+  const [words, setWords] = useState([]);
+
+  const handleAddWord = () => {
+    if (input.trim()) {
+      setWords([...words, input.trim()]);
+      setInput(''); // Clear the input
+    }
+  };
+  const handleRemoveWord = index => {
+    const updatedWords = words.filter((_, i) => i !== index);
+    setWords(updatedWords);
+  };
+
   const [questions, setQuestions] = useState([
     {
       id: 1,
@@ -96,16 +110,17 @@ const Preferences = ({navigation, route}) => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
+      console.log(questions, 'questions');
       const params = {
-        learningGoals: ['Skill Development', 'Career Advancement'],
-        preferedWay: [
-          'Visual: Videos, Infographics',
-          'Interactive: Quizzes, Hands-on Projects',
-        ],
-        topicsOfInterest: ['aws', 'java'],
+        learningGoals: questions[0]?.answer,
+        preferedWay: questions[1]?.answer,
+        topicsOfInterest: words,
       };
+      console.log(params);
       try {
         const {data} = await savePreferences(params);
+
+        console.log(data, 'data from preference');
         navigation.navigate(Routes.Home);
       } catch (error) {
         console.log('🚀 ~ handleNext ~ error:', error);
@@ -260,8 +275,41 @@ const Preferences = ({navigation, route}) => {
             />
           )}
           {currentQuestion.type == 'textinput' && (
-            <View style={{flex: 1}}>
-              <CustomTextInput placeholder="Please specify" errorMessage="" />
+            <View>
+              <FlatList
+                data={words}
+                horizontal
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({item, index}) => (
+                  <View
+                    style={{
+                      padding: 10,
+                      marginVertical: 4,
+
+                      borderRadius: 8,
+                      marginRight: 10,
+                      borderWidth: 1,
+                      marginBottom: 10,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                    <Text variant="semibold12">{item}</Text>
+                    <TouchableOpacity
+                      style={styles.crossButton}
+                      onPress={() => handleRemoveWord(index)}>
+                      <Text style={styles.crossText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+              <CustomTextInput
+                placeholder="Please specify"
+                errorMessage=""
+                value={input}
+                onChangeText={setInput}
+                onSubmitEditing={handleAddWord} // Triggered when Enter is pressed
+              />
+
               {bottomComp()}
             </View>
           )}
@@ -345,5 +393,14 @@ const styles = StyleSheet.create({
   optionTextContainer: {
     // flex: 1,
     flexDirection: 'row',
+  },
+  crossButton: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // backgroundColor: '#f5be00',
+    borderRadius: 12,
+    width: 20,
+    height: 20,
   },
 });
