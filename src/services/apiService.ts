@@ -37,3 +37,46 @@ export const getHomePageData = (payload: any) => {
 export const savePreferences = (payload: any) => {
   return axiosInstance.post(API.PREFERENCES, payload);
 };
+
+
+export const getPreferences = (payload: any) => {
+  return axiosInstance.get(API.PREFERENCES, payload);
+};
+
+export const saveEducation = (payload: any) => {
+  return axiosInstance.post(API.EDUCATION, payload);
+};
+
+
+export const getEducation = (payload: any) => {
+  return axiosInstance.get(API.EDUCATION, payload);
+};
+
+export const saveWorkExperience = (payload: any) => {
+  return axiosInstance.post(API.EXPERIENCE, payload);
+};
+export const getWorkExperience = (payload: any) => {
+  return axiosInstance.get(API.EXPERIENCE, payload);
+};
+
+export const saveCertification = (payload: any) => {
+  return axiosInstance.post(API.CERTIFICATION, payload);
+};
+export const getCertification = (payload: any) => {
+  return axiosInstance.get(API.CERTIFICATION, payload);
+};
+
+export const saveProjects = (payload: any) => {
+  return axiosInstance.post(API.PROJECTS, payload);
+};
+
+export const getProjects = (payload: any) => {
+  return axiosInstance.get(API.PROJECTS, payload);
+};
+
+
+
+export const getProfile = (payload: any) => {
+  return axiosInstance.get(API.PROFILE_DETAIL, payload);
+};
+

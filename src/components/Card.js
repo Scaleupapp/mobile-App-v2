@@ -4,7 +4,8 @@ import {nh, nw} from '../helper/scales';
 import {COLORS} from '../helper/colors';
 import Text from './Text';
 
-export const Card = () => {
+export const Card = ({title, subtitle, text1, text2, checked}) => {
+  console.log(title, 'title');
   return (
     <View style={styles.card}>
       <View style={styles.cardimage}>
@@ -16,20 +17,24 @@ export const Card = () => {
       </View>
       <View>
         <Text variant="semibold14" color={COLORS.blue043142}>
-          Job Profile
+          {title}
         </Text>
-        <Text variant="medium12" color={COLORS.blue043142}>
-          Company Name
+        <Text
+          variant="medium12"
+          color={COLORS.blue043142}
+          style={{width: nw(250)}}
+          numberOfLines={1}>
+          {subtitle}
         </Text>
         <Text variant="medium12" color={COLORS.grey999999}>
-          Duration | Location
+          {text1} {text2 && '|'} {text2}
         </Text>
       </View>
       <View
         style={{
           paddingVertical: 2,
           paddingHorizontal: 12,
-          backgroundColor: 'rgba(251, 217, 215, 1)',
+          backgroundColor: checked ? '#D6EEDD' : 'rgba(251, 217, 215, 1)',
           // rgba(214, 238, 221, 1)
           alignItems: 'center',
           borderRadius: 5,
@@ -37,8 +42,10 @@ export const Card = () => {
           bottom: -10,
           right: 0,
         }}>
-        <Text variant="medium12" color={COLORS.redEA4335}>
-          Pursuing
+        <Text
+          variant="medium12"
+          color={checked ? COLORS.green34A853 : COLORS.redEA4335}>
+          {checked ? 'Completed' : 'Pursuing'}
         </Text>
       </View>
     </View>

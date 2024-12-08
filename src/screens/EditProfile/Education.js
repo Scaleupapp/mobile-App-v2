@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -14,10 +14,12 @@ import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {Card} from '../../components/Card';
+import {getEducation, saveEducation} from '../../services/apiService';
 
 const Education = ({navigation, route}) => {
   const [isChecked, setIsChecked] = useState(false);
   const [education, setEducation] = useState([]);
+  const [saved, setSaved] = useState(true);
   console.log(education);
   const [state, setState] = useState({
     degree: '',
@@ -26,6 +28,23 @@ const Education = ({navigation, route}) => {
     endDate: '',
   });
   const [errors, setErrors] = useState({});
+  useEffect(() => {
+    getEducationDetails();
+  }, []);
+  const getEducationDetails = async () => {
+    try {
+      let res = await getEducation();
+
+      setEducation(res?.data?.educationInfo);
+      if (res?.data?.educationInfo?.length > 0) {
+        setSaved(true);
+      }
+    } catch (error) {
+      setSaved(false);
+      console.log(error, 'error from getEducationDetails');
+    } finally {
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setState({...state, [field]: value});
@@ -67,21 +86,35 @@ const Education = ({navigation, route}) => {
     return isValid;
   };
 
-  const saveEducation = () => {
+  const saveEducationAPI = async () => {
     if (validateFields()) {
-      console.log(
-        'Education details:',
-        state,
-        'Currently pursuing:',
-        isChecked,
-      );
+      //   setSaved(true);
+      let payload = {
+        degree: state?.degree,
+        university: state?.university,
+        startDate: state?.startDate,
+        endDate: state?.endDate,
+        currentltPursuing: isChecked,
+      };
+      try {
+        let res = await saveEducation(payload);
+        console.log(res?.data, 'saved');
+        setEducation([payload, ...education]);
+        setSaved(true);
+        setState({
+          degree: '',
+          university: '',
+          startDate: '',
+          endDate: '',
+        });
+      } catch (error) {
+        console.log(error?.response?.data, 'errror');
+      }
 
-      setEducation([...education, state]);
-      setSaved(true);
       // Perform your API call or other actions here
     }
   };
-  const [saved, setSaved] = useState(false);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -95,7 +128,7 @@ const Education = ({navigation, route}) => {
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          {!saved ? (
+          {!saved && (
             <>
               <View style={styles.input}>
                 <CustomTextInput
@@ -108,8 +141,8 @@ const Education = ({navigation, route}) => {
                 />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
-                  label="University"
-                  placeholder="Enter University"
+                  label="College"
+                  placeholder="Enter College Name"
                   value={state.university}
                   onChangeText={value => handleInputChange('university', value)}
                   errorMessage={errors.university}
@@ -118,20 +151,22 @@ const Education = ({navigation, route}) => {
               <View style={styles.input}>
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
-                  label="Start Date"
-                  placeholder="Enter Start Date"
-                  value={state.startDate}
+                  label="Start Year"
+                  placeholder="Enter Start Year"
+                  value={state.startYear}
                   onChangeText={value => handleInputChange('startDate', value)}
                   errorMessage={errors.startDate}
+                  keyboardType="numeric"
                 />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
-                  label="End Date"
-                  placeholder="Enter End Date"
+                  label="End Year"
+                  placeholder="Enter End Year"
                   value={state.endDate}
                   onChangeText={value => handleInputChange('endDate', value)}
                   errorMessage={errors.endDate}
                   disabled={isChecked} // Disable if currently pursuing
+                  keyboardType="numeric"
                 />
               </View>
               <View style={styles.checkboxContainer}>
@@ -160,12 +195,37 @@ const Education = ({navigation, route}) => {
                   width={nw(63)}
                   height={nh(35)}
                   textStyle={{fontSize: 14}}
-                  onPress={saveEducation}
+                  onPress={saveEducationAPI}
                 />
               </View>
             </>
-          ) : (
-            <FlatList data={education} renderItem={() => <Card />} />
+          )}
+          {education.length > 0 && saved && (
+            <>
+              <View style={{marginBottom: nh(10), width: nw(96)}}>
+                <Button
+                  leftIcon={'plus-circle'}
+                  text="Add more"
+                  variant="outline"
+                  width={nw(96)}
+                  height={nh(35)}
+                  textStyle={{fontSize: 14}}
+                  onPress={() => setSaved(false)}
+                />
+              </View>
+              <FlatList
+                data={education}
+                renderItem={({item}) => (
+                  <Card
+                    title={item?.university}
+                    subtitle={item?.degree}
+                    text1={new Date(item?.startDate).getFullYear()}
+                    text2={new Date(item?.endDate).getFullYear()}
+                    checked={item?.currentltPursuing}
+                  />
+                )}
+              />
+            </>
           )}
         </View>
       </View>

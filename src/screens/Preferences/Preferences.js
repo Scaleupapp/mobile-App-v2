@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -18,7 +18,7 @@ import CustomTextInput from '../../components/TextInput';
 import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Routes from '../../helper/routes';
-import {savePreferences} from '../../services/apiService';
+import {getPreferences, savePreferences} from '../../services/apiService';
 const Preferences = ({navigation, route}) => {
   const [visible, setVisible] = useState(false);
   const [input, setInput] = useState('');
@@ -35,6 +35,33 @@ const Preferences = ({navigation, route}) => {
     setWords(updatedWords);
   };
 
+  useEffect(() => {
+    getPreference();
+  }, []);
+
+  const getPreference = async () => {
+    try {
+      let res = await getPreferences();
+      console.log(res?.data?.prefrenceInfo, 'ididn');
+      if (Object.keys(res?.data?.prefrenceInfo).length > 0) {
+        console.log('isndie');
+        let userAnswers = res?.data?.prefrenceInfo;
+        const updatedQuestions = questions.map(question => {
+          if (question.id === 1) {
+            return {...question, answer: userAnswers.learningGoals};
+          } else if (question.id === 2) {
+            return {...question, answer: userAnswers.preferedWay};
+          } else if (question.id === 3) {
+            setWords(userAnswers.topicsOfInterest);
+            return {...question, answer: userAnswers.topicsOfInterest};
+          }
+          return question; // Return unchanged question if no match
+        });
+
+        setQuestions(updatedQuestions);
+      }
+    } catch (error) {}
+  };
   const [questions, setQuestions] = useState([
     {
       id: 1,

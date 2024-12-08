@@ -180,7 +180,7 @@ const EditProfile = ({navigation, route}) => {
                 </Text>
                 <View style={styles.progresbar}>
                   <View style={styles.greenbar}></View>
-                </View>
+                </View> */}
                 <View>
                   <Image
                     source={images.logo}
@@ -195,7 +195,7 @@ const EditProfile = ({navigation, route}) => {
                       size={16}
                     />
                   </View>
-                </View> */}
+                </View>
 
                 {/* Form Fields */}
                 <CustomTextInput

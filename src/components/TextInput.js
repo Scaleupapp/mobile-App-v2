@@ -70,7 +70,10 @@ const CustomTextInput = ({
         <TextInput
           style={[
             styles.input,
-            {height: textinputType == 'L' ? nh(150) : nh(40)},
+            {
+              height: textinputType == 'L' ? nh(150) : nh(40),
+              textAlignVertical: textinputType === 'L' ? 'top' : 'center',
+            },
           ]}
           placeholder={placeholder}
           placeholderTextColor={COLORS.grey999999}
