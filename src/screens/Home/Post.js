@@ -18,7 +18,7 @@ import Video from 'react-native-video';
 // import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  console.log({item});
+  // console.log({item});
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const [imageModal, setImageModal] = useState(false);
@@ -27,14 +27,17 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
+  // console.log('Image URL:', item?.contentURL);
 
-  useEffect(() => {
-    if (item?.contentType == 'image' && item?.contentURL) {
-      Image.getSize(item?.media, (width, height) => {
-        setImageHeight(height / 3);
-      });
-    }
-  }, [item?.contentURL]);
+
+  // useEffect(() => {
+  //   const testImageURL = 'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/6753654c6a2a23d228a400a2/Yxucu_1733745794319/Screenshot_20241209-031146.png';  // Replace with a valid image URL
+  //   Image.getSize(testImageURL, (width, height) => {
+  //     console.log('Test Image Size:', width, height);
+  //     setImageHeight(height);
+  //   });
+  // }, []);
+  
 
   return (
     <View
@@ -67,96 +70,69 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         />
       </View>
 
-      {/* <Image style={styles.postimage} /> */}
-      {item?.contentType == 'image' && item?.contentURL ? (
-        <Pressable
-          onPress={() => setImageModal(true)}
-          style={{marginVertical: nh(10)}}>
-          <Image
-            source={{uri: item?.contentURL}}
-            style={{
-              height: imageHeight,
-              width: DEVICE_WIDTH,
-              backgroundColor: COLORS.whiteFFFFFF,
-              marginBottom: nh(6),
-            }}
-            resizeMode="cover"
-          />
-        </Pressable>
-      ) : null}
-      {item?.contentType == 'Video' && item?.contentURL ? (
-        <Pressable
-          onPress={() => setIsPlaying(index)}
-          style={{
-            marginVertical: nh(10),
-            // alignContent: 'center',
-            // justifyContent: 'center',
-          }}>
-          {item?.isVerified && (
-            <View
-              style={{
-                height: nh(30),
-                width: nw(30),
-                borderRadius: 15,
-                backgroundColor: COLORS.blue043142,
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'absolute',
-                right: 10,
-                top: 10,
-                zIndex: 1,
-                // Centers vertically
-              }}>
-              <Icon
-                type="material-community"
-                name="check-decagram"
-                color={COLORS.yellowF5BE00}
-                size={20} // Ensure the icon size is appropriate
-              />
-            </View>
-          )}
-          <Video
-            paused={isPlaying != index}
-            controls
-            onLoad={onLoad}
-            // source={{uri: convertToProxyURL(item?.contentURL)}}
-            source={{uri: item?.contentURL}}
-            style={
-              videoDimensions?.height
-                ? {
-                    aspectRatio: Number(
-                      videoDimensions.width / videoDimensions.height,
-                    ),
-                    width: DEVICE_WIDTH - nw(32),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                    marginBottom: nh(6),
-                  }
-                : {
-                    height: nh(250),
-                    width: DEVICE_WIDTH - nw(32),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                    marginBottom: nh(6),
-                  }
-            }
-            resizeMode="cover"
-            onBuffer={e => console.log('bufeer ', e)}
-            onError={e => console.log('sdsds ', e)}
-          />
-          {/* <View
-            style={{
-              position: 'absolute',
-              alignSelf: 'center',
-            }}>
-            <Icon
-              type="antdesign"
-              name="playcircleo"
-              size={nh(40)}
-              color={COLORS.blue043142}
-              style={{marginRight: nw(10), opacity: 0.8}}
-            />
-          </View> */}
-        </Pressable>
-      ) : null}
+      {item?.contentType == 'Image' && item?.contentURL ? (
+  <Pressable
+    onPress={() => setImageModal(true)}
+    style={{marginVertical: nh(10)}}>
+    <Image
+      source={{uri: item?.contentURL}}
+      style={{
+        height: nh(250), // Fixed height for the image
+        width: DEVICE_WIDTH-nw(30), // Fixed width for the image (full width of the device)
+        backgroundColor: COLORS.whiteFFFFFF,
+        marginBottom: nh(6),
+      }}
+      resizeMode="contain" // Ensures the image fills the container while maintaining aspect ratio
+    />
+  </Pressable>
+) : null}
+
+{item?.contentType == 'Video' && item?.contentURL ? (
+  <Pressable
+    onPress={() => setIsPlaying(index)}
+    style={{
+      marginVertical: nh(10),
+    }}>
+    {item?.isVerified && (
+      <View
+        style={{
+          height: nh(30),
+          width: nw(30),
+          borderRadius: 15,
+          backgroundColor: COLORS.blue043142,
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          right: 10,
+          top: 10,
+          zIndex: 1,
+        }}>
+        <Icon
+          type="material-community"
+          name="check-decagram"
+          color={COLORS.yellowF5BE00}
+          size={20}
+        />
+      </View>
+    )}
+    <Video
+      paused={isPlaying != index}
+      controls
+      onLoad={onLoad}
+      source={{uri: item?.contentURL}}
+      style={{
+        width: DEVICE_WIDTH - nw(32),  // Fixed width
+        height: nh(250),  // Fixed height
+        backgroundColor: COLORS.whiteFFFFFF,
+        marginBottom: nh(6),
+      }}
+      resizeMode="conatin"
+      onBuffer={e => console.log('buffer ', e)}
+      onError={e => console.log('error ', e)}
+    />
+  </Pressable>
+) : null}
+
 
       <View style={styles.view}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>

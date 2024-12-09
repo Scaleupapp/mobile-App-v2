@@ -33,7 +33,7 @@ const Home = ({navigation, route}) => {
 
   useFocusEffect(
     useCallback(() => {
-      homePageData(1);
+      homePageData(1,true);
       setHasMore(true);
       return () => {
         // setPage(1);
@@ -41,6 +41,8 @@ const Home = ({navigation, route}) => {
       };
     }, []),
   );
+
+  
 
   const homePageData = async (page, refresh = false) => {
     try {
@@ -151,7 +153,7 @@ const Home = ({navigation, route}) => {
             )}
           </>
         }
-        // onEndReached={handleOnReachEnd}
+        onEndReached={handleOnReachEnd}
         onEndReachedThreshold={0.5}
       />
     </SafeAreaView>

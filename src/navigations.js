@@ -150,6 +150,11 @@ export const RootNavigator = () => {
         component={Projects}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={Routes.CreatePost}
+        component={CreatePost}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };
