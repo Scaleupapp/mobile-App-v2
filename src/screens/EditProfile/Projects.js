@@ -13,10 +13,16 @@ import CustomTextInput from '../../components/TextInput';
 import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
-import {getProjects, saveCertification} from '../../services/apiService';
+import {
+  deleteProjects,
+  getProjects,
+  saveProjects,
+} from '../../services/apiService';
 import {Card} from '../../components/Card';
+import {useToast} from '../../components/CustomToast';
 
 const Projects = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [isChecked, setIsChecked] = useState(false);
   const [state, setState] = useState({
     name: '',
@@ -27,6 +33,8 @@ const Projects = ({navigation, route}) => {
   const [errors, setErrors] = useState({});
   const [projects, setProjects] = useState([]);
   const [saved, setSaved] = useState(true);
+  const [edit, setEdit] = useState(false);
+
   useEffect(() => {
     getProjectsAPI();
   }, []);
@@ -104,21 +112,46 @@ const Projects = ({navigation, route}) => {
         projectLink: state?.projectLink,
         currentlyWorking: isChecked,
       };
+      if (edit) payload.id = edit;
       try {
         console.log(payload, 'payload');
-        let res = await saveCertification(payload);
-        console.log(res, payload, 'saved');
-        setProjects([payload, ...projects]);
+        const {data} = await saveProjects(payload);
+        console.log(data, payload, 'saved');
+        getProjectsAPI();
         setSaved(true);
+        if (edit) setEdit(false);
         setState({
           name: '',
           startDate: '',
           endDate: '',
           projectLink: '',
         });
+        showToast({type: 'success', title: data?.message});
       } catch (error) {
         console.log(error?.response?.data, 'errror');
       }
+    }
+  };
+
+  const onEdit = item => {
+    setSaved(false);
+    setEdit(item?._id);
+    setState({
+      name: item?.name,
+      startDate: item?.startDate,
+      endDate: item?.endDate,
+      projectLink: item?.projectLink,
+    });
+    setIsChecked(item?.currentlyWorking);
+  };
+
+  const onDelete = async item => {
+    try {
+      const {data} = await deleteProjects(item?._id);
+      showToast({type: 'success', title: data?.message});
+      getProjectsAPI();
+    } catch (error) {
+      console.log('🚀 ~ onDelete ~ error:', error);
     }
   };
 
@@ -220,6 +253,8 @@ const Projects = ({navigation, route}) => {
                     subtitle={item?.projectLink}
                     text1={new Date(item?.endDate).getFullYear()}
                     checked={item?.currentlyWorking}
+                    onEdit={() => onEdit(item)}
+                    onDelete={() => onDelete(item)}
                   />
                 )}
               />

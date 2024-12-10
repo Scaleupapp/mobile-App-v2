@@ -38,7 +38,6 @@ export const savePreferences = (payload: any) => {
   return axiosInstance.post(API.PREFERENCES, payload);
 };
 
-
 export const getPreferences = (payload: any) => {
   return axiosInstance.get(API.PREFERENCES, payload);
 };
@@ -46,10 +45,11 @@ export const getPreferences = (payload: any) => {
 export const saveEducation = (payload: any) => {
   return axiosInstance.post(API.EDUCATION, payload);
 };
-
-
 export const getEducation = (payload: any) => {
   return axiosInstance.get(API.EDUCATION, payload);
+};
+export const deleteEducation = (id: any) => {
+  return axiosInstance.delete(`${API.EDUCATION}/${id}`);
 };
 
 export const saveWorkExperience = (payload: any) => {
@@ -58,6 +58,9 @@ export const saveWorkExperience = (payload: any) => {
 export const getWorkExperience = (payload: any) => {
   return axiosInstance.get(API.EXPERIENCE, payload);
 };
+export const deleteWorkExperience = (id: any) => {
+  return axiosInstance.delete(`${API.EXPERIENCE}/${id}`);
+};
 
 export const saveCertification = (payload: any) => {
   return axiosInstance.post(API.CERTIFICATION, payload);
@@ -65,16 +68,19 @@ export const saveCertification = (payload: any) => {
 export const getCertification = (payload: any) => {
   return axiosInstance.get(API.CERTIFICATION, payload);
 };
+export const deleteCertification = (id: any) => {
+  return axiosInstance.delete(`${API.CERTIFICATION}/${id}`);
+};
 
 export const saveProjects = (payload: any) => {
   return axiosInstance.post(API.PROJECTS, payload);
 };
-
 export const getProjects = (payload: any) => {
   return axiosInstance.get(API.PROJECTS, payload);
 };
-
-
+export const deleteProjects = (id: any) => {
+  return axiosInstance.delete(`${API.PROJECTS}/${id}`);
+};
 
 export const getProfile = (payload: any) => {
   return axiosInstance.get(API.PROFILE_DETAIL, payload);
@@ -83,4 +89,3 @@ export const getProfile = (payload: any) => {
 export const updateProfile = (payload: any) => {
   return axiosInstance.put(API.PROFILE_DETAIL, payload);
 };
-

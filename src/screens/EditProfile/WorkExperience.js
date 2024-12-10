@@ -9,9 +9,15 @@ import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {Card} from '../../components/Card';
 import {FlatList} from 'react-native';
-import {getWorkExperience, saveWorkExperience} from '../../services/apiService';
+import {
+  deleteWorkExperience,
+  getWorkExperience,
+  saveWorkExperience,
+} from '../../services/apiService';
+import {useToast} from '../../components/CustomToast';
 
 const WorkExperience = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [isChecked, setIsChecked] = useState(false);
   const [workexperience, setWorkExperience] = useState([]);
   const [saved, setSaved] = useState(true);
@@ -23,6 +29,7 @@ const WorkExperience = ({navigation, route}) => {
     rolesResponsibilities: '',
   });
   const [errors, setErrors] = useState({});
+  const [edit, setEdit] = useState(false);
 
   useEffect(() => {
     getWorkExperiencedetail();
@@ -99,11 +106,13 @@ const WorkExperience = ({navigation, route}) => {
         role: state?.rolesResponsibilities,
         currentlyWorking: isChecked,
       };
+      if (edit) payload.id = edit;
       try {
-        let res = await saveWorkExperience(payload);
-        console.log(res, payload, 'saved');
-        setWorkExperience([payload, ...workexperience]);
+        const {data} = await saveWorkExperience(payload);
+        console.log(data, payload, 'saved');
+        getWorkExperiencedetail();
         setSaved(true);
+        if (edit) setEdit(false);
         setState({
           designation: '',
           companyName: '',
@@ -111,9 +120,33 @@ const WorkExperience = ({navigation, route}) => {
           endDate: '',
           rolesResponsibilities: '',
         });
+        showToast({type: 'success', title: data?.message});
       } catch (error) {
         console.log(error?.response?.data, 'errror');
       }
+    }
+  };
+
+  const onEdit = item => {
+    setSaved(false);
+    setEdit(item?._id);
+    setState({
+      designation: item?.designation,
+      companyName: item?.company,
+      startDate: item?.startDate,
+      endDate: item?.endDate,
+      rolesResponsibilities: item?.role,
+    });
+    setIsChecked(item?.currentlyWorking);
+  };
+
+  const onDelete = async item => {
+    try {
+      const {data} = await deleteWorkExperience(item?._id);
+      showToast({type: 'success', title: data?.message});
+      getWorkExperiencedetail();
+    } catch (error) {
+      console.log('🚀 ~ onDelete ~ error:', error);
     }
   };
 
@@ -234,6 +267,8 @@ const WorkExperience = ({navigation, route}) => {
                     text1={new Date(item?.startDate).getFullYear()}
                     text2={new Date(item?.endDate).getFullYear()}
                     checked={item?.currentlyWorking}
+                    onEdit={() => onEdit(item)}
+                    onDelete={() => onDelete(item)}
                   />
                 )}
               />

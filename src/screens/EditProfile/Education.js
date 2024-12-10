@@ -14,12 +14,19 @@ import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {Card} from '../../components/Card';
-import {getEducation, saveEducation} from '../../services/apiService';
+import {
+  deleteEducation,
+  getEducation,
+  saveEducation,
+} from '../../services/apiService';
+import {useToast} from '../../components/CustomToast';
 
 const Education = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [isChecked, setIsChecked] = useState(false);
   const [education, setEducation] = useState([]);
   const [saved, setSaved] = useState(true);
+  const [edit, setEdit] = useState(false);
   console.log(education);
   const [state, setState] = useState({
     degree: '',
@@ -85,10 +92,9 @@ const Education = ({navigation, route}) => {
     setErrors(newErrors);
     return isValid;
   };
-
+  console.log({edit});
   const saveEducationAPI = async () => {
     if (validateFields()) {
-      //   setSaved(true);
       let payload = {
         degree: state?.degree,
         university: state?.university,
@@ -96,22 +102,45 @@ const Education = ({navigation, route}) => {
         endDate: state?.endDate,
         currentltPursuing: isChecked,
       };
+      if (edit) payload.id = edit;
+      console.log({payload});
       try {
-        let res = await saveEducation(payload);
-        console.log(res?.data, 'saved');
-        setEducation([payload, ...education]);
+        const {data} = await saveEducation(payload);
+        console.log(data?.educationInfo, 'saved');
+        getEducationDetails();
         setSaved(true);
+        if (edit) setEdit(false);
         setState({
           degree: '',
           university: '',
           startDate: '',
           endDate: '',
         });
+        showToast({type: 'success', title: data?.message});
       } catch (error) {
         console.log(error?.response?.data, 'errror');
       }
+    }
+  };
+  const onEdit = item => {
+    setSaved(false);
+    setEdit(item?._id);
+    setState({
+      degree: item?.degree,
+      university: item?.university,
+      startDate: item?.startDate,
+      endDate: item?.endDate,
+    });
+    setIsChecked(item?.currentltPursuing);
+  };
 
-      // Perform your API call or other actions here
+  const onDelete = async item => {
+    try {
+      const {data} = await deleteEducation(item?._id);
+      showToast({type: 'success', title: data?.message});
+      getEducationDetails();
+    } catch (error) {
+      console.log('🚀 ~ onDelete ~ error:', error);
     }
   };
 
@@ -222,6 +251,8 @@ const Education = ({navigation, route}) => {
                     text1={new Date(item?.startDate).getFullYear()}
                     text2={new Date(item?.endDate).getFullYear()}
                     checked={item?.currentltPursuing}
+                    onEdit={() => onEdit(item)}
+                    onDelete={() => onDelete(item)}
                   />
                 )}
               />

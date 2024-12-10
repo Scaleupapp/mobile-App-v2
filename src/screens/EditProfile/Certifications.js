@@ -7,11 +7,17 @@ import CustomTextInput from '../../components/TextInput';
 import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
-import {getCertification, saveCertification} from '../../services/apiService';
+import {
+  deleteCertification,
+  getCertification,
+  saveCertification,
+} from '../../services/apiService';
 import {FlatList} from 'react-native';
 import {Card} from '../../components/Card';
+import {useToast} from '../../components/CustomToast';
 
 const Certifications = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [isChecked, setIsChecked] = useState(false);
   const [state, setState] = useState({
     name: '',
@@ -23,6 +29,7 @@ const Certifications = ({navigation, route}) => {
   const [errors, setErrors] = useState({});
   const [certification, setCertification] = useState([]);
   const [saved, setSaved] = useState(true);
+  const [edit, setEdit] = useState(false);
   useEffect(() => {
     getCertificationsAPI();
   }, []);
@@ -102,12 +109,13 @@ const Certifications = ({navigation, route}) => {
         IDCredentials: state?.idCredentials,
         currentlyPursuing: isChecked,
       };
+      if (edit) payload.id = edit;
       try {
-        console.log(payload, 'payload');
-        let res = await saveCertification(payload);
-        console.log(res, payload, 'saved');
-        setCertification([payload, ...certification]);
+        const {data} = await saveCertification(payload);
+        console.log(data, payload, 'saved');
+        getCertificationsAPI();
         setSaved(true);
+        if (edit) setEdit(false);
         setState({
           name: '',
           issuedBy: '',
@@ -115,10 +123,33 @@ const Certifications = ({navigation, route}) => {
           endDate: '',
           idCredentials: '',
         });
+        showToast({type: 'success', title: data?.message});
       } catch (error) {
         console.log(error?.response?.data, 'errror');
       }
-      // Perform your API call or other actions here
+    }
+  };
+
+  const onEdit = item => {
+    setSaved(false);
+    setEdit(item?._id);
+    setState({
+      name: item?.name,
+      issuedBy: item?.issuedBy,
+      startDate: item?.startDate,
+      endDate: item?.endDate,
+      idCredentials: item?.IDCredentials,
+    });
+    setIsChecked(item?.currentlyPursuing);
+  };
+
+  const onDelete = async item => {
+    try {
+      const {data} = await deleteCertification(item?._id);
+      showToast({type: 'success', title: data?.message});
+      getCertificationsAPI();
+    } catch (error) {
+      console.log('🚀 ~ onDelete ~ error:', error);
     }
   };
 
@@ -230,6 +261,8 @@ const Certifications = ({navigation, route}) => {
                     text1={new Date(item?.endDate).getFullYear()}
                     text2={item?.IDCredentials}
                     checked={item?.currentlyPursuing}
+                    onEdit={() => onEdit(item)}
+                    onDelete={() => onDelete(item)}
                   />
                 )}
               />

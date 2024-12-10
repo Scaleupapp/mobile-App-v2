@@ -3,9 +3,17 @@ import {View, StyleSheet} from 'react-native';
 import {nh, nw} from '../helper/scales';
 import {COLORS} from '../helper/colors';
 import Text from './Text';
+import Icon from '../helper/icon';
 
-export const Card = ({title, subtitle, text1, text2, checked}) => {
-  console.log(title, 'title');
+export const Card = ({
+  title,
+  subtitle,
+  text1,
+  text2,
+  checked,
+  onEdit,
+  onDelete,
+}) => {
   return (
     <View style={styles.card}>
       <View style={styles.cardimage}>
@@ -29,6 +37,33 @@ export const Card = ({title, subtitle, text1, text2, checked}) => {
         <Text variant="medium12" color={COLORS.grey999999}>
           {text1} {text2 && '|'} {text2}
         </Text>
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          top: 5,
+          right: 5,
+          flexDirection: 'row',
+          width: nw(40),
+          // backgroundColor: 'red',
+          justifyContent: 'space-between',
+        }}>
+        <Icon
+          onPress={onEdit}
+          type={'feather'}
+          // type={'antdesign'}
+          // color={COLORS.grey646464}
+          name={'edit'}
+          size={nw(15)}
+        />
+        <Icon
+          onPress={onDelete}
+          type={'antdesign'}
+          // type={'feather'}
+          // color={COLORS.grey646464}
+          name={'delete'}
+          size={nw(15)}
+        />
       </View>
       <View
         style={{

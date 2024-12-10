@@ -22,9 +22,6 @@ import {isValidEmail, isvalidMobileNumber} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {updateProfile} from '../../services/apiService';
-import {API} from '../../services/apiConstent';
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const professionData = [
   {
@@ -149,61 +146,28 @@ const EditProfile = ({navigation, route}) => {
 
   // Register user or perform API call
   const handleSave = async () => {
-    // if (validateFields()) {
+    const profilePicture = {
+      uri: image?.uri, // The URI of the image
+      name: image?.name, // File name
+      type: image?.type, // MIME type
+    };
+    console.log('🚀 ~ handleSave ~ profilePicture:', profilePicture);
+    const formData = new FormData();
+    formData.append('name', 'Rahul Kumar');
+    formData.append('email', 'rahul@scalupapp.club');
+    formData.append('phoneNumber', '0000000000');
+    formData.append('location', 'Greater Noida');
+    formData.append('dateOfBirth', '03-08-2002');
+    formData.append('bioAbout', 'Yoo');
+    formData.append('profilePicture', profilePicture);
+
     try {
-      //   const formData = new FormData();
-      //   formData.append('name', 'Rahul Kumar');
-      //   formData.append('email', 'rahul@scalupapp.club');
-      //   formData.append('phoneNumber', '0000000000');
-      //   formData.append('location', 'Greater Noida');
-      //   formData.append('dateOfBirth', '03-08-2002');
-      //   formData.append('bioAbout', 'Yoo');
-      //   formData.append('profilePicture', image.uri); // Update the path to your local file
-      //   let res = await updateProfile(formData);
-
-      const url = 'https://api.scaleupapp.club/api/users/profile';
-      //   const user = await AsyncStorage.getItem('userData');
-      //   const parsedUser = JSON.parse(user);
-      const token =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NzRlZDFlMzkyMzgzYTg4Y2FiZjJiYjIiLCJpYXQiOjE3MzMyMTg4MDAsImV4cCI6MTc1OTEzODgwMH0.bsAKm_6EO7thK4N1ZzWP8h5JqX1BDbDbCpGMBOcku1w';
-
-      // Assuming `profilePicture` is an image object from React Native Image Picker
-      const profilePicture = {
-        uri: image?.uri, // The URI of the image
-        name: image?.name, // File name
-        type: image?.type, // MIME type
-      };
-      console.log('🚀 ~ handleSave ~ profilePicture:', profilePicture);
-
-      const formData = new FormData();
-      formData.append('name', 'Rahul Kumar');
-      formData.append('email', 'rahul@scalupapp.club');
-      formData.append('phoneNumber', '0000000000');
-      formData.append('location', 'Greater Noida');
-      formData.append('dateOfBirth', '03-08-2002');
-      formData.append('bioAbout', 'Yoo');
-      formData.append('profilePicture', profilePicture?.uri); // Attach the image
-
-      try {
-        const response = await axios.put(url, formData, {
-          headers: {
-            Authorization: `Bearer ${userData?.token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-        console.log('Response:', response.data);
-      } catch (error) {
-        console.error(
-          'Error:',
-          error.response ? error.response.data : error.message,
-        );
-      }
-
-      // Perform your API call here
+      const {data} = await updateProfile(formData);
+      console.log('🚀 ~ handleSave ~ data:', data);
     } catch (error) {
-      console.error('Error registering user:', error);
+      console.log('🚀 ~ handleSave ~ error:', error?.response?.data);
     }
+    // if (validateFields()) {
     // }
   };
 
