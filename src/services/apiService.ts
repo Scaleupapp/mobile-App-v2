@@ -80,3 +80,7 @@ export const getProfile = (payload: any) => {
   return axiosInstance.get(API.PROFILE_DETAIL, payload);
 };
 
+export const updateProfile = (payload: any) => {
+  return axiosInstance.put(API.PROFILE_DETAIL, payload);
+};
+

@@ -19,6 +19,12 @@ import Icon from '../../helper/icon';
 import CustomTextInput from '../../components/TextInput';
 import Button from '../../components/Button';
 import {isValidEmail, isvalidMobileNumber} from '../../helper/commonFunctions';
+import {useDispatch, useSelector} from 'react-redux';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {updateProfile} from '../../services/apiService';
+import {API} from '../../services/apiConstent';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const professionData = [
   {
@@ -55,15 +61,22 @@ const professionData = [
 
 const EditProfile = ({navigation, route}) => {
   const [selected, setSelected] = useState(0);
-
+  const dispatch = useDispatch();
+  const userData = useSelector(state => state?.userData);
+  console.log('🚀 ~ EditProfile ~ userData:', userData);
+  const [image, setImage] = useState();
   // Form State
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    mobile: '',
-    location: '',
-    dob: '',
-    about: '',
+    profilePicture: userData?.profilePicture ?? '',
+    name: userData?.firstname ?? '',
+    email: userData?.email ?? '',
+    mobile: userData?.phoneNumber ?? '',
+    location: userData?.location ?? '',
+    dob: userData?.dateOfBirth
+      ? new Date(userData?.dateOfBirth).toLocaleDateString('en-GB')
+      : '',
+
+    about: userData?.bion?.bioAbout ?? '',
   });
 
   // Error State
@@ -136,14 +149,92 @@ const EditProfile = ({navigation, route}) => {
 
   // Register user or perform API call
   const handleSave = async () => {
-    if (validateFields()) {
+    // if (validateFields()) {
+    try {
+      //   const formData = new FormData();
+      //   formData.append('name', 'Rahul Kumar');
+      //   formData.append('email', 'rahul@scalupapp.club');
+      //   formData.append('phoneNumber', '0000000000');
+      //   formData.append('location', 'Greater Noida');
+      //   formData.append('dateOfBirth', '03-08-2002');
+      //   formData.append('bioAbout', 'Yoo');
+      //   formData.append('profilePicture', image.uri); // Update the path to your local file
+      //   let res = await updateProfile(formData);
+
+      const url = 'https://api.scaleupapp.club/api/users/profile';
+      //   const user = await AsyncStorage.getItem('userData');
+      //   const parsedUser = JSON.parse(user);
+      const token =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NzRlZDFlMzkyMzgzYTg4Y2FiZjJiYjIiLCJpYXQiOjE3MzMyMTg4MDAsImV4cCI6MTc1OTEzODgwMH0.bsAKm_6EO7thK4N1ZzWP8h5JqX1BDbDbCpGMBOcku1w';
+
+      // Assuming `profilePicture` is an image object from React Native Image Picker
+      const profilePicture = {
+        uri: image?.uri, // The URI of the image
+        name: image?.name, // File name
+        type: image?.type, // MIME type
+      };
+      console.log('🚀 ~ handleSave ~ profilePicture:', profilePicture);
+
+      const formData = new FormData();
+      formData.append('name', 'Rahul Kumar');
+      formData.append('email', 'rahul@scalupapp.club');
+      formData.append('phoneNumber', '0000000000');
+      formData.append('location', 'Greater Noida');
+      formData.append('dateOfBirth', '03-08-2002');
+      formData.append('bioAbout', 'Yoo');
+      formData.append('profilePicture', profilePicture?.uri); // Attach the image
+
       try {
-        console.log('API call with form:', form);
-        // Perform your API call here
+        const response = await axios.put(url, formData, {
+          headers: {
+            Authorization: `Bearer ${userData?.token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        console.log('Response:', response.data);
       } catch (error) {
-        console.error('Error registering user:', error);
+        console.error(
+          'Error:',
+          error.response ? error.response.data : error.message,
+        );
       }
+
+      // Perform your API call here
+    } catch (error) {
+      console.error('Error registering user:', error);
     }
+    // }
+  };
+
+  // Handle selected or captured media
+  const handleMedia = async result => {
+    if (result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      setForm(prevForm => ({
+        ...prevForm, // Spread the existing state
+        profilePicture: asset?.uri, // Update only the profilePicture field
+      }));
+      // Prepare the media data for upload
+      setImage({
+        uri: asset.uri,
+        name: asset.fileName || 'media', // Fallback name
+        type: asset.type || 'image/jpeg',
+      });
+      //   const formData = new FormData();
+      //   formData.append('file', {
+      //     uri: asset.uri,
+      //     name: asset.fileName || 'media', // Fallback name
+      //     type: asset.type || 'image/jpeg',
+      //   });
+    }
+  };
+
+  const openGallery = async () => {
+    const result = await launchImageLibrary({
+      mediaType: 'mixed',
+    });
+    handleMedia(result);
   };
 
   const handleInputChange = (field, value) => {
@@ -183,7 +274,7 @@ const EditProfile = ({navigation, route}) => {
                 </View> */}
                 <View>
                   <Image
-                    source={images.logo}
+                    source={{uri: form?.profilePicture}}
                     style={styles.image}
                     resizeMode="cover"
                   />
@@ -193,6 +284,7 @@ const EditProfile = ({navigation, route}) => {
                       name="edit"
                       style={{marginLeft: 0.5}}
                       size={16}
+                      onPress={() => openGallery()}
                     />
                   </View>
                 </View>
@@ -334,6 +426,8 @@ const styles = StyleSheet.create({
     borderRadius: nh(50),
     alignSelf: 'center',
     marginBottom: 30,
+    borderWidth: 1,
+    borderColor: COLORS.grey999999,
   },
   circle: {
     height: nh(25),
