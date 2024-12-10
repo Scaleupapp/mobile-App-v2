@@ -6,7 +6,6 @@ import {
   View,
   Image,
   ScrollView,
-  FlatList,
   TouchableOpacity,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
@@ -21,7 +20,9 @@ import Button from '../../components/Button';
 import {isValidEmail, isvalidMobileNumber} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
 import {launchImageLibrary} from 'react-native-image-picker';
-import {updateProfile} from '../../services/apiService';
+import {getProfile, updateProfile} from '../../services/apiService';
+import {actions} from '../../redux/reducers';
+import {useToast} from '../../components/CustomToast';
 
 const professionData = [
   {
@@ -57,10 +58,10 @@ const professionData = [
 ];
 
 const EditProfile = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [selected, setSelected] = useState(0);
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
-  console.log('🚀 ~ EditProfile ~ userData:', userData);
   const [image, setImage] = useState();
   // Form State
   const [form, setForm] = useState({
@@ -73,7 +74,7 @@ const EditProfile = ({navigation, route}) => {
       ? new Date(userData?.dateOfBirth).toLocaleDateString('en-GB')
       : '',
 
-    about: userData?.bion?.bioAbout ?? '',
+    about: userData?.bio?.bioAbout ?? '',
   });
 
   // Error State
@@ -105,7 +106,7 @@ const EditProfile = ({navigation, route}) => {
     if (!form.email) {
       newErrors.email = 'Email is required';
       isValid = false;
-    } else if (isValidEmail(form.email)) {
+    } else if (!isValidEmail(form.email)) {
       newErrors.email = 'Enter a valid email address';
       isValid = false;
     }
@@ -117,7 +118,7 @@ const EditProfile = ({navigation, route}) => {
     } else if (form.mobile.length !== 10) {
       newErrors.mobile = 'Mobile number must be 10 digits';
       isValid = false;
-    } else if (isvalidMobileNumber(form.mobile)) {
+    } else if (!isvalidMobileNumber(form.mobile)) {
       newErrors.mobile = 'Enter a valid mobile number';
       isValid = false;
     }
@@ -144,31 +145,44 @@ const EditProfile = ({navigation, route}) => {
     return isValid;
   };
 
+  const getProfileData = async () => {
+    try {
+      let res = await getProfile();
+      dispatch(
+        actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
+      ); // Dispatch the updated data
+    } catch (error) {
+      console.log(error?.response?.data?.message, 'errormsg');
+    }
+  };
+
   // Register user or perform API call
   const handleSave = async () => {
-    const profilePicture = {
-      uri: image?.uri, // The URI of the image
-      name: image?.name, // File name
-      type: image?.type, // MIME type
-    };
-    console.log('🚀 ~ handleSave ~ profilePicture:', profilePicture);
-    const formData = new FormData();
-    formData.append('name', 'Rahul Kumar');
-    formData.append('email', 'rahul@scalupapp.club');
-    formData.append('phoneNumber', '0000000000');
-    formData.append('location', 'Greater Noida');
-    formData.append('dateOfBirth', '03-08-2002');
-    formData.append('bioAbout', 'Yoo');
-    formData.append('profilePicture', profilePicture);
-
-    try {
-      const {data} = await updateProfile(formData);
-      console.log('🚀 ~ handleSave ~ data:', data);
-    } catch (error) {
-      console.log('🚀 ~ handleSave ~ error:', error?.response?.data);
+    if (validateFields()) {
+      const profilePicture = {
+        uri: image?.uri, // The URI of the image
+        name: image?.name, // File name
+        type: image?.type, // MIME type
+      };
+      console.log('🚀 ~ handleSave ~ profilePicture:', profilePicture);
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('email', form.email);
+      formData.append('phoneNumber', form.mobile);
+      formData.append('location', form.location);
+      formData.append('dateOfBirth', form.dob);
+      formData.append('bioAbout', form.about);
+      formData.append('profilePicture', profilePicture);
+      6464;
+      try {
+        const {data} = await updateProfile(formData);
+        showToast({type: 'success', title: data?.message});
+        getProfileData();
+        console.log('🚀 ~ handleSave ~ data:', data);
+      } catch (error) {
+        console.log('🚀 ~ handleSave ~ error:', error?.response?.data);
+      }
     }
-    // if (validateFields()) {
-    // }
   };
 
   // Handle selected or captured media
@@ -185,18 +199,13 @@ const EditProfile = ({navigation, route}) => {
         name: asset.fileName || 'media', // Fallback name
         type: asset.type || 'image/jpeg',
       });
-      //   const formData = new FormData();
-      //   formData.append('file', {
-      //     uri: asset.uri,
-      //     name: asset.fileName || 'media', // Fallback name
-      //     type: asset.type || 'image/jpeg',
-      //   });
     }
   };
 
   const openGallery = async () => {
     const result = await launchImageLibrary({
-      mediaType: 'mixed',
+      mediaType: 'photo',
+      quality: 0.3,
     });
     handleMedia(result);
   };
@@ -224,7 +233,7 @@ const EditProfile = ({navigation, route}) => {
             selected={selected}
             onToggle={onSelect}
           />
-          <ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false}>
             {selected == 0 && (
               <>
                 {/* <Text variant="semibold16" color={COLORS.green34A853}>
@@ -274,6 +283,7 @@ const EditProfile = ({navigation, route}) => {
                   value={form.mobile}
                   onChangeText={value => handleInputChange('mobile', value)}
                   errorMessage={errors.mobile}
+                  // editable={false}
                 />
                 <CustomTextInput
                   label="Location"
