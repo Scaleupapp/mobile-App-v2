@@ -38,6 +38,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
+  // console.log('Image URL:', item?.contentURL);
 
   const likeHandler = async () => {
     try {
@@ -104,30 +105,28 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         /> */}
       </View>
 
-      {/* <Image style={styles.postimage} /> */}
-      {item?.contentType == 'image' && item?.contentURL ? (
+      {item?.contentType == 'Image' && item?.contentURL ? (
         <Pressable
           onPress={() => setImageModal(true)}
           style={{marginVertical: nh(10)}}>
           <Image
             source={{uri: item?.contentURL}}
             style={{
-              height: imageHeight,
-              width: DEVICE_WIDTH,
+              height: nh(250), // Fixed height for the image
+              width: DEVICE_WIDTH - nw(30), // Fixed width for the image (full width of the device)
               backgroundColor: COLORS.whiteFFFFFF,
               marginBottom: nh(6),
             }}
-            resizeMode="cover"
+            resizeMode="contain" // Ensures the image fills the container while maintaining aspect ratio
           />
         </Pressable>
       ) : null}
+
       {item?.contentType == 'Video' && item?.contentURL ? (
         <Pressable
           onPress={() => setIsPlaying(index)}
           style={{
             marginVertical: nh(10),
-            // alignContent: 'center',
-            // justifyContent: 'center',
           }}>
           {item?.isVerified && (
             <View
@@ -142,13 +141,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
                 right: 10,
                 top: 10,
                 zIndex: 1,
-                // Centers vertically
               }}>
               <Icon
                 type="material-community"
                 name="check-decagram"
                 color={COLORS.yellowF5BE00}
-                size={20} // Ensure the icon size is appropriate
+                size={20}
               />
             </View>
           )}
@@ -156,42 +154,17 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             paused={isPlaying != index}
             controls
             onLoad={onLoad}
-            // source={{uri: convertToProxyURL(item?.contentURL)}}
             source={{uri: item?.contentURL}}
-            style={
-              videoDimensions?.height
-                ? {
-                    aspectRatio: Number(
-                      videoDimensions.width / videoDimensions.height,
-                    ),
-                    width: DEVICE_WIDTH - nw(32),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                    marginBottom: nh(6),
-                  }
-                : {
-                    height: nh(250),
-                    width: DEVICE_WIDTH - nw(32),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                    marginBottom: nh(6),
-                  }
-            }
-            resizeMode="cover"
-            onBuffer={e => console.log('bufeer ', e)}
-            onError={e => console.log('sdsds ', e)}
-          />
-          {/* <View
             style={{
-              position: 'absolute',
-              alignSelf: 'center',
-            }}>
-            <Icon
-              type="antdesign"
-              name="playcircleo"
-              size={nh(40)}
-              color={COLORS.blue043142}
-              style={{marginRight: nw(10), opacity: 0.8}}
-            />
-          </View> */}
+              width: DEVICE_WIDTH - nw(32), // Fixed width
+              height: nh(250), // Fixed height
+              backgroundColor: COLORS.whiteFFFFFF,
+              marginBottom: nh(6),
+            }}
+            resizeMode="conatin"
+            onBuffer={e => console.log('buffer ', e)}
+            onError={e => console.log('error ', e)}
+          />
         </Pressable>
       ) : null}
 

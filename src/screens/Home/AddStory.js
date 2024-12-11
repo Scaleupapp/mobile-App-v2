@@ -13,9 +13,14 @@ import axios from 'axios';
 import { COLORS } from '../../helper/colors';
 import { nw } from '../../helper/scales';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useSelector } from 'react-redux';
+import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
+
 
 export const AddStory = ({ onStoryAdded }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const token = useSelector((state) => state.auth.userData.token);
+  const userId = token ? jwtDecode(token)?.userId : null;
 
   // Open camera for capturing media
   const openCamera = async () => {
@@ -49,7 +54,7 @@ export const AddStory = ({ onStoryAdded }) => {
         name: asset.fileName || 'media', // Fallback name
         type: asset.type || 'image/jpeg',
       });
-      formData.append('userId', '6639f2882693d884adf47072'); // Replace with your actual user ID
+      formData.append('userId', userId); // Use dynamic userId
       formData.append('type', asset.type.includes('video') ? 'video' : 'image');
 
       try {

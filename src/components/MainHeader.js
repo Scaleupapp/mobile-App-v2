@@ -59,6 +59,7 @@ const MainHeader = () => {
             name="bookmark"
             color={COLORS.whiteFFFFFF}
             size={nh(24)}
+            onPress={() => navigation.navigate(Routes.CreatePost)}
           />
         </View>
       </View>

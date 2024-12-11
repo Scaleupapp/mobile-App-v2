@@ -187,13 +187,13 @@ export const Story = () => {
           {/* Story Content */}
           {currentStory?.type === 'image' ? (
               <Image
-                source={{ uri: `http://192.168.155.240:1000${currentStory?.url}` }}
+                source={{ uri: `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}` }}
                 style={styles.storyImage}
                 resizeMode="contain"
               />
             ) : currentStory?.type === 'video' ? (
               <Video
-                source={{ uri: `http://192.168.155.240:1000${currentStory?.url}` }}
+                source={{ uri: `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}` }}
                 style={styles.storyImage}
                 resizeMode="contain"
                 paused={false}
