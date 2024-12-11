@@ -33,7 +33,7 @@ const Home = ({navigation, route}) => {
 
   useFocusEffect(
     useCallback(() => {
-      homePageData(1,true);
+      homePageData(1);
       setHasMore(true);
       return () => {
         // setPage(1);

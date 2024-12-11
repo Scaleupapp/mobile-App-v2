@@ -114,7 +114,7 @@ export const Story = () => {
 
   const currentUser = groupedStories[currentUserIndex];
   const currentStory = currentUser?.stories[currentStoryIndex];
-
+  
   return (
     <View style={styles.container}>
       
