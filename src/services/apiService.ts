@@ -89,3 +89,20 @@ export const getProfile = (payload: any) => {
 export const updateProfile = (payload: any) => {
   return axiosInstance.put(API.PROFILE_DETAIL, payload);
 };
+
+
+//post 
+export const likePostApi = (postId: any) => {
+  return axiosInstance.put(`${API.LIKEPOST}/${postId}`);
+};
+
+export const unlikePostApi = (postId: any) => {
+  return axiosInstance.put(`${API.UNLIKEPOST}/${postId}`);
+};
+
+export const savePostAPI = (postId: any) => {
+  return axiosInstance.put(`${API.SAVE}/${postId}`);
+};
+export const unsavePostAPI = (postId: any) => {
+  return axiosInstance.put(`${API.UNSAVE}/${postId}`);
+};

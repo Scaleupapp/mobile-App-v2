@@ -43,5 +43,10 @@ export const API = {
   EXPERIENCE:'users/work-experience',
   CERTIFICATION:'users/certification',
   PROJECTS:'users/project',
-  PROFILE_DETAIL:'users/profile'
+  PROFILE_DETAIL:'users/profile',
+  LIKEPOST:'content/like',
+  UNLIKEPOST:'content/unlike',
+  SAVE:"content/save",
+  UNSAVE:"content/unsave"
+
 };

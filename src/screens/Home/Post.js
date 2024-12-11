@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -15,17 +15,54 @@ import {COLORS} from '../../helper/colors';
 import ReadMore from '@fawazahmed/react-native-read-more';
 import {APP_FONTS} from '../../assets/fonts';
 import Video from 'react-native-video';
+import {
+  likePostApi,
+  savePostAPI,
+  unlikePostApi,
+  unsavePostAPI,
+} from '../../services/apiService';
+
 // import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  //   console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const [imageModal, setImageModal] = useState(false);
+  const [isLiked, setIsLiked] = useState(item.isLiked);
+  const [likeCount, setLikeCount] = useState(item?.likes?.length);
+  const [isSaved, setIsSaved] = useState(item?.isSaved);
+  const commentRef = useRef(null);
 
+  const snapPoints = useMemo(() => ['50%'], []);
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
+  };
+
+  const likeHandler = async () => {
+    try {
+      setIsLiked(!isLiked);
+      const res = isLiked
+        ? await unlikePostApi(item?._id)
+        : await likePostApi(item?._id);
+      console.log('🚀 ~ likeHandler ~ res:', res?.data);
+
+      setLikeCount(res?.data?.likeCount);
+    } catch (error) {
+      console.log(error, 'eeee');
+    }
+  };
+
+  const saveHandler = async () => {
+    try {
+      setIsSaved(!isSaved);
+      const res = isSaved
+        ? await unsavePostAPI(item?._id)
+        : await savePostAPI(item?._id);
+      console.log('🚀 ~ likeHandler ~ res:', res?.data);
+    } catch (error) {
+      console.log(error, 'eeee');
+    }
   };
 
   useEffect(() => {
@@ -59,12 +96,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </Text>
         </View>
 
-        <Icon
+        {/* <Icon
           type="entypo"
           name="dots-three-vertical"
           size={21}
           color={COLORS.blue043142}
-        />
+        /> */}
       </View>
 
       {/* <Image style={styles.postimage} /> */}
@@ -159,20 +196,30 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       ) : null}
 
       <View style={styles.view}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
           <Icon
             type="antdesign"
-            name="like2"
+            name={isLiked ? 'like1' : 'like2'}
             size={24}
             color={COLORS.blue043142}
-            style={{marginRight: nw(10)}}
+            onPress={() => likeHandler()}
+            style={{marginRight: nw(3)}}
           />
+          <Text variant="medium12" style={{marginRight: nw(10), marginTop: 5}}>
+            {likeCount}
+          </Text>
           <Icon
             type="ionicon"
-            name="chatbubble-outline"
+            name={'chatbubble-outline'}
             size={24}
             color={COLORS.blue043142}
             style={{marginRight: nw(10)}}
+            onPress={() => commentRef?.current?.present()}
           />
           <Icon
             type="feather"
@@ -182,12 +229,14 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           />
         </View>
         <Icon
-          type="feather"
-          name="bookmark"
+          type="font-awesome"
+          name={isSaved ? 'bookmark' : 'bookmark-o'}
           size={24}
           color={COLORS.blue043142}
+          onPress={() => saveHandler()}
         />
       </View>
+
       <ReadMore
         numberOfLines={2}
         style={styles.textStyle}
