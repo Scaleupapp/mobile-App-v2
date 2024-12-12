@@ -13,16 +13,17 @@ import {
 import {useSelector} from 'react-redux';
 import {jwtDecode} from 'jwt-decode';
 import {registerApi} from '../services/apiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SocialLogin = ({signup = false}) => {
   // const userData=useSelector((state) => state.auth.userData.token);
   // console.log('token',JSON.parse(userData));
   // Static token and secret for demonstration purposes
-  const staticToken =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NzU5NDg4MGVjNWI5MWIzY2Q4MDZhMzIiLCJpYXQiOjE3MzM5MDQ1NTQsImV4cCI6MTc1OTgyNDU1NH0.ECK2gJxt4a76lzxY0lHHPF_VDR-2ZH26dUHxPNkr2Fk';
+  // const staticToken =
+  //   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NzU5NDg4MGVjNWI5MWIzY2Q4MDZhMzIiLCJpYXQiOjE3MzM5MDQ1NTQsImV4cCI6MTc1OTgyNDU1NH0.ECK2gJxt4a76lzxY0lHHPF_VDR-2ZH26dUHxPNkr2Fk';
   // Replace with your actual secret
 
-  const API_URL = 'https://api.scaleupapp.club/api/auth/register';
+  // const API_URL = 'https://api.scaleupapp.club/api/auth/register';
 
   const handleGoogleLogin = async () => {
     try {
@@ -30,9 +31,10 @@ const SocialLogin = ({signup = false}) => {
 
       const userInfo = await GoogleSignin.signIn();
       const user = userInfo.data.user;
+      const token = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(token);
 
-      const token = staticToken;
-      const decodedToken = jwtDecode(token);
+      // const decodedToken = jwtDecode(parsedUser);
 
       const userData = {
         username: user.name || 'Unknown',
@@ -41,7 +43,7 @@ const SocialLogin = ({signup = false}) => {
         firstname: user.givenName || '',
         lastname: user.familyName || '',
         isbasicProfileComplete: true,
-        password: decodedToken.userId,
+        password: parsedUser?.userId,
       };
 
       let response = await registerApi(userData);
