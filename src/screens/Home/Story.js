@@ -42,13 +42,13 @@ export const Story = () => {
     };
   
      // Fetch data every second
-     const interval = setInterval(fetchData, 1000);
+    //  const interval = setInterval(fetchData, 1000);
   
      // Fetch data immediately on component mount
      fetchData();
    
      // Clear the interval when the component unmounts
-     return () => clearInterval(interval);
+    //  return () => clearInterval(interval);
   }, []);
   
   

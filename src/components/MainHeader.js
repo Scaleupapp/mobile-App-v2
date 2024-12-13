@@ -59,7 +59,16 @@ const MainHeader = () => {
             name="bookmark"
             color={COLORS.whiteFFFFFF}
             size={nh(24)}
+            style={{marginRight: nw(14)}}
             onPress={() => navigation.navigate(Routes.CreatePost)}
+          />
+          <Icon
+            type="font-awesome"
+            name="bookmark"
+            color={COLORS.whiteFFFFFF}
+            size={nh(24)}
+            
+            onPress={() => navigation.navigate(Routes.MyPlaylist)}
           />
         </View>
       </View>

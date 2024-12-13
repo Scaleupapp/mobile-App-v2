@@ -331,7 +331,7 @@ const Login = ({navigation}) => {
             }
             onPress={loginUser}
           />
-          <SocialLogin />
+<SocialLogin navigation={navigation} />
           {phoneNumberData?.loginOtp ? (
             <View
               style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>

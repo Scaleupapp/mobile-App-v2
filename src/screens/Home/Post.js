@@ -6,6 +6,7 @@ import {
   Image,
   StatusBar,
   Pressable,
+  Alert,
 } from 'react-native';
 import Text from '../../components/Text';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -15,6 +16,13 @@ import {COLORS} from '../../helper/colors';
 import ReadMore from '@fawazahmed/react-native-read-more';
 import {APP_FONTS} from '../../assets/fonts';
 import Video from 'react-native-video';
+
+import { useSelector } from 'react-redux';
+import axios from 'axios';
+import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
+import PlaylistSelectionModal from './PlaylistSelectionModal'; // Import the new modal
+
+
 // import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
@@ -23,20 +31,82 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const [imageModal, setImageModal] = useState(false);
 
+  const token = useSelector((state) => state.auth.userData.token);
+  const userId = token ? jwtDecode(token)?.userId : null; // Extract userId from token
+  console.log('hhhhbhhbk',userId);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
+  const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+
+
+
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
-  // console.log('Image URL:', item?.contentURL);
 
 
-  // useEffect(() => {
-  //   const testImageURL = 'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/6753654c6a2a23d228a400a2/Yxucu_1733745794319/Screenshot_20241209-031146.png';  // Replace with a valid image URL
-  //   Image.getSize(testImageURL, (width, height) => {
-  //     console.log('Test Image Size:', width, height);
-  //     setImageHeight(height);
-  //   });
-  // }, []);
+
+  const handleBookmarkPress = () => {
+    if (userId) {
+      // Instead of directly bookmarking, show playlist modal
+      setIsPlaylistModalVisible(true);
+    } else {
+      console.error('User ID not available');
+    }
+  };
+
+  const handleBookmark = async (userId, postId) => {
+    try {
+      // First, check if the post is already in the playlist
+      const checkResponse = await axios.get(`http://192.168.48.240:5000/api/playlists/check?userId=${userId}&postId=${postId}`);
+      
+      if (checkResponse.data.exists) {
+        // If already bookmarked, show "Already in playlist" message
+        Alert.alert(
+          '',
+          'Already in your playlist', 
+          [{text: 'OK', style: 'default'}],
+          {
+            cancelable: true,
+            onDismiss: () => {}
+          }
+        );
+        return;
+      }
+
+      // If not bookmarked, proceed with bookmarking
+      await axios.post('http://192.168.48.240:5000/api/playlists', {
+        userId, // Send userId in the body
+        playlistName: 'My Playlist', // Optional: Customize the playlist name
+        items: [{ postId }], // Only send the postId, not the entire object
+      });
+      
+      // Show added to playlist message
+      Alert.alert(
+        '',
+        'Added to your playlist', 
+        [{text: 'OK', style: 'default'}],
+        {
+          cancelable: true,
+          onDismiss: () => {}
+        }
+      );
+
+      console.log('Post successfully bookmarked');
+      setIsBookmarked(true); // Update the UI state
+    } catch (error) {
+      console.error('Failed to bookmark post:', error.response?.data || error.message);
+      
+      // Show error message if something goes wrong
+      Alert.alert(
+        'Error',
+        'Failed to bookmark post', 
+        [{text: 'OK', style: 'default'}]
+      );
+    }
+  };
+  
   
 
   return (
@@ -157,12 +227,26 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             color={COLORS.blue043142}
           />
         </View>
+        <Pressable onPress={handleBookmarkPress}>
         <Icon
           type="feather"
           name="bookmark"
           size={24}
-          color={COLORS.blue043142}
+          color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
         />
+      </Pressable>
+
+      {/* Playlist Selection Modal */}
+      <PlaylistSelectionModal
+        visible={isPlaylistModalVisible}
+        onClose={() => setIsPlaylistModalVisible(false)}
+        postId={item._id}
+        onPostAdded={() => {
+          // Optional: Update UI state to show post is bookmarked
+          setIsBookmarked(true);
+        }}
+      />
+
       </View>
       <ReadMore
         numberOfLines={2}

@@ -155,6 +155,11 @@ export const RootNavigator = () => {
         component={CreatePost}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={Routes.MyPlaylist}
+        component={MyPlaylist}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };
