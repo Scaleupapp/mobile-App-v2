@@ -2,7 +2,10 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
     // Initial state properties
-    userData: {},
+    userData: {
+        userId: null,    // Store userId directly here
+    token: null, 
+    },
 
 };
 
