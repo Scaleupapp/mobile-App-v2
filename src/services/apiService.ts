@@ -1,4 +1,3 @@
-import axios from 'axios';
 import {API} from './apiConstent';
 import axiosInstance from './axiosinstance';
 
@@ -38,15 +37,15 @@ export const savePreferences = (payload: any) => {
   return axiosInstance.post(API.PREFERENCES, payload);
 };
 
-export const getPreferences = (payload: any) => {
-  return axiosInstance.get(API.PREFERENCES, payload);
+export const getPreferences = () => {
+  return axiosInstance.get(API.PREFERENCES);
 };
 
 export const saveEducation = (payload: any) => {
   return axiosInstance.post(API.EDUCATION, payload);
 };
-export const getEducation = (payload: any) => {
-  return axiosInstance.get(API.EDUCATION, payload);
+export const getEducation = () => {
+  return axiosInstance.get(API.EDUCATION);
 };
 export const deleteEducation = (id: any) => {
   return axiosInstance.delete(`${API.EDUCATION}/${id}`);
@@ -55,8 +54,8 @@ export const deleteEducation = (id: any) => {
 export const saveWorkExperience = (payload: any) => {
   return axiosInstance.post(API.EXPERIENCE, payload);
 };
-export const getWorkExperience = (payload: any) => {
-  return axiosInstance.get(API.EXPERIENCE, payload);
+export const getWorkExperience = () => {
+  return axiosInstance.get(API.EXPERIENCE);
 };
 export const deleteWorkExperience = (id: any) => {
   return axiosInstance.delete(`${API.EXPERIENCE}/${id}`);
@@ -65,8 +64,8 @@ export const deleteWorkExperience = (id: any) => {
 export const saveCertification = (payload: any) => {
   return axiosInstance.post(API.CERTIFICATION, payload);
 };
-export const getCertification = (payload: any) => {
-  return axiosInstance.get(API.CERTIFICATION, payload);
+export const getCertification = () => {
+  return axiosInstance.get(API.CERTIFICATION);
 };
 export const deleteCertification = (id: any) => {
   return axiosInstance.delete(`${API.CERTIFICATION}/${id}`);
@@ -75,15 +74,15 @@ export const deleteCertification = (id: any) => {
 export const saveProjects = (payload: any) => {
   return axiosInstance.post(API.PROJECTS, payload);
 };
-export const getProjects = (payload: any) => {
-  return axiosInstance.get(API.PROJECTS, payload);
+export const getProjects = () => {
+  return axiosInstance.get(API.PROJECTS);
 };
 export const deleteProjects = (id: any) => {
   return axiosInstance.delete(`${API.PROJECTS}/${id}`);
 };
 
-export const getProfile = (payload: any) => {
-  return axiosInstance.get(API.PROFILE_DETAIL, payload);
+export const getProfile = () => {
+  return axiosInstance.get(API.PROFILE_DETAIL);
 };
 
 export const updateProfile = (payload: any) => {

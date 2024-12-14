@@ -34,7 +34,6 @@ const Home = ({navigation, route}) => {
   const flatListRef = useRef(null);
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
-  console.log('🚀 ~ Home ~ userData:', userData);
 
   useFocusEffect(
     useCallback(() => {

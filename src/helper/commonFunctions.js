@@ -54,3 +54,11 @@ export const throttle = (func, limit) => {
     }
   };
 };
+
+export const formatDate = date => {
+  const options = {year: 'numeric', month: 'short'}; // 'short' gives abbreviated month name
+  const formattedDate = new Intl.DateTimeFormat('en-US', options)
+    .format(date)
+    .replace(' ', '-');
+  return formattedDate;
+};

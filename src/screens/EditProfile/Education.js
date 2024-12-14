@@ -5,6 +5,7 @@ import {
   StatusBar,
   View,
   FlatList,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -20,6 +21,8 @@ import {
   saveEducation,
 } from '../../services/apiService';
 import {useToast} from '../../components/CustomToast';
+import DatePicker from 'react-native-date-picker';
+import {formatDate} from '../../helper/commonFunctions';
 
 const Education = ({navigation, route}) => {
   const {showToast} = useToast();
@@ -27,7 +30,16 @@ const Education = ({navigation, route}) => {
   const [education, setEducation] = useState([]);
   const [saved, setSaved] = useState(true);
   const [edit, setEdit] = useState(false);
-  console.log(education);
+  const [startDate, setStartDate] = useState({
+    show: false,
+    date: new Date(),
+    format: '',
+  });
+  const [endDate, setEndDate] = useState({
+    show: false,
+    date: new Date(),
+    format: '',
+  });
   const [state, setState] = useState({
     degree: '',
     university: '',
@@ -131,6 +143,16 @@ const Education = ({navigation, route}) => {
       startDate: item?.startDate,
       endDate: item?.endDate,
     });
+    if (item?.startDate) {
+      const newDate = new Date(item?.startDate);
+      const formattedDate = formatDate(newDate);
+      setStartDate({show: false, date: newDate, format: formattedDate});
+    }
+    if (item?.endDate) {
+      const endDate = new Date(item?.endDate);
+      const formattedDate = formatDate(endDate);
+      setEndDate({show: false, date: endDate, format: formattedDate});
+    }
     setIsChecked(item?.currentltPursuing);
   };
 
@@ -178,26 +200,78 @@ const Education = ({navigation, route}) => {
                 />
               </View>
               <View style={styles.input}>
+                <Pressable
+                  style={{
+                    position: 'absolute',
+                    height: '100%',
+                    width: '48%',
+                    zIndex: 1,
+                  }}
+                  onPress={() =>
+                    setStartDate({
+                      ...startDate,
+                      show: true,
+                    })
+                  }></Pressable>
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
                   label="Start Year"
                   placeholder="Enter Start Year"
-                  value={state.startYear}
-                  onChangeText={value => handleInputChange('startDate', value)}
+                  editable={false}
+                  value={startDate.format}
                   errorMessage={errors.startDate}
-                  keyboardType="numeric"
                 />
+                <Pressable
+                  disabled={isChecked}
+                  style={{
+                    position: 'absolute',
+                    height: '100%',
+                    right: 0,
+                    width: '48%',
+                    zIndex: 1,
+                  }}
+                  onPress={() =>
+                    setEndDate({...endDate, show: true})
+                  }></Pressable>
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
                   label="End Year"
                   placeholder="Enter End Year"
-                  value={state.endDate}
-                  onChangeText={value => handleInputChange('endDate', value)}
+                  editable={false}
+                  value={endDate.format}
                   errorMessage={errors.endDate}
-                  disabled={isChecked} // Disable if currently pursuing
-                  keyboardType="numeric"
                 />
               </View>
+              <DatePicker
+                modal
+                open={startDate.show}
+                date={startDate.date}
+                mode={'date'}
+                minimumDate={new Date('1970-01-01')}
+                maximumDate={new Date()}
+                onConfirm={date => {
+                  handleInputChange('startDate', date);
+                  const formattedDate = formatDate(date);
+                  setStartDate({
+                    show: false,
+                    date: date,
+                    format: formattedDate,
+                  });
+                }}
+              />
+              <DatePicker
+                modal
+                open={endDate.show}
+                date={endDate.date}
+                mode={'date'}
+                minimumDate={new Date('1970-01-01')}
+                maximumDate={new Date()}
+                onConfirm={date => {
+                  handleInputChange('endDate', date);
+                  const formattedDate = formatDate(date);
+                  setEndDate({show: false, date: date, format: formattedDate});
+                }}
+              />
               <View style={styles.checkboxContainer}>
                 <CheckBox
                   checkedIcon="check-box"
