@@ -21,6 +21,8 @@ import {
   unlikePostApi,
   unsavePostAPI,
 } from '../../services/apiService';
+import Routes from '../../helper/routes';
+import {navigationRef} from '../../../App';
 
 // import convertToProxyURL from 'react-native-video-cache';
 
@@ -82,7 +84,11 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         paddingBottom: nh(30),
       }}>
       <View style={styles.view}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Pressable
+          style={{flexDirection: 'row', alignItems: 'center'}}
+          onPress={() =>
+            navigationRef.navigate(Routes.MyProfile, {type: 'other'})
+          }>
           <Image
             source={
               item?.userId?.profilePicture
@@ -94,7 +100,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           <Text variant="medium14" color={COLORS.blue043142}>
             {item?.userId?.username}
           </Text>
-        </View>
+        </Pressable>
 
         {/* <Icon
           type="entypo"

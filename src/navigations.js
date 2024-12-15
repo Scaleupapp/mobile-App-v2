@@ -37,6 +37,9 @@ import Followers from './screens/MyProfile/Followers';
 import Following from './screens/MyProfile/Following';
 import Likes from './screens/MyProfile/Likes';
 import BlockUsers from './screens/MyProfile/BlockUser';
+import MenuScreen from './screens/Menuscreen/MenuScreen';
+import Settings from './screens/Menuscreen/SettingScreen';
+import ChangePassword from './screens/Login/ChangePassword';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -148,6 +151,102 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.Projects}
         component={Projects}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CreatePost}
+        component={CreatePost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MenuScreen}
+        component={MenuScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyProfile}
+        component={MyProfile}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyPlaylist}
+        component={MyPlaylist}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditPlayList}
+        component={EditPlayList}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.NewPlayList}
+        component={NewPlayList}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.SavePost}
+        component={SavePost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DraftPost}
+        component={DraftPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.VerifiedPost}
+        component={VerifiedPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.PendingPost}
+        component={PendingPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DeclinedPost}
+        component={DeclinedPost}
+        options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name={Routes.InnerCircleRequest}
+        component={InnerCircleRequest}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.InnerCircle}
+        component={InnerCircle}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Followers}
+        component={Followers}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Following}
+        component={Following}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Likes}
+        component={Likes}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.BlockUsers}
+        component={BlockUsers}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Settings}
+        component={Settings}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.ChangePassword}
+        component={ChangePassword}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

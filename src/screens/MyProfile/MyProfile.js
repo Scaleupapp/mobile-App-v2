@@ -6,6 +6,7 @@ import {
   View,
   Image,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -15,9 +16,15 @@ import Text from '../../components/Text';
 import Button from '../../components/Button';
 
 import AllPostoption from './AllPostoption';
+import Routes from '../../helper/routes';
+import {useSelector} from 'react-redux';
 
 const MyProfile = ({navigation, route}) => {
-  let type = 'user';
+  const userReducer = useSelector(state => state?.auth?.userData);
+  console.log('🚀 ~ MyProfile ~ userReducer:', userReducer);
+  // const {username, firstname} = userReducer;
+  let type = route?.params?.type;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -26,7 +33,7 @@ const MyProfile = ({navigation, route}) => {
         backgroundColor={COLORS.yellowF5BE00}
       />
       <Header
-        title="My Profile"
+        title={type == 'user' ? 'My Profile' : 'Sophie'}
         // backIcon={icons.backArrow} // Provide your back arrow icon
         // rightIcon={icons.menu} // Provide your right icon
         // onBackPress={handleBackPress}
@@ -84,30 +91,34 @@ const MyProfile = ({navigation, route}) => {
                 alignContent: 'center',
                 marginHorizontal: nw(44),
               }}>
-              <View style={{alignItems: 'center'}}>
+              <Pressable style={{alignItems: 'center'}}>
                 <Text variant="bold20" color={COLORS.blue043142}>
                   100
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   posts
                 </Text>
-              </View>
-              <View style={{alignItems: 'center'}}>
+              </Pressable>
+              <Pressable
+                style={{alignItems: 'center'}}
+                onPress={() => navigation.navigate(Routes.Followers)}>
                 <Text variant="bold20" color={COLORS.blue043142}>
                   1000
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   followers
                 </Text>
-              </View>
-              <View style={{alignItems: 'center'}}>
+              </Pressable>
+              <Pressable
+                style={{alignItems: 'center'}}
+                onPress={() => navigation.navigate(Routes.Following)}>
                 <Text variant="bold20" color={COLORS.blue043142}>
                   1000
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   following
                 </Text>
-              </View>
+              </Pressable>
             </View>
             {type == 'user' ? (
               <View
@@ -116,8 +127,16 @@ const MyProfile = ({navigation, route}) => {
                   marginTop: nh(30),
                   justifyContent: 'space-between',
                 }}>
-                <Button text="Edit Profile" width={nw(283)} />
-                <Button justIcon={'settings-sharp'} width={50} />
+                <Button
+                  text="Edit Profile"
+                  width={nw(283)}
+                  onPress={() => navigation.navigate(Routes.EditProfile)}
+                />
+                <Button
+                  justIcon={'settings-sharp'}
+                  width={50}
+                  onPress={() => navigation.navigate(Routes.Settings)}
+                />
               </View>
             ) : (
               <View style={{marginTop: nh(30)}}>

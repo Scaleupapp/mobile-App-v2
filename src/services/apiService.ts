@@ -106,3 +106,17 @@ export const savePostAPI = (postId: any) => {
 export const unsavePostAPI = (postId: any) => {
   return axiosInstance.put(`${API.UNSAVE}/${postId}`);
 };
+
+export const getNotificationAPI = (postId: any) => {
+  return axiosInstance.get(`${API.NOTIFICATION}`);
+};
+
+export const markReadNotificationAPI = (payload: any) => {
+  return axiosInstance.post(`${API.MARK_READ}`,payload);
+};
+
+
+export const myInnerCircleRequestAPI = (payload: any) => {
+  return axiosInstance.post(`${API.MARK_READ}`,payload);
+};
+
