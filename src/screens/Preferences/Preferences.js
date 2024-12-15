@@ -148,7 +148,10 @@ const Preferences = ({navigation, route}) => {
         const {data} = await savePreferences(params);
 
         console.log(data, 'data from preference');
-        navigation.navigate(Routes.Home);
+        navigation.reset({
+          index: 0,
+          routes: [{name: Routes.Home}],
+        });
       } catch (error) {
         console.log('🚀 ~ handleNext ~ error:', error);
       }

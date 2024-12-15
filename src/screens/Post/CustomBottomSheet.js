@@ -27,9 +27,6 @@ const CustomBottomSheetModal = forwardRef(({data = [], commentHandle}, ref) => {
   });
 
   useEffect(() => {
-    setTimeout(() => {
-      ref?.current?.present();
-    }, 1000);
     // getData(data?.post_id);
   }, []);
 
