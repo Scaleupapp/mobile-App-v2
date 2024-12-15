@@ -21,6 +21,7 @@ import {
   unlikePostApi,
   unsavePostAPI,
 } from '../../services/apiService';
+import CustomBottomSheetModal from '../Post/CustomBottomSheet';
 
 // import convertToProxyURL from 'react-native-video-cache';
 
@@ -32,8 +33,6 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [isSaved, setIsSaved] = useState(item?.isSaved);
   const commentRef = useRef(null);
-
-  const snapPoints = useMemo(() => ['50%'], []);
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
@@ -267,6 +266,15 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </View>
         ))}
       </View>
+      <CustomBottomSheetModal
+        data={{
+          post_id: 'data._id',
+        }}
+        ref={commentRef}
+        commentHandle={() => {
+          // setCommentCount((prev) => prev + 1)
+        }}
+      />
     </View>
   );
 };
