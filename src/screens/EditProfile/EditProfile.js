@@ -247,7 +247,13 @@ const EditProfile = ({navigation, route}) => {
                 </View> */}
                 <View>
                   <Image
-                    source={{uri: form?.profilePicture}}
+                    source={{
+                      uri: form?.profilePicture
+                        ? `${
+                            form.profilePicture
+                          }?timestamp=${new Date().getTime()}`
+                        : null,
+                    }}
                     style={styles.image}
                     resizeMode="cover"
                   />

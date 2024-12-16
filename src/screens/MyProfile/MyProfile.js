@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -18,12 +18,29 @@ import Button from '../../components/Button';
 import AllPostoption from './AllPostoption';
 import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
+import {getProfile} from '../../services/apiService';
 
 const MyProfile = ({navigation, route}) => {
-  const userReducer = useSelector(state => state?.auth?.userData);
-  console.log('🚀 ~ MyProfile ~ userReducer:', userReducer);
+  const userData = useSelector(state => state?.userData);
+  const [profile, setProfile] = useState();
+  console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
-  let type = route?.params?.type;
+  let type = route?.params?.type ?? 'user';
+  useEffect(() => {
+    getprofiledetails();
+  }, []);
+  const getprofiledetails = async () => {
+    try {
+      if (type == 'user') {
+        setProfile(userData);
+      } else {
+        let resp = await getProfile('675b2be1faab6e2a6c8ca44e');
+        setProfile(resp?.data?.userProfileInfo);
+      }
+    } catch (error) {
+      console.log('🚀 ~ getprofiledetails ~ error:', error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -44,7 +61,7 @@ const MyProfile = ({navigation, route}) => {
           <ScrollView>
             <Image source={images.profilebaground} style={styles.images} />
             <Image
-              source={images.ciclelogo}
+              source={{uri: profile?.profilePicture}}
               style={styles.imagecircle}
               resizeMode="cover"
             />
@@ -53,21 +70,20 @@ const MyProfile = ({navigation, route}) => {
               variant="semibold20"
               color={COLORS.blue043142}
               style={{textAlign: 'center'}}>
-              Sophie Turner
+              {profile?.username}
             </Text>
 
             <Text
               variant="medium16"
               color={COLORS.grey777777}
               style={{textAlign: 'center'}}>
-              Sophie Turner
+              {/* {profile} */}
             </Text>
             <Text
               variant="medium12"
               color={COLORS.grey999999}
               style={{textAlign: 'center', marginBottom: nh(20)}}>
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt
+              {profile?.bio?.bioAbout}
             </Text>
             <View
               style={{
@@ -93,7 +109,7 @@ const MyProfile = ({navigation, route}) => {
               }}>
               <Pressable style={{alignItems: 'center'}}>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  100
+                  {profile?.contentCount}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   posts
@@ -103,7 +119,7 @@ const MyProfile = ({navigation, route}) => {
                 style={{alignItems: 'center'}}
                 onPress={() => navigation.navigate(Routes.Followers)}>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  1000
+                  {profile?.followersCount}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   followers
@@ -113,7 +129,7 @@ const MyProfile = ({navigation, route}) => {
                 style={{alignItems: 'center'}}
                 onPress={() => navigation.navigate(Routes.Following)}>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  1000
+                  {profile?.followingCount}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   following

@@ -40,9 +40,19 @@ import BlockUsers from './screens/MyProfile/BlockUser';
 import MenuScreen from './screens/Menuscreen/MenuScreen';
 import Settings from './screens/Menuscreen/SettingScreen';
 import ChangePassword from './screens/Login/ChangePassword';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {images} from './assets/images';
+import icon from './helper/icon';
+import {icons} from './assets/icons';
+import {Image, View} from 'react-native';
+import {nh, nw} from './helper/scales';
+import {COLORS} from './helper/colors';
+import {APP_FONTS} from './assets/fonts';
+import Text from './components/Text';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
 
 const LoginNavigator = ({route}) => {
   return (
@@ -89,6 +99,137 @@ const LoginNavigator = ({route}) => {
   );
 };
 
+const TabNavigator = ({navigation, route}) => {
+  const setBottomIcon = (img, focused) => {
+    if (focused)
+      return (
+        <View
+          style={{
+            top: nh(-20),
+            height: nw(50),
+            width: nw(50),
+            borderRadius: nw(25),
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: COLORS.whiteFFFFFF,
+          }}>
+          <View
+            style={{
+              backgroundColor: COLORS.blue043142,
+              height: nw(40),
+              width: nw(40),
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: nw(20),
+              borderWidth: nw(1),
+              borderColor: COLORS.whiteFFFFFF,
+              boxShadow: '0 0 10 0  rgba(4, 49, 66, 0.35)',
+            }}>
+            <Image
+              source={img}
+              tintColor={'white'}
+              style={{
+                height: nw(20),
+                width: nw(20),
+              }}
+            />
+          </View>
+        </View>
+      );
+    return (
+      <View style={{marginVertical: nh(15)}}>
+        <Image source={img} style={{height: nw(30), width: nw(30)}} />
+      </View>
+    );
+  };
+
+  const setBottomIconText = (iconText, focused) => {
+    if (!focused) return;
+    return (
+      <Text
+        variant="bold12"
+        style={{
+          color: COLORS.whiteFFFFFF,
+        }}>
+        {iconText}
+      </Text>
+    );
+  };
+
+  return (
+    <Tab.Navigator
+      initialRouteName={'MainHome'}
+      screenOptions={props => {
+        return {
+          tabBarLabelPosition: 'below-icon',
+          headerShown: false,
+          headerTransparent: true,
+          tabBarHideOnKeyboard: true,
+          showIcon: true,
+          tabBarStyle: {
+            backgroundColor: COLORS.blue043142,
+            // paddingBottom: 10,
+          },
+          tabBarItemStyle: {
+            // paddingBottom: nh(15),
+            // marginBottom: 10,
+          },
+        };
+      }}>
+      <Tab.Screen
+        name={'MainHome'}
+        component={Home}
+        options={{
+          headerShown: false,
+          tabBarLabel: ({focused}) => setBottomIconText('Home', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIcon(focused ? icons.home1 : icons.home2, focused),
+        }}
+      />
+      <Tab.Screen
+        name={Routes.Preferences}
+        component={Preferences}
+        options={{
+          headerShown: false,
+          tabBarLabel: ({focused}) => setBottomIconText('Search', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIcon(focused ? icons.search1 : icons.search2, focused),
+        }}
+      />
+      <Tab.Screen
+        name={Routes.CreatePost}
+        component={CreatePost}
+        options={{
+          headerShown: false,
+          tabBarLabel: ({focused}) => setBottomIconText('Add', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIcon(focused ? icons.add1 : icons.add2, focused),
+        }}
+      />
+      <Tab.Screen
+        name={Routes.Education}
+        component={Education}
+        options={{
+          headerShown: false,
+          tabBarLabel: ({focused}) => setBottomIconText('Book', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIcon(focused ? icons.book1 : icons.book2, focused),
+        }}
+      />
+      <Tab.Screen
+        name={Routes.MyPlaylist}
+        component={MyProfile}
+        options={{
+          headerShown: false,
+          tabBarLabel: ({focused}) => setBottomIconText('Profile', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIcon(focused ? icons.account1 : icons.account2, focused),
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
 export const RootNavigator = () => {
   const {showToast} = useToast(); // Access useToast hook here
   const navigation = useNavigation();
@@ -120,7 +261,7 @@ export const RootNavigator = () => {
       />
       <Stack.Screen
         name={Routes.Home}
-        component={Home}
+        component={TabNavigator}
         options={{headerShown: false}}
       />
       <Stack.Screen

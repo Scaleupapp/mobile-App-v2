@@ -22,6 +22,7 @@ import {Story} from './Story';
 import {throttle} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
 import {actions} from '../../redux/reducers';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Home = ({navigation, route}) => {
   const [home, setHome] = useState([]);
@@ -34,7 +35,6 @@ const Home = ({navigation, route}) => {
   const flatListRef = useRef(null);
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
-  console.log('🚀 ~ Home ~ userData:', userData);
 
   useFocusEffect(
     useCallback(() => {
@@ -52,7 +52,10 @@ const Home = ({navigation, route}) => {
 
   const getProfileData = async () => {
     try {
-      let res = await getProfile();
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile(parsedUser?.id);
 
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),

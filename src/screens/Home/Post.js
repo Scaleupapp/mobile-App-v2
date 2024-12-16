@@ -23,10 +23,12 @@ import {
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
+import CustomBottomSheetModal from '../Post/CustomBottomSheet';
 
 // import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
+  console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const [imageModal, setImageModal] = useState(false);
@@ -34,8 +36,6 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [isSaved, setIsSaved] = useState(item?.isSaved);
   const commentRef = useRef(null);
-
-  const snapPoints = useMemo(() => ['50%'], []);
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
@@ -87,7 +87,10 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         <Pressable
           style={{flexDirection: 'row', alignItems: 'center'}}
           onPress={() =>
-            navigationRef.navigate(Routes.MyProfile, {type: 'other'})
+            navigationRef.navigate(Routes.MyProfile, {
+              type: 'other',
+              id: item?.userId?._id,
+            })
           }>
           <Image
             source={
@@ -273,6 +276,13 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </View>
         ))}
       </View>
+      <CustomBottomSheetModal
+        data={item?.comments}
+        ref={commentRef}
+        commentHandle={() => {
+          // setCommentCount((prev) => prev + 1)
+        }}
+      />
     </View>
   );
 };
