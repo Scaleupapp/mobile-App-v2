@@ -21,8 +21,8 @@ import {
   unlikePostApi,
   unsavePostAPI,
 } from '../../services/apiService';
-import CustomBottomSheetModal from '../Post/CustomBottomSheet';
 import ImageModal from '../Post/ImageModal';
+import CommentBottomSheetModal from '../Post/CustomBottomSheet';
 
 // import convertToProxyURL from 'react-native-video-cache';
 
@@ -267,10 +267,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </View>
         ))}
       </View>
-      <CustomBottomSheetModal
-        data={{
-          post_id: 'data._id',
-        }}
+      <CommentBottomSheetModal
+        data={item?.comments}
         ref={commentRef}
         commentHandle={() => {
           // setCommentCount((prev) => prev + 1)

@@ -1,7 +1,6 @@
 import {
   View,
   StyleSheet,
-  Text,
   Image,
   FlatList,
   Keyboard,
@@ -14,172 +13,190 @@ import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
 import {COLORS} from '../../helper/colors';
 import {APP_FONTS} from '../../assets/fonts';
 import {nh, nw} from '../../helper/scales';
+import Text from '../../components/Text';
+import Icon from '../../helper/icon';
+import {timeAgo} from '../../helper/commonFunctions';
 
-const CustomBottomSheetModal = forwardRef(({data = [], commentHandle}, ref) => {
-  // console.log('🚀 ~ CustomBottomSheetModal ~ ref:', ref);
-  // console.log({data, commentHandle});
-  const snapPoints = useMemo(() => ['50%'], []);
-  const [comments, setComments] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [isKeyboardVisible, setKeyboardVisible] = useState({
-    height: 16,
-    visible: false,
-  });
+const CommentBottomSheetModal = forwardRef(
+  ({data = [], commentHandle}, ref) => {
+    // console.log('🚀 ~ CustomBottomSheetModal ~ ref:', ref);
+    // console.log({data, commentHandle});
+    const snapPoints = useMemo(() => ['80%'], []);
+    const [comments, setComments] = useState(data);
+    // console.log('sbdjbs ', JSON.stringify(comments));
+    const [modalVisible, setModalVisible] = useState(false);
+    const [isKeyboardVisible, setKeyboardVisible] = useState({
+      height: 16,
+      visible: false,
+    });
 
-  useEffect(() => {
-    // getData(data?.post_id);
-  }, []);
+    useEffect(() => {
+      // getData(data?.post_id);
+    }, []);
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      event => {
-        // Get the keyboard height from the event
-        const keyboardHeight = event.endCoordinates.height;
-        setKeyboardVisible({height: keyboardHeight, visible: true});
-      },
-    );
+    useEffect(() => {
+      const keyboardDidShowListener = Keyboard.addListener(
+        'keyboardDidShow',
+        event => {
+          // Get the keyboard height from the event
+          const keyboardHeight = event.endCoordinates.height;
+          setKeyboardVisible({height: keyboardHeight, visible: true});
+        },
+      );
 
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        setKeyboardVisible({height: 16, visible: false});
-      },
-    );
+      const keyboardDidHideListener = Keyboard.addListener(
+        'keyboardDidHide',
+        () => {
+          setKeyboardVisible({height: 16, visible: false});
+        },
+      );
 
-    // Clean up listeners when component unmounts
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
+      // Clean up listeners when component unmounts
+      return () => {
+        keyboardDidShowListener.remove();
+        keyboardDidHideListener.remove();
+      };
+    }, []);
+
+    const getData = async post_id => {
+      // try {
+      //     const { data } = await getCommentsApi(post_id)
+      //     // console.log(data);
+      //     setComments(data?.comments)
+      // } catch (err) {
+      //     console.log(err, 'eeee');
+      // }
     };
-  }, []);
-
-  const getData = async post_id => {
-    // try {
-    //     const { data } = await getCommentsApi(post_id)
-    //     // console.log(data);
-    //     setComments(data?.comments)
-    // } catch (err) {
-    //     console.log(err, 'eeee');
-    // }
-  };
-  // console.log({comments});r
-  return (
-    <BottomSheetModal
-      ref={ref}
-      index={0}
-      snapPoints={snapPoints}
-      containerStyle={{
-        borderTopLeftRadius: 24,
-      }}
-      style={{
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: COLORS.blue043142,
-        overflow: 'hidden',
-      }}>
-      <BottomSheetView style={styles.contentContainer}>
-        <Text style={styles.containerHeadline}>Comments</Text>
-
-        {comments.length == 0 ? (
-          <Text style={styles.emptyContainer}>
-            {' No Comments on this Vibe yet..\nBe the first one to comment..'}
+    // console.log({comments});
+    return (
+      <BottomSheetModal
+        ref={ref}
+        index={0}
+        snapPoints={snapPoints}
+        handleComponent={null}
+        containerStyle={{
+          borderTopLeftRadius: 24,
+        }}
+        style={{
+          borderRadius: 24,
+          // borderWidth: 1,
+          boxShadow: '2 4 4 8 rgba(0, 0, 0, 0.15)',
+          // borderColor: COLORS.blue043142,
+          overflow: 'hidden',
+        }}>
+        <BottomSheetView style={styles.contentContainer}>
+          <Text variant="semibold18" style={styles.containerHeadline}>
+            Comments
           </Text>
-        ) : (
-          <FlatList
-            data={comments}
-            renderItem={({item}) => {
-              return (
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    marginHorizontal: nw(24),
-                    marginBottom: nh(16),
-                    flex: 1,
-                  }}>
-                  {/* <Image source={{ uri: appendExtenstion(item?.creator?.profile_picture) }} style={{ height: normalize(30), width: normalize(30), borderRadius: normalize(15), marginRight: normalize(11) }} /> */}
-                  {/* <View style={{ flex: 1 }}>
-                                            <Text style={{
-                                                color: COLORS.black000000,
-                                                fontSize: normalize(16),
-                                                fontFamily: FONTS.CircularstdBold,
-                                                fontWeight: '700',
-                                                marginBottom: normalize(5)
-                                            }}>{item?.creator?.user_name}</Text>
-                                            <Text style={{
-                                                color: COLORS.black000000,
-                                                fontSize: normalize(14),
-                                                fontFamily: FONTS.CircularstdMedium,
-                                                fontWeight: '400'
-                                            }}>{item?.content}</Text>
 
-                                            <View style={{ flexDirection: 'row', marginTop: normalize(11), justifyContent: 'space-between', flex: 1, alignItems: 'center' }}>
-                                                <View style={{ flexDirection: 'row' }}>
-                                                    <Text style={{
-                                                        color: '#828282',
-                                                        fontSize: normalize(12),
-                                                        fontFamily: FONTS.CircularstdMedium,
-                                                        fontWeight: '400',
-
-                                                    }}> {time(item?.createdAt) + ' ago'}</Text>
-                                                    <Text style={{
-                                                        color: COLORS.grey646464,
-                                                        fontSize: normalize(12),
-                                                        fontFamily: FONTS.CircularstdMedium,
-                                                        fontWeight: '400',
-                                                        marginLeft: normalize(20)
-                                                    }}>{'Reply'}</Text>
-                                                </View>
-
-                                                <Icon
-
-                                                    type={ICON_TYPE.Antdesign}
-
-                                                    color={COLORS.greyA7A7A7}
-                                                    name={"hearto"}
-                                                    size={normalize(14)}
-
-
-                                                />
-
-                                            </View>
-
-                                        </View> */}
-                  <Text>{item}</Text>
-                </View>
-              );
-            }}
-          />
-        )}
-      </BottomSheetView>
-      {/* <ChatInput camera={false} gallery={false} mice={false} value={prompt} onChangeText={(e) => setPrompt(e)} btnStyle={{ marginBottom: isKeyboardVisible?.height + 10, paddingRight: normalize(95) }} handleComment={() => createComment()} handleGenai={() => setGenAI(true)} /> */}
-    </BottomSheetModal>
-  );
-});
+          {comments.length == 0 ? (
+            <>
+              <Text variant="semibold20" style={styles.emptyContainer}>
+                {'No Comments Yet'}
+              </Text>
+              <Text variant="medium14" style={styles.emptyContainer1}>
+                {
+                  'It’s a bit quiet here. Start the conversation by leaving a comment on a post you find interesting.'
+                }
+              </Text>
+            </>
+          ) : (
+            <FlatList
+              data={comments}
+              contentContainerStyle={{marginTop: 30}}
+              renderItem={({item}) => {
+                console.log('🚀 ~ item:', item);
+                return (
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      marginHorizontal: nw(24),
+                      marginBottom: nh(16),
+                      flex: 1,
+                    }}>
+                    <Image
+                      source={{uri: item?.userId?.profilePicture}}
+                      style={{
+                        height: nw(65),
+                        width: nw(65),
+                        borderRadius: nw(65 / 2),
+                        marginRight: nw(11),
+                      }}
+                    />
+                    <View style={{flex: 1}}>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Text
+                          variant="semibold16"
+                          style={{
+                            color: COLORS.black000000,
+                            // marginBottom: nh(5),
+                          }}>
+                          {item?.userId?.username}
+                        </Text>
+                        <Text
+                          variant="medium12"
+                          style={{
+                            color: COLORS.black333333,
+                            marginHorizontal: nw(30),
+                          }}>
+                          {' '}
+                          {timeAgo(item?.commentDate)}
+                        </Text>
+                      </View>
+                      <Text
+                        variant="medium12"
+                        style={{
+                          color: COLORS.black333333,
+                        }}>
+                        {item?.commentText}
+                      </Text>
+                      <Text
+                        variant="semibold12"
+                        style={{
+                          color: COLORS.grey999999,
+                        }}>
+                        {'Reply'}
+                      </Text>
+                    </View>
+                    <Icon
+                      type={'antdesign'}
+                      color={COLORS.grey777777}
+                      name={'hearto'}
+                      size={nh(14)}
+                    />
+                  </View>
+                );
+              }}
+            />
+          )}
+        </BottomSheetView>
+        {/* <ChatInput camera={false} gallery={false} mice={false} value={prompt} onChangeText={(e) => setPrompt(e)} btnStyle={{ marginBottom: isKeyboardVisible?.height + 10, paddingRight: normalize(95) }} handleComment={() => createComment()} handleGenai={() => setGenAI(true)} /> */}
+      </BottomSheetModal>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    color: COLORS.grey777777,
-    fontSize: nh(14),
-    // fontFamily: FONTS.CircularstdMedium,
-    justifyContent: 'center',
     textAlign: 'center',
-    marginTop: nh(300),
-    lineHeight: nh(16),
+    color: COLORS.black333333,
+    marginTop: nh(100),
+  },
+  emptyContainer1: {
+    textAlign: 'center',
+    color: COLORS.grey999999,
+    marginHorizontal: 16,
+    marginBottom: nh(100),
   },
   contentContainer: {
     flex: 1,
   },
   containerHeadline: {
-    // fontFamily: FONTS.CircularstdMedium,
-    fontSize: 16,
-    fontWeight: '500',
-    // color: COLORS.black333333,
-    alignItems: 'center',
+    letterSpacing: 0.3,
+    color: COLORS.black333333,
     textAlign: 'center',
-    // padding: 20
+    marginTop: 16,
   },
   textInput: {
     alignSelf: 'stretch',
@@ -199,4 +216,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CustomBottomSheetModal;
+export default CommentBottomSheetModal;
