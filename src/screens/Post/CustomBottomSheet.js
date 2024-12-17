@@ -21,10 +21,10 @@ import {icons} from '../../assets/icons';
 import {addComment} from '../../services/apiService';
 
 const CustomBottomSheetModal = forwardRef(({data = [], commentHandle}, ref) => {
-  console.log('🚀 ~ CustomBottomSheetModal ~ ref:', data);
+  // console.log('🚀 ~ CustomBottomSheetModal ~ ref:', ref);
   // console.log({data, commentHandle});
   const snapPoints = useMemo(() => ['50%'], []);
-  const [comments, setComments] = useState(data);
+  const [comments, setComments] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [text, setText] = useState();
   const [isKeyboardVisible, setKeyboardVisible] = useState({
@@ -75,7 +75,7 @@ const CustomBottomSheetModal = forwardRef(({data = [], commentHandle}, ref) => {
     //     console.log(err, 'eeee');
     // }
   };
-  console.log({comments});
+  // console.log({comments});r
   return (
     <BottomSheetModal
       ref={ref}
