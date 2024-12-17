@@ -22,13 +22,14 @@ import {
   unsavePostAPI,
 } from '../../services/apiService';
 import CustomBottomSheetModal from '../Post/CustomBottomSheet';
+import ImageModal from '../Post/ImageModal';
 
 // import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  const [imageHeight, setImageHeight] = useState(0);
+  const [imageHeight, setImageHeight] = useState(200);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
-  const [imageModal, setImageModal] = useState(false);
+  const imageModalRef = useRef(null);
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [isSaved, setIsSaved] = useState(item?.isSaved);
@@ -65,12 +66,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   };
 
   useEffect(() => {
-    if (item?.contentType == 'image' && item?.contentURL) {
-      Image.getSize(item?.media, (width, height) => {
-        setImageHeight(height / 3);
+    if (item?.contentType == 'Image' && item?.contentURL) {
+      Image.getSize(item?.contentURL, (width, height) => {
+        setImageHeight(height / 6);
       });
     }
-  }, [item?.contentURL]);
+  }, [item?.contentType]);
 
   return (
     <View
@@ -104,15 +105,15 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       </View>
 
       {/* <Image style={styles.postimage} /> */}
-      {item?.contentType == 'image' && item?.contentURL ? (
+      {item?.contentType == 'Image' && item?.contentURL ? (
         <Pressable
-          onPress={() => setImageModal(true)}
+          onPress={() => imageModalRef.current?.present()}
           style={{marginVertical: nh(10)}}>
           <Image
             source={{uri: item?.contentURL}}
             style={{
               height: imageHeight,
-              width: DEVICE_WIDTH,
+              width: '100%',
               backgroundColor: COLORS.whiteFFFFFF,
               marginBottom: nh(6),
             }}
@@ -275,6 +276,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           // setCommentCount((prev) => prev + 1)
         }}
       />
+      <ImageModal ref={imageModalRef} imageUrl={item?.contentURL} />
     </View>
   );
 };

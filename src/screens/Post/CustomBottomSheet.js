@@ -16,10 +16,10 @@ import {APP_FONTS} from '../../assets/fonts';
 import {nh, nw} from '../../helper/scales';
 
 const CustomBottomSheetModal = forwardRef(({data = [], commentHandle}, ref) => {
-  console.log('🚀 ~ CustomBottomSheetModal ~ ref:', ref);
-  console.log({data, commentHandle});
+  // console.log('🚀 ~ CustomBottomSheetModal ~ ref:', ref);
+  // console.log({data, commentHandle});
   const snapPoints = useMemo(() => ['50%'], []);
-  const [comments, setComments] = useState(['heelo', 'hooiii']);
+  const [comments, setComments] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [isKeyboardVisible, setKeyboardVisible] = useState({
     height: 16,
@@ -63,7 +63,7 @@ const CustomBottomSheetModal = forwardRef(({data = [], commentHandle}, ref) => {
     //     console.log(err, 'eeee');
     // }
   };
-  console.log({comments});
+  // console.log({comments});r
   return (
     <BottomSheetModal
       ref={ref}
