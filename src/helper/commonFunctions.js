@@ -55,10 +55,11 @@ export const throttle = (func, limit) => {
   };
 };
 
-export const formatDate = date => {
-  const options = {year: 'numeric', month: 'short'}; // 'short' gives abbreviated month name
-  const formattedDate = new Intl.DateTimeFormat('en-US', options)
-    .format(date)
-    .replace(' ', '-');
+export const formatDate = (date, day = false) => {
+  let options = {year: 'numeric', month: 'short'}; // 'short' gives abbreviated month name
+  if (day) options.day = 'numeric';
+  const formattedDate = new Intl.DateTimeFormat('en-US', options).format(date);
+  if (day) formattedDate.replace(/, /g, '-');
+  formattedDate.replace(' ', '-');
   return formattedDate;
 };

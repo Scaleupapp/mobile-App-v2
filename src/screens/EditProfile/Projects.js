@@ -21,8 +21,8 @@ import {
 } from '../../services/apiService';
 import {Card} from '../../components/Card';
 import {useToast} from '../../components/CustomToast';
-import DatePicker from 'react-native-date-picker';
 import {formatDate} from '../../helper/commonFunctions';
+import MonthPickerComponent from '../../components/MonthPickerComponent';
 
 const Projects = ({navigation, route}) => {
   const {showToast} = useToast();
@@ -249,35 +249,17 @@ const Projects = ({navigation, route}) => {
                 onChangeText={value => handleInputChange('projectLink', value)}
                 errorMessage={errors.projectLink}
               />
-              <DatePicker
-                modal
-                open={startDate.show}
-                date={startDate.date}
-                mode={'date'}
-                minimumDate={new Date('1970-01-01')}
-                maximumDate={new Date()}
-                onConfirm={date => {
-                  handleInputChange('startDate', date);
-                  const formattedDate = formatDate(date);
-                  setStartDate({
-                    show: false,
-                    date: date,
-                    format: formattedDate,
-                  });
-                }}
+              <MonthPickerComponent
+                pickerState={startDate}
+                onPickerStateChange={setStartDate}
+                field="startDate"
+                handleInputChange={handleInputChange}
               />
-              <DatePicker
-                modal
-                open={endDate.show}
-                date={endDate.date}
-                mode={'date'}
-                minimumDate={new Date('1970-01-01')}
-                maximumDate={new Date()}
-                onConfirm={date => {
-                  handleInputChange('endDate', date);
-                  const formattedDate = formatDate(date);
-                  setEndDate({show: false, date: date, format: formattedDate});
-                }}
+              <MonthPickerComponent
+                pickerState={endDate}
+                onPickerStateChange={setEndDate}
+                field="endDate"
+                handleInputChange={handleInputChange}
               />
               <View style={styles.checkboxContainer}>
                 <CheckBox

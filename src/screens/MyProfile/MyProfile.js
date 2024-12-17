@@ -32,6 +32,7 @@ const MyProfile = ({navigation, route}) => {
   const getprofiledetails = async () => {
     try {
       if (type == 'user') {
+        console.log(userData, 'userData');
         setProfile(userData);
       } else {
         let resp = await getProfile('675b2be1faab6e2a6c8ca44e');
@@ -41,7 +42,7 @@ const MyProfile = ({navigation, route}) => {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
   };
-
+  console.log(profile);
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}

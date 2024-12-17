@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -17,12 +18,17 @@ import {images} from '../../assets/images';
 import Icon from '../../helper/icon';
 import CustomTextInput from '../../components/TextInput';
 import Button from '../../components/Button';
-import {isValidEmail, isvalidMobileNumber} from '../../helper/commonFunctions';
+import {
+  formatDate,
+  isValidEmail,
+  isvalidMobileNumber,
+} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {getProfile, updateProfile} from '../../services/apiService';
 import {actions} from '../../redux/reducers';
 import {useToast} from '../../components/CustomToast';
+import DatePicker from 'react-native-date-picker';
 
 const professionData = [
   {
@@ -63,6 +69,11 @@ const EditProfile = ({navigation, route}) => {
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
   const [image, setImage] = useState();
+  const [dob, setDob] = useState({
+    show: false,
+    date: new Date(),
+    format: '',
+  });
   // Form State
   const [form, setForm] = useState({
     profilePicture: userData?.profilePicture ?? '',
@@ -71,7 +82,7 @@ const EditProfile = ({navigation, route}) => {
     mobile: userData?.phoneNumber ?? '',
     location: userData?.location ?? '',
     dob: userData?.dateOfBirth
-      ? new Date(userData?.dateOfBirth).toLocaleDateString('en-GB')
+      ? new Date(userData?.dateOfBirth).toLocaleDateString('en-US')
       : '',
 
     about: userData?.bio?.bioAbout ?? '',
@@ -298,13 +309,29 @@ const EditProfile = ({navigation, route}) => {
                   onChangeText={value => handleInputChange('location', value)}
                   errorMessage={errors.location}
                 />
-                <CustomTextInput
-                  label="Date of Birth"
-                  placeholder="Enter Date of Birth"
-                  value={form.dob}
-                  onChangeText={value => handleInputChange('dob', value)}
-                  errorMessage={errors.dob}
-                />
+                <View>
+                  <Pressable
+                    style={{
+                      position: 'absolute',
+                      height: '100%',
+                      width: '100%',
+                      zIndex: 1,
+                    }}
+                    onPress={() =>
+                      setDob({
+                        ...dob,
+                        show: true,
+                      })
+                    }></Pressable>
+                  <CustomTextInput
+                    label="Date of Birth"
+                    placeholder="Enter Date of Birth"
+                    value={dob.format}
+                    editable={false}
+                    errorMessage={errors.dob}
+                  />
+                </View>
+
                 <CustomTextInput
                   label="About"
                   placeholder="Enter About Yourself"
@@ -328,6 +355,23 @@ const EditProfile = ({navigation, route}) => {
                     textStyle={{fontSize: 14}}
                   />
                 </View>
+                <DatePicker
+                  modal
+                  open={dob.show}
+                  date={dob.date}
+                  mode={'date'}
+                  minimumDate={new Date('1970-01-01')}
+                  maximumDate={new Date()}
+                  onConfirm={date => {
+                    handleInputChange('dob', date);
+                    const formattedDate = formatDate(date, true);
+                    setDob({
+                      show: false,
+                      date: date,
+                      format: formattedDate,
+                    });
+                  }}
+                />
               </>
             )}
             {selected == 1 &&
