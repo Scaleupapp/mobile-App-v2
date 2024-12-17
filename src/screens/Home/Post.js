@@ -23,8 +23,8 @@ import {
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
-import CustomBottomSheetModal from '../Post/CustomBottomSheet';
 import ImageModal from '../Post/ImageModal';
+import CommentBottomSheetModal from '../Post/CustomBottomSheet';
 
 // import convertToProxyURL from 'react-native-video-cache';
 
@@ -35,6 +35,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [isSaved, setIsSaved] = useState(item?.isSaved);
+  const [comments, setComments] = useState(item?.comments);
   const commentRef = useRef(null);
   const onLoad = data => {
     const {width, height} = data.naturalSize;
@@ -276,12 +277,10 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </View>
         ))}
       </View>
-      <CustomBottomSheetModal
-        data={item?.comments}
+      <CommentBottomSheetModal
         ref={commentRef}
-        commentHandle={() => {
-          // setCommentCount((prev) => prev + 1)
-        }}
+        comments={comments}
+        setComments={setComments}
       />
       <ImageModal ref={imageModalRef} imageUrl={item?.contentURL} />
     </View>
