@@ -40,7 +40,7 @@ const PlaylistSelectionModal = ({
 
   const fetchUserPlaylists = async () => {
     try {
-      const response = await axios.get(`http://192.168.48.240:5000/api/playlists?userId=${userId}`);
+      const response = await axios.get(`http://192.168.0.187:5000/api/playlists?userId=${userId}`);
       setPlaylists(response.data);
       setLoading(false);
     } catch (error) {
@@ -53,7 +53,7 @@ const PlaylistSelectionModal = ({
     if (!newPlaylistName.trim()) return;
 
     try {
-      const response = await axios.post('http://192.168.48.240:5000/api/playlists/create', {
+      const response = await axios.post('http://192.168.0.187:5000/api/playlists/create', {
         userId,
         playlistName: newPlaylistName
       });
@@ -72,7 +72,7 @@ const PlaylistSelectionModal = ({
 
   const addPostToPlaylist = async (playlistId) => {
     try {
-      await axios.post('http://192.168.48.240:5000/api/playlists/add-to-playlist', {
+      await axios.post('http://192.168.0.187:5000/api/playlists/add-to-playlist', {
         userId,
         playlistId,
         postId

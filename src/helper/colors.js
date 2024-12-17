@@ -12,5 +12,8 @@ export const COLORS = {
     redEA4335: "#EA4335",
     green34A853: "#34A853",
     pinkFBD9D7: "#FBD9D7",
-    greenishD6EEDD: "#D6EEDD"
+    greenishD6EEDD: "#D6EEDD",
+
+    green: '#00a86b', // Or any shade of green you prefer
+
 }

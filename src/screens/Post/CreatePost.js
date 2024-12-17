@@ -8,7 +8,8 @@ import {
   View,
   ScrollView,
   Alert,
-  Dimensions
+  Dimensions,
+  Image
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -25,7 +26,9 @@ const CreatePost = ({navigation}) => {
   const [captions, setCaptions] = useState('');
   const [hashtags, setHashtags] = useState('');
   const [file, setFile] = useState(null);
-  const [contentType, setContentType] = useState('Image'); // Default content type
+  const [thumbnailFile, setThumbnailFile] = useState(null);
+
+  const [contentType, setContentType] = useState('image'); // Default content type
   
   
   const userData = useSelector((state) => state.auth.userData); // Fetch from state.auth
@@ -47,6 +50,14 @@ const CreatePost = ({navigation}) => {
         setContentType('Image');
       } else if (fileType.includes('video')) {
         setContentType('Video');
+        Alert.alert(
+          'Thumbnail Required', 
+          'Please upload a thumbnail for your video',
+          [{
+            text: 'Upload Thumbnail',
+            onPress: handleThumbnailUpload
+          }]
+        );
       } else if (fileType.includes('pdf') || fileType.includes('document')) {
         setContentType('Document');
       } else if (fileType.includes('gif')) {
@@ -63,11 +74,32 @@ const CreatePost = ({navigation}) => {
       }
     }
   };
+
+  const handleThumbnailUpload = async () => {
+    try {
+      const res = await DocumentPicker.pickSingle({
+        type: [DocumentPicker.types.images],
+      });
+      setThumbnailFile(res);
+    } catch (err) {
+      if (DocumentPicker.isCancel(err)) {
+        console.log('User cancelled thumbnail picker');
+      } else {
+        console.error('Error selecting thumbnail:', err);
+      }
+    }
+  };
   
 
   const handlePost = async () => {
     if (!heading || !topics || !hashtags || !file || !captions) {
       Alert.alert('Error', 'Please fill all fields and upload a file.');
+      return;
+    }
+
+     // Additional validation for video thumbnail
+     if (contentType === 'Video' && !thumbnailFile) {
+      Alert.alert('Error', 'Please upload a thumbnail for your video.');
       return;
     }
 
@@ -83,14 +115,26 @@ const CreatePost = ({navigation}) => {
       type: file.type,
       name: file.name,
     });
+    if (contentType === 'Video' && thumbnailFile) {
+      formData.append('thumbnail', {
+        uri: thumbnailFile.uri,
+        type: thumbnailFile.type,
+        name: thumbnailFile.name,
+      });
+    }
     formData.append('contentType', contentType);
 
     // console.log('Form Data:', formData); // Logs the FormData object
 
+
+      // Add thumbnail for video
+
+
+
     try {
       console.log('Sending POST request...');
       const response = await axios.post(
-        'http://ec2-54-198-30-68.compute-1.amazonaws.com:3000/api/content/create',
+        'http://192.168.0.187:3000/api/content/create',
         formData,
         {headers: {
           'Content-Type': 'multipart/form-data',
@@ -98,7 +142,7 @@ const CreatePost = ({navigation}) => {
 
         }}
       );
-      // console.log('Response:', response.data); // Logs server response
+      console.log('Response:', response.data); // Logs server response
 
       
       Alert.alert('Success', 'Post created successfully!');
@@ -133,7 +177,7 @@ const CreatePost = ({navigation}) => {
               value={topics}
               onChangeText={setTopics}
             />
-                        <CustomTextInput label="Label" value={captions}
+                        <CustomTextInput label="Captions" value={captions}
               onChangeText={setCaptions} textinputType="L" />
 
             <CustomTextInput
@@ -155,6 +199,15 @@ const CreatePost = ({navigation}) => {
                 textStyle={{fontSize: 14}}
               />
             </View>
+            {contentType === 'Video' && thumbnailFile && (
+        <View style={styles.thumbnailPreview}>
+          <Text>Thumbnail Preview:</Text>
+          <Image 
+            source={{uri: thumbnailFile.uri}} 
+            style={styles.thumbnailImage} 
+          />
+        </View>
+      )}
             <View style={styles.actionButtonContainer}>
               <Button
                 variant="outline"
@@ -214,5 +267,14 @@ const styles = StyleSheet.create({
     width: Dimensions.get('window').width / 2 - 30,
     justifyContent: 'space-between',
     marginTop: nh(30),
+  },
+  thumbnailPreview: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  thumbnailImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
   },
 });

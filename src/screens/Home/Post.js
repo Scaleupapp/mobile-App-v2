@@ -48,18 +48,28 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
 
   const handleBookmarkPress = () => {
-    if (userId) {
-      // Instead of directly bookmarking, show playlist modal
-      setIsPlaylistModalVisible(true);
+    if (item?.contentType === 'Video') {
+      if (userId) {
+        // Show playlist modal for videos
+        setIsPlaylistModalVisible(true);
+      } else {
+        console.error('User ID not available');
+      }
     } else {
-      console.error('User ID not available');
+      // Show message if the content is not a video
+      Alert.alert(
+        'Action Not Allowed',
+        'Cannot add image to the playlist',
+        [{ text: 'OK', style: 'default' }]
+      );
     }
   };
+  
 
   const handleBookmark = async (userId, postId) => {
     try {
       // First, check if the post is already in the playlist
-      const checkResponse = await axios.get(`http://192.168.48.240:5000/api/playlists/check?userId=${userId}&postId=${postId}`);
+      const checkResponse = await axios.get(`http://192.168.0.187:5000/api/playlists/check?userId=${userId}&postId=${postId}`);
       
       if (checkResponse.data.exists) {
         // If already bookmarked, show "Already in playlist" message
@@ -76,7 +86,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       }
 
       // If not bookmarked, proceed with bookmarking
-      await axios.post('http://192.168.48.240:5000/api/playlists', {
+      await axios.post('http://192.168.0.187:5000/api/playlists', {
         userId, // Send userId in the body
         playlistName: 'My Playlist', // Optional: Customize the playlist name
         items: [{ postId }], // Only send the postId, not the entire object
