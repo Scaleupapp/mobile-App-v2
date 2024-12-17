@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -17,8 +17,67 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
+import {getFollowerlist} from '../../services/apiService';
 
 const Following = ({navigation, route}) => {
+  const [followers, setFollowers] = useState();
+
+  useEffect(() => {
+    getfollowers();
+  }, []);
+
+  let getfollowers = async () => {
+    try {
+      let resp = await getFollowerlist();
+      setFollowers(resp?.data?.followerList);
+      console.log(resp?.data, 'dta');
+    } catch (error) {}
+  };
+
+  const UserView = ({item}) => {
+    const [follow, setFollow] = useState(item?.isFollowed);
+
+    const followApi = async () => {
+      try {
+        setFollow(!follow);
+        let res = follow
+          ? await unlfollowUser(item?._id)
+          : await followUser(item?._id);
+        console.log('🚀 ~ followApi ~ res:', res?.data);
+      } catch (error) {
+        console.log('🚀 ~ followApi ~ error:', error?.response?.data);
+      }
+    };
+    return (
+      <View>
+        <View style={styles.card}>
+          <Image source={images.ciclelogo} style={styles.image} />
+
+          <View style={{width: nw(188)}}>
+            <Text variant="medium14" color={COLORS.blue043142}>
+              {item?.username}
+            </Text>
+
+            {/* <Text
+            variant="medium12"
+            color={COLORS.grey999999}
+            style={{width: nw(208)}}>
+            Designation
+          </Text> */}
+          </View>
+
+          <Button
+            text={follow ? 'Unfollow' : 'Follow'}
+            variant={follow ? 'outline' : 'solid'}
+            width={nw(100)}
+            height={nh(35)}
+            textStyle={{fontSize: 14}}
+            onPress={() => followApi()}
+          />
+        </View>
+      </View>
+    );
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -32,7 +91,7 @@ const Following = ({navigation, route}) => {
         style={styles.semicirlce}
         resizeMode="stretch">
         <Header
-          title="Following"
+          title="Followers"
           // backIcon={icons.backArrow} // Provide your back arrow icon
           rightIcon={false} // Provide your right icon
           // onBackPress={handleBackPress}
@@ -45,37 +104,8 @@ const Following = ({navigation, route}) => {
       </View>
 
       <FlatList
-        data={['', '', '', '', '']}
-        renderItem={() => {
-          return (
-            <View>
-              <View style={styles.card}>
-                <Image source={images.ciclelogo} style={styles.image} />
-
-                <View style={{width: nw(193)}}>
-                  <Text variant="medium14" color={COLORS.blue043142}>
-                    Name
-                  </Text>
-
-                  <Text
-                    variant="medium12"
-                    color={COLORS.grey999999}
-                    style={{width: nw(208)}}>
-                    Designation
-                  </Text>
-                </View>
-
-                <Button
-                  text="Unfollow"
-                  variant="outline"
-                  width={nw(93)}
-                  height={nh(35)}
-                  textStyle={{fontSize: 14}}
-                />
-              </View>
-            </View>
-          );
-        }}
+        data={followers}
+        renderItem={({item}) => <UserView item={item} />}
       />
 
       {/* <View>
