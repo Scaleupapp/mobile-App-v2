@@ -37,6 +37,9 @@ import Followers from './screens/MyProfile/Followers';
 import Following from './screens/MyProfile/Following';
 import Likes from './screens/MyProfile/Likes';
 import BlockUsers from './screens/MyProfile/BlockUser';
+import MenuScreen from './screens/Menuscreen/MenuScreen';
+import Settings from './screens/Menuscreen/SettingScreen';
+import ChangePassword from './screens/Login/ChangePassword';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {images} from './assets/images';
 import icon from './helper/icon';
@@ -165,9 +168,11 @@ const TabNavigator = ({navigation, route}) => {
           showIcon: true,
           tabBarStyle: {
             backgroundColor: COLORS.blue043142,
+            // paddingBottom: 10,
           },
           tabBarItemStyle: {
-            // paddingVertical: nh(15),
+            // paddingBottom: nh(15),
+            // marginBottom: 10,
           },
         };
       }}>
@@ -192,8 +197,8 @@ const TabNavigator = ({navigation, route}) => {
         }}
       />
       <Tab.Screen
-        name={Routes.WorkExperience}
-        component={WorkExperience}
+        name={Routes.CreatePost}
+        component={CreatePost}
         options={{
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Add', focused),
@@ -212,8 +217,8 @@ const TabNavigator = ({navigation, route}) => {
         }}
       />
       <Tab.Screen
-        name={Routes.Certifications}
-        component={Certifications}
+        name={Routes.MyPlaylist}
+        component={MyProfile}
         options={{
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Profile', focused),
@@ -287,6 +292,102 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.Projects}
         component={Projects}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CreatePost}
+        component={CreatePost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MenuScreen}
+        component={MenuScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyProfile}
+        component={MyProfile}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyPlaylist}
+        component={MyPlaylist}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditPlayList}
+        component={EditPlayList}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.NewPlayList}
+        component={NewPlayList}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.SavePost}
+        component={SavePost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DraftPost}
+        component={DraftPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.VerifiedPost}
+        component={VerifiedPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.PendingPost}
+        component={PendingPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DeclinedPost}
+        component={DeclinedPost}
+        options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name={Routes.InnerCircleRequest}
+        component={InnerCircleRequest}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.InnerCircle}
+        component={InnerCircle}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Followers}
+        component={Followers}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Following}
+        component={Following}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Likes}
+        component={Likes}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.BlockUsers}
+        component={BlockUsers}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Settings}
+        component={Settings}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.ChangePassword}
+        component={ChangePassword}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

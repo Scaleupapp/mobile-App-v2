@@ -11,7 +11,7 @@ export const API = {
   FOLLOW_UNFOLLOW: 'content/followUnfollowList',
   SEARCH_USER: 'content/search-users',
   ADD_COMMENT: 'content/add-comment',
-  NOTIFICATION: 'content/notifications',
+
   CONTENT_CREATE: 'content/create',
   LIKE_REQUEST: 'content/like',
   UNLIKE_REQUEST: 'content/unlike',
@@ -47,6 +47,7 @@ export const API = {
   LIKEPOST:'content/like',
   UNLIKEPOST:'content/unlike',
   SAVE:"content/save",
-  UNSAVE:"content/unsave"
+  UNSAVE:"content/unsave",
+  NOTIFICATION:"content/notifications"
 
 };

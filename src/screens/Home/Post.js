@@ -21,6 +21,8 @@ import {
   unlikePostApi,
   unsavePostAPI,
 } from '../../services/apiService';
+import Routes from '../../helper/routes';
+import {navigationRef} from '../../../App';
 import ImageModal from '../Post/ImageModal';
 import CommentBottomSheetModal from '../Post/CustomBottomSheet';
 
@@ -33,6 +35,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [isSaved, setIsSaved] = useState(item?.isSaved);
+  const [comments, setComments] = useState(item?.comments);
   const commentRef = useRef(null);
   const onLoad = data => {
     const {width, height} = data.naturalSize;
@@ -82,7 +85,14 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         paddingBottom: nh(30),
       }}>
       <View style={styles.view}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Pressable
+          style={{flexDirection: 'row', alignItems: 'center'}}
+          onPress={() =>
+            navigationRef.navigate(Routes.MyProfile, {
+              type: 'other',
+              id: item?.userId?._id,
+            })
+          }>
           <Image
             source={
               item?.userId?.profilePicture
@@ -94,7 +104,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           <Text variant="medium14" color={COLORS.blue043142}>
             {item?.userId?.username}
           </Text>
-        </View>
+        </Pressable>
 
         {/* <Icon
           type="entypo"
@@ -268,11 +278,9 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         ))}
       </View>
       <CommentBottomSheetModal
-        data={item?.comments}
         ref={commentRef}
-        commentHandle={() => {
-          // setCommentCount((prev) => prev + 1)
-        }}
+        comments={comments}
+        setComments={setComments}
       />
       <ImageModal ref={imageModalRef} imageUrl={item?.contentURL} />
     </View>

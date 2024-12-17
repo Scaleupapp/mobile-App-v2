@@ -19,31 +19,32 @@ const ToggleWithIconUnderline = ({
     },
     {
       type: 'icon', // Specifies this toggle uses icons
-      activeIcon: 'settings-sharp', // React component for active icon
-      inactiveIcon: 'settings-sharp',
-      typeIcon: 'ionicon', // React component for inactive icon
+      activeIcon: 'note-edit', // React component for active icon
+      inactiveIcon: 'note-edit-outline',
+      typeIcon: 'material-community', // React component for inactive icon
     },
+    // {
+    //   type: 'icon', // Specifies this toggle uses icons
+    //   activeIcon: 'check-decagram', // React component for active icon
+    //   inactiveIcon: 'check-decagram-outline',
+    //   typeIcon: 'material-community',
+    //   // React component for inactive icon
+    // },
+    // {
+    //   type: 'icon', // Specifies this toggle uses icons
+    //   activeIcon: 'settings-sharp', // React component for active icon
+    //   inactiveIcon: 'settings-sharp', // React component for inactive icon
+    // },
+    // {
+    //   type: 'icon', // Specifies this toggle uses icons
+    //   activeIcon: 'settings-sharp', // React component for active icon
+    //   inactiveIcon: 'settings-sharp', // React component for inactive icon
+    // },
     {
       type: 'icon', // Specifies this toggle uses icons
-      activeIcon: 'check-decagram', // React component for active icon
-      inactiveIcon: 'check-decagram-outline',
-      typeIcon: 'material-community',
-      // React component for inactive icon
-    },
-    {
-      type: 'icon', // Specifies this toggle uses icons
-      activeIcon: 'settings-sharp', // React component for active icon
-      inactiveIcon: 'settings-sharp', // React component for inactive icon
-    },
-    {
-      type: 'icon', // Specifies this toggle uses icons
-      activeIcon: 'settings-sharp', // React component for active icon
-      inactiveIcon: 'settings-sharp', // React component for inactive icon
-    },
-    {
-      type: 'icon', // Specifies this toggle uses icons
-      activeIcon: 'settings-sharp', // React component for active icon
-      inactiveIcon: 'settings-sharp', // React component for inactive icon
+      activeIcon: 'video', // React component for active icon
+      inactiveIcon: 'video', // React component for inactive icon
+      typeIcon: 'octicons',
     },
   ], // Array of toggle options (objects)
   selectedTextColor = COLORS.yellowF5BE00, // Selected text color

@@ -4,50 +4,57 @@ import {
   Image,
   FlatList,
   Keyboard,
-  TextInput,
   TouchableOpacity,
-  Platform,
 } from 'react-native';
-import React, {forwardRef, useEffect, useMemo, useState} from 'react';
+import React, {forwardRef, useEffect, useMemo, useRef, useState} from 'react';
 import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
 import {COLORS} from '../../helper/colors';
-import {APP_FONTS} from '../../assets/fonts';
 import {nh, nw} from '../../helper/scales';
+import CustomTextInput from '../../components/TextInput';
+import {icons} from '../../assets/icons';
+import {addComment} from '../../services/apiService';
 import Text from '../../components/Text';
 import Icon from '../../helper/icon';
 import {timeAgo} from '../../helper/commonFunctions';
 
 const CommentBottomSheetModal = forwardRef(
-  ({data = [], commentHandle}, ref) => {
-    // console.log('🚀 ~ CustomBottomSheetModal ~ ref:', ref);
-    // console.log({data, commentHandle});
-    const snapPoints = useMemo(() => ['80%'], []);
-    const [comments, setComments] = useState(data);
-    // console.log('sbdjbs ', JSON.stringify(comments));
-    const [modalVisible, setModalVisible] = useState(false);
-    const [isKeyboardVisible, setKeyboardVisible] = useState({
-      height: 16,
-      visible: false,
-    });
-
-    useEffect(() => {
-      // getData(data?.post_id);
-    }, []);
+  ({comments = [], setComments}, ref) => {
+    const snapPoints = useMemo(() => ['100%', '90%'], []);
+    const [contentId, setcontentId] = useState(
+      comments?.length > 0 ? comments[0]?.contentId : '',
+    );
+    const [text, setText] = useState('');
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+    const TextInputRef = useRef();
+    const sendComment = async () => {
+      try {
+        let paylaod = {
+          contentId: contentId,
+          commentText: text,
+        };
+        let resp = await addComment(paylaod);
+        console.log('🚀 ~ sendComment ~ resp:', resp.data);
+        Keyboard.dismiss();
+        setcontentId(comments?.length > 0 ? comments[0]?.contentId : '');
+        setText('');
+        setComments([...comments, ...[paylaod]]);
+      } catch (error) {}
+    };
 
     useEffect(() => {
       const keyboardDidShowListener = Keyboard.addListener(
         'keyboardDidShow',
         event => {
-          // Get the keyboard height from the event
-          const keyboardHeight = event.endCoordinates.height;
-          setKeyboardVisible({height: keyboardHeight, visible: true});
+          ref.current?.snapToIndex(1);
+          setKeyboardVisible(true);
         },
       );
 
       const keyboardDidHideListener = Keyboard.addListener(
         'keyboardDidHide',
         () => {
-          setKeyboardVisible({height: 16, visible: false});
+          ref.current?.snapToIndex(0);
+          setKeyboardVisible(false);
         },
       );
 
@@ -58,30 +65,18 @@ const CommentBottomSheetModal = forwardRef(
       };
     }, []);
 
-    const getData = async post_id => {
-      // try {
-      //     const { data } = await getCommentsApi(post_id)
-      //     // console.log(data);
-      //     setComments(data?.comments)
-      // } catch (err) {
-      //     console.log(err, 'eeee');
-      // }
-    };
-    // console.log({comments});
     return (
       <BottomSheetModal
         ref={ref}
         index={0}
         snapPoints={snapPoints}
-        handleComponent={null}
+        // handleComponent={null}
         containerStyle={{
           borderTopLeftRadius: 24,
         }}
         style={{
           borderRadius: 24,
-          // borderWidth: 1,
           boxShadow: '2 4 4 8 rgba(0, 0, 0, 0.15)',
-          // borderColor: COLORS.blue043142,
           overflow: 'hidden',
         }}>
         <BottomSheetView style={styles.contentContainer}>
@@ -101,77 +96,94 @@ const CommentBottomSheetModal = forwardRef(
               </Text>
             </>
           ) : (
-            <FlatList
-              data={comments}
-              contentContainerStyle={{marginTop: 30}}
-              renderItem={({item}) => {
-                console.log('🚀 ~ item:', item);
-                return (
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      marginHorizontal: nw(24),
-                      marginBottom: nh(16),
-                      flex: 1,
-                    }}>
-                    <Image
-                      source={{uri: item?.userId?.profilePicture}}
+            <View style={{height: nh(isKeyboardVisible ? 280 : 400)}}>
+              <FlatList
+                data={comments}
+                contentContainerStyle={{marginTop: 30}}
+                renderItem={({item}) => {
+                  return (
+                    <View
                       style={{
-                        height: nw(65),
-                        width: nw(65),
-                        borderRadius: nw(65 / 2),
-                        marginRight: nw(11),
-                      }}
-                    />
-                    <View style={{flex: 1}}>
-                      <View
-                        style={{flexDirection: 'row', alignItems: 'center'}}>
-                        <Text
-                          variant="semibold16"
-                          style={{
-                            color: COLORS.black000000,
-                            // marginBottom: nh(5),
-                          }}>
-                          {item?.userId?.username}
-                        </Text>
+                        flexDirection: 'row',
+                        marginHorizontal: nw(24),
+                        marginBottom: nh(16),
+                        flex: 1,
+                      }}>
+                      <Image
+                        source={{uri: item?.userId?.profilePicture}}
+                        style={{
+                          height: nw(65),
+                          width: nw(65),
+                          borderRadius: nw(65 / 2),
+                          marginRight: nw(11),
+                        }}
+                      />
+                      <View style={{flex: 1}}>
+                        <View
+                          style={{flexDirection: 'row', alignItems: 'center'}}>
+                          <Text
+                            variant="semibold16"
+                            style={{
+                              color: COLORS.black000000,
+                            }}>
+                            {item?.userId?.username}
+                          </Text>
+                          <Text
+                            variant="medium12"
+                            style={{
+                              color: COLORS.black333333,
+                              marginHorizontal: nw(30),
+                            }}>
+                            {' '}
+                            {timeAgo(item?.commentDate)}
+                          </Text>
+                        </View>
                         <Text
                           variant="medium12"
                           style={{
                             color: COLORS.black333333,
-                            marginHorizontal: nw(30),
                           }}>
-                          {' '}
-                          {timeAgo(item?.commentDate)}
+                          {item?.commentText}
                         </Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            TextInputRef.current?.focus();
+                            setcontentId(item?.contentId);
+                          }}>
+                          <Text
+                            variant="semibold12"
+                            style={{
+                              color: COLORS.grey999999,
+                            }}>
+                            {'Reply'}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
-                      <Text
-                        variant="medium12"
-                        style={{
-                          color: COLORS.black333333,
-                        }}>
-                        {item?.commentText}
-                      </Text>
-                      <Text
-                        variant="semibold12"
-                        style={{
-                          color: COLORS.grey999999,
-                        }}>
-                        {'Reply'}
-                      </Text>
+                      <Icon
+                        type={'antdesign'}
+                        color={COLORS.grey777777}
+                        name={'hearto'}
+                        size={nh(14)}
+                      />
                     </View>
-                    <Icon
-                      type={'antdesign'}
-                      color={COLORS.grey777777}
-                      name={'hearto'}
-                      size={nh(14)}
-                    />
-                  </View>
-                );
-              }}
-            />
+                  );
+                }}
+              />
+            </View>
           )}
+          <View style={{marginHorizontal: nw(16), paddingVertical: nh(10)}}>
+            <CustomTextInput
+              ref={TextInputRef}
+              value={text}
+              onChangeText={setText}
+              placeholder={'Write here'}
+              placeholderTextColor={COLORS.grey646464}
+              rightIcon={icons.send}
+              onRightIconPress={sendComment}
+              // multiline={true}
+            />
+          </View>
         </BottomSheetView>
-        {/* <ChatInput camera={false} gallery={false} mice={false} value={prompt} onChangeText={(e) => setPrompt(e)} btnStyle={{ marginBottom: isKeyboardVisible?.height + 10, paddingRight: normalize(95) }} handleComment={() => createComment()} handleGenai={() => setGenAI(true)} /> */}
       </BottomSheetModal>
     );
   },

@@ -21,10 +21,10 @@ const AllPostoption = ({type}) => {
           {selected == 0 && <AllPost />}
           {selected == 1 && <AllPost />}
           {selected == 2 && <AllPost />}
-          {selected == 3 && <Verified />}
+          {/* {selected == 3 && <Verified />}
           {selected == 4 && <Verified />}
-          {selected == 5 && <Verified />}
-          {selected == 6 && <VideoList />}
+          {selected == 5 && <Verified />} */}
+          {selected == 3 && <VideoList />}
         </>
       ) : (
         <View style={{marginTop: nh(30)}}>

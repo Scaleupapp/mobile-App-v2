@@ -81,8 +81,8 @@ export const deleteProjects = (id: any) => {
   return axiosInstance.delete(`${API.PROJECTS}/${id}`);
 };
 
-export const getProfile = () => {
-  return axiosInstance.get(API.PROFILE_DETAIL);
+export const getProfile = (payload:any) => {
+  return axiosInstance.get(`${API.PROFILE_DETAIL}/${payload}`);
 };
 
 export const updateProfile = (payload: any) => {
@@ -105,3 +105,23 @@ export const savePostAPI = (postId: any) => {
 export const unsavePostAPI = (postId: any) => {
   return axiosInstance.put(`${API.UNSAVE}/${postId}`);
 };
+
+export const getNotificationAPI = (postId: any) => {
+  return axiosInstance.get(`${API.NOTIFICATION}`);
+};
+
+export const markReadNotificationAPI = (payload: any) => {
+  return axiosInstance.post(`${API.MARK_READ}`,payload);
+};
+
+
+export const myInnerCircleRequestAPI = (payload: any) => {
+  return axiosInstance.post(`${API.MARK_READ}`,payload);
+};
+
+
+export const addComment = (payload: any) => {
+  return axiosInstance.post(`${API.ADD_COMMENT}`,payload);
+};
+
+

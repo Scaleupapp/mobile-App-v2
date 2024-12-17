@@ -13,15 +13,17 @@ const MonthPickerComponent = ({
   maximumDate = new Date(),
 }) => {
   const handleDateChange = (event, newDate) => {
+    console.log(event, 'eveevn');
     if (event === 'dateSetAction') {
       const selectedDate = newDate || pickerState.date;
       const formattedDate = formatDate(selectedDate);
-      handleInputChange(field, selectedDate);
       onPickerStateChange({
         show: false,
         date: selectedDate,
         format: formattedDate,
       });
+      handleInputChange(field, selectedDate);
+      console.log('heerer');
     } else {
       onPickerStateChange({
         ...pickerState,

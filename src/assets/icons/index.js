@@ -14,4 +14,5 @@ export const icons = {
   book2: require('../icons/bookoutline.png'),
   account1: require('../icons/accountsolid.png'),
   account2: require('../icons/accountouline.png'),
+  send: require('../icons/send.png'),
 };
