@@ -27,45 +27,36 @@ const CreatePost = ({navigation}) => {
   const [hashtags, setHashtags] = useState('');
   const [file, setFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
-
   const [contentType, setContentType] = useState('image'); // Default content type
-  
-  
+
   const userData = useSelector((state) => state.auth.userData); // Fetch from state.auth
   const jwtToken = userData?.token; // Use optional chaining to avoid undefined errors
 
-  // console.log('JWT Token:', jwtToken); // Log token to verify it's retrieved correctly // Debugging to check if the token is available
   const handleFileUpload = async () => {
     try {
       const res = await DocumentPicker.pickSingle({
         type: [DocumentPicker.types.allFiles],
       });
-      console.log('Selected File:', res); // Logs selected file details
+      console.log('Selected File:', res);
       setFile(res);
-  
-      // Check file type and set contentType accordingly
+
       const fileType = res.type || res.name.split('.').pop().toLowerCase();
-      
       if (fileType.includes('image')) {
         setContentType('Image');
       } else if (fileType.includes('video')) {
         setContentType('Video');
         Alert.alert(
-          'Thumbnail Required', 
+          'Thumbnail Required',
           'Please upload a thumbnail for your video',
-          [{
-            text: 'Upload Thumbnail',
-            onPress: handleThumbnailUpload
-          }]
+          [{ text: 'Upload Thumbnail', onPress: handleThumbnailUpload }]
         );
       } else if (fileType.includes('pdf') || fileType.includes('document')) {
         setContentType('Document');
       } else if (fileType.includes('gif')) {
         setContentType('GIF');
       } else {
-        setContentType('Other'); // For other types of files
+        setContentType('Other');
       }
-      
     } catch (err) {
       if (DocumentPicker.isCancel(err)) {
         console.log('User cancelled document picker');
@@ -89,7 +80,31 @@ const CreatePost = ({navigation}) => {
       }
     }
   };
-  
+
+  const uploadFile = async (fileData, additionalFields = {}) => {
+    const formData = new FormData();
+    Object.keys(additionalFields).forEach((key) => {
+      formData.append(key, additionalFields[key]);
+    });
+
+    formData.append('media', {
+      uri: fileData.uri,
+      type: fileData.type,
+      name: fileData.name,
+    });
+
+    const response = await axios.post(
+      'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/create',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      }
+    );
+    return response;
+  };
 
   const handlePost = async () => {
     if (!heading || !topics || !hashtags || !file || !captions) {
@@ -97,59 +112,32 @@ const CreatePost = ({navigation}) => {
       return;
     }
 
-     // Additional validation for video thumbnail
-     if (contentType === 'Video' && !thumbnailFile) {
-      Alert.alert('Error', 'Please upload a thumbnail for your video.');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('heading', heading);
-    formData.append('relatedTopics', topics);
-    formData.append('hashtags', hashtags);
-    formData.append('verify', 'Yes');
-    formData.append('captions', captions); // Example: 'Nature'
-
-    formData.append('media', {
-      uri: file.uri,
-      type: file.type,
-      name: file.name,
-    });
-    if (contentType === 'Video' && thumbnailFile) {
-      formData.append('thumbnail', {
-        uri: thumbnailFile.uri,
-        type: thumbnailFile.type,
-        name: thumbnailFile.name,
-      });
-    }
-    formData.append('contentType', contentType);
-
-    // console.log('Form Data:', formData); // Logs the FormData object
-
-
-      // Add thumbnail for video
-
-
-
     try {
-      console.log('Sending POST request...');
-      const response = await axios.post(
-        'http://192.168.0.187:3000/api/content/create',
-        formData,
-        {headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${jwtToken}`, // Include the token
+      console.log('Uploading main file...');
+      const additionalFields = {
+        heading,
+        relatedTopics: topics,
+        hashtags,
+        verify: 'Yes',
+        captions,
+        contentType,
+      };
 
-        }}
-      );
-      console.log('Response:', response.data); // Logs server response
+      const fileResponse = await uploadFile(file, additionalFields);
+      console.log('File Upload Success:', fileResponse.data);
 
-      
+      if (contentType === 'Video' && thumbnailFile) {
+        console.log('Uploading thumbnail...');
+        const thumbnailResponse = await uploadFile(thumbnailFile, {
+          isThumbnail: true,
+        });
+        console.log('Thumbnail Upload Success:', thumbnailResponse.data);
+      }
+
       Alert.alert('Success', 'Post created successfully!');
       navigation.goBack();
     } catch (error) {
-      console.error('Error Response:', error.response?.data); // Logs server error response
-      console.log('Error Details:', error); // Logs additional error details
+      console.error('Upload Error:', error.response?.data || error.message);
       Alert.alert('Error', 'Failed to upload post.');
     }
   };
@@ -177,9 +165,11 @@ const CreatePost = ({navigation}) => {
               value={topics}
               onChangeText={setTopics}
             />
-                        <CustomTextInput label="Captions" value={captions}
-              onChangeText={setCaptions} textinputType="L" />
-
+            <CustomTextInput
+              label="Captions"
+              value={captions}
+              onChangeText={setCaptions}
+            />
             <CustomTextInput
               label="Hashtags (Add # before each word)"
               value={hashtags}
@@ -200,28 +190,28 @@ const CreatePost = ({navigation}) => {
               />
             </View>
             {contentType === 'Video' && thumbnailFile && (
-        <View style={styles.thumbnailPreview}>
-          <Text>Thumbnail Preview:</Text>
-          <Image 
-            source={{uri: thumbnailFile.uri}} 
-            style={styles.thumbnailImage} 
-          />
-        </View>
-      )}
+              <View style={styles.thumbnailPreview}>
+                <Text>Thumbnail Preview:</Text>
+                <Image
+                  source={{ uri: thumbnailFile.uri }}
+                  style={styles.thumbnailImage}
+                />
+              </View>
+            )}
             <View style={styles.actionButtonContainer}>
               <Button
                 variant="outline"
                 text="Cancel"
                 width={nw(85)}
                 height={nh(35)}
-                textStyle={{fontSize: 14}}
+                textStyle={{ fontSize: 14 }}
                 onPress={() => navigation.goBack()}
               />
               <Button
                 text="Next"
                 width={nw(65)}
                 height={nh(35)}
-                textStyle={{fontSize: 14}}
+                textStyle={{ fontSize: 14 }}
                 onPress={handlePost}
               />
             </View>
@@ -243,8 +233,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     marginTop: nh(32),
-    width: Dimensions.get('window').width, // Ensure full width
-    alignSelf: 'center', // Center the view
+    width: Dimensions.get('window').width,
+    alignSelf: 'center',
   },
   scrollViewContent: {
     flexGrow: 1,
@@ -259,12 +249,11 @@ const styles = StyleSheet.create({
     paddingTop: nh(30),
   },
   uploadButtonContainer: {
-    marginTop: nh(10), 
+    marginTop: nh(10),
     width: nw(96),
   },
   actionButtonContainer: {
     flexDirection: 'row',
-    width: Dimensions.get('window').width / 2 - 30,
     justifyContent: 'space-between',
     marginTop: nh(30),
   },

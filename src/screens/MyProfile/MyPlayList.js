@@ -53,7 +53,7 @@ const MyPlaylists = ({ navigation }) => {
   const [selectedPlaylistForComments, setSelectedPlaylistForComments] = useState(null);
 
   const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] = useState(false);
-const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
+  const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
 
   // Get the user token from the Redux store
   const token = useSelector((state) => state.auth.userData.token);
@@ -81,7 +81,7 @@ const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] 
 
 const markPostAsViewed = async (playlistId, postId) => {
   try {
-    await axios.post('http://192.168.0.187:5000/api/playlists/mark-viewed', {
+    await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/mark-viewed', {
       userId,
       playlistId,
       postId
@@ -126,7 +126,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
     const fetchUserPlaylists = async () => {
       try {
         // Fetch playlists for the specific user
-        const response = await axios.get(`http://192.168.0.187:5000/api/playlists?userId=${userId}`);
+        const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${userId}`);
         
         // Fetch details for posts in each playlist
         const playlistsWithDetails = await Promise.all(
@@ -190,7 +190,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
 
   const togglePlaylistStatus = async (playlistId) => {
     try {
-      const response = await axios.put('http://192.168.0.187:5000/api/playlists/toggle-status', {
+      const response = await axios.put('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/toggle-status', {
         userId,
         playlistId,
       });
@@ -208,7 +208,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
 
   const fetchPublicPlaylists = async () => {
     try {
-      const response = await axios.get('http://192.168.0.187:5000/api/playlists/public');
+      const response = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/public');
       setPublicPlaylists(response.data);
       setIsPublicPlaylistsExpanded(true);
     } catch (error) {
@@ -220,7 +220,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
 
   const fetchPublicPlaylistDetails = async (playlistId) => {
     try {
-      const response = await axios.get(`http://192.168.0.187:5000/api/playlists/public/${playlistId}`);
+      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/public/${playlistId}`);
       
       // Fetch details for each post in the playlist
       const postDetailsPromises = response.data.items.map(async (item) => {
@@ -262,7 +262,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
     }
 
     try {
-      const response = await axios.post('http://192.168.0.187:5000/api/playlists/create', {
+      const response = await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/create', {
         userId,
         playlistName: newPlaylistName
       });
@@ -287,7 +287,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
     }
 
     try {
-      const response = await axios.put('http://192.168.0.187:5000/api/playlists/rename', {
+      const response = await axios.put('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/rename', {
         userId,
         playlistId: playlistToEdit._id,
         newPlaylistName
@@ -314,7 +314,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
   // Delete a playlist
   const deletePlaylist = async (playlistId) => {
     try {
-      await axios.delete('http://192.168.0.187:5000/api/playlists/delete', {
+      await axios.delete('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/delete', {
         data: { userId, playlistId }
       });
 
@@ -508,7 +508,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
   // Add the removePostFromPlaylist method
   const removePostFromPlaylist = async (playlistId, postId) => {
     try {
-      const response = await axios.delete('http://192.168.0.187:5000/api/playlists/remove-from-playlist', {
+      const response = await axios.delete('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/remove-from-playlist', {
         data: { 
           userId, 
           playlistId, 
@@ -562,7 +562,7 @@ const openPublicPlaylistCommentsModal = (playlist) => {
   
     try {
       await axios.put(
-        'http://192.168.0.187:5000/api/playlists/update-order',
+        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/update-order',
         {
           playlistId,
           items: updatedPlaylist.items,

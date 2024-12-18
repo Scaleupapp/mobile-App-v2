@@ -40,7 +40,7 @@ const PlaylistCommentsModal = ({
 
   const checkPlaylistOwnership = async () => {
     try {
-      const response = await axios.get(`http://192.168.0.187:5000/api/playlists/${playlistId}/ownership`, {
+      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/${playlistId}/ownership`, {
         params: { userId }
       });
       setIsPlaylistOwner(response.data.isOwner);
@@ -81,7 +81,7 @@ const PlaylistCommentsModal = ({
   const pinComment = async (commentId) => {
     try {
       setIsLoading(true);
-      await axios.post('http://192.168.0.187:5000/api/playlists/comments/pin', {
+      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/pin', {
         userId,
         playlistId,
         commentId
@@ -97,7 +97,7 @@ const PlaylistCommentsModal = ({
   const fetchComments = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`http://192.168.0.187:5000/api/playlists/${playlistId}/comments`);
+      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/${playlistId}/comments`);
       
       // Fetch usernames for comment userIds and reply userIds
       const commentsWithUserData = await Promise.all(
@@ -135,7 +135,7 @@ const PlaylistCommentsModal = ({
 
     try {
       setIsLoading(true);
-      await axios.post('http://192.168.0.187:5000/api/playlists/comments/add', {
+      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/add', {
         userId,
         playlistId,
         text: newCommentText,
@@ -156,7 +156,7 @@ const PlaylistCommentsModal = ({
 
     try {
       setIsLoading(true);
-      await axios.post('http://192.168.0.187:5000/api/playlists/comments/reply', {
+      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/reply', {
         userId,
         playlistId,
         commentId,
@@ -177,7 +177,7 @@ const PlaylistCommentsModal = ({
   const likeComment = async (commentId, replyId = null) => {
     try {
       setIsLoading(true);
-      await axios.post('http://192.168.0.187:5000/api/playlists/comments/like', {
+      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/like', {
         userId,
         playlistId,
         commentId,
