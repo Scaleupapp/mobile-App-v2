@@ -94,7 +94,7 @@ const CreatePost = ({navigation}) => {
     });
 
     const response = await axios.post(
-      'http://192.168.0.187:3000/api/content/create',
+      'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/create',
       formData,
       {
         headers: {

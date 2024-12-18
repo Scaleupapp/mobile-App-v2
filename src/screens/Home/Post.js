@@ -69,7 +69,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const handleBookmark = async (userId, postId) => {
     try {
       // First, check if the post is already in the playlist
-      const checkResponse = await axios.get(`http://192.168.0.187:5000/api/playlists/check?userId=${userId}&postId=${postId}`);
+      const checkResponse = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/check?userId=${userId}&postId=${postId}`);
       
       if (checkResponse.data.exists) {
         // If already bookmarked, show "Already in playlist" message
@@ -86,7 +86,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       }
 
       // If not bookmarked, proceed with bookmarking
-      await axios.post('http://192.168.0.187:5000/api/playlists', {
+      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists', {
         userId, // Send userId in the body
         playlistName: 'My Playlist', // Optional: Customize the playlist name
         items: [{ postId }], // Only send the postId, not the entire object
