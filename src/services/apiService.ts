@@ -116,7 +116,20 @@ export const markReadNotificationAPI = (payload: any) => {
 
 
 export const myInnerCircleRequestAPI = (payload: any) => {
-  return axiosInstance.post(`${API.MARK_READ}`,payload);
+  return axiosInstance.get(`${API.INNERCIRCLE}`);
+};
+
+export const myInnerCircleAPI = (payload: any) => {
+  return axiosInstance.get(`${API.GETINNERCIRCLE}`);
+};
+
+
+export const acceptInnerCircleRequestAPI = (payload: any) => {
+  return axiosInstance.post(`${API.ACCEPTREQ}`,payload);
+};
+
+export const declineInnerCircleRequestAPI = (payload: any) => {
+  return axiosInstance.post(`${API.REMOVEREQ}`,payload);
 };
 
 
@@ -124,4 +137,18 @@ export const addComment = (payload: any) => {
   return axiosInstance.post(`${API.ADD_COMMENT}`,payload);
 };
 
+
+export const getFollowerlist = (payload: any) => {
+  return axiosInstance.get(`${API.FOLLOW_UNFOLLOW}`,payload);
+};
+
+
+export const followUser = (payload: any) => {
+  console.log(payload,'poayysyys');
+  
+  return axiosInstance.post(`${API.FOLLOW_USER}/${payload}`,);
+};
+export const unlfollowUser = (payload: any) => {
+  return axiosInstance.delete(`${API.UNFOLLOW}/${payload}`,);
+};
 

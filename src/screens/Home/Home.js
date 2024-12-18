@@ -55,7 +55,8 @@ const Home = ({navigation, route}) => {
       const user = await AsyncStorage.getItem('userData');
       const parsedUser = JSON.parse(user);
 
-      let res = await getProfile(parsedUser?.id);
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
 
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
@@ -64,7 +65,6 @@ const Home = ({navigation, route}) => {
       console.log(error?.response?.data?.message, 'errormsg');
     }
   };
-  console.log(home.length, 'what length');
   const homePageData = async (page, refresh = false) => {
     try {
       const {data} = await getHomePageData(page);
@@ -124,7 +124,7 @@ const Home = ({navigation, route}) => {
             ListHeaderComponent={() => {
               return (
                 <>
-                  <Story />
+                  {/* <Story /> */}
                   <Text
                     variant="semibold16"
                     style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}

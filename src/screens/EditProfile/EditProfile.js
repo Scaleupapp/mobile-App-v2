@@ -158,7 +158,8 @@ const EditProfile = ({navigation, route}) => {
 
   const getProfileData = async () => {
     try {
-      let res = await getProfile();
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data);
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
       ); // Dispatch the updated data

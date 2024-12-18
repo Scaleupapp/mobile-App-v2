@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -17,12 +17,89 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
+import {
+  acceptInnerCircleRequestAPI,
+  myInnerCircleRequestAPI,
+} from '../../services/apiService';
 
 const InnerCircleRequest = ({navigation, route}) => {
+  const [innerCircle, setInnerCircle] = useState([]);
+
+  useEffect(() => {
+    getInnerCircleList();
+  }, []);
+
+  let getInnerCircleList = async () => {
+    try {
+      let resp = await myInnerCircleRequestAPI();
+      setInnerCircle(resp?.data);
+      console.log(resp?.data, 'myInnerCircleRequestAPI');
+    } catch (error) {
+      console.log(error, 'rerrr');
+    }
+  };
+
   const [selected, setSelected] = useState(0);
   const onSelect = number => {
     setSelected(number);
   };
+
+  let acceptRequest = async id => {
+    try {
+      let payload = {
+        requestId: id,
+        action: 'accept',
+      };
+      let resp = await acceptInnerCircleRequestAPI(payload);
+      console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
+      let data = innerCircle.filter(user => user.id !== id);
+      setInnerCircle(data);
+    } catch (error) {}
+  };
+
+  const RequestView = ({item}) => {
+    return (
+      <View>
+        <View style={styles.card}>
+          <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          <View>
+            <Text variant="medium14" color={COLORS.blue043142}>
+              {item?.username}
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                width: '90%',
+              }}>
+              <Text
+                variant="medium12"
+                color={COLORS.grey999999}
+                style={{width: nw(208)}}>
+                wants to be a part of your Inner Circle
+              </Text>
+
+              <Icon
+                type="antdesign"
+                name="closecircle"
+                color={COLORS.redEA4335}
+                size={25}
+                // onPress={() => declineRequest(item?.id)}
+              />
+              <Icon
+                type="antdesign"
+                name="checkcircle"
+                color={COLORS.green34A853}
+                size={25}
+                onPress={() => acceptRequest(item?.id)}
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -56,50 +133,40 @@ const InnerCircleRequest = ({navigation, route}) => {
           />
         </View>
       </View>
-      {selected == 0 && (
+      {selected == 0 && innerCircle?.length > 0 ? (
         <FlatList
-          data={['', '', '', '', '']}
-          renderItem={() => {
-            return (
-              <View>
-                <View style={styles.card}>
-                  <Image source={images.ciclelogo} style={styles.image} />
-                  <View>
-                    <Text variant="medium14" color={COLORS.blue043142}>
-                      Name
-                    </Text>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        width: '90%',
-                      }}>
-                      <Text
-                        variant="medium12"
-                        color={COLORS.grey999999}
-                        style={{width: nw(208)}}>
-                        wants to be a part of your Inner Circle
-                      </Text>
-
-                      <Icon
-                        type="antdesign"
-                        name="closecircle"
-                        color={COLORS.redEA4335}
-                        size={25}
-                      />
-                      <Icon
-                        type="antdesign"
-                        name="checkcircle"
-                        color={COLORS.green34A853}
-                        size={25}
-                      />
-                    </View>
-                  </View>
-                </View>
-              </View>
-            );
-          }}
+          data={innerCircle}
+          renderItem={({item}) => <RequestView item={item} />}
         />
+      ) : (
+        selected == 0 && (
+          <View>
+            <Image
+              source={images.norequest}
+              resizeMode="contain"
+              style={styles.notimage}
+            />
+
+            <Text
+              variant="semibold20"
+              color={COLORS.blue043142}
+              style={{textAlign: 'center', marginTop: nh(30)}}>
+              No Inner Circle Requests Received
+            </Text>
+            <Text
+              variant="medium14"
+              color={COLORS.grey999999}
+              style={{
+                textAlign: 'center',
+                marginTop: nh(5),
+                marginBottom: nh(20),
+              }}>
+              It’s quiet here. Why not create your first post and share your
+              thoughts with the community?
+            </Text>
+            <Button text="Explore Content" />
+          </View>
+        )
       )}
       {selected == 1 && (
         <FlatList
@@ -142,32 +209,6 @@ const InnerCircleRequest = ({navigation, route}) => {
           }}
         />
       )}
-      {/* <View>
-          <Image
-            source={images.notification}
-            resizeMode="contain"
-            style={styles.notimage}
-          />
-
-          <Text
-            variant="semibold20"
-            color={COLORS.blue043142}
-            style={{textAlign: 'center', marginTop: nh(30)}}>
-            You’re All Caught Up{' '}
-          </Text>
-          <Text
-            variant="medium14"
-            color={COLORS.grey999999}
-            style={{
-              textAlign: 'center',
-              marginTop: nh(5),
-              marginBottom: nh(20),
-            }}>
-            No new notifications right now. Check back later or explore more
-            content in the meantime.
-          </Text>
-          <Button text="Explore Content" />
-        </View> */}
     </SafeAreaView>
   );
 };
@@ -186,9 +227,11 @@ const styles = StyleSheet.create({
   },
   image: {
     height: nh(50),
-    width: nw(50),
+    width: nh(50),
     borderRadius: nh(25),
     marginRight: 10,
+    borderColor: COLORS.grey777777,
+    borderWidth: 1,
   },
   card: {
     flexDirection: 'row',

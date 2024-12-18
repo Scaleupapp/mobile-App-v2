@@ -35,7 +35,7 @@ const MyProfile = ({navigation, route}) => {
         console.log(userData, 'userData');
         setProfile(userData);
       } else {
-        let resp = await getProfile('675b2be1faab6e2a6c8ca44e');
+        let resp = await getProfile(route?.params?.id);
         setProfile(resp?.data?.userProfileInfo);
       }
     } catch (error) {
@@ -51,7 +51,7 @@ const MyProfile = ({navigation, route}) => {
         backgroundColor={COLORS.yellowF5BE00}
       />
       <Header
-        title={type == 'user' ? 'My Profile' : 'Sophie'}
+        title={type == 'user' ? 'My Profile' : profile?.username}
         // backIcon={icons.backArrow} // Provide your back arrow icon
         // rightIcon={icons.menu} // Provide your right icon
         // onBackPress={handleBackPress}
@@ -118,7 +118,11 @@ const MyProfile = ({navigation, route}) => {
               </Pressable>
               <Pressable
                 style={{alignItems: 'center'}}
-                onPress={() => navigation.navigate(Routes.Followers)}>
+                onPress={() =>
+                  navigation.navigate(Routes.Followers, {
+                    id: type == 'user' ? '' : route?.params?.id,
+                  })
+                }>
                 <Text variant="bold20" color={COLORS.blue043142}>
                   {profile?.followersCount}
                 </Text>
@@ -199,9 +203,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   imagecircle: {
-    height: nh(100),
+    height: nw(100),
     width: nw(100),
-    borderRadius: nh(50),
+    borderRadius: nw(50),
     borderWidth: 5,
     borderColor: COLORS.whiteFFFFFF,
     alignSelf: 'center',

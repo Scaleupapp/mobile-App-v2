@@ -23,4 +23,7 @@ export const images = {
   ellipse: require('../images/Ellipse.png'),
   notification: require('../images/notification.png'),
   profilebaground: require('../images/profilebaground.png'),
+
+  norequest: require('../images/norequest.png'),
+  nocircle: require('../images/nocircle.png'),
 };
