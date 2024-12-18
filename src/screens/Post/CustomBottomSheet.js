@@ -16,7 +16,94 @@ import {addComment} from '../../services/apiService';
 import Text from '../../components/Text';
 import Icon from '../../helper/icon';
 import {timeAgo} from '../../helper/commonFunctions';
+import {images} from '../../assets/images';
 
+const RenderComment = ({item, index, onReplyPress}) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const likeHandler = async () => {
+    setIsLiked(!isLiked);
+    // try {
+    //   setIsLiked(!isLiked);
+    //   const res = isLiked
+    //     ? await unlikePostApi(item?._id)
+    //     : await likePostApi(item?._id);
+    //   console.log('🚀 ~ likeHandler ~ res:', res?.data);
+
+    //   setLikeCount(res?.data?.likeCount);
+    // } catch (error) {
+    //   console.log(error, 'eeee');
+    // }
+  };
+
+  return (
+    <View
+      key={index}
+      style={{
+        flexDirection: 'row',
+        marginHorizontal: nw(24),
+        marginBottom: nh(16),
+        flex: 1,
+      }}>
+      <Image
+        source={
+          item?.userId?.profilePicture
+            ? {uri: item?.userId?.profilePicture}
+            : images.ciclelogo
+        }
+        // source={{uri: item?.userId?.profilePicture}}
+        style={{
+          height: nw(65),
+          width: nw(65),
+          borderRadius: nw(65 / 2),
+          marginRight: nw(11),
+        }}
+      />
+      <View style={{flex: 1}}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Text
+            variant="semibold16"
+            style={{
+              color: COLORS.black000000,
+            }}>
+            {item?.userId?.username}
+          </Text>
+          <Text
+            variant="medium12"
+            style={{
+              color: COLORS.black333333,
+              marginHorizontal: nw(30),
+            }}>
+            {' '}
+            {timeAgo(item?.commentDate)}
+          </Text>
+        </View>
+        <Text
+          variant="medium12"
+          style={{
+            color: COLORS.black333333,
+          }}>
+          {item?.commentText}
+        </Text>
+        <TouchableOpacity onPress={onReplyPress}>
+          <Text
+            variant="semibold12"
+            style={{
+              color: COLORS.grey999999,
+            }}>
+            {'Reply'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <Icon
+        type={'antdesign'}
+        color={COLORS.grey777777}
+        name={isLiked ? 'like1' : 'like2'}
+        size={nh(14)}
+        onPress={() => likeHandler()}
+      />
+    </View>
+  );
+};
 const CommentBottomSheetModal = forwardRef(
   ({comments = [], setComments}, ref) => {
     const snapPoints = useMemo(() => ['100%', '90%'], []);
@@ -25,6 +112,7 @@ const CommentBottomSheetModal = forwardRef(
     );
     const [text, setText] = useState('');
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+
     const TextInputRef = useRef();
     const sendComment = async () => {
       try {
@@ -100,74 +188,16 @@ const CommentBottomSheetModal = forwardRef(
               <FlatList
                 data={comments}
                 contentContainerStyle={{marginTop: 30}}
-                renderItem={({item}) => {
-                  return (
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        marginHorizontal: nw(24),
-                        marginBottom: nh(16),
-                        flex: 1,
-                      }}>
-                      <Image
-                        source={{uri: item?.userId?.profilePicture}}
-                        style={{
-                          height: nw(65),
-                          width: nw(65),
-                          borderRadius: nw(65 / 2),
-                          marginRight: nw(11),
-                        }}
-                      />
-                      <View style={{flex: 1}}>
-                        <View
-                          style={{flexDirection: 'row', alignItems: 'center'}}>
-                          <Text
-                            variant="semibold16"
-                            style={{
-                              color: COLORS.black000000,
-                            }}>
-                            {item?.userId?.username}
-                          </Text>
-                          <Text
-                            variant="medium12"
-                            style={{
-                              color: COLORS.black333333,
-                              marginHorizontal: nw(30),
-                            }}>
-                            {' '}
-                            {timeAgo(item?.commentDate)}
-                          </Text>
-                        </View>
-                        <Text
-                          variant="medium12"
-                          style={{
-                            color: COLORS.black333333,
-                          }}>
-                          {item?.commentText}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => {
-                            TextInputRef.current?.focus();
-                            setcontentId(item?.contentId);
-                          }}>
-                          <Text
-                            variant="semibold12"
-                            style={{
-                              color: COLORS.grey999999,
-                            }}>
-                            {'Reply'}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                      <Icon
-                        type={'antdesign'}
-                        color={COLORS.grey777777}
-                        name={'hearto'}
-                        size={nh(14)}
-                      />
-                    </View>
-                  );
-                }}
+                renderItem={({item, index}) => (
+                  <RenderComment
+                    item={item}
+                    index={index}
+                    onReplyPress={() => {
+                      TextInputRef.current?.focus();
+                      setcontentId(item?.contentId);
+                    }}
+                  />
+                )}
               />
             </View>
           )}
