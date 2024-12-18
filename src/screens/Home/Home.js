@@ -124,7 +124,7 @@ const Home = ({navigation, route}) => {
             ListHeaderComponent={() => {
               return (
                 <>
-                  {/* <Story /> */}
+                  <Story />
                   <Text
                     variant="semibold16"
                     style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}

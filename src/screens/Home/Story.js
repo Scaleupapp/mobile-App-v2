@@ -24,16 +24,15 @@ export const Story = () => {
   const [viewedStories, setViewedStories] = useState({});
   const progressAnims = useRef([]);
 
-<<<<<<< HEAD
   useEffect(() => {
     const fetchData = async () => {
       try {
         const usersResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user');
         const storiesResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories');
-  
+
         const users = usersResponse.data;
         const stories = storiesResponse.data;
-  
+
         // Group stories by user ID
         const grouped = users
           .map(user => ({
@@ -41,66 +40,25 @@ export const Story = () => {
             stories: stories.filter(story => story.user && story.user._id === user._id),
           }))
           .filter(user => user.stories.length > 0); // Only include users with stories
-  
+
         setGroupedStories(grouped);
-  
+
         // Initialize progress animations for all users
         progressAnims.current = grouped.map(() => new Animated.Value(0));
       } catch (error) {
         console.error('Error fetching data:', error);
       }
     };
-  
+
      // Fetch data every second
-    //  const interval = setInterval(fetchData, 1000);
-  
+     const interval = setInterval(fetchData, 1000);
+
      // Fetch data immediately on component mount
      fetchData();
-   
+
      // Clear the interval when the component unmounts
-    //  return () => clearInterval(interval);
+     return () => clearInterval(interval);
   }, []);
-  
-  
-  
-  
-=======
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const usersResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user');
-  //       const storiesResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories');
->>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
-
-  //       const users = usersResponse.data;
-  //       const stories = storiesResponse.data;
-
-  //       // Group stories by user ID
-  //       const grouped = users
-  //         .map(user => ({
-  //           ...user,
-  //           stories: stories.filter(story => story.user && story.user._id === user._id),
-  //         }))
-  //         .filter(user => user.stories.length > 0); // Only include users with stories
-
-  //       setGroupedStories(grouped);
-
-  //       // Initialize progress animations for all users
-  //       progressAnims.current = grouped.map(() => new Animated.Value(0));
-  //     } catch (error) {
-  //       console.error('Error fetching data:', error);
-  //     }
-  //   };
-
-  //    // Fetch data every second
-  //    const interval = setInterval(fetchData, 1000);
-
-  //    // Fetch data immediately on component mount
-  //    fetchData();
-
-  //    // Clear the interval when the component unmounts
-  //    return () => clearInterval(interval);
-  // }, []);
 
   const startProgressAnimation = duration => {
     Animated.timing(progressAnims.current[currentUserIndex], {
@@ -234,7 +192,6 @@ export const Story = () => {
 
           {/* Story Content */}
           {currentStory?.type === 'image' ? (
-<<<<<<< HEAD
               <Image
                 source={{ uri: `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}` }}
                 style={styles.storyImage}
@@ -249,22 +206,6 @@ export const Story = () => {
                 onEnd={handleNextStory}
               />
             ) : null}
-=======
-            <Image
-              source={{uri: `http://192.168.155.240:1000${currentStory?.url}`}}
-              style={styles.storyImage}
-              resizeMode="contain"
-            />
-          ) : currentStory?.type === 'video' ? (
-            <Video
-              source={{uri: `http://192.168.155.240:1000${currentStory?.url}`}}
-              style={styles.storyImage}
-              resizeMode="contain"
-              paused={false}
-              onEnd={handleNextStory}
-            />
-          ) : null}
->>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
 
           {/* Navigation Buttons */}
           <View style={styles.navigationButtons}>
