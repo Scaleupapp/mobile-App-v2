@@ -139,32 +139,34 @@ const InnerCircleRequest = ({navigation, route}) => {
           renderItem={({item}) => <RequestView item={item} />}
         />
       ) : (
-        <View>
-          <Image
-            source={images.norequest}
-            resizeMode="contain"
-            style={styles.notimage}
-          />
+        selected == 0 && (
+          <View>
+            <Image
+              source={images.norequest}
+              resizeMode="contain"
+              style={styles.notimage}
+            />
 
-          <Text
-            variant="semibold20"
-            color={COLORS.blue043142}
-            style={{textAlign: 'center', marginTop: nh(30)}}>
-            No Inner Circle Requests Received
-          </Text>
-          <Text
-            variant="medium14"
-            color={COLORS.grey999999}
-            style={{
-              textAlign: 'center',
-              marginTop: nh(5),
-              marginBottom: nh(20),
-            }}>
-            It’s quiet here. Why not create your first post and share your
-            thoughts with the community?
-          </Text>
-          <Button text="Explore Content" />
-        </View>
+            <Text
+              variant="semibold20"
+              color={COLORS.blue043142}
+              style={{textAlign: 'center', marginTop: nh(30)}}>
+              No Inner Circle Requests Received
+            </Text>
+            <Text
+              variant="medium14"
+              color={COLORS.grey999999}
+              style={{
+                textAlign: 'center',
+                marginTop: nh(5),
+                marginBottom: nh(20),
+              }}>
+              It’s quiet here. Why not create your first post and share your
+              thoughts with the community?
+            </Text>
+            <Button text="Explore Content" />
+          </View>
+        )
       )}
       {selected == 1 && (
         <FlatList

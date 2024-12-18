@@ -7,6 +7,7 @@ import {
   Image,
   ImageBackground,
   FlatList,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -22,6 +23,7 @@ import {
   getFollowerlist,
   unlfollowUser,
 } from '../../services/apiService';
+import Routes from '../../helper/routes';
 
 const Followers = ({navigation, route}) => {
   const [followers, setFollowers] = useState();
@@ -55,9 +57,13 @@ const Followers = ({navigation, route}) => {
     return (
       <View>
         <View style={styles.card}>
-          <Image source={images.ciclelogo} style={styles.image} />
+          <Image source={{uri: item?.profilePicture}} style={styles.image} />
 
-          <View style={{width: nw(188)}}>
+          <Pressable
+            style={{width: nw(188)}}
+            onPress={() =>
+              navigation.navigate(Routes.MyProfile, {id: item?._id})
+            }>
             <Text variant="medium14" color={COLORS.blue043142}>
               {item?.username}
             </Text>
@@ -68,7 +74,7 @@ const Followers = ({navigation, route}) => {
             style={{width: nw(208)}}>
             Designation
           </Text> */}
-          </View>
+          </Pressable>
 
           <Button
             text={follow ? 'Following' : 'Follow'}
@@ -156,9 +162,11 @@ const styles = StyleSheet.create({
   },
   image: {
     height: nh(50),
-    width: nw(50),
+    width: nh(50),
     borderRadius: nh(25),
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: COLORS.grey777777,
   },
   card: {
     flexDirection: 'row',
