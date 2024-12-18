@@ -53,7 +53,7 @@ const MyPlaylists = ({ navigation }) => {
   const [selectedPlaylistForComments, setSelectedPlaylistForComments] = useState(null);
 
   const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] = useState(false);
-const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
+  const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
 
   // Get the user token from the Redux store
   const token = useSelector((state) => state.auth.userData.token);
