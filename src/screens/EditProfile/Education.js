@@ -1,10 +1,11 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
   StatusBar,
   View,
   FlatList,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -14,11 +15,31 @@ import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {Card} from '../../components/Card';
+import {
+  deleteEducation,
+  getEducation,
+  saveEducation,
+} from '../../services/apiService';
+import {useToast} from '../../components/CustomToast';
+import {formatDate} from '../../helper/commonFunctions';
+import MonthPickerComponent from '../../components/MonthPickerComponent';
 
 const Education = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [isChecked, setIsChecked] = useState(false);
   const [education, setEducation] = useState([]);
-  console.log(education);
+  const [saved, setSaved] = useState(true);
+  const [edit, setEdit] = useState(false);
+  const [startDate, setStartDate] = useState({
+    show: false,
+    date: new Date(),
+    format: '',
+  });
+  const [endDate, setEndDate] = useState({
+    show: false,
+    date: new Date(),
+    format: '',
+  });
   const [state, setState] = useState({
     degree: '',
     university: '',
@@ -26,6 +47,23 @@ const Education = ({navigation, route}) => {
     endDate: '',
   });
   const [errors, setErrors] = useState({});
+  useEffect(() => {
+    getEducationDetails();
+  }, []);
+  const getEducationDetails = async () => {
+    try {
+      let res = await getEducation();
+
+      setEducation(res?.data?.educationInfo);
+      if (res?.data?.educationInfo?.length > 0) {
+        setSaved(true);
+      }
+    } catch (error) {
+      setSaved(false);
+      console.log(error, 'error from getEducationDetails');
+    } finally {
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setState({...state, [field]: value});
@@ -66,22 +104,68 @@ const Education = ({navigation, route}) => {
     setErrors(newErrors);
     return isValid;
   };
-
-  const saveEducation = () => {
+  console.log({edit});
+  const saveEducationAPI = async () => {
     if (validateFields()) {
-      console.log(
-        'Education details:',
-        state,
-        'Currently pursuing:',
-        isChecked,
-      );
-
-      setEducation([...education, state]);
-      setSaved(true);
-      // Perform your API call or other actions here
+      let payload = {
+        degree: state?.degree,
+        university: state?.university,
+        startDate: state?.startDate,
+        endDate: state?.endDate,
+        currentltPursuing: isChecked,
+      };
+      if (edit) payload.id = edit;
+      console.log({payload});
+      try {
+        const {data} = await saveEducation(payload);
+        console.log(data?.educationInfo, 'saved');
+        getEducationDetails();
+        setSaved(true);
+        if (edit) setEdit(false);
+        setState({
+          degree: '',
+          university: '',
+          startDate: '',
+          endDate: '',
+        });
+        showToast({type: 'success', title: data?.message});
+      } catch (error) {
+        console.log(error?.response?.data, 'errror');
+      }
     }
   };
-  const [saved, setSaved] = useState(false);
+  const onEdit = item => {
+    setSaved(false);
+    setEdit(item?._id);
+    setState({
+      degree: item?.degree,
+      university: item?.university,
+      startDate: item?.startDate,
+      endDate: item?.endDate,
+    });
+    if (item?.startDate) {
+      const newDate = new Date(item?.startDate);
+      const formattedDate = formatDate(newDate);
+      setStartDate({show: false, date: newDate, format: formattedDate});
+    }
+    if (item?.endDate) {
+      const endDate = new Date(item?.endDate);
+      const formattedDate = formatDate(endDate);
+      setEndDate({show: false, date: endDate, format: formattedDate});
+    }
+    setIsChecked(item?.currentltPursuing);
+  };
+
+  const onDelete = async item => {
+    try {
+      const {data} = await deleteEducation(item?._id);
+      showToast({type: 'success', title: data?.message});
+      getEducationDetails();
+    } catch (error) {
+      console.log('🚀 ~ onDelete ~ error:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -95,7 +179,7 @@ const Education = ({navigation, route}) => {
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          {!saved ? (
+          {!saved && (
             <>
               <View style={styles.input}>
                 <CustomTextInput
@@ -108,32 +192,68 @@ const Education = ({navigation, route}) => {
                 />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
-                  label="University"
-                  placeholder="Enter University"
+                  label="College"
+                  placeholder="Enter College Name"
                   value={state.university}
                   onChangeText={value => handleInputChange('university', value)}
                   errorMessage={errors.university}
                 />
               </View>
               <View style={styles.input}>
+                <Pressable
+                  style={{
+                    position: 'absolute',
+                    height: '100%',
+                    width: '48%',
+                    zIndex: 1,
+                  }}
+                  onPress={() =>
+                    setStartDate({
+                      ...startDate,
+                      show: true,
+                    })
+                  }></Pressable>
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
-                  label="Start Date"
-                  placeholder="Enter Start Date"
-                  value={state.startDate}
-                  onChangeText={value => handleInputChange('startDate', value)}
+                  label="Start Year"
+                  placeholder="Enter Start Year"
+                  editable={false}
+                  value={startDate.format}
                   errorMessage={errors.startDate}
                 />
+                <Pressable
+                  disabled={isChecked}
+                  style={{
+                    position: 'absolute',
+                    height: '100%',
+                    right: 0,
+                    width: '48%',
+                    zIndex: 1,
+                  }}
+                  onPress={() =>
+                    setEndDate({...endDate, show: true})
+                  }></Pressable>
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
-                  label="End Date"
-                  placeholder="Enter End Date"
-                  value={state.endDate}
-                  onChangeText={value => handleInputChange('endDate', value)}
+                  label="End Year"
+                  placeholder="Enter End Year"
+                  editable={false}
+                  value={endDate.format}
                   errorMessage={errors.endDate}
-                  disabled={isChecked} // Disable if currently pursuing
                 />
               </View>
+              <MonthPickerComponent
+                pickerState={startDate}
+                onPickerStateChange={setStartDate}
+                field="startDate"
+                handleInputChange={handleInputChange}
+              />
+              <MonthPickerComponent
+                pickerState={endDate}
+                onPickerStateChange={setEndDate}
+                field="endDate"
+                handleInputChange={handleInputChange}
+              />
               <View style={styles.checkboxContainer}>
                 <CheckBox
                   checkedIcon="check-box"
@@ -160,12 +280,39 @@ const Education = ({navigation, route}) => {
                   width={nw(63)}
                   height={nh(35)}
                   textStyle={{fontSize: 14}}
-                  onPress={saveEducation}
+                  onPress={saveEducationAPI}
                 />
               </View>
             </>
-          ) : (
-            <FlatList data={education} renderItem={() => <Card />} />
+          )}
+          {education.length > 0 && saved && (
+            <>
+              <View style={{marginBottom: nh(10), width: nw(96)}}>
+                <Button
+                  leftIcon={'plus-circle'}
+                  text="Add more"
+                  variant="outline"
+                  width={nw(96)}
+                  height={nh(35)}
+                  textStyle={{fontSize: 14}}
+                  onPress={() => setSaved(false)}
+                />
+              </View>
+              <FlatList
+                data={education}
+                renderItem={({item}) => (
+                  <Card
+                    title={item?.university}
+                    subtitle={item?.degree}
+                    text1={new Date(item?.startDate).getFullYear()}
+                    text2={new Date(item?.endDate).getFullYear()}
+                    checked={item?.currentltPursuing}
+                    onEdit={() => onEdit(item)}
+                    onDelete={() => onDelete(item)}
+                  />
+                )}
+              />
+            </>
           )}
         </View>
       </View>

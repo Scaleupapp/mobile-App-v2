@@ -1,11 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AddStory } from './AddStory'; // Adjust the path as needed
+import React, {useState, useEffect, useRef} from 'react';
+import {AddStory} from './AddStory'; // Adjust the path as needed
 import axios from 'axios';
-import { View, Image, TouchableOpacity, ScrollView, Modal, Dimensions, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  Dimensions,
+  StyleSheet,
+  Animated,
+} from 'react-native';
 import Video from 'react-native-video';
 import Text from '../../components/Text';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -15,6 +24,7 @@ export const Story = () => {
   const [viewedStories, setViewedStories] = useState({});
   const progressAnims = useRef([]);
 
+<<<<<<< HEAD
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -54,23 +64,61 @@ export const Story = () => {
   
   
   
+=======
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const usersResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user');
+  //       const storiesResponse = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories');
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
 
-  const startProgressAnimation = (duration) => {
+  //       const users = usersResponse.data;
+  //       const stories = storiesResponse.data;
+
+  //       // Group stories by user ID
+  //       const grouped = users
+  //         .map(user => ({
+  //           ...user,
+  //           stories: stories.filter(story => story.user && story.user._id === user._id),
+  //         }))
+  //         .filter(user => user.stories.length > 0); // Only include users with stories
+
+  //       setGroupedStories(grouped);
+
+  //       // Initialize progress animations for all users
+  //       progressAnims.current = grouped.map(() => new Animated.Value(0));
+  //     } catch (error) {
+  //       console.error('Error fetching data:', error);
+  //     }
+  //   };
+
+  //    // Fetch data every second
+  //    const interval = setInterval(fetchData, 1000);
+
+  //    // Fetch data immediately on component mount
+  //    fetchData();
+
+  //    // Clear the interval when the component unmounts
+  //    return () => clearInterval(interval);
+  // }, []);
+
+  const startProgressAnimation = duration => {
     Animated.timing(progressAnims.current[currentUserIndex], {
       toValue: 1,
       duration,
       useNativeDriver: false,
-    }).start(({ finished }) => {
+    }).start(({finished}) => {
       if (finished) handleNextStory();
     });
   };
 
   const handleNextStory = () => {
     const currentUser = groupedStories[currentUserIndex];
-    const isLastStoryInUser = currentStoryIndex === currentUser.stories.length - 1;
+    const isLastStoryInUser =
+      currentStoryIndex === currentUser.stories.length - 1;
 
     // Mark current story as viewed
-    const updatedViewedStories = { ...viewedStories };
+    const updatedViewedStories = {...viewedStories};
     if (!updatedViewedStories[currentUser._id]) {
       updatedViewedStories[currentUser._id] = new Set();
     }
@@ -117,28 +165,27 @@ export const Story = () => {
   
   return (
     <View style={styles.container}>
-      
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={styles.thumbnailScroll}
-      >
-        <AddStory/>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.thumbnailScroll}>
+        <AddStory />
         {groupedStories.map((user, userIndex) => (
           <View key={user._id} style={styles.thumbnailGroup}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => handleStoryPress(userIndex, 0)}
               style={[
                 styles.thumbnailBorder,
                 {
-                  borderColor: user.stories.every((_, index) => 
-                    isStoryViewed(user._id, index)
-                  ) ? 'green' : 'red'
-                }
-              ]}
-            >
+                  borderColor: user.stories.every((_, index) =>
+                    isStoryViewed(user._id, index),
+                  )
+                    ? 'green'
+                    : 'red',
+                },
+              ]}>
               <Image
-                source={{ uri: user.profilePicture }}
+                source={{uri: user.profilePicture}}
                 style={styles.thumbnailImage}
               />
             </TouchableOpacity>
@@ -151,26 +198,27 @@ export const Story = () => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           {/* Progress Bars */}
           <View style={styles.progressContainer}>
             {currentUser?.stories.map((_, index) => (
-              <View 
-                key={index} 
-                style={styles.progressBarBackground}
-              >
-                <Animated.View 
+              <View key={index} style={styles.progressBarBackground}>
+                <Animated.View
                   style={[
                     styles.progressBarForeground,
                     {
-                      width: progressAnims.current[currentUserIndex]?.interpolate({
+                      width: progressAnims.current[
+                        currentUserIndex
+                      ]?.interpolate({
                         inputRange: [0, 1],
-                        outputRange: ['0%', index === currentStoryIndex ? '100%' : '0%']
-                      })
-                    }
-                  ]} 
+                        outputRange: [
+                          '0%',
+                          index === currentStoryIndex ? '100%' : '0%',
+                        ],
+                      }),
+                    },
+                  ]}
                 />
               </View>
             ))}
@@ -178,7 +226,7 @@ export const Story = () => {
 
           <View style={styles.userInfoContainer}>
             <Image
-              source={{ uri: currentUser?.profilePicture }}
+              source={{uri: currentUser?.profilePicture}}
               style={styles.modalUserProfilePicture}
             />
             <Text style={styles.modalUsername}>{currentUser?.username}</Text>
@@ -186,6 +234,7 @@ export const Story = () => {
 
           {/* Story Content */}
           {currentStory?.type === 'image' ? (
+<<<<<<< HEAD
               <Image
                 source={{ uri: `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}` }}
                 style={styles.storyImage}
@@ -200,15 +249,31 @@ export const Story = () => {
                 onEnd={handleNextStory}
               />
             ) : null}
+=======
+            <Image
+              source={{uri: `http://192.168.155.240:1000${currentStory?.url}`}}
+              style={styles.storyImage}
+              resizeMode="contain"
+            />
+          ) : currentStory?.type === 'video' ? (
+            <Video
+              source={{uri: `http://192.168.155.240:1000${currentStory?.url}`}}
+              style={styles.storyImage}
+              resizeMode="contain"
+              paused={false}
+              onEnd={handleNextStory}
+            />
+          ) : null}
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
 
           {/* Navigation Buttons */}
           <View style={styles.navigationButtons}>
-            <TouchableOpacity 
-              onPress={handlePreviousStory} 
+            <TouchableOpacity
+              onPress={handlePreviousStory}
               style={styles.navButton}
             />
-            <TouchableOpacity 
-              onPress={handleNextStory} 
+            <TouchableOpacity
+              onPress={handleNextStory}
               style={styles.navButton}
             />
           </View>
@@ -222,35 +287,35 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
   },
-  thumbnailScroll: { 
+  thumbnailScroll: {
     marginVertical: 10,
     paddingHorizontal: 10,
   },
-  thumbnailGroup: { 
-    alignItems: 'center', 
-    marginHorizontal: 5 
+  thumbnailGroup: {
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
   thumbnailBorder: {
     borderWidth: 3,
     borderRadius: 50,
     padding: 2,
   },
-  thumbnailImage: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 40 
+  thumbnailImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
-  username: { 
-    fontSize: 12, 
-    color: 'black', 
-    textAlign: 'center', 
-    marginTop: 5 
+  username: {
+    fontSize: 12,
+    color: 'black',
+    textAlign: 'center',
+    marginTop: 5,
   },
-  modalContainer: { 
-    flex: 1, 
-    backgroundColor: 'black', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   progressContainer: {
     position: 'absolute',
@@ -289,9 +354,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  storyImage: { 
-    width: width * 0.9, 
-    height: height * 0.7 
+  storyImage: {
+    width: width * 0.9,
+    height: height * 0.7,
   },
   navigationButtons: {
     position: 'absolute',

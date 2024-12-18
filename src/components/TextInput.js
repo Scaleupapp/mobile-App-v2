@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {forwardRef, useState} from 'react';
 import {
   TextInput,
   View,
@@ -11,20 +11,23 @@ import {nh, nw} from '../helper/scales';
 import {COLORS} from '../helper/colors';
 import {APP_FONTS} from '../assets/fonts';
 
-const CustomTextInput = ({
-  placeholder = 'Enter text', // Placeholder text
-  errorMessage = '', // Error message (icon + text)
-  successMessage = '', // Success message (icon + text)
-  rightIcon, // Component for the right-side icon
-  onRightIconPress = () => {}, // Callback for right icon press
-  marginBottom = 15,
-  dropDown = false,
-  label = '',
-  textinputType = '',
-  width = '',
-  height = 40,
-  ...props
-}) => {
+const CustomTextInput = (
+  {
+    placeholder = 'Enter text', // Placeholder text
+    errorMessage = '', // Error message (icon + text)
+    successMessage = '', // Success message (icon + text)
+    rightIcon, // Component for the right-side icon
+    onRightIconPress = () => {}, // Callback for right icon press
+    marginBottom = 15,
+    dropDown = false,
+    label = '',
+    textinputType = '',
+    width = '',
+    height = 40,
+    ...props
+  },
+  ref,
+) => {
   const [selectedCountry, setSelectedCountry] = useState({
     name: 'India',
     flag: '🇮🇳',
@@ -68,9 +71,13 @@ const CustomTextInput = ({
           </TouchableOpacity>
         )}
         <TextInput
+          ref={ref}
           style={[
             styles.input,
-            {height: textinputType == 'L' ? nh(150) : nh(40)},
+            {
+              height: textinputType == 'L' ? nh(150) : nh(40),
+              textAlignVertical: textinputType === 'L' ? 'top' : 'center',
+            },
           ]}
           placeholder={placeholder}
           placeholderTextColor={COLORS.grey999999}
@@ -155,4 +162,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CustomTextInput;
+export default forwardRef(CustomTextInput);

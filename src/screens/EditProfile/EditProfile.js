@@ -6,8 +6,8 @@ import {
   View,
   Image,
   ScrollView,
-  FlatList,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -18,7 +18,17 @@ import {images} from '../../assets/images';
 import Icon from '../../helper/icon';
 import CustomTextInput from '../../components/TextInput';
 import Button from '../../components/Button';
-import {isValidEmail, isvalidMobileNumber} from '../../helper/commonFunctions';
+import {
+  formatDate,
+  isValidEmail,
+  isvalidMobileNumber,
+} from '../../helper/commonFunctions';
+import {useDispatch, useSelector} from 'react-redux';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {getProfile, updateProfile} from '../../services/apiService';
+import {actions} from '../../redux/reducers';
+import {useToast} from '../../components/CustomToast';
+import DatePicker from 'react-native-date-picker';
 
 const professionData = [
   {
@@ -54,16 +64,28 @@ const professionData = [
 ];
 
 const EditProfile = ({navigation, route}) => {
+  const {showToast} = useToast();
   const [selected, setSelected] = useState(0);
-
+  const dispatch = useDispatch();
+  const userData = useSelector(state => state?.userData);
+  const [image, setImage] = useState();
+  const [dob, setDob] = useState({
+    show: false,
+    date: new Date(),
+    format: '',
+  });
   // Form State
   const [form, setForm] = useState({
-    name: '',
-    email: '',
-    mobile: '',
-    location: '',
-    dob: '',
-    about: '',
+    profilePicture: userData?.profilePicture ?? '',
+    name: userData?.firstname ?? '',
+    email: userData?.email ?? '',
+    mobile: userData?.phoneNumber ?? '',
+    location: userData?.location ?? '',
+    dob: userData?.dateOfBirth
+      ? new Date(userData?.dateOfBirth).toLocaleDateString('en-US')
+      : '',
+
+    about: userData?.bio?.bioAbout ?? '',
   });
 
   // Error State
@@ -95,7 +117,7 @@ const EditProfile = ({navigation, route}) => {
     if (!form.email) {
       newErrors.email = 'Email is required';
       isValid = false;
-    } else if (isValidEmail(form.email)) {
+    } else if (!isValidEmail(form.email)) {
       newErrors.email = 'Enter a valid email address';
       isValid = false;
     }
@@ -107,7 +129,7 @@ const EditProfile = ({navigation, route}) => {
     } else if (form.mobile.length !== 10) {
       newErrors.mobile = 'Mobile number must be 10 digits';
       isValid = false;
-    } else if (isvalidMobileNumber(form.mobile)) {
+    } else if (!isvalidMobileNumber(form.mobile)) {
       newErrors.mobile = 'Enter a valid mobile number';
       isValid = false;
     }
@@ -134,16 +156,70 @@ const EditProfile = ({navigation, route}) => {
     return isValid;
   };
 
+  const getProfileData = async () => {
+    try {
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data);
+      dispatch(
+        actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
+      ); // Dispatch the updated data
+    } catch (error) {
+      console.log(error?.response?.data?.message, 'errormsg');
+    }
+  };
+
   // Register user or perform API call
   const handleSave = async () => {
     if (validateFields()) {
+      const profilePicture = {
+        uri: image?.uri, // The URI of the image
+        name: image?.name, // File name
+        type: image?.type, // MIME type
+      };
+      console.log('🚀 ~ handleSave ~ profilePicture:', profilePicture);
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('email', form.email);
+      formData.append('phoneNumber', form.mobile);
+      formData.append('location', form.location);
+      formData.append('dateOfBirth', form.dob);
+      formData.append('bioAbout', form.about);
+      formData.append('profilePicture', profilePicture);
+      6464;
       try {
-        console.log('API call with form:', form);
-        // Perform your API call here
+        const {data} = await updateProfile(formData);
+        showToast({type: 'success', title: data?.message});
+        getProfileData();
+        console.log('🚀 ~ handleSave ~ data:', data);
       } catch (error) {
-        console.error('Error registering user:', error);
+        console.log('🚀 ~ handleSave ~ error:', error?.response?.data);
       }
     }
+  };
+
+  // Handle selected or captured media
+  const handleMedia = async result => {
+    if (result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      setForm(prevForm => ({
+        ...prevForm, // Spread the existing state
+        profilePicture: asset?.uri, // Update only the profilePicture field
+      }));
+      // Prepare the media data for upload
+      setImage({
+        uri: asset.uri,
+        name: asset.fileName || 'media', // Fallback name
+        type: asset.type || 'image/jpeg',
+      });
+    }
+  };
+
+  const openGallery = async () => {
+    const result = await launchImageLibrary({
+      mediaType: 'photo',
+      quality: 0.3,
+    });
+    handleMedia(result);
   };
 
   const handleInputChange = (field, value) => {
@@ -169,7 +245,7 @@ const EditProfile = ({navigation, route}) => {
             selected={selected}
             onToggle={onSelect}
           />
-          <ScrollView>
+          <ScrollView showsVerticalScrollIndicator={false}>
             {selected == 0 && (
               <>
                 {/* <Text variant="semibold16" color={COLORS.green34A853}>
@@ -180,10 +256,16 @@ const EditProfile = ({navigation, route}) => {
                 </Text>
                 <View style={styles.progresbar}>
                   <View style={styles.greenbar}></View>
-                </View>
+                </View> */}
                 <View>
                   <Image
-                    source={images.logo}
+                    source={{
+                      uri: form?.profilePicture
+                        ? `${
+                            form.profilePicture
+                          }?timestamp=${new Date().getTime()}`
+                        : null,
+                    }}
                     style={styles.image}
                     resizeMode="cover"
                   />
@@ -193,9 +275,10 @@ const EditProfile = ({navigation, route}) => {
                       name="edit"
                       style={{marginLeft: 0.5}}
                       size={16}
+                      onPress={() => openGallery()}
                     />
                   </View>
-                </View> */}
+                </View>
 
                 {/* Form Fields */}
                 <CustomTextInput
@@ -218,6 +301,7 @@ const EditProfile = ({navigation, route}) => {
                   value={form.mobile}
                   onChangeText={value => handleInputChange('mobile', value)}
                   errorMessage={errors.mobile}
+                  // editable={false}
                 />
                 <CustomTextInput
                   label="Location"
@@ -226,13 +310,29 @@ const EditProfile = ({navigation, route}) => {
                   onChangeText={value => handleInputChange('location', value)}
                   errorMessage={errors.location}
                 />
-                <CustomTextInput
-                  label="Date of Birth"
-                  placeholder="Enter Date of Birth"
-                  value={form.dob}
-                  onChangeText={value => handleInputChange('dob', value)}
-                  errorMessage={errors.dob}
-                />
+                <View>
+                  <Pressable
+                    style={{
+                      position: 'absolute',
+                      height: '100%',
+                      width: '100%',
+                      zIndex: 1,
+                    }}
+                    onPress={() =>
+                      setDob({
+                        ...dob,
+                        show: true,
+                      })
+                    }></Pressable>
+                  <CustomTextInput
+                    label="Date of Birth"
+                    placeholder="Enter Date of Birth"
+                    value={dob.format}
+                    editable={false}
+                    errorMessage={errors.dob}
+                  />
+                </View>
+
                 <CustomTextInput
                   label="About"
                   placeholder="Enter About Yourself"
@@ -256,6 +356,23 @@ const EditProfile = ({navigation, route}) => {
                     textStyle={{fontSize: 14}}
                   />
                 </View>
+                <DatePicker
+                  modal
+                  open={dob.show}
+                  date={dob.date}
+                  mode={'date'}
+                  minimumDate={new Date('1970-01-01')}
+                  maximumDate={new Date()}
+                  onConfirm={date => {
+                    handleInputChange('dob', date);
+                    const formattedDate = formatDate(date, true);
+                    setDob({
+                      show: false,
+                      date: date,
+                      format: formattedDate,
+                    });
+                  }}
+                />
               </>
             )}
             {selected == 1 &&
@@ -334,6 +451,8 @@ const styles = StyleSheet.create({
     borderRadius: nh(50),
     alignSelf: 'center',
     marginBottom: 30,
+    borderWidth: 1,
+    borderColor: COLORS.grey999999,
   },
   circle: {
     height: nh(25),

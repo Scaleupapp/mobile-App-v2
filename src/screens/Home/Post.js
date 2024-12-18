@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -16,16 +16,30 @@ import {COLORS} from '../../helper/colors';
 import ReadMore from '@fawazahmed/react-native-read-more';
 import {APP_FONTS} from '../../assets/fonts';
 import Video from 'react-native-video';
+<<<<<<< HEAD
 
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
 import PlaylistSelectionModal from './PlaylistSelectionModal'; // Import the new modal
 
+=======
+import {
+  likePostApi,
+  savePostAPI,
+  unlikePostApi,
+  unsavePostAPI,
+} from '../../services/apiService';
+import Routes from '../../helper/routes';
+import {navigationRef} from '../../../App';
+import ImageModal from '../Post/ImageModal';
+import CommentBottomSheetModal from '../Post/CustomBottomSheet';
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
 
 // import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
+<<<<<<< HEAD
   // console.log({item});
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
@@ -40,11 +54,22 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
 
 
+=======
+  const [imageHeight, setImageHeight] = useState(200);
+  const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
+  const imageModalRef = useRef(null);
+  const [isLiked, setIsLiked] = useState(item.isLiked);
+  const [likeCount, setLikeCount] = useState(item?.likes?.length);
+  const [isSaved, setIsSaved] = useState(item?.isSaved);
+  const [comments, setComments] = useState(item?.comments);
+  const commentRef = useRef(null);
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
 
+<<<<<<< HEAD
 
 
   const handleBookmarkPress = () => {
@@ -118,6 +143,41 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   };
   
   
+=======
+  const likeHandler = async () => {
+    try {
+      setIsLiked(!isLiked);
+      const res = isLiked
+        ? await unlikePostApi(item?._id)
+        : await likePostApi(item?._id);
+      console.log('🚀 ~ likeHandler ~ res:', res?.data);
+
+      setLikeCount(res?.data?.likeCount);
+    } catch (error) {
+      console.log(error, 'eeee');
+    }
+  };
+
+  const saveHandler = async () => {
+    try {
+      setIsSaved(!isSaved);
+      const res = isSaved
+        ? await unsavePostAPI(item?._id)
+        : await savePostAPI(item?._id);
+      console.log('🚀 ~ likeHandler ~ res:', res?.data);
+    } catch (error) {
+      console.log(error, 'eeee');
+    }
+  };
+
+  useEffect(() => {
+    if (item?.contentType == 'Image' && item?.contentURL) {
+      Image.getSize(item?.contentURL, (width, height) => {
+        setImageHeight(height / 6);
+      });
+    }
+  }, [item?.contentType]);
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
 
   return (
     <View
@@ -128,7 +188,14 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         paddingBottom: nh(30),
       }}>
       <View style={styles.view}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <Pressable
+          style={{flexDirection: 'row', alignItems: 'center'}}
+          onPress={() =>
+            navigationRef.navigate(Routes.MyProfile, {
+              type: 'other',
+              id: item?.userId?._id,
+            })
+          }>
           <Image
             source={
               item?.userId?.profilePicture
@@ -140,16 +207,17 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           <Text variant="medium14" color={COLORS.blue043142}>
             {item?.userId?.username}
           </Text>
-        </View>
+        </Pressable>
 
-        <Icon
+        {/* <Icon
           type="entypo"
           name="dots-three-vertical"
           size={21}
           color={COLORS.blue043142}
-        />
+        /> */}
       </View>
 
+<<<<<<< HEAD
       {item?.contentType == 'Image' && item?.contentURL ? (
   <Pressable
     onPress={() => setImageModal(true)}
@@ -213,22 +281,124 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   </Pressable>
 ) : null}
 
+=======
+      {/* <Image style={styles.postimage} /> */}
+      {item?.contentType == 'Image' && item?.contentURL ? (
+        <Pressable
+          onPress={() => imageModalRef.current?.present()}
+          style={{marginVertical: nh(10)}}>
+          <Image
+            source={{uri: item?.contentURL}}
+            style={{
+              height: imageHeight,
+              width: '100%',
+              backgroundColor: COLORS.whiteFFFFFF,
+              marginBottom: nh(6),
+            }}
+            resizeMode="cover"
+          />
+        </Pressable>
+      ) : null}
+      {item?.contentType == 'Video' && item?.contentURL ? (
+        <Pressable
+          onPress={() => setIsPlaying(index)}
+          style={{
+            marginVertical: nh(10),
+            // alignContent: 'center',
+            // justifyContent: 'center',
+          }}>
+          {item?.isVerified && (
+            <View
+              style={{
+                height: nh(30),
+                width: nw(30),
+                borderRadius: 15,
+                backgroundColor: COLORS.blue043142,
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                right: 10,
+                top: 10,
+                zIndex: 1,
+                // Centers vertically
+              }}>
+              <Icon
+                type="material-community"
+                name="check-decagram"
+                color={COLORS.yellowF5BE00}
+                size={20} // Ensure the icon size is appropriate
+              />
+            </View>
+          )}
+          <Video
+            paused={isPlaying != index}
+            controls
+            onLoad={onLoad}
+            // source={{uri: convertToProxyURL(item?.contentURL)}}
+            source={{uri: item?.contentURL}}
+            style={
+              videoDimensions?.height
+                ? {
+                    aspectRatio: Number(
+                      videoDimensions.width / videoDimensions.height,
+                    ),
+                    width: DEVICE_WIDTH - nw(32),
+                    backgroundColor: COLORS.whiteFFFFFF,
+                    marginBottom: nh(6),
+                  }
+                : {
+                    height: nh(250),
+                    width: DEVICE_WIDTH - nw(32),
+                    backgroundColor: COLORS.whiteFFFFFF,
+                    marginBottom: nh(6),
+                  }
+            }
+            resizeMode="cover"
+            onBuffer={e => console.log('bufeer ', e)}
+            onError={e => console.log('sdsds ', e)}
+          />
+          {/* <View
+            style={{
+              position: 'absolute',
+              alignSelf: 'center',
+            }}>
+            <Icon
+              type="antdesign"
+              name="playcircleo"
+              size={nh(40)}
+              color={COLORS.blue043142}
+              style={{marginRight: nw(10), opacity: 0.8}}
+            />
+          </View> */}
+        </Pressable>
+      ) : null}
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
 
       <View style={styles.view}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
           <Icon
             type="antdesign"
-            name="like2"
+            name={isLiked ? 'like1' : 'like2'}
             size={24}
             color={COLORS.blue043142}
-            style={{marginRight: nw(10)}}
+            onPress={() => likeHandler()}
+            style={{marginRight: nw(3)}}
           />
+          <Text variant="medium12" style={{marginRight: nw(10), marginTop: 5}}>
+            {likeCount}
+          </Text>
           <Icon
             type="ionicon"
-            name="chatbubble-outline"
+            name={'chatbubble-outline'}
             size={24}
             color={COLORS.blue043142}
             style={{marginRight: nw(10)}}
+            onPress={() => commentRef?.current?.present()}
           />
           <Icon
             type="feather"
@@ -239,10 +409,15 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         </View>
         <Pressable onPress={handleBookmarkPress}>
         <Icon
-          type="feather"
-          name="bookmark"
+          type="font-awesome"
+          name={isSaved ? 'bookmark' : 'bookmark-o'}
           size={24}
+<<<<<<< HEAD
           color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
+=======
+          color={COLORS.blue043142}
+          onPress={() => saveHandler()}
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
         />
       </Pressable>
 
@@ -258,6 +433,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       />
 
       </View>
+
       <ReadMore
         numberOfLines={2}
         style={styles.textStyle}
@@ -288,6 +464,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </View>
         ))}
       </View>
+      <CommentBottomSheetModal
+        ref={commentRef}
+        comments={comments}
+        setComments={setComments}
+      />
+      <ImageModal ref={imageModalRef} imageUrl={item?.contentURL} />
     </View>
   );
 };

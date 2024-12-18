@@ -1,5 +1,5 @@
 import React, {memo} from 'react';
-import {GestureResponderEvent, Pressable, ViewStyle} from 'react-native';
+import {GestureResponderEvent, TouchableOpacity, ViewStyle} from 'react-native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import Entypo from 'react-native-vector-icons/Entypo';
 import Feather from 'react-native-vector-icons/Feather';
@@ -99,12 +99,12 @@ const Icon = ({
   }
 
   return (
-    <Pressable
+    <TouchableOpacity
       disabled={onPress ? false : true}
       onPress={onPress}
       style={style}>
-      <IconComponent name={name} size={size} color={color} type={type}/>
-    </Pressable>
+      <IconComponent name={name} size={size} color={color} type={type} />
+    </TouchableOpacity>
   );
 };
 

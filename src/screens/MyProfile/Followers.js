@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -7,6 +7,7 @@ import {
   Image,
   ImageBackground,
   FlatList,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -17,8 +18,76 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
+import {
+  followUser,
+  getFollowerlist,
+  unlfollowUser,
+} from '../../services/apiService';
+import Routes from '../../helper/routes';
 
 const Followers = ({navigation, route}) => {
+  const [followers, setFollowers] = useState();
+
+  useEffect(() => {
+    getfollowers();
+  }, []);
+
+  let getfollowers = async () => {
+    try {
+      let resp = await getFollowerlist();
+      setFollowers(resp?.data?.followerList);
+      console.log(resp?.data, 'dta');
+    } catch (error) {}
+  };
+
+  const UserView = ({item}) => {
+    const [follow, setFollow] = useState(item?.isFollowed);
+
+    const followApi = async () => {
+      try {
+        setFollow(!follow);
+        let res = follow
+          ? await unlfollowUser(item?._id)
+          : await followUser(item?._id);
+        console.log('🚀 ~ followApi ~ res:', res?.data);
+      } catch (error) {
+        console.log('🚀 ~ followApi ~ error:', error?.response?.data);
+      }
+    };
+    return (
+      <View>
+        <View style={styles.card}>
+          <Image source={{uri: item?.profilePicture}} style={styles.image} />
+
+          <Pressable
+            style={{width: nw(188)}}
+            onPress={() =>
+              navigation.navigate(Routes.MyProfile, {id: item?._id})
+            }>
+            <Text variant="medium14" color={COLORS.blue043142}>
+              {item?.username}
+            </Text>
+
+            {/* <Text
+            variant="medium12"
+            color={COLORS.grey999999}
+            style={{width: nw(208)}}>
+            Designation
+          </Text> */}
+          </Pressable>
+
+          <Button
+            text={follow ? 'Following' : 'Follow'}
+            variant={follow ? 'outline' : 'solid'}
+            width={nw(100)}
+            height={nh(35)}
+            textStyle={{fontSize: 14}}
+            onPress={() => followApi()}
+          />
+        </View>
+      </View>
+    );
+  };
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -45,37 +114,8 @@ const Followers = ({navigation, route}) => {
       </View>
 
       <FlatList
-        data={['', '', '', '', '']}
-        renderItem={() => {
-          return (
-            <View>
-              <View style={styles.card}>
-                <Image source={images.ciclelogo} style={styles.image} />
-
-                <View style={{width: nw(188)}}>
-                  <Text variant="medium14" color={COLORS.blue043142}>
-                    Name
-                  </Text>
-
-                  <Text
-                    variant="medium12"
-                    color={COLORS.grey999999}
-                    style={{width: nw(208)}}>
-                    Designation
-                  </Text>
-                </View>
-
-                <Button
-                  text="Following"
-                  variant="outline"
-                  width={nw(100)}
-                  height={nh(35)}
-                  textStyle={{fontSize: 14}}
-                />
-              </View>
-            </View>
-          );
-        }}
+        data={followers}
+        renderItem={({item}) => <UserView item={item} />}
       />
 
       {/* <View>
@@ -122,9 +162,11 @@ const styles = StyleSheet.create({
   },
   image: {
     height: nh(50),
-    width: nw(50),
+    width: nh(50),
     borderRadius: nh(25),
     marginRight: 10,
+    borderWidth: 1,
+    borderColor: COLORS.grey777777,
   },
   card: {
     flexDirection: 'row',

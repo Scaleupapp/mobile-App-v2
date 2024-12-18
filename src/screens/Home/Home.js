@@ -15,21 +15,26 @@ import Text from '../../components/Text';
 import {FlatList} from 'react-native-gesture-handler';
 import {images} from '../../assets/images';
 import {Image} from 'react-native';
-import {getHomePageData} from '../../services/apiService';
+import {getHomePageData, getProfile} from '../../services/apiService';
 import {useFocusEffect} from '@react-navigation/native';
 import PostView from './Post';
 import {Story} from './Story';
 import {throttle} from '../../helper/commonFunctions';
+import {useDispatch, useSelector} from 'react-redux';
+import {actions} from '../../redux/reducers';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Home = ({navigation, route}) => {
   const [home, setHome] = useState([]);
-  console.log('🚀 ~ Home ~ home:', home);
+  // console.log('🚀 ~ Home ~ home:', home);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
+  const dispatch = useDispatch();
+  const userData = useSelector(state => state?.userData);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,13 +46,34 @@ const Home = ({navigation, route}) => {
       };
     }, []),
   );
+  useEffect(() => {
+    getProfileData();
+  }, []);
 
+<<<<<<< HEAD
   
 
+=======
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+
+      dispatch(
+        actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
+      ); // Dispatch the updated data
+    } catch (error) {
+      console.log(error?.response?.data?.message, 'errormsg');
+    }
+  };
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
   const homePageData = async (page, refresh = false) => {
     try {
       const {data} = await getHomePageData(page);
-      console.log('🚀 ~ homePageData ~ data:', data);
+      // console.log('🚀 ~ homePageData ~ data:', data);
       if (data?.content.length > 0) {
         setPage(prevPage => prevPage + 1);
         if (refresh) setHome(data.content);
@@ -82,80 +108,88 @@ const Home = ({navigation, route}) => {
         backgroundColor={COLORS.yellowF5BE00}
       />
       <MainHeader />
-      <FlatList
-        ref={flatListRef}
-        keyExtractor={(_, index) => index.toString()}
-        data={home}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setPage(1);
-              setRefreshing(true);
-              homePageData(1, true);
+      <View style={styles.layer1}>
+        <View style={styles.layer2}>
+          <FlatList
+            ref={flatListRef}
+            keyExtractor={(_, index) => index.toString()}
+            data={home}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => {
+                  setPage(1);
+                  setRefreshing(true);
+                  homePageData(1, true);
+                }}
+                tintColor={COLORS.blue043142}
+              />
+            }
+            ListHeaderComponent={() => {
+              return (
+                <>
+                  {/* <Story /> */}
+                  <Text
+                    variant="semibold16"
+                    style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}
+                    color={COLORS.blue043142}>
+                    Post
+                  </Text>
+                </>
+              );
             }}
-            tintColor={COLORS.blue043142}
-          />
-        }
-        ListHeaderComponent={() => {
-          return (
-            <View style={styles.layer1}>
-              <View style={styles.layer2}>
-                {/* story */}
-                <Story />
-                {/* Post */}
-                <Text
-                  variant="semibold16"
-                  style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}
-                  color={COLORS.blue043142}>
-                  Post
-                </Text>
-              </View>
-            </View>
-          );
-        }}
-        renderItem={({item, index}) => (
-          <PostView
-            item={item}
-            index={index}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-          />
-        )}
-        ListFooterComponent={() =>
-          loading && (
-            <View
-              style={{
-                height: page > 1 ? nh(40) : DEVICE_HEIGHT,
-                paddingVertical: nh(20),
-                backgroundColor: COLORS.whiteFFFFFF,
-              }}>
-              <ActivityIndicator size={'small'} color={COLORS.blue043142} />
-            </View>
-          )
-        }
-        ListEmptyComponent={
-          <>
-            {!loading && (
-              <View style={styles.emptyList}>
-                <Text
-                  variant="semibold16"
-                  style={{
-                    width: '100%',
-                    textAlign: 'center',
-                  }}>
-                  {
-                    'Your Home Feed is empty right now. Start exploring and following users from the search page to see their content here!'
-                  }
-                </Text>
-              </View>
+            renderItem={({item, index}) => (
+              <PostView
+                item={item}
+                index={index}
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+              />
             )}
+<<<<<<< HEAD
           </>
         }
         onEndReached={handleOnReachEnd}
         onEndReachedThreshold={0.5}
       />
+=======
+            ListFooterComponent={() =>
+              loading && (
+                <View
+                  style={{
+                    height: page > 1 ? nh(40) : DEVICE_HEIGHT,
+                    paddingVertical: nh(20),
+                    backgroundColor: COLORS.whiteFFFFFF,
+                  }}>
+                  <ActivityIndicator size={'small'} color={COLORS.blue043142} />
+                </View>
+              )
+            }
+            ListEmptyComponent={
+              <>
+                {!loading && (
+                  <View style={styles.emptyList}>
+                    <Text
+                      variant="semibold16"
+                      style={{
+                        width: '100%',
+                        textAlign: 'center',
+                      }}>
+                      {
+                        'Your Home Feed is empty right now. Start exploring and following users from the search page to see their content here!'
+                      }
+                    </Text>
+                  </View>
+                )}
+              </>
+            }
+            // onEndReached={handleOnReachEnd}
+            onEndReachedThreshold={0.5}
+          />
+        </View>
+      </View>
+>>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
     </SafeAreaView>
   );
 };

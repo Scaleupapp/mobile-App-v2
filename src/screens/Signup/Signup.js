@@ -134,7 +134,10 @@ const SignUp = ({navigation, route}) => {
           AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(stringifiedUserData));
           if (phoneNumberData?.isPhoneNumberVerified) {
-            navigation.navigate(Routes.Home);
+            navigation.reset({
+              index: 0,
+              routes: [{name: Routes.Home}],
+            });
           } else {
             navigation.navigate(Routes.BasicDetails);
           }

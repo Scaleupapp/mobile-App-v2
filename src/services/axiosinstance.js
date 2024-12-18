@@ -12,6 +12,7 @@ export const setupAxiosInterceptors = showToast => {
     async config => {
       const user = await AsyncStorage.getItem('userData');
       const parsedUser = JSON.parse(user);
+
       if (parsedUser?.token) {
         config.headers.Authorization = `Bearer ${parsedUser?.token}`;
       }
@@ -27,6 +28,7 @@ export const setupAxiosInterceptors = showToast => {
       return config;
     },
     async error => {
+      console.log(error, 'inaxiosss');
       if (
         error.response.status == 400 ||
         error.response.status == 429 ||
