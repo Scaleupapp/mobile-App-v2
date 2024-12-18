@@ -50,10 +50,6 @@ const Home = ({navigation, route}) => {
     getProfileData();
   }, []);
 
-<<<<<<< HEAD
-  
-
-=======
   const getProfileData = async () => {
     try {
       const user = await AsyncStorage.getItem('userData');
@@ -69,7 +65,6 @@ const Home = ({navigation, route}) => {
       console.log(error?.response?.data?.message, 'errormsg');
     }
   };
->>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
   const homePageData = async (page, refresh = false) => {
     try {
       const {data} = await getHomePageData(page);
@@ -147,13 +142,6 @@ const Home = ({navigation, route}) => {
                 setIsPlaying={setIsPlaying}
               />
             )}
-<<<<<<< HEAD
-          </>
-        }
-        onEndReached={handleOnReachEnd}
-        onEndReachedThreshold={0.5}
-      />
-=======
             ListFooterComponent={() =>
               loading && (
                 <View
@@ -189,7 +177,6 @@ const Home = ({navigation, route}) => {
           />
         </View>
       </View>
->>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
     </SafeAreaView>
   );
 };

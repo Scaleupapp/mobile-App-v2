@@ -300,8 +300,6 @@ export const RootNavigator = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
-<<<<<<< HEAD
-=======
         name={Routes.MenuScreen}
         component={MenuScreen}
         options={{headerShown: false}}
@@ -312,13 +310,10 @@ export const RootNavigator = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
->>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
         name={Routes.MyPlaylist}
         component={MyPlaylist}
         options={{headerShown: false}}
       />
-<<<<<<< HEAD
-=======
       <Stack.Screen
         name={Routes.EditPlayList}
         component={EditPlayList}
@@ -395,7 +390,6 @@ export const RootNavigator = () => {
         component={ChangePassword}
         options={{headerShown: false}}
       />
->>>>>>> c74be917a469ef1a59acf1cdb96846dd31ce7fa4
     </Stack.Navigator>
   );
 };
