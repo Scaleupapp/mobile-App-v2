@@ -279,6 +279,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       </View>
       <CommentBottomSheetModal
         ref={commentRef}
+        postId={item?._id}
         comments={comments}
         setComments={setComments}
       />
