@@ -26,6 +26,8 @@ import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
 import ImageModal from '../Post/ImageModal';
 import CommentBottomSheetModal from '../Post/CustomBottomSheet';
+
+
 import {useSelector} from 'react-redux';
 import axios from 'axios';
 import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
@@ -42,9 +44,13 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [comments, setComments] = useState(item?.comments);
   const commentRef = useRef(null);
-  const userData = useSelector(state => state.auth?.userData);
+
+
+  const userData = useSelector(state => state?.userData);
   const token = userData?.token;
   const userId = token ? jwtDecode(token)?.userId : null;
+
+
   console.log('hhhhbhhbk', userId);
   const [isBookmarked, setIsBookmarked] = useState(false);
 

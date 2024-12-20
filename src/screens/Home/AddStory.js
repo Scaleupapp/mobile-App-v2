@@ -18,11 +18,12 @@ import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
 
 
 export const AddStory = ({ onStoryAdded }) => {
+
   const [modalVisible, setModalVisible] = useState(false);
- // Updated selector to match the Redux state structure
-  const userData = useSelector((state) => state.auth?.userData);
-  const token = userData?.token;
-  const userId = token ? jwtDecode(token)?.userId : null;
+
+  const userData = useSelector(state => state?.userData);
+   const token = userData?.token;
+   const userId = token ? jwtDecode(token)?.userId : null;
 
   // Open camera for capturing media
   const openCamera = async () => {

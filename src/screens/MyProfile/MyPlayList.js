@@ -64,8 +64,9 @@ const MyPlaylists = ({navigation}) => {
   ] = useState(null);
 
   // Get the user token from the Redux store
-  const token = useSelector(state => state.userData.token);
-  const userId = token ? jwtDecode(token)?.userId : null;
+ const userData = useSelector(state => state?.userData);
+    const token = userData?.token;
+    const userId = token ? jwtDecode(token)?.userId : null;
 
   const fetchUsername = async userId => {
     try {
