@@ -38,7 +38,8 @@ const MainHeader = () => {
 
         {/* Title */}
         <View style={{flexDirection: 'row'}}>
-          <Icon
+          {/* commented */}
+          {/* <Icon
             type="material-community"
             name="bell-badge"
             color={COLORS.whiteFFFFFF}
@@ -55,7 +56,7 @@ const MainHeader = () => {
             onPress={() =>
               navigation.navigate(Routes.MyProfile, {type: 'user'})
             }
-          />
+          /> */}
           <Icon
             type="font-awesome"
             name="bookmark"
