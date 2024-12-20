@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import { useSelector } from 'react-redux';
+import {useSelector} from 'react-redux';
 
 import {
   StyleSheet,
@@ -9,7 +9,7 @@ import {
   ScrollView,
   Alert,
   Dimensions,
-  Image
+  Image,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -19,10 +19,10 @@ import Text from '../../components/Text';
 import Button from '../../components/Button';
 import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
-import { useToast } from '../../components/CustomToast';
+import {useToast} from '../../components/CustomToast';
 
 const CreatePost = ({navigation}) => {
-  const { showToast } = useToast(); // Ensure useToast is called within the `ToastProvider` context
+  const {showToast} = useToast(); // Ensure useToast is called within the `ToastProvider` context
 
   const [heading, setHeading] = useState('');
   const [topics, setTopics] = useState('');
@@ -32,7 +32,7 @@ const CreatePost = ({navigation}) => {
   const [thumbnailFile, setThumbnailFile] = useState(null);
   const [contentType, setContentType] = useState('image'); // Default content type
 
-  const userData = useSelector((state) => state.auth.userData); // Fetch from state.auth
+  const userData = useSelector(state => state.userData); // Fetch from state.auth
   const jwtToken = userData?.token; // Use optional chaining to avoid undefined errors
 
   const handleFileUpload = async () => {
@@ -51,7 +51,7 @@ const CreatePost = ({navigation}) => {
         Alert.alert(
           'Thumbnail Required',
           'Please upload a thumbnail for your video',
-          [{ text: 'Upload Thumbnail', onPress: handleThumbnailUpload }]
+          [{text: 'Upload Thumbnail', onPress: handleThumbnailUpload}],
         );
       } else if (fileType.includes('pdf') || fileType.includes('document')) {
         setContentType('Document');
@@ -86,7 +86,7 @@ const CreatePost = ({navigation}) => {
 
   const uploadFile = async (fileData, additionalFields = {}) => {
     const formData = new FormData();
-    Object.keys(additionalFields).forEach((key) => {
+    Object.keys(additionalFields).forEach(key => {
       formData.append(key, additionalFields[key]);
     });
 
@@ -104,14 +104,17 @@ const CreatePost = ({navigation}) => {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${jwtToken}`,
         },
-      }
+      },
     );
     return response;
   };
 
   const handlePost = async () => {
     if (!heading || !topics || !hashtags || !file || !captions) {
-      showToast({ text: 'Please fill all fields and upload a file.', type: 'error' });
+      showToast({
+        text: 'Please fill all fields and upload a file.',
+        type: 'error',
+      });
       return;
     }
 
@@ -137,11 +140,11 @@ const CreatePost = ({navigation}) => {
         console.log('Thumbnail Upload Success:', thumbnailResponse.data);
       }
 
-      showToast({ text: 'Post created successfully!', type: 'success' });
+      showToast({text: 'Post created successfully!', type: 'success'});
       navigation.goBack();
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
-      showToast({ text: 'Failed to upload post.', type: 'error' });
+      showToast({text: 'Failed to upload post.', type: 'error'});
     }
   };
 
@@ -155,8 +158,7 @@ const CreatePost = ({navigation}) => {
       <View style={styles.layer1}>
         <ScrollView
           contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           <View style={styles.layer2}>
             <CustomTextInput
               label="Heading"
@@ -196,7 +198,7 @@ const CreatePost = ({navigation}) => {
               <View style={styles.thumbnailPreview}>
                 <Text>Thumbnail Preview:</Text>
                 <Image
-                  source={{ uri: thumbnailFile.uri }}
+                  source={{uri: thumbnailFile.uri}}
                   style={styles.thumbnailImage}
                 />
               </View>
@@ -207,14 +209,14 @@ const CreatePost = ({navigation}) => {
                 text="Cancel"
                 width={nw(85)}
                 height={nh(35)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => navigation.goBack()}
               />
               <Button
                 text="Next"
                 width={nw(65)}
                 height={nh(35)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={handlePost}
               />
             </View>

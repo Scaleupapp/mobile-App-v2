@@ -41,7 +41,7 @@ const SocialLogin = ({signup = false}) => {
 
       // Initiate Google Sign-In
       const userInfo = await GoogleSignin.signIn();
-      
+
       // Extract user data
       const user = userInfo.data.user;
       const userData = {
@@ -58,35 +58,34 @@ const SocialLogin = ({signup = false}) => {
         // First, try to login
         const {data: loginData} = await loginApi({
           loginIdentifier: userData.email,
-          password: userData.password
+          password: userData.password,
         });
 
         // Login successful
-        await AsyncStorage.setItem('userData', JSON.stringify(loginData));
-        dispatch(actions.setUserData(loginData));
+        const stringifiedUserData = JSON.stringify(loginData);
+        await AsyncStorage.setItem('userData', stringifiedUserData);
+        dispatch(actions.setUserData(stringifiedUserData));
         navigation.navigate(Routes.Home);
-
       } catch (loginError) {
         // If login fails, attempt to register
         try {
           const {data: registrationData} = await registerApi(userData);
-          
+
           // Registration successful, now login
-          await AsyncStorage.setItem('userData', JSON.stringify(registrationData));
+          const stringifiedUserData = JSON.stringify(registrationData);
+          await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(registrationData));
           navigation.navigate(Routes.Home);
-
         } catch (registrationError) {
           // Handle registration error
           console.error('Registration Error:', registrationError);
           Alert.alert(
-            'Registration Failed', 
-            registrationError.response?.data?.message || 
-            'Unable to create account. Please try again.'
+            'Registration Failed',
+            registrationError.response?.data?.message ||
+              'Unable to create account. Please try again.',
           );
         }
       }
-
     } catch (error) {
       // Handle Google Sign-In errors
       console.error('Google Auth Error:', JSON.stringify(error, null, 2));
@@ -94,11 +93,13 @@ const SocialLogin = ({signup = false}) => {
       const errorHandlers = {
         [statusCodes.SIGN_IN_CANCELLED]: 'Login Cancelled',
         [statusCodes.IN_PROGRESS]: 'Sign in is already in progress',
-        [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]: 'Google Play services is not available'
+        [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]:
+          'Google Play services is not available',
       };
 
-      const errorMessage = errorHandlers[error.code] || `Unexpected error: ${error.message}`;
-      
+      const errorMessage =
+        errorHandlers[error.code] || `Unexpected error: ${error.message}`;
+
       Alert.alert('Authentication Error', errorMessage);
     }
   };
@@ -116,8 +117,8 @@ const SocialLogin = ({signup = false}) => {
           variant="outline"
           text="Google"
           textStyle={{
-            fontSize: nh(12), 
-            fontFamily: APP_FONTS.PoppinsMedium
+            fontSize: nh(12),
+            fontFamily: APP_FONTS.PoppinsMedium,
           }}
           width={DEVICE_WIDTH / 2 - nw(23)}
           leftIcon={icons.google}
@@ -128,8 +129,8 @@ const SocialLogin = ({signup = false}) => {
           variant="outline"
           text="Apple"
           textStyle={{
-            fontSize: 12, 
-            fontFamily: APP_FONTS.PoppinsMedium
+            fontSize: 12,
+            fontFamily: APP_FONTS.PoppinsMedium,
           }}
           width={DEVICE_WIDTH / 2 - nw(23)}
           leftIcon={icons.apple}

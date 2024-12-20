@@ -83,7 +83,7 @@ export const deleteProjects = (id: any) => {
   return axiosInstance.delete(`${API.PROJECTS}/${id}`);
 };
 
-export const getProfile = (payload:any) => {
+export const getProfile = (payload: any) => {
   return axiosInstance.get(`${API.PROFILE_DETAIL}/${payload}`);
 };
 
@@ -91,8 +91,7 @@ export const updateProfile = (payload: any) => {
   return axiosInstance.put(API.PROFILE_DETAIL, payload);
 };
 
-
-//post 
+//post
 export const likePostApi = (postId: any) => {
   return axiosInstance.put(`${API.LIKEPOST}/${postId}`);
 };
@@ -108,49 +107,50 @@ export const unsavePostAPI = (postId: any) => {
   return axiosInstance.put(`${API.UNSAVE}/${postId}`);
 };
 
-export const getNotificationAPI = (postId: any) => {
+export const getNotificationAPI = () => {
   return axiosInstance.get(`${API.NOTIFICATION}`);
 };
 
 export const markReadNotificationAPI = (payload: any) => {
-  return axiosInstance.post(`${API.MARK_READ}`,payload);
+  return axiosInstance.post(`${API.MARK_READ}`, payload);
 };
 
-
-export const myInnerCircleRequestAPI = (payload: any) => {
+export const myInnerCircleRequestAPI = () => {
   return axiosInstance.get(`${API.INNERCIRCLE}`);
 };
 
-export const myInnerCircleAPI = (payload: any) => {
+export const myInnerCircleAPI = () => {
   return axiosInstance.get(`${API.GETINNERCIRCLE}`);
 };
 
-
 export const acceptInnerCircleRequestAPI = (payload: any) => {
-  return axiosInstance.post(`${API.ACCEPTREQ}`,payload);
+  return axiosInstance.post(`${API.ACCEPTREQ}`, payload);
 };
 
 export const declineInnerCircleRequestAPI = (payload: any) => {
-  return axiosInstance.post(`${API.REMOVEREQ}`,payload);
+  return axiosInstance.post(`${API.REMOVEREQ}`, payload);
 };
-
 
 export const addComment = (payload: any) => {
-  return axiosInstance.post(`${API.ADD_COMMENT}`,payload);
+  return axiosInstance.post(`${API.ADD_COMMENT}`, payload);
 };
-
+export const replyComment = (payload: any) => {
+  return axiosInstance.post(`${API.COMMENT}/reply`, payload);
+};
+export const likeComment = (id: any) => {
+  return axiosInstance.post(`${API.COMMENT}/like/${id}`);
+};
+export const unlikeComment = (id: any) => {
+  return axiosInstance.post(`${API.COMMENT}/unlike/${id}`);
+};
 
 export const getFollowerlist = (payload: any) => {
-  return axiosInstance.get(`${API.FOLLOW_UNFOLLOW}`,payload);
+  return axiosInstance.get(`${API.FOLLOW_UNFOLLOW}`, payload);
 };
-
 
 export const followUser = (payload: any) => {
-  console.log(payload,'poayysyys');
-  
-  return axiosInstance.post(`${API.FOLLOW_USER}/${payload}`,);
+  return axiosInstance.post(`${API.FOLLOW_USER}/${payload}`);
 };
 export const unlfollowUser = (payload: any) => {
-  return axiosInstance.delete(`${API.UNFOLLOW}/${payload}`,);
+  return axiosInstance.delete(`${API.UNFOLLOW}/${payload}`);
 };
-

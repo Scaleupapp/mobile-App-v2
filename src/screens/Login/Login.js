@@ -168,7 +168,7 @@ const Login = ({navigation}) => {
         });
         showToast({type: 'success', title: data?.message});
         const stringifiedUserData = JSON.stringify(data);
-        AsyncStorage.setItem('userData', stringifiedUserData);
+        await AsyncStorage.setItem('userData', stringifiedUserData);
         dispatch(actions.setUserData(stringifiedUserData));
         navigation.reset({
           index: 0,
@@ -187,7 +187,7 @@ const Login = ({navigation}) => {
           });
           showToast({type: 'success', title: data?.message});
           const stringifiedUserData = JSON.stringify(data);
-          AsyncStorage.setItem('userData', stringifiedUserData);
+          await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(stringifiedUserData));
           if (phoneNumberData?.isPhoneNumberVerified) {
             navigation.reset({
@@ -337,7 +337,7 @@ const Login = ({navigation}) => {
             }
             onPress={loginUser}
           />
-<SocialLogin navigation={navigation} />
+          <SocialLogin navigation={navigation} />
           {phoneNumberData?.loginOtp ? (
             <View
               style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
