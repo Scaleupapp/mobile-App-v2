@@ -5,6 +5,8 @@ import {
   FlatList,
   Keyboard,
   TouchableOpacity,
+  Text as RNText,
+  Pressable,
 } from 'react-native';
 import React, {forwardRef, useEffect, useMemo, useRef, useState} from 'react';
 import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
@@ -23,9 +25,12 @@ import Icon from '../../helper/icon';
 import {timeAgo} from '../../helper/commonFunctions';
 import {images} from '../../assets/images';
 import {useSelector} from 'react-redux';
+import {APP_FONTS} from '../../assets/fonts';
+import {navigationRef} from '../../../App';
+import Routes from '../../helper/routes';
 
-const RenderComment = ({item, index, onReplyPress}) => {
-  const [isLiked, setIsLiked] = useState(false);
+const RenderComment = ({item, index, onReplyPress, onClose}) => {
+  const [isLiked, setIsLiked] = useState(item?.isLiked);
   const [showReplies, setShowReplies] = useState(false); // State to toggle replies visibility
 
   const likeHandler = async () => {
@@ -34,12 +39,17 @@ const RenderComment = ({item, index, onReplyPress}) => {
       const res = isLiked
         ? await unlikeComment(item?._id)
         : await likeComment(item?._id);
-      console.log('🚀 ~ likeHandler ~ res:', res?.data);
     } catch (error) {
       console.log(error, 'eeee');
     }
   };
-
+  const goToProfile = () => {
+    onClose();
+    navigationRef.navigate(Routes.MyProfile, {
+      type: 'other',
+      id: item?.userId?._id,
+    });
+  };
   return (
     <View key={index}>
       <View
@@ -49,28 +59,34 @@ const RenderComment = ({item, index, onReplyPress}) => {
           marginBottom: nh(16),
           flex: 1,
         }}>
-        <Image
-          source={
-            item?.userId?.profilePicture
-              ? {uri: item?.userId?.profilePicture}
-              : images.ciclelogo
-          }
-          style={{
-            height: nw(65),
-            width: nw(65),
-            borderRadius: nw(65 / 2),
-            marginRight: nw(11),
-          }}
-        />
+        <Pressable onPress={goToProfile}>
+          <Image
+            source={
+              item?.userId?.profilePicture
+                ? {uri: item?.userId?.profilePicture}
+                : item?.profilePicture
+                ? {uri: item?.profilePicture}
+                : images.ciclelogo
+            }
+            style={{
+              height: nw(65),
+              width: nw(65),
+              borderRadius: nw(65 / 2),
+              marginRight: nw(11),
+            }}
+          />
+        </Pressable>
         <View style={{flex: 1}}>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <Text
-              variant="semibold16"
-              style={{
-                color: COLORS.black000000,
-              }}>
-              {item?.userId?.username}
-            </Text>
+            <Pressable onPress={goToProfile}>
+              <Text
+                variant="semibold16"
+                style={{
+                  color: COLORS.black000000,
+                }}>
+                {item?.userId?.username ?? item?.username}
+              </Text>
+            </Pressable>
             <Text
               variant="medium12"
               style={{
@@ -80,14 +96,48 @@ const RenderComment = ({item, index, onReplyPress}) => {
               {timeAgo(item?.commentDate)}
             </Text>
           </View>
-          <Text
-            variant="medium12"
-            style={{
-              color: COLORS.black333333,
-            }}>
-            {item?.commentText}
-          </Text>
-          <TouchableOpacity onPress={onReplyPress}>
+          {item?.taggedUserName ?? item?.parentUsername ? (
+            <RNText
+              style={{
+                fontSize: nh(12),
+                fontFamily: APP_FONTS.PoppinsMedium,
+                lineHeight: nh(18),
+                letterSpacing: nw(0.3),
+                fontWeight: '500',
+                color: COLORS.blue043142,
+              }}
+              onPress={() => {
+                onClose();
+                navigationRef.navigate(Routes.MyProfile, {
+                  type: 'other',
+                  id: item?.taggedUserId ?? item?.parentUserId,
+                });
+              }}>
+              {`@${item?.taggedUserName ?? item?.parentUsername} `}
+              <RNText
+                style={{
+                  color: COLORS.black333333,
+                }}>
+                {item?.commentText}
+              </RNText>
+            </RNText>
+          ) : (
+            <Text
+              variant="medium12"
+              style={{
+                color: COLORS.black333333,
+              }}>
+              {item?.commentText}
+            </Text>
+          )}
+          <TouchableOpacity
+            onPress={() =>
+              onReplyPress({
+                parentCommentId: item?._id,
+                username: item?.userId?.username,
+                userId: item?.userId?._id,
+              })
+            }>
             <Text
               variant="semibold12"
               style={{
@@ -96,7 +146,7 @@ const RenderComment = ({item, index, onReplyPress}) => {
               {'Reply'}
             </Text>
           </TouchableOpacity>
-          {item?.replies?.length > 0 && (
+          {item?.replies?.length > 0 && typeof item?.replies[0] === 'object' ? (
             <TouchableOpacity onPress={() => setShowReplies(!showReplies)}>
               <Text
                 variant="semibold12"
@@ -106,10 +156,10 @@ const RenderComment = ({item, index, onReplyPress}) => {
                 }}>
                 {showReplies
                   ? 'Hide Replies'
-                  : `Show ${item.replies.length} Replies`}
+                  : `Show ${item?.replies?.length} Replies`}
               </Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
         <Icon
           type={'antdesign'}
@@ -129,26 +179,15 @@ const RenderComment = ({item, index, onReplyPress}) => {
             }}>
             <RenderComment
               item={reply}
-              // item={{
-              //   _id: '6762efb7d56881947a4f07fc',
-              //   contentId: '6673c49515ce5d6b3aea1ac6',
-              //   userId: {
-              //     _id: '674f0edd92383a88cabf2bcb',
-              //     username: 'vpd',
-              //     profilePicture:
-              //       'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/674f0edd92383a88cabf2bcb/674f0edd92383a88cabf2bcb.jpg',
-              //   },
-              //   username: 'vpd',
-              //   commentText: 'Anskans',
-              //   parentCommentId: null,
-              //   replies: [],
-              //   likes: [],
-              //   likeCount: 0,
-              //   commentDate: '2024-12-18T15:52:23.993Z',
-              //   __v: 0,
-              // }}
               index={replyIndex}
-              onReplyPress={() => console.log('Reply to', reply?._id)}
+              onReplyPress={() =>
+                onReplyPress({
+                  parentCommentId: item?._id,
+                  username: reply?.userId?.username ?? reply?.username,
+                  userId: reply?.userId?._id ?? reply?.userId,
+                })
+              }
+              onClose={onClose}
             />
           </View>
         ))}
@@ -161,7 +200,12 @@ const CommentBottomSheetModal = forwardRef(
     const snapPoints = useMemo(() => ['100%', '90%'], []);
     const userData = useSelector(state => state?.userData);
     const [text, setText] = useState('');
-    const [selectedComment, setSelectedComment] = useState(null);
+    const [selectedComment, setSelectedComment] = useState({
+      parentCommentId: null,
+      username: null,
+      userId: null,
+    });
+    console.log({selectedComment});
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     const TextInputRef = useRef();
     const FlatRef = useRef();
@@ -195,29 +239,23 @@ const CommentBottomSheetModal = forwardRef(
         let paylaod = {
           contentId: postId,
           commentText: text,
-          parentCommentId: selectedComment?._id,
+          parentCommentId: selectedComment.parentCommentId,
+          taggedUserId: selectedComment.userId,
+          taggedUserName: selectedComment.username,
         };
-        console.log('🚀 ~ sendReply ~ paylaod:', paylaod);
         const {data} = await replyComment(paylaod);
-        console.log('🚀 ~ sendReply ~ data:', data);
         Keyboard.dismiss();
         FlatRef.current?.scrollToEnd();
-        // let newComments = comments?.map(u => {
-        //   if (u?._id == selectedComment?._id) {
-        //   }
-        // });
-        // let newPayload = [
-        //   {
-        //     ...paylaod,
-        //     userId: {
-        //       profilePicture: userData?.profilePicture,
-        //       username: userData?.username,
-        //       commentDate: new Date(),
-        //     },
-        //   },
-        // ];
+        let newComments = [];
+        comments?.map(u => {
+          let obj = u;
+          if (u?._id == selectedComment?.parentCommentId) {
+            obj.replies = [...u?.replies, data?.comment];
+          }
+          newComments.push(obj);
+        });
         setText('');
-        // setComments([...comments, ...newPayload]);
+        setComments(newComments);
       } catch (error) {}
     };
 
@@ -296,10 +334,11 @@ const CommentBottomSheetModal = forwardRef(
                   <RenderComment
                     item={item}
                     index={index}
-                    onReplyPress={() => {
+                    onReplyPress={detail => {
                       TextInputRef.current?.focus();
-                      setSelectedComment(item);
+                      setSelectedComment(detail);
                     }}
+                    onClose={() => ref.current?.dismiss()}
                   />
                 )}
               />

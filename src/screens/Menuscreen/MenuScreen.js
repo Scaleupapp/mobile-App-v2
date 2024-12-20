@@ -17,31 +17,32 @@ import {logoutUser} from '../../helper/commonFunctions';
 
 const MenuScreen = ({navigation, route}) => {
   const menu = [
-    {
-      title: 'Quiz',
-      nav: '',
-    },
-    {
-      title: 'My Inner Circle',
-      nav: Routes.InnerCircle,
-    },
-    {
-      title: 'My Inner Request',
-      nav: Routes.InnerCircleRequest,
-    },
+    // commented
+    // {
+    //   title: 'Quiz',
+    //   nav: '',
+    // },
+    // {
+    //   title: 'My Inner Circle',
+    //   nav: Routes.InnerCircle,
+    // },
+    // {
+    //   title: 'My Inner Request',
+    //   nav: Routes.InnerCircleRequest,
+    // },
 
-    {
-      title: 'Achievements',
-      nav: '',
-    },
-    {
-      title: 'Help Centre',
-      nav: '',
-    },
-    {
-      title: 'Report an Issue',
-      nav: '',
-    },
+    // {
+    //   title: 'Achievements',
+    //   nav: '',
+    // },
+    // {
+    //   title: 'Help Centre',
+    //   nav: '',
+    // },
+    // {
+    //   title: 'Report an Issue',
+    //   nav: '',
+    // },
     {
       title: 'Settings',
       nav: Routes.Settings,
@@ -89,7 +90,13 @@ const MenuScreen = ({navigation, route}) => {
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          <View style={{marginBottom: nh(100)}}>
+          <View
+            style={
+              {
+                // commented
+                // marginBottom: nh(100)
+              }
+            }>
             <FlatList
               data={menu}
               renderItem={({item}) => <Card item={item} />}

@@ -44,7 +44,8 @@ const Header = ({
       </View>
 
       {/* Right Icon */}
-      <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
+      {/* commented */}
+      {/* <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
         {rightIcon && (
           <Entypo
             name="dots-three-vertical"
@@ -53,7 +54,7 @@ const Header = ({
             style={styles.icon}
           />
         )}
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };
