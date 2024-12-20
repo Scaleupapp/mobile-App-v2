@@ -231,12 +231,13 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             style={{marginRight: nw(10)}}
             onPress={() => commentRef?.current?.present()}
           />
-          <Icon
+          {/* commented */}
+          {/* <Icon
             type="feather"
             name="share-2"
             size={24}
             color={COLORS.blue043142}
-          />
+          /> */}
         </View>
         <Icon
           type="font-awesome"

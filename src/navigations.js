@@ -186,7 +186,8 @@ const TabNavigator = ({navigation, route}) => {
             setBottomIcon(focused ? icons.home1 : icons.home2, focused),
         }}
       />
-      <Tab.Screen
+      {/* commented */}
+      {/* <Tab.Screen
         name={Routes.Preferences}
         component={Preferences}
         options={{
@@ -195,7 +196,7 @@ const TabNavigator = ({navigation, route}) => {
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.search1 : icons.search2, focused),
         }}
-      />
+      /> */}
       <Tab.Screen
         name={Routes.CreatePost}
         component={CreatePost}
