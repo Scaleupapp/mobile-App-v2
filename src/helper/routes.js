@@ -36,6 +36,7 @@ const Routes = {
   MenuScreen: 'MenuScreen',
   MyProfile: 'MyProfile',
   MyPlaylist: 'MyPlaylist',
+  LearningVideo: 'LearningVideo',
   EditPlayList: 'EditPlayList',
   NewPlayList: 'NewPlayList',
   SavePost: 'SavePost',

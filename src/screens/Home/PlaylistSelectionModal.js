@@ -29,7 +29,7 @@ const PlaylistSelectionModal = ({
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
 
-  const userData = useSelector((state) => state.auth?.userData);
+  const userData = useSelector(state => state?.userData);
   const token = userData?.token;
   const userId = token ? jwtDecode(token)?.userId : null;
 

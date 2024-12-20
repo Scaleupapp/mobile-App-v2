@@ -32,6 +32,7 @@ import PendingPost from './screens/Post/PendingPost';
 import DeclinedPost from './screens/Post/DeclinedPost';
 import CreatePost from './screens/Post/CreatePost';
 import InnerCircleRequest from './screens/InnerCircle/InnerCircleRequest';
+import LearningVideo from './screens/LearningVideo/LearningVideo';
 import InnerCircle from './screens/InnerCircle/MyInnerCircle';
 import Followers from './screens/MyProfile/Followers';
 import Following from './screens/MyProfile/Following';
@@ -208,8 +209,8 @@ const TabNavigator = ({navigation, route}) => {
         }}
       />
       <Tab.Screen
-        name={Routes.Education}
-        component={Education}
+        name={Routes.LearningVideo}
+        component={LearningVideo}
         options={{
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Book', focused),
