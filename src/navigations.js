@@ -217,7 +217,7 @@ const TabNavigator = ({navigation, route}) => {
         }}
       />
       <Tab.Screen
-        name={Routes.MyPlaylist}
+        name={Routes.MyProfile}
         component={MyProfile}
         options={{
           headerShown: false,

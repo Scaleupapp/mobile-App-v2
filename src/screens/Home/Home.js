@@ -21,20 +21,18 @@ import PostView from './Post';
 import {Story} from './Story';
 import {throttle} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
-import {actions} from '../../redux/reducers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {actions} from '../../redux/reducers';
 
 const Home = ({navigation, route}) => {
   const [home, setHome] = useState([]);
-  // console.log('🚀 ~ Home ~ home:', home);
+  console.log('🚀 ~ Home ~ home:', home);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
-  const dispatch = useDispatch();
-  const userData = useSelector(state => state?.userData);
 
   useFocusEffect(
     useCallback(() => {
@@ -49,6 +47,7 @@ const Home = ({navigation, route}) => {
   useEffect(() => {
     getProfileData();
   }, []);
+  
 
   const getProfileData = async () => {
     try {
@@ -65,10 +64,12 @@ const Home = ({navigation, route}) => {
       console.log(error?.response?.data?.message, 'errormsg');
     }
   };
+  
+
   const homePageData = async (page, refresh = false) => {
     try {
       const {data} = await getHomePageData(page);
-      // console.log('🚀 ~ homePageData ~ data:', data);
+      console.log('🚀 ~ homePageData ~ data:', data);
       if (data?.content.length > 0) {
         setPage(prevPage => prevPage + 1);
         if (refresh) setHome(data.content);

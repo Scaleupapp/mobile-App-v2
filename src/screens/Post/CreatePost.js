@@ -19,8 +19,11 @@ import Text from '../../components/Text';
 import Button from '../../components/Button';
 import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
+import { useToast } from '../../components/CustomToast';
 
 const CreatePost = ({navigation}) => {
+  const { showToast } = useToast(); // Ensure useToast is called within the `ToastProvider` context
+
   const [heading, setHeading] = useState('');
   const [topics, setTopics] = useState('');
   const [captions, setCaptions] = useState('');
@@ -108,7 +111,7 @@ const CreatePost = ({navigation}) => {
 
   const handlePost = async () => {
     if (!heading || !topics || !hashtags || !file || !captions) {
-      Alert.alert('Error', 'Please fill all fields and upload a file.');
+      showToast({ text: 'Please fill all fields and upload a file.', type: 'error' });
       return;
     }
 
@@ -134,11 +137,11 @@ const CreatePost = ({navigation}) => {
         console.log('Thumbnail Upload Success:', thumbnailResponse.data);
       }
 
-      Alert.alert('Success', 'Post created successfully!');
+      showToast({ text: 'Post created successfully!', type: 'success' });
       navigation.goBack();
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
-      Alert.alert('Error', 'Failed to upload post.');
+      showToast({ text: 'Failed to upload post.', type: 'error' });
     }
   };
 

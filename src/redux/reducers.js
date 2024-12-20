@@ -2,10 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
     // Initial state properties
-    userData: {
-    //     userId: null,    // Store userId directly here
-    // token: null, 
-    },
+    userData: {},
 
 };
 
@@ -17,8 +14,6 @@ const mySlice = createSlice({
         setUserData(state, action) {
             state.userData = action.payload;
         },
-
-        
 
         logout(state) {
             return initialState;

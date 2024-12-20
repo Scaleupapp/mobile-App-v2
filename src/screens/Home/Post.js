@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -19,32 +19,45 @@ import Video from 'react-native-video';
 
 import { useSelector } from 'react-redux';
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode';
-import PlaylistSelectionModal from './PlaylistSelectionModal';
+import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
+import PlaylistSelectionModal from './PlaylistSelectionModal'; // Import the new modal
+
+
+// import convertToProxyURL from 'react-native-video-cache';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
+  // console.log({item});
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const [imageModal, setImageModal] = useState(false);
 
-  const token = useSelector((state) => state.auth.userData.token);
+  const userData = useSelector((state) => state.auth?.userData);
+  const token = userData?.token;
   const userId = token ? jwtDecode(token)?.userId : null;
+  console.log('hhhhbhhbk',userId);
   const [isBookmarked, setIsBookmarked] = useState(false);
+
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+
+
 
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
 
+
+
   const handleBookmarkPress = () => {
     if (item?.contentType === 'Video') {
       if (userId) {
+        // Show playlist modal for videos
         setIsPlaylistModalVisible(true);
       } else {
         console.error('User ID not available');
       }
     } else {
+      // Show message if the content is not a video
       Alert.alert(
         'Action Not Allowed',
         'Cannot add image to the playlist',
@@ -52,13 +65,15 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       );
     }
   };
+  
 
   const handleBookmark = async (userId, postId) => {
     try {
-      // Check if the post is already in the playlist
+      // First, check if the post is already in the playlist
       const checkResponse = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/check?userId=${userId}&postId=${postId}`);
       
       if (checkResponse.data.exists) {
+        // If already bookmarked, show "Already in playlist" message
         Alert.alert(
           '',
           'Already in your playlist', 
@@ -73,11 +88,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
       // If not bookmarked, proceed with bookmarking
       await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists', {
-        userId,
-        playlistName: 'My Playlist',
-        items: [{ postId }],
+        userId, // Send userId in the body
+        playlistName: 'My Playlist', // Optional: Customize the playlist name
+        items: [{ postId }], // Only send the postId, not the entire object
       });
       
+      // Show added to playlist message
       Alert.alert(
         '',
         'Added to your playlist', 
@@ -89,10 +105,11 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       );
 
       console.log('Post successfully bookmarked');
-      setIsBookmarked(true);
+      setIsBookmarked(true); // Update the UI state
     } catch (error) {
       console.error('Failed to bookmark post:', error.response?.data || error.message);
       
+      // Show error message if something goes wrong
       Alert.alert(
         'Error',
         'Failed to bookmark post', 
@@ -100,6 +117,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       );
     }
   };
+  
+  
 
   return (
     <View
@@ -132,68 +151,69 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         />
       </View>
 
-      {item?.contentType === 'Image' && item?.contentURL ? (
-        <Pressable
-          onPress={() => setImageModal(true)}
-          style={{marginVertical: nh(10)}}>
-          <Image
-            source={{uri: item?.contentURL}}
-            style={{
-              height: nh(250),
-              width: DEVICE_WIDTH-nw(30),
-              backgroundColor: COLORS.whiteFFFFFF,
-              marginBottom: nh(6),
-            }}
-            resizeMode="contain"
-          />
-        </Pressable>
-      ) : null}
+      {item?.contentType == 'Image' && item?.contentURL ? (
+  <Pressable
+    onPress={() => setImageModal(true)}
+    style={{marginVertical: nh(10)}}>
+    <Image
+      source={{uri: item?.contentURL}}
+      style={{
+        height: nh(250), // Fixed height for the image
+        width: DEVICE_WIDTH-nw(30), // Fixed width for the image (full width of the device)
+        backgroundColor: COLORS.whiteFFFFFF,
+        marginBottom: nh(6),
+      }}
+      resizeMode="contain" // Ensures the image fills the container while maintaining aspect ratio
+    />
+  </Pressable>
+) : null}
 
-      {item?.contentType === 'Video' && item?.contentURL ? (
-        <Pressable
-          onPress={() => setIsPlaying(index)}
-          style={{
-            marginVertical: nh(10),
-          }}>
-          {item?.isVerified && (
-            <View
-              style={{
-                height: nh(30),
-                width: nw(30),
-                borderRadius: 15,
-                backgroundColor: COLORS.blue043142,
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'absolute',
-                right: 10,
-                top: 10,
-                zIndex: 1,
-              }}>
-              <Icon
-                type="material-community"
-                name="check-decagram"
-                color={COLORS.yellowF5BE00}
-                size={20}
-              />
-            </View>
-          )}
-          <Video
-            paused={isPlaying !== index}
-            controls
-            onLoad={onLoad}
-            source={{uri: item?.contentURL}}
-            style={{
-              width: DEVICE_WIDTH - nw(32),
-              height: nh(250),
-              backgroundColor: COLORS.whiteFFFFFF,
-              marginBottom: nh(6),
-            }}
-            resizeMode="contain"
-            onBuffer={e => console.log('buffer ', e)}
-            onError={e => console.log('error ', e)}
-          />
-        </Pressable>
-      ) : null}
+{item?.contentType == 'Video' && item?.contentURL ? (
+  <Pressable
+    onPress={() => setIsPlaying(index)}
+    style={{
+      marginVertical: nh(10),
+    }}>
+    {item?.isVerified && (
+      <View
+        style={{
+          height: nh(30),
+          width: nw(30),
+          borderRadius: 15,
+          backgroundColor: COLORS.blue043142,
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'absolute',
+          right: 10,
+          top: 10,
+          zIndex: 1,
+        }}>
+        <Icon
+          type="material-community"
+          name="check-decagram"
+          color={COLORS.yellowF5BE00}
+          size={20}
+        />
+      </View>
+    )}
+    <Video
+      paused={isPlaying != index}
+      controls
+      onLoad={onLoad}
+      source={{uri: item?.contentURL}}
+      style={{
+        width: DEVICE_WIDTH - nw(32),  // Fixed width
+        height: nh(250),  // Fixed height
+        backgroundColor: COLORS.whiteFFFFFF,
+        marginBottom: nh(6),
+      }}
+      resizeMode="conatin"
+      onBuffer={e => console.log('buffer ', e)}
+      onError={e => console.log('error ', e)}
+    />
+  </Pressable>
+) : null}
+
 
       <View style={styles.view}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -218,26 +238,27 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             color={COLORS.blue043142}
           />
         </View>
-        
         <Pressable onPress={handleBookmarkPress}>
-          <Icon
-            type="feather"
-            name="bookmark"
-            size={24}
-            color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
-          />
-        </Pressable>
-
-        <PlaylistSelectionModal
-          visible={isPlaylistModalVisible}
-          onClose={() => setIsPlaylistModalVisible(false)}
-          postId={item._id}
-          onPostAdded={() => {
-            setIsBookmarked(true);
-          }}
+        <Icon
+          type="feather"
+          name="bookmark"
+          size={24}
+          color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
         />
-      </View>
+      </Pressable>
 
+      {/* Playlist Selection Modal */}
+      <PlaylistSelectionModal
+        visible={isPlaylistModalVisible}
+        onClose={() => setIsPlaylistModalVisible(false)}
+        postId={item._id}
+        onPostAdded={() => {
+          // Optional: Update UI state to show post is bookmarked
+          setIsBookmarked(true);
+        }}
+      />
+
+      </View>
       <ReadMore
         numberOfLines={2}
         style={styles.textStyle}
@@ -250,9 +271,15 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         }}>
         {item?.captions}
       </ReadMore>
-
       <Text color={COLORS.blue043142}>{item.hashtags}</Text>
-
+      {/* <Text
+        variant="medium12"
+        color={COLORS.grey333333}
+        numberOfLines={2}
+        ellipsizeMode="tail"
+        style={{marginTop: nh(10)}}>
+        {item?.captions}
+      </Text> */}
       <View style={{flexDirection: 'row', width: '100%'}}>
         {item?.relatedTopics.map((u, i) => (
           <View key={i} style={styles.yellowview}>
