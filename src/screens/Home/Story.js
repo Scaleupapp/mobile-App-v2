@@ -16,9 +16,13 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 import Text from '../../components/Text';
+import {useSelector} from 'react-redux';
+import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
 
 const { width, height } = Dimensions.get('window');
 const STORY_DURATION = 5000;
+const API_BASE_URL = 'http://192.168.63.240:3000/api';
+
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -31,6 +35,10 @@ export const Story = () => {
   const progressAnimations = useRef([]);
   const currentAnimation = useRef(null);
 
+  const userData = useSelector(state => state?.userData);
+    const token = userData?.token;
+    const userId = token ? jwtDecode(token)?.userId : null;
+
   useEffect(() => {
     fetchStories();
     return () => {
@@ -39,20 +47,21 @@ export const Story = () => {
         currentAnimation.current.stop();
       }
     };
-  }, []);
+  }, [userId]);
 
   const fetchStories = async () => {
     try {
       setIsLoading(true);
       const [usersResponse, storiesResponse] = await Promise.all([
-        axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user'),
-        axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories')
+        axios.get(`${API_BASE_URL}/user`),
+        axios.get(`${API_BASE_URL}/stories?userId=${userId}`) // Add userId to get view status
       ]);
 
       const users = usersResponse.data || [];
-      const stories = storiesResponse.data || [];
+      const stories = storiesResponse.data || []; // Stories now include isViewed property
 
-      const grouped = users
+      // Group stories by user and include view status
+      let grouped = users
         .map(user => ({
           ...user,
           stories: stories.filter(story => 
@@ -61,9 +70,25 @@ export const Story = () => {
         }))
         .filter(user => user.stories.length > 0);
 
+
+         // Calculate if all stories for a user are viewed
+      grouped = grouped.map(user => ({
+        ...user,
+        allStoriesViewed: user.stories.every(story => story.isViewed),
+      }));
+
+      // Sort users based on story view status
+      grouped.sort((a, b) => {
+        // If one user has all stories viewed and the other doesn't
+        if (a.allStoriesViewed !== b.allStoriesViewed) {
+          return a.allStoriesViewed ? 1 : -1; // Unviewed stories first
+        }
+        // If view status is the same, maintain original order
+        return 0;
+      });
+
       setGroupedStories(grouped);
       
-      // Initialize progress animations after setting grouped stories
       if (grouped.length > 0) {
         progressAnimations.current = grouped.map(user =>
           user.stories.map(() => new Animated.Value(0))
@@ -73,6 +98,31 @@ export const Story = () => {
       console.error('Error fetching stories:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+
+  // New function to mark story as viewed
+  const markStoryAsViewed = async (storyId) => {
+    try {
+      await axios.post(`${API_BASE_URL}/stories/view`, {
+        userId,
+        storyId
+      });
+      
+      // Update local state to reflect the view
+      setGroupedStories(prev => {
+        return prev.map(user => ({
+          ...user,
+          stories: user.stories.map(story => 
+            story._id === storyId 
+              ? { ...story, isViewed: true }
+              : story
+          )
+        }));
+      });
+    } catch (error) {
+      console.error('Error marking story as viewed:', error);
     }
   };
 
@@ -123,20 +173,19 @@ export const Story = () => {
     }
   };
 
-  const handleNextStory = () => {
+  const handleNextStory = async () => {
     const currentUser = groupedStories[currentUserIndex];
     if (!currentUser) return;
 
-    const isLastStoryInUser = currentStoryIndex === currentUser.stories.length - 1;
+    const currentStory = currentUser.stories[currentStoryIndex];
     
     // Mark current story as viewed
-    const newViewedStories = { ...viewedStories };
-    if (!newViewedStories[currentUser._id]) {
-      newViewedStories[currentUser._id] = new Set();
+    if (currentStory && !currentStory.isViewed) {
+      await markStoryAsViewed(currentStory._id);
     }
-    newViewedStories[currentUser._id].add(currentStoryIndex);
-    setViewedStories(newViewedStories);
 
+    const isLastStoryInUser = currentStoryIndex === currentUser.stories.length - 1;
+    
     if (isLastStoryInUser) {
       if (currentUserIndex === groupedStories.length - 1) {
         setModalVisible(false);
@@ -206,6 +255,44 @@ export const Story = () => {
   const currentUser = groupedStories[currentUserIndex];
   const currentStory = currentUser?.stories[currentStoryIndex];
 
+
+  // Modified thumbnail rendering to show view status
+  const renderThumbnail = (user, userIndex) => {
+    const allStoriesViewed = user.allStoriesViewed;
+    
+    return (
+      <View key={user._id} style={[
+        styles.thumbnailGroup,
+        // Add slight opacity to viewed stories
+        allStoriesViewed && styles.viewedThumbnailGroup
+      ]}>
+        <TouchableOpacity
+          onPress={() => handleStoryPress(userIndex)}
+          style={[
+            styles.thumbnailBorder,
+            {
+              borderColor: allStoriesViewed ? 'green' : '#ff3040',
+              borderWidth: allStoriesViewed ? 3 : 3,
+            },
+          ]}>
+          <Image
+            source={{ uri: user.profilePicture }}
+            style={[
+              styles.thumbnailImage,
+              allStoriesViewed && styles.viewedThumbnailImage
+            ]}
+          />
+        </TouchableOpacity>
+        <Text style={[
+          styles.username,
+          allStoriesViewed && styles.viewedUsername
+        ]}>
+          {user.username}
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -213,28 +300,8 @@ export const Story = () => {
         showsHorizontalScrollIndicator={false}
         style={styles.thumbnailScroll}>
         <AddStory />
-        {groupedStories.map((user, userIndex) => (
-          <View key={user._id} style={styles.thumbnailGroup}>
-            <TouchableOpacity
-              onPress={() => handleStoryPress(userIndex)}
-              style={[
-                styles.thumbnailBorder,
-                {
-                  borderColor: user.stories.every((_, index) =>
-                    viewedStories[user._id]?.has(index)
-                  )
-                    ? 'green'
-                    : '#ff3040',
-                },
-              ]}>
-              <Image
-                source={{ uri: user.profilePicture }}
-                style={styles.thumbnailImage}
-              />
-            </TouchableOpacity>
-            <Text style={styles.username}>{user.username}</Text>
-          </View>
-        ))}
+        {groupedStories.map((user, userIndex) => renderThumbnail(user, userIndex))}
+
       </ScrollView>
 
       <Modal
