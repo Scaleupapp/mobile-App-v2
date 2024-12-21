@@ -195,6 +195,8 @@ const MyPlaylists = ({navigation}) => {
       setIsVideoModalVisible(true);
     }
   };
+
+  
   const handleVideoEnd = async () => {
     if (selectedVideo && selectedVideo.playlistId) {
       try {
@@ -788,6 +790,14 @@ const MyPlaylists = ({navigation}) => {
                     </TouchableOpacity>
 
                     <View style={styles.actionButtons}>
+                    {isViewed && (
+                        <Icon
+                          type="ionicon"
+                          name="checkmark-circle"
+                          size={24}
+                          color='green'
+                        />
+                      )}
                       <TouchableOpacity
                         style={styles.deleteButton}
                         onPress={() =>
@@ -800,14 +810,7 @@ const MyPlaylists = ({navigation}) => {
                           color={COLORS.red}
                         />
                       </TouchableOpacity>
-                      {isViewed && (
-                        <Icon
-                          type="ionicon"
-                          name="checkmark-circle"
-                          size={24}
-                          color={COLORS.green}
-                        />
-                      )}
+                      
                     </View>
                   </View>
                 </Swipeable>

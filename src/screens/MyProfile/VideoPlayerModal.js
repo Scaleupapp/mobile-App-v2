@@ -12,13 +12,15 @@ import Icon from '../../helper/icon';
 import { COLORS } from '../../helper/colors';
 import Text from '../../components/Text';
 
-const VideoPlayerModal = ({ visible, videoUrl, onClose }) => {
+const VideoPlayerModal = ({ visible, videoUrl, onClose, onVideoEnd, playlistId, postId }) => {
   const videoRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [videoError, setVideoError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMarkedAsViewed, setHasMarkedAsViewed] = useState(false);
+  const [duration, setDuration] = useState(0);
 
   const handleRotate = useCallback(() => {
     setRotation((prevRotation) => (prevRotation + 90) % 360);
@@ -31,6 +33,33 @@ const VideoPlayerModal = ({ visible, videoUrl, onClose }) => {
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
   }, []);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setHasMarkedAsViewed(false);
+    }
+  }, [visible]);
+
+  const handleProgress = ({ currentTime }) => {
+    // Mark as viewed when 90% of the video is watched
+    if (duration > 0 && !hasMarkedAsViewed && (currentTime / duration) >= 0.9) {
+      setHasMarkedAsViewed(true);
+      onVideoEnd?.();
+    }
+  };
+
+  const handleLoad = (data) => {
+    setIsLoading(false);
+    setDuration(data.duration);
+  };
+
+  const handleEnd = () => {
+    if (!hasMarkedAsViewed) {
+      setHasMarkedAsViewed(true);
+      onVideoEnd?.();
+    }
+  };
 
   return (
     <Modal
@@ -68,7 +97,9 @@ const VideoPlayerModal = ({ visible, videoUrl, onClose }) => {
             muted={isMuted}
             resizeMode="contain"
             onLoadStart={() => setIsLoading(true)}
-            onLoad={() => setIsLoading(false)}
+            onLoad={handleLoad}
+            onProgress={handleProgress}
+            onEnd={handleEnd}
             onError={(error) => {
               console.error('Video Error:', error);
               setVideoError(error?.errorString || 'Unknown error');
