@@ -16,13 +16,12 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 import Text from '../../components/Text';
-import {useSelector} from 'react-redux';
-import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {getProfile} from '../../services/apiService';
 
 const { width, height } = Dimensions.get('window');
 const STORY_DURATION = 5000;
-const API_BASE_URL = 'http://192.168.63.240:3000/api';
-
+const API_BASE_URL = 'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api';
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,35 +31,52 @@ export const Story = () => {
   const [viewedStories, setViewedStories] = useState({});
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [profileData, setProfileData] = useState(null);
   const progressAnimations = useRef([]);
   const currentAnimation = useRef(null);
 
-  const userData = useSelector(state => state?.userData);
-    const token = userData?.token;
-    const userId = token ? jwtDecode(token)?.userId : null;
-
   useEffect(() => {
     fetchStories();
+    getProfileData();
     return () => {
-      // Cleanup animations on unmount
       if (currentAnimation.current) {
         currentAnimation.current.stop();
       }
     };
-  }, [userId]);
+  }, []);
 
-  const fetchStories = async () => {
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+
+      const userId = res?.data?.userProfileInfo?.id;
+      if (userId) {
+        fetchStories(userId);
+      }
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+      setIsLoading(false);
+    }
+  };
+
+  const fetchStories = async (userId) => {
+    if (!userId) return;
+    
     try {
       setIsLoading(true);
       const [usersResponse, storiesResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/user`),
-        axios.get(`${API_BASE_URL}/stories?userId=${userId}`) // Add userId to get view status
+        axios.get(`${API_BASE_URL}/stories?userId=${userId}`)
       ]);
 
       const users = usersResponse.data || [];
-      const stories = storiesResponse.data || []; // Stories now include isViewed property
+      const stories = storiesResponse.data || [];
 
-      // Group stories by user and include view status
       let grouped = users
         .map(user => ({
           ...user,
@@ -70,20 +86,15 @@ export const Story = () => {
         }))
         .filter(user => user.stories.length > 0);
 
-
-         // Calculate if all stories for a user are viewed
       grouped = grouped.map(user => ({
         ...user,
         allStoriesViewed: user.stories.every(story => story.isViewed),
       }));
 
-      // Sort users based on story view status
       grouped.sort((a, b) => {
-        // If one user has all stories viewed and the other doesn't
         if (a.allStoriesViewed !== b.allStoriesViewed) {
-          return a.allStoriesViewed ? 1 : -1; // Unviewed stories first
+          return a.allStoriesViewed ? 1 : -1;
         }
-        // If view status is the same, maintain original order
         return 0;
       });
 
@@ -101,16 +112,15 @@ export const Story = () => {
     }
   };
 
-
-  // New function to mark story as viewed
   const markStoryAsViewed = async (storyId) => {
+    if (!profileData?.id) return;
+    
     try {
       await axios.post(`${API_BASE_URL}/stories/view`, {
-        userId,
+        userId: profileData.id,
         storyId
       });
       
-      // Update local state to reflect the view
       setGroupedStories(prev => {
         return prev.map(user => ({
           ...user,

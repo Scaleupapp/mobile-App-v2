@@ -21,22 +21,17 @@ import {
   savePostAPI,
   unlikePostApi,
   unsavePostAPI,
+  getProfile,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
 import ImageModal from '../Post/ImageModal';
 import CommentBottomSheetModal from '../Post/CustomBottomSheet';
-
-
-import {useSelector} from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode'; // Import jwtDecode
-import PlaylistSelectionModal from './PlaylistSelectionModal'; // Import the new modal
-
-// import convertToProxyURL from 'react-native-video-cache';
+import PlaylistSelectionModal from './PlaylistSelectionModal';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  // console.log({item});
   const [imageHeight, setImageHeight] = useState(200);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
@@ -44,17 +39,26 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [comments, setComments] = useState(item?.comments);
   const commentRef = useRef(null);
-
-
-  const userData = useSelector(state => state?.userData);
-  const token = userData?.token;
-  const userId = token ? jwtDecode(token)?.userId : null;
-
-
-  console.log('hhhhbhhbk', userId);
   const [isBookmarked, setIsBookmarked] = useState(false);
-
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    getProfileData();
+  }, []);
+
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+    }
+  };
 
   const onLoad = data => {
     const {width, height} = data.naturalSize;
@@ -62,6 +66,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   };
 
   const likeHandler = async () => {
+    if (!profileData?.id) return;
+    
     try {
       setIsLiked(!isLiked);
       const res = isLiked
@@ -84,15 +90,14 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   }, [item?.contentType]);
 
   const handleBookmarkPress = () => {
+    if (!profileData?.id) {
+      console.error('User ID not available');
+      return;
+    }
+
     if (item?.contentType === 'Video') {
-      if (userId) {
-        // Show playlist modal for videos
-        setIsPlaylistModalVisible(true);
-      } else {
-        console.error('User ID not available');
-      }
+      setIsPlaylistModalVisible(true);
     } else {
-      // Show message if the content is not a video
       Alert.alert('Action Not Allowed', 'Cannot add image to the playlist', [
         {text: 'OK', style: 'default'},
       ]);

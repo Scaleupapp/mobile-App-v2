@@ -1,6 +1,4 @@
-import React, {useState} from 'react';
-import {useSelector} from 'react-redux';
-
+import React, {useState, useEffect} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -11,6 +9,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
@@ -20,20 +19,45 @@ import Button from '../../components/Button';
 import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
 import {useToast} from '../../components/CustomToast';
+import {getProfile} from '../../services/apiService';
 
 const CreatePost = ({navigation}) => {
-  const {showToast} = useToast(); // Ensure useToast is called within the `ToastProvider` context
+  const {showToast} = useToast();
 
+  // Form state
   const [heading, setHeading] = useState('');
   const [topics, setTopics] = useState('');
   const [captions, setCaptions] = useState('');
   const [hashtags, setHashtags] = useState('');
   const [file, setFile] = useState(null);
   const [thumbnailFile, setThumbnailFile] = useState(null);
-  const [contentType, setContentType] = useState('image'); // Default content type
+  const [contentType, setContentType] = useState('image');
+  
+  // User data state
+  const [profileData, setProfileData] = useState(null);
 
-  const userData = useSelector(state => state.userData); // Fetch from state.auth
-  const jwtToken = userData?.token; // Use optional chaining to avoid undefined errors
+  // Fetch profile data on component mount
+  useEffect(() => {
+    getProfileData();
+  }, []);
+
+  // Function to fetch profile data using AsyncStorage and API
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile('');
+      console.log('Profile data fetched:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+      showToast({
+        text: 'Failed to load profile data',
+        type: 'error',
+      });
+    }
+  };
 
   const handleFileUpload = async () => {
     try {
@@ -65,6 +89,10 @@ const CreatePost = ({navigation}) => {
         console.log('User cancelled document picker');
       } else {
         console.error('Error selecting file:', err);
+        showToast({
+          text: 'Failed to select file',
+          type: 'error',
+        });
       }
     }
   };
@@ -80,36 +108,63 @@ const CreatePost = ({navigation}) => {
         console.log('User cancelled thumbnail picker');
       } else {
         console.error('Error selecting thumbnail:', err);
+        showToast({
+          text: 'Failed to select thumbnail',
+          type: 'error',
+        });
       }
     }
   };
 
   const uploadFile = async (fileData, additionalFields = {}) => {
-    const formData = new FormData();
-    Object.keys(additionalFields).forEach(key => {
-      formData.append(key, additionalFields[key]);
-    });
+    try {
+      // Get the authentication token from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const {token} = JSON.parse(userData);
 
-    formData.append('media', {
-      uri: fileData.uri,
-      type: fileData.type,
-      name: fileData.name,
-    });
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
 
-    const response = await axios.post(
-      'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/create',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${jwtToken}`,
+      const formData = new FormData();
+      Object.keys(additionalFields).forEach(key => {
+        formData.append(key, additionalFields[key]);
+      });
+
+      formData.append('media', {
+        uri: fileData.uri,
+        type: fileData.type,
+        name: fileData.name,
+      });
+
+      const response = await axios.post(
+        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/create',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
         },
-      },
-    );
-    return response;
+      );
+      return response;
+    } catch (error) {
+      console.error('Upload Error:', error);
+      throw error;
+    }
   };
 
   const handlePost = async () => {
+    // Validate user authentication
+    if (!profileData?.id) {
+      showToast({
+        text: 'Please log in to create a post',
+        type: 'error',
+      });
+      return;
+    }
+
+    // Validate form fields
     if (!heading || !topics || !hashtags || !file || !captions) {
       showToast({
         text: 'Please fill all fields and upload a file.',
@@ -148,6 +203,7 @@ const CreatePost = ({navigation}) => {
     }
   };
 
+  // Rest of the component remains the same...
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
@@ -227,8 +283,7 @@ const CreatePost = ({navigation}) => {
   );
 };
 
-export default CreatePost;
-
+// Styles remain unchanged
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -272,3 +327,5 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
 });
+
+export default CreatePost;

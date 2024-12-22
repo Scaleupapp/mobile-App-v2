@@ -10,13 +10,13 @@ import {
   Alert
 } from 'react-native';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
-import { jwtDecode } from 'jwt-decode';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import { COLORS } from '../../helper/colors';
 import { nh, nw } from '../../helper/scales';
 import Icon from '../../helper/icon';
+import { getProfile } from '../../services/apiService';
 
 const PlaylistSelectionModal = ({ 
   visible, 
@@ -28,20 +28,33 @@ const PlaylistSelectionModal = ({
   const [loading, setLoading] = useState(true);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
-
-  const userData = useSelector(state => state?.userData);
-  const token = userData?.token;
-  const userId = token ? jwtDecode(token)?.userId : null;
+  const [profileData, setProfileData] = useState(null);
 
   useEffect(() => {
-    if (visible && userId) {
+    getProfileData();
+  }, []);
+
+  useEffect(() => {
+    if (visible && profileData?.id) {
       fetchUserPlaylists();
     }
-  }, [visible, userId]);
+  }, [visible, profileData]);
+
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+    }
+  };
 
   const fetchUserPlaylists = async () => {
     try {
-      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${userId}`);
+      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${profileData.id}`);
       setPlaylists(response.data);
       setLoading(false);
     } catch (error) {
@@ -51,11 +64,11 @@ const PlaylistSelectionModal = ({
   };
 
   const handleCreateNewPlaylist = async () => {
-    if (!newPlaylistName.trim()) return;
+    if (!newPlaylistName.trim() || !profileData?.id) return;
 
     try {
       const response = await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/create', {
-        userId,
+        userId: profileData.id,
         playlistName: newPlaylistName
       });
 
@@ -67,39 +80,43 @@ const PlaylistSelectionModal = ({
       setShowNewPlaylistInput(false);
     } catch (error) {
       console.error('Failed to create playlist:', error);
-      // Handle error (show alert, etc.)
+      Alert.alert(
+        'Error',
+        'Failed to create playlist. Please try again.',
+        [{ text: 'OK', style: 'cancel' }]
+      );
     }
   };
 
   const addPostToPlaylist = async (playlistId) => {
+    if (!profileData?.id) return;
+
     try {
       await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/add-to-playlist', {
-        userId,
+        userId: profileData.id,
         playlistId,
         postId
       });
 
-      onPostAdded(); // Callback to update UI
-      onClose(); // Close modal
+      onPostAdded();
+      onClose();
     } catch (error) {
-        if (error.response && error.response.status === 400) {
-          // Show an alert if the post is already in the playlist
-          Alert.alert(
-            'Duplicate Post',
-            'This post is already present in the playlist.',
-            [{ text: 'OK', style: 'cancel' }]
-          );
-        } else {
-          console.error('Failed to add post to playlist:', error);
-          // Handle other types of errors
-          Alert.alert(
-            'Error',
-            'An error occurred while adding the post to the playlist.',
-            [{ text: 'OK', style: 'cancel' }]
-          );
-        }
+      if (error.response && error.response.status === 400) {
+        Alert.alert(
+          'Duplicate Post',
+          'This post is already present in the playlist.',
+          [{ text: 'OK', style: 'cancel' }]
+        );
+      } else {
+        console.error('Failed to add post to playlist:', error);
+        Alert.alert(
+          'Error',
+          'An error occurred while adding the post to the playlist.',
+          [{ text: 'OK', style: 'cancel' }]
+        );
       }
-    };
+    }
+  };
 
   const renderContent = () => {
     if (loading) {

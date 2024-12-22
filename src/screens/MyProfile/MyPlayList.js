@@ -14,9 +14,8 @@ import {
   TextInput,
 } from 'react-native';
 import {Swipeable} from 'react-native-gesture-handler';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import {useSelector} from 'react-redux';
 import {jwtDecode} from 'jwt-decode';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -34,39 +33,50 @@ import VideoPlayerModal from './VideoPlayerModal';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 
 const MyPlaylists = ({navigation}) => {
+  // State Management
   const [playlists, setPlaylists] = useState([]);
   const [expandedPlaylist, setExpandedPlaylist] = useState(null);
   const [postDetails, setPostDetails] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
-  const [isCreatePlaylistModalVisible, setIsCreatePlaylistModalVisible] =
-    useState(false);
-  const [isEditPlaylistModalVisible, setIsEditPlaylistModalVisible] =
-    useState(false);
+  const [isCreatePlaylistModalVisible, setIsCreatePlaylistModalVisible] = useState(false);
+  const [isEditPlaylistModalVisible, setIsEditPlaylistModalVisible] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [playlistToEdit, setPlaylistToEdit] = useState(null);
   const [publicPlaylists, setPublicPlaylists] = useState([]);
   const [expandedPublicPlaylist, setExpandedPublicPlaylist] = useState(null);
   const [publicPlaylistPosts, setPublicPlaylistPosts] = useState([]);
-  const [isPublicPlaylistsExpanded, setIsPublicPlaylistsExpanded] =
-    useState(false);
+  const [isPublicPlaylistsExpanded, setIsPublicPlaylistsExpanded] = useState(false);
   const [usernameCache, setUsernameCache] = useState({});
   const [isCommentsModalVisible, setIsCommentsModalVisible] = useState(false);
-  const [selectedPlaylistForComments, setSelectedPlaylistForComments] =
-    useState(null);
+  const [selectedPlaylistForComments, setSelectedPlaylistForComments] = useState(null);
+  const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] = useState(false);
+  const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
+  
+  // User Authentication State
+  const [userId, setUserId] = useState(null);
+  const [token, setToken] = useState(null);
 
-  const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] =
-    useState(false);
-  const [
-    selectedPublicPlaylistForComments,
-    setSelectedPublicPlaylistForComments,
-  ] = useState(null);
+  // Initialize user authentication data
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const parsedData = JSON.parse(userData);
+          const token = parsedData.token;
+          const decodedToken = jwtDecode(token);
+          setToken(token);
+          setUserId(decodedToken.userId);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      }
+    };
 
-  // Get the user token from the Redux store
- const userData = useSelector(state => state?.userData);
-    const token = userData?.token;
-    const userId = token ? jwtDecode(token)?.userId : null;
+    initializeAuth();
+  }, []);
 
   const fetchUsername = async userId => {
     try {
@@ -122,69 +132,104 @@ const MyPlaylists = ({navigation}) => {
     setIsPublicCommentsModalVisible(true);
   };
 
-  // Fetch post details for a single post
-  const fetchPostDetails = async postId => {
+// Modify the fetchPostDetails function
+const fetchPostDetails = async (postId) => {
+  try {
+    // Get the latest token from AsyncStorage
+    const userData = await AsyncStorage.getItem('userData');
+    const currentToken = userData ? JSON.parse(userData).token : null;
+    
+    // For public playlists, we'll try to fetch without token first
+    let response;
     try {
+      response = await axios.get(
+        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/post/${postId}`
+      );
+    } catch (err) {
+      // If that fails and we have a token, try with authentication
+      if (currentToken) {
+        response = await axios.get(
+          `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/post/${postId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${currentToken}`,
+            },
+          }
+        );
+      } else {
+        throw err;
+      }
+    }
+    return response.data.contentDetails;
+  } catch (err) {
+    // Don't log 403 errors as they're expected for private posts
+    if (err?.response?.status !== 403) {
+      console.error(`Failed to fetch details for post ${postId}:`, err);
+    }
+    return null;
+  }
+};
+
+useEffect(() => {
+  const fetchUserPlaylists = async () => {
+    try {
+      // Get the latest token from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const currentToken = userData ? JSON.parse(userData).token : null;
+      
+      if (!currentToken || !userId) {
+        console.error('No authentication data available');
+        setLoading(false);
+        return;
+      }
+
+      // Fetch playlists for the specific user
       const response = await axios.get(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/post/${postId}`,
+        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${userId}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${currentToken}`,
           },
-        },
+        }
       );
-      return response.data.contentDetails;
+
+      // Fetch details for posts in each playlist
+      const playlistsWithDetails = await Promise.all(
+        response.data.map(async playlist => {
+          const postDetailsPromises = playlist.items.map(async item => {
+            const details = await fetchPostDetails(item.postId);
+            return {postId: item.postId, details};
+          });
+
+          const resolvedPostDetails = await Promise.all(postDetailsPromises);
+
+          const postDetailsMap = resolvedPostDetails.reduce((acc, item) => {
+            if (item.details) {
+              acc[item.postId] = item.details;
+            }
+            return acc;
+          }, {});
+
+          return {
+            ...playlist,
+            postDetailsMap,
+          };
+        }),
+      );
+
+      setPlaylists(playlistsWithDetails);
+      setLoading(false);
     } catch (err) {
-      console.error(`Failed to fetch details for post ${postId}:`, err);
-      return null;
+      console.error('Failed to fetch playlists:', err);
+      setLoading(false);
+      Alert.alert('Error', 'Failed to load playlists');
     }
   };
 
-  useEffect(() => {
-    const fetchUserPlaylists = async () => {
-      try {
-        // Fetch playlists for the specific user
-        const response = await axios.get(
-          `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${userId}`,
-        );
-
-        // Fetch details for posts in each playlist
-        const playlistsWithDetails = await Promise.all(
-          response.data.map(async playlist => {
-            const postDetailsPromises = playlist.items.map(async item => {
-              const details = await fetchPostDetails(item.postId);
-              return {postId: item.postId, details};
-            });
-
-            const resolvedPostDetails = await Promise.all(postDetailsPromises);
-
-            const postDetailsMap = resolvedPostDetails.reduce((acc, item) => {
-              if (item.details) {
-                acc[item.postId] = item.details;
-              }
-              return acc;
-            }, {});
-
-            return {
-              ...playlist,
-              postDetailsMap,
-            };
-          }),
-        );
-
-        setPlaylists(playlistsWithDetails);
-        setLoading(false);
-      } catch (err) {
-        console.error('Failed to fetch playlists:', err);
-        setLoading(false);
-        Alert.alert('Error', 'Failed to load playlists');
-      }
-    };
-
-    if (userId) {
-      fetchUserPlaylists();
-    }
-  }, [userId]);
+  if (userId) {
+    fetchUserPlaylists();
+  }
+}, [userId]);
 
   const handleVideoPress = (postDetail, playlistId) => {
     if (postDetail.contentType === 'Video') {
@@ -249,46 +294,68 @@ const MyPlaylists = ({navigation}) => {
       );
     }
   };
-
-  const fetchPublicPlaylistDetails = async playlistId => {
+  
+  const fetchPublicPlaylistDetails = async (playlistId) => {
     try {
+      // Get the latest token from AsyncStorage
+      let userData = await AsyncStorage.getItem('userData');
+      let currentToken = userData ? JSON.parse(userData).token : null;
+      console.log(currentToken);
+  
+      if (!currentToken) {
+        console.error('No authentication token available');
+        Alert.alert('Error', 'Authentication required to fetch playlist details');
+        return;
+      }
+  
+      // Include token in the playlist request
       const response = await axios.get(
         `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/public/${playlistId}`,
-      );
-
-      // Fetch details for each post in the playlist
-      const postDetailsPromises = response.data.items.map(async item => {
-        try {
-          const postResponse = await axios.get(
-            `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/post/${item.postId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
-          );
-          return postResponse.data.contentDetails;
-        } catch (err) {
-          console.error(
-            `Failed to fetch details for post ${item.postId}:`,
-            err,
-          );
-          return null;
+        {
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+          },
         }
+      );
+  
+      const postDetailsPromises = response.data.items.map(async (item) => {
+        const details = await fetchPostDetails(item.postId);
+        return { postId: item.postId, details };
       });
-
-      const postDetails = await Promise.all(postDetailsPromises);
-
-      setExpandedPublicPlaylist(response.data);
-      setPublicPlaylistPosts(postDetails.filter(post => post !== null));
+  
+      const resolvedPostDetails = await Promise.all(postDetailsPromises);
+      const postDetailsMap = resolvedPostDetails.reduce((acc, item) => {
+        if (item.details) {
+          acc[item.postId] = item.details;
+        }
+        return acc;
+      }, {});
+  
+      const playlistWithDetails = {
+        ...response.data,
+        postDetailsMap,
+        accessiblePosts: Object.keys(postDetailsMap).length,
+        totalPosts: response.data.items.length,
+      };
+  
+      setExpandedPublicPlaylist(playlistWithDetails);
+      setPublicPlaylistPosts(Object.values(postDetailsMap));
+  
+      if (playlistWithDetails.accessiblePosts < playlistWithDetails.totalPosts) {
+        console.log(
+          `Some posts in this playlist are private or require authentication (${playlistWithDetails.accessiblePosts}/${playlistWithDetails.totalPosts} posts accessible)`
+        );
+      }
     } catch (error) {
       console.error('Failed to fetch public playlist details:', error);
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'Failed to fetch playlist details',
+        error.response?.data?.message || 'Failed to fetch playlist details'
       );
     }
   };
+  
+  
 
   // Create a new playlist
   const createPlaylist = async () => {

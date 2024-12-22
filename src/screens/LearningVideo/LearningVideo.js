@@ -18,11 +18,11 @@ import {
   likePostApi, 
   savePostAPI, 
   unlikePostApi, 
-  unsavePostAPI 
+  unsavePostAPI,
+  getProfile 
 } from '../../services/apiService';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
-import { jwtDecode } from 'jwt-decode';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import CommentBottomSheetModal from '../Post/CustomBottomSheet';
 import PlaylistSelectionModal from '../Home/PlaylistSelectionModal';
 import { APP_FONTS } from '../../assets/fonts';
@@ -31,44 +31,56 @@ import { navigationRef } from '../../../App';
 import Routes from '../../helper/routes';
 
 const VideoItem = ({ item, index, currentlyPlaying, setCurrentlyPlaying, onDimensionsLoad, videoDimensions }) => {
-  // Initialize states with item data
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [comments, setComments] = useState(item?.comments);
-  
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+  const [profileData, setProfileData] = useState(null);
   
   const commentRef = useRef(null);
-  const userData = useSelector(state => state?.userData);
-  const token = userData?.token;
-  const userId = token ? jwtDecode(token)?.userId : null;
-
   const dimensions = videoDimensions[item._id];
   const aspectRatio = dimensions ? dimensions.width / dimensions.height : 16/9;
 
- 
-   const likeHandler = async () => {
-     try {
-       setIsLiked(!isLiked);
-       const res = isLiked
-         ? await unlikePostApi(item?._id)
-         : await likePostApi(item?._id);
-       console.log('🚀 ~ likeHandler ~ res:', res?.data);
- 
-       setLikeCount(res?.data?.likeCount);
-     } catch (error) {
-       console.log(error, 'eeee');
-     }
-   };
+  useEffect(() => {
+    getProfileData();
+  }, []);
 
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+    }
+  };
+
+  const likeHandler = async () => {
+    if (!profileData?.id) return;
+    
+    try {
+      setIsLiked(!isLiked);
+      const res = isLiked
+        ? await unlikePostApi(item?._id)
+        : await likePostApi(item?._id);
+      console.log('🚀 ~ likeHandler ~ res:', res?.data);
+
+      setLikeCount(res?.data?.likeCount);
+    } catch (error) {
+      console.log(error, 'eeee');
+    }
+  };
 
   const handleBookmarkPress = () => {
-    if (userId) {
-      setIsPlaylistModalVisible(true);
-    } else {
+    if (!profileData?.id) {
       Alert.alert('Login Required', 'Please login to save videos to playlists');
+      return;
     }
+    setIsPlaylistModalVisible(true);
   };
 
   return (
@@ -131,7 +143,7 @@ const VideoItem = ({ item, index, currentlyPlaying, setCurrentlyPlaying, onDimen
               name={isLiked ? 'like1' : 'like2'}
               size={24}
               color={COLORS.blue043142}
-              onPress={() => likeHandler()}
+              onPress={likeHandler}
               />
             <Text variant="medium12" style={styles.countText}>
               {likeCount}
@@ -210,9 +222,6 @@ const LearningVideo = () => {
   const [loading, setLoading] = useState(true);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [videoDimensions, setVideoDimensions] = useState({});
-    const userData = useSelector(state => state?.userData);
-  const token = userData?.token;
-  const userId = token ? jwtDecode(token)?.userId : null;
 
   useEffect(() => {
     fetchVideos();
@@ -220,14 +229,19 @@ const LearningVideo = () => {
 
   const fetchVideos = async () => {
     try {
-      // Include the token in the Authorization header
-      const response = await axios.get('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/allcontent', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const userData = await AsyncStorage.getItem('userData');
+      const parsedData = JSON.parse(userData);
+      const token = parsedData?.token;
+
+      const response = await axios.get(
+        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/allcontent',
+        {
+          headers: token ? {
+            Authorization: `Bearer ${token}`,
+          } : {}
+        }
+      );
   
-      // Filter and process video content
       const videoContent = response.data.content
         .filter(item => item.contentURL?.toLowerCase().includes('.mp4'))
         .map(video => ({
@@ -242,8 +256,6 @@ const LearningVideo = () => {
       setLoading(false);
     }
   };
-  
-  
 
   const onDimensionsLoad = (data, videoId) => {
     const { width, height } = data.naturalSize;
