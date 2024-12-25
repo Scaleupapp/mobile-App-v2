@@ -23,9 +23,12 @@ import {getProfile} from '../../services/apiService';
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
+
   console.log('🚀 ~ MyProfile ~ userReducer:', userData);
+
   // const {username, firstname} = userReducer;
   let type = route?.params?.type ?? 'user';
+  console.log('🚀 ~ MyProfile ~ type:', type);
   useEffect(() => {
     getprofiledetails();
   }, []);
@@ -92,10 +95,10 @@ const MyProfile = ({navigation, route}) => {
                 width: '100%',
                 justifyContent: 'center',
               }}>
-              {['', '', ''].map(() => (
+              {profile?.topicsOfInterest?.map(u => (
                 <View style={styles.yellowview}>
                   <Text variant="medium12" color={COLORS.blue043142}>
-                    Design
+                    {u}
                   </Text>
                 </View>
               ))}

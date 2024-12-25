@@ -17,7 +17,11 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
-import {getFollowerlist} from '../../services/apiService';
+import {
+  followUser,
+  getFollowerlist,
+  unlfollowUser,
+} from '../../services/apiService';
 import {Pressable} from 'react-native';
 import Routes from '../../helper/routes';
 
@@ -59,7 +63,10 @@ const Following = ({navigation, route}) => {
           <Pressable
             style={{width: nw(188)}}
             onPress={() =>
-              navigation.navigate(Routes.MyProfile, {id: item?._id})
+              navigation.navigate(Routes.MyProfile, {
+                id: item?._id,
+                type: 'other',
+              })
             }>
             <Text variant="medium14" color={COLORS.blue043142}>
               {item?.username}
