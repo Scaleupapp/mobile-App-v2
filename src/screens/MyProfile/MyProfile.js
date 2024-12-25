@@ -23,7 +23,7 @@ import {getProfile} from '../../services/apiService';
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  console.log('🚀 ~ MyProfile ~ userReducer:', userData);
+  // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
   let type = route?.params?.type ?? 'user';
   useEffect(() => {
@@ -61,11 +61,31 @@ const MyProfile = ({navigation, route}) => {
         <View style={styles.layer2}>
           <ScrollView>
             <Image source={images.profilebaground} style={styles.images} />
-            <Image
-              source={{uri: profile?.profilePicture}}
-              style={styles.imagecircle}
-              resizeMode="cover"
-            />
+            {profile?.profilePicture ? (
+              <Image
+                source={{uri: profile?.profilePicture}}
+                style={styles.imagecircle}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.imagecircle,
+                  {
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: COLORS.greyD6D6D6,
+                  },
+                ]}>
+                <Text variant="semibold20" color={COLORS.black333333}>
+                  {`${profile?.firstname
+                    ?.charAt(0)
+                    .toUpperCase()}${profile?.lastname
+                    ?.charAt(0)
+                    .toUpperCase()}`}
+                </Text>
+              </View>
+            )}
 
             <Text
               variant="semibold20"

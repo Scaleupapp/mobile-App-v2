@@ -49,6 +49,7 @@ import {nh, nw} from './helper/scales';
 import {COLORS} from './helper/colors';
 import {APP_FONTS} from './assets/fonts';
 import Text from './components/Text';
+import Search from './screens/Search/Search';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -186,17 +187,16 @@ const TabNavigator = ({navigation, route}) => {
             setBottomIcon(focused ? icons.home1 : icons.home2, focused),
         }}
       />
-      {/* commented */}
-      {/* <Tab.Screen
-        name={Routes.Preferences}
-        component={Preferences}
+      <Tab.Screen
+        name={Routes.Search}
+        component={Search}
         options={{
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Search', focused),
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.search1 : icons.search2, focused),
         }}
-      /> */}
+      />
       <Tab.Screen
         name={Routes.CreatePost}
         component={CreatePost}
@@ -212,7 +212,7 @@ const TabNavigator = ({navigation, route}) => {
         component={Education}
         options={{
           headerShown: false,
-          tabBarLabel: ({focused}) => setBottomIconText('Book', focused),
+          tabBarLabel: ({focused}) => setBottomIconText('Videos', focused),
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.book1 : icons.book2, focused),
         }}

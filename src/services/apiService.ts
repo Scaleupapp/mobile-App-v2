@@ -152,3 +152,6 @@ export const followUser = (payload: any) => {
 export const unlfollowUser = (payload: any) => {
   return axiosInstance.delete(`${API.UNFOLLOW}/${payload}`);
 };
+export const globalSearch = (payload: any) => {
+  return axiosInstance.post(`${API.SEARCH_USER}`, payload);
+};

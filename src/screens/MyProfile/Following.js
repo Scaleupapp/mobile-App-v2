@@ -17,7 +17,11 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
-import {getFollowerlist} from '../../services/apiService';
+import {
+  followUser,
+  getFollowerlist,
+  unlfollowUser,
+} from '../../services/apiService';
 import {Pressable} from 'react-native';
 import Routes from '../../helper/routes';
 
@@ -32,12 +36,10 @@ const Following = ({navigation, route}) => {
     try {
       let resp = await getFollowerlist();
       setFollowers(resp?.data?.followerList);
-      console.log(resp?.data, 'dta');
     } catch (error) {}
   };
 
   const UserView = ({item}) => {
-    console.log('🚀 ~ UserView ~ item:', item);
     const [follow, setFollow] = useState(item?.isFollowed);
 
     const followApi = async () => {
@@ -54,7 +56,23 @@ const Following = ({navigation, route}) => {
     return (
       <View>
         <View style={styles.card}>
-          <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          {item?.profilePicture ? (
+            <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          ) : (
+            <View
+              style={[
+                styles.image,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                },
+              ]}>
+              <Text variant="semibold18" color={COLORS.black333333}>
+                {`${item?.username?.charAt(0).toUpperCase()}`}
+              </Text>
+            </View>
+          )}
 
           <Pressable
             style={{width: nw(188)}}
@@ -106,9 +124,9 @@ const Following = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       <FlatList
         data={followers}

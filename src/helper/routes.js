@@ -52,6 +52,7 @@ const Routes = {
   BlockUsers: 'BlockUsers',
   Settings: 'Settings',
   ChangePassword: 'ChangePassword',
+  Search: 'Search',
 };
 
 export default Routes;

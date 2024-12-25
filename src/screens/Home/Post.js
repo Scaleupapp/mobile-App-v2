@@ -93,14 +93,26 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
               id: item?.userId?._id,
             })
           }>
-          <Image
-            source={
-              item?.userId?.profilePicture
-                ? {uri: item?.userId?.profilePicture}
-                : images.ciclelogo
-            }
-            style={styles.image}
-          />
+          {item?.userId?.profilePicture ? (
+            <Image
+              source={{uri: item?.userId?.profilePicture}}
+              style={styles.image}
+            />
+          ) : (
+            <View
+              style={[
+                styles.image,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                },
+              ]}>
+              <Text variant="semibold16" color={COLORS.black333333}>
+                {`${item?.userId?.username?.charAt(0).toUpperCase()}`}
+              </Text>
+            </View>
+          )}
           <Text variant="medium14" color={COLORS.blue043142}>
             {item?.userId?.username}
           </Text>
@@ -220,7 +232,10 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             onPress={() => likeHandler()}
             style={{marginRight: nw(3)}}
           />
-          <Text variant="medium12" style={{marginRight: nw(10), marginTop: 5}}>
+          <Text
+            variant="medium12"
+            color={COLORS.black333333}
+            style={{marginRight: nw(10), marginTop: 5}}>
             {likeCount}
           </Text>
           <Icon
