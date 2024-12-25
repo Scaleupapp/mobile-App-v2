@@ -23,16 +23,17 @@ import Routes from '../../helper/routes';
 
 const Settings = ({navigation, route}) => {
   const menuItems = [
-    {
-      heading: '',
-      data: [
-        {
-          title: 'Notifications',
-          icon: 'bell-icon',
-          navKey: 'Notifications',
-        },
-      ],
-    },
+    // commented
+    // {
+    //   heading: '',
+    //   data: [
+    //     {
+    //       title: 'Notifications',
+    //       icon: 'bell-icon',
+    //       navKey: 'Notifications',
+    //     },
+    //   ],
+    // },
     {
       heading: 'Account',
       data: [
@@ -41,58 +42,60 @@ const Settings = ({navigation, route}) => {
           icon: 'password-icon',
           navKey: Routes.ChangePassword,
         },
-        {title: 'Your Activity', icon: 'activity-icon', navKey: 'YourActivity'},
-        {title: 'Language', icon: 'language-icon', navKey: 'Language'},
-        {title: 'Theme', icon: 'theme-icon', navKey: 'Theme'},
-        {title: 'Block List', icon: 'theme-icon', navKey: Routes.BlockUsers},
+        // commented
+        // {title: 'Your Activity', icon: 'activity-icon', navKey: 'YourActivity'},
+        // {title: 'Language', icon: 'language-icon', navKey: 'Language'},
+        // {title: 'Theme', icon: 'theme-icon', navKey: 'Theme'},
+        // {title: 'Block List', icon: 'theme-icon', navKey: Routes.BlockUsers},
       ],
     },
     {
       heading: 'Posts',
       data: [
         {title: 'Saved', icon: 'saved-icon', navKey: Routes.SavePost},
-        {title: 'Drafts', icon: 'drafts-icon', navKey: Routes.DraftPost},
-        {title: 'Verified', icon: 'verified-icon', navKey: Routes.VerifiedPost},
-        {
-          title: 'Not Verified',
-          icon: 'not-verified-icon',
-          navKey: Routes.PendingPost,
-        },
-        {
-          title: 'Post Visibility',
-          icon: 'visibility-icon',
-          navKey: 'PostVisibility',
-        },
-        {
-          title: 'Performance & Analytics',
-          icon: 'analytics-icon',
-          navKey: 'PerformanceAnalytics',
-        },
+        // commented
+        // {title: 'Drafts', icon: 'drafts-icon', navKey: Routes.DraftPost},
+        // {title: 'Verified', icon: 'verified-icon', navKey: Routes.VerifiedPost},
+        // {
+        //   title: 'Not Verified',
+        //   icon: 'not-verified-icon',
+        //   navKey: Routes.PendingPost,
+        // },
+        // {
+        //   title: 'Post Visibility',
+        //   icon: 'visibility-icon',
+        //   navKey: 'PostVisibility',
+        // },
+        // {
+        //   title: 'Performance & Analytics',
+        //   icon: 'analytics-icon',
+        //   navKey: 'PerformanceAnalytics',
+        // },
       ],
     },
-    {
-      heading: 'Rewards',
-      data: [
-        {
-          title: 'Achievements',
-          icon: 'achievements-icon',
-          navKey: 'Achievements',
-        },
-      ],
-    },
-    {
-      heading: 'Help',
-      data: [
-        {title: 'Report an Issue', icon: 'report-icon', navKey: 'ReportIssue'},
-        {title: 'Help Center', icon: 'help-center-icon', navKey: 'HelpCenter'},
-        {title: 'Feedback', icon: 'feedback-icon', navKey: 'Feedback'},
-      ],
-    },
+    // {
+    //   heading: 'Rewards',
+    //   data: [
+    //     {
+    //       title: 'Achievements',
+    //       icon: 'achievements-icon',
+    //       navKey: 'Achievements',
+    //     },
+    //   ],
+    // },
+    // {
+    //   heading: 'Help',
+    //   data: [
+    //     {title: 'Report an Issue', icon: 'report-icon', navKey: 'ReportIssue'},
+    //     {title: 'Help Center', icon: 'help-center-icon', navKey: 'HelpCenter'},
+    //     {title: 'Feedback', icon: 'feedback-icon', navKey: 'Feedback'},
+    //   ],
+    // },
 
-    {
-      heading: '',
-      data: [{title: 'Log out', icon: 'logout-icon', navKey: 'Logout'}],
-    },
+    // {
+    //   heading: '',
+    //   data: [{title: 'Log out', icon: 'logout-icon', navKey: 'Logout'}],
+    // },
   ];
 
   return (
@@ -115,10 +118,10 @@ const Settings = ({navigation, route}) => {
           // onRightIconPress={handleRightIconPress}
         />
       </ImageBackground>
-
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* commented */}
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
         {menuItems.map(item => (
           <>
@@ -128,36 +131,38 @@ const Settings = ({navigation, route}) => {
               style={{marginLeft: nw(16), marginBottom: nh(15)}}>
               {item?.heading}
             </Text>
-            <FlatList
-              scrollEnabled={false}
-              data={item?.data}
-              contentContainerStyle={{marginBottom: nh(15)}}
-              renderItem={({item}) => {
-                return (
-                  <Pressable
-                    style={styles.card}
-                    onPress={() => navigation.navigate(item?.navKey)}>
-                    <View style={{flexDirection: 'row'}}>
-                      <View style={styles.image}>
-                        <Image
-                          source={images.ciclelogo}
-                          style={{width: nw(14), height: nh(17)}}
-                        />
+            <View>
+              <FlatList
+                scrollEnabled={false}
+                data={item?.data}
+                contentContainerStyle={{marginBottom: nh(15)}}
+                renderItem={({item}) => {
+                  return (
+                    <Pressable
+                      style={styles.card}
+                      onPress={() => navigation.navigate(item?.navKey)}>
+                      <View style={{flexDirection: 'row'}}>
+                        <View style={styles.image}>
+                          <Image
+                            source={images.ciclelogo}
+                            style={{width: nw(14), height: nh(17)}}
+                          />
+                        </View>
+                        <Text variant="medium14" color={COLORS.blue043142}>
+                          {item.title}
+                        </Text>
                       </View>
-                      <Text variant="medium14" color={COLORS.blue043142}>
-                        {item.title}
-                      </Text>
-                    </View>
-                    <Icon
-                      type="material"
-                      name="keyboard-arrow-right"
-                      color={COLORS.grey777777}
-                      style={{marginRight: nw(10)}}
-                    />
-                  </Pressable>
-                );
-              }}
-            />
+                      <Icon
+                        type="material"
+                        name="keyboard-arrow-right"
+                        color={COLORS.grey777777}
+                        style={{marginRight: nw(10)}}
+                      />
+                    </Pressable>
+                  );
+                }}
+              />
+            </View>
           </>
         ))}
       </ScrollView>

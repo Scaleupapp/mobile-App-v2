@@ -34,9 +34,8 @@ const Followers = ({navigation, route}) => {
 
   let getfollowers = async () => {
     try {
-      let resp = await getFollowerlist();
+      let resp = await getFollowerlist(route?.params?.id);
       setFollowers(resp?.data?.followerList);
-      console.log(resp?.data, 'dta');
     } catch (error) {}
   };
 
@@ -49,7 +48,6 @@ const Followers = ({navigation, route}) => {
         let res = follow
           ? await unlfollowUser(item?._id)
           : await followUser(item?._id);
-        console.log('🚀 ~ followApi ~ res:', res?.data);
       } catch (error) {
         console.log('🚀 ~ followApi ~ error:', error?.response?.data);
       }
@@ -57,8 +55,23 @@ const Followers = ({navigation, route}) => {
     return (
       <View>
         <View style={styles.card}>
-          <Image source={{uri: item?.profilePicture}} style={styles.image} />
-
+          {item?.profilePicture ? (
+            <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          ) : (
+            <View
+              style={[
+                styles.image,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                },
+              ]}>
+              <Text variant="semibold18" color={COLORS.black333333}>
+                {`${item?.username?.charAt(0).toUpperCase()}`}
+              </Text>
+            </View>
+          )}
           <Pressable
             style={{width: nw(188)}}
             onPress={() =>
@@ -112,9 +125,9 @@ const Followers = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       <FlatList
         data={followers}

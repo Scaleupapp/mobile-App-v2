@@ -56,7 +56,7 @@ const Home = ({navigation, route}) => {
       const parsedUser = JSON.parse(user);
 
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
 
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),

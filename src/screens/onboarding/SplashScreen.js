@@ -38,7 +38,7 @@ const SplashScreen = ({navigation}) => {
     setTimeout(() => {
       if (user) {
         const parsedUser = JSON.parse(user);
-        console.log('🚀 ~ getData ~ parsedUser:', parsedUser?.token?.length);
+        // console.log('🚀 ~ getData ~ parsedUser:', parsedUser?.token?.length);
         dispatch(actions.setUserData(parsedUser));
         navigation.reset({
           index: 0,

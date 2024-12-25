@@ -62,7 +62,6 @@ const ToggleWithIconUnderline = ({
     onToggle(index);
   };
 
-  console.log('herer');
   return (
     <View style={styles.container}>
       {options.map((option, index) => {
