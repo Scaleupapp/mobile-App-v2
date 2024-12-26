@@ -17,12 +17,19 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
-import {getFollowerlist} from '../../services/apiService';
+import {
+  followUser,
+  getFollowerlist,
+  unlfollowUser,
+} from '../../services/apiService';
 import {Pressable} from 'react-native';
 import Routes from '../../helper/routes';
+import {useSelector} from 'react-redux';
 
 const Following = ({navigation, route}) => {
   const [followers, setFollowers] = useState();
+  const userData = useSelector(state => state?.userData);
+  console.log('🚀 ~ Following ~ userData:', userData?.id);
 
   useEffect(() => {
     getfollowers();
@@ -30,14 +37,12 @@ const Following = ({navigation, route}) => {
 
   let getfollowers = async () => {
     try {
-      let resp = await getFollowerlist();
-      setFollowers(resp?.data?.followerList);
-      console.log(resp?.data, 'dta');
+      let resp = await getFollowerlist(route?.params?.id);
+      setFollowers(resp?.data?.followingList);
     } catch (error) {}
   };
 
   const UserView = ({item}) => {
-    console.log('🚀 ~ UserView ~ item:', item);
     const [follow, setFollow] = useState(item?.isFollowed);
 
     const followApi = async () => {
@@ -54,12 +59,31 @@ const Following = ({navigation, route}) => {
     return (
       <View>
         <View style={styles.card}>
-          <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          {item?.profilePicture ? (
+            <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          ) : (
+            <View
+              style={[
+                styles.image,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                },
+              ]}>
+              <Text variant="semibold18" color={COLORS.black333333}>
+                {`${item?.username?.charAt(0).toUpperCase()}`}
+              </Text>
+            </View>
+          )}
 
           <Pressable
             style={{width: nw(188)}}
             onPress={() =>
-              navigation.navigate(Routes.MyProfile, {id: item?._id})
+              navigation.navigate(Routes.MyProfile, {
+                id: item?._id,
+                type: 'other',
+              })
             }>
             <Text variant="medium14" color={COLORS.blue043142}>
               {item?.username}
@@ -98,7 +122,7 @@ const Following = ({navigation, route}) => {
         style={styles.semicirlce}
         resizeMode="stretch">
         <Header
-          title="Followers"
+          title="Following"
           // backIcon={icons.backArrow} // Provide your back arrow icon
           rightIcon={false} // Provide your right icon
           // onBackPress={handleBackPress}
@@ -106,9 +130,9 @@ const Following = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       <FlatList
         data={followers}

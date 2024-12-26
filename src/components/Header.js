@@ -22,14 +22,12 @@ const Header = ({
   onRightIconPress = () => {}, // Callback for right icon press
   backIcon = icons.backarrow, // Back arrow icon source
   rightIcon = true, // Right icon source
+  backgroundColor = COLORS.yellowF5BE00,
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: backgroundColor}]}>
       {/* Back Arrow */}
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.yellowF5BE00}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={backgroundColor} />
       <View style={styles.subcontainer}>
         <TouchableOpacity onPress={onBackPress} style={styles.iconContainer}>
           {backIcon && <Image source={backIcon} style={styles.icon} />}

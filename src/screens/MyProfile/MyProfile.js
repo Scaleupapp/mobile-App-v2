@@ -23,21 +23,18 @@ import {getProfile} from '../../services/apiService';
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  console.log('🚀 ~ MyProfile ~ userReducer:', userData);
+  console.log('🚀 ~ MyProfile ~ profile:', profile);
+  // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
   let type = route?.params?.type ?? 'user';
+
   useEffect(() => {
     getprofiledetails();
   }, []);
   const getprofiledetails = async () => {
     try {
-      if (type == 'user') {
-        console.log(userData, 'userData');
-        setProfile(userData);
-      } else {
-        let resp = await getProfile(route?.params?.id);
-        setProfile(resp?.data?.userProfileInfo);
-      }
+      let resp = await getProfile(route?.params?.id ?? userData?.id);
+      setProfile(resp?.data?.userProfileInfo);
     } catch (error) {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
@@ -51,7 +48,7 @@ const MyProfile = ({navigation, route}) => {
         backgroundColor={COLORS.yellowF5BE00}
       />
       <Header
-        title={type == 'user' ? 'My Profile' : profile?.username}
+        title={type == 'user' ? 'My Profile' : profile?.username ?? ''}
         // backIcon={icons.backArrow} // Provide your back arrow icon
         // rightIcon={icons.menu} // Provide your right icon
         // onBackPress={handleBackPress}
@@ -61,11 +58,33 @@ const MyProfile = ({navigation, route}) => {
         <View style={styles.layer2}>
           <ScrollView>
             <Image source={images.profilebaground} style={styles.images} />
-            <Image
-              source={{uri: profile?.profilePicture}}
-              style={styles.imagecircle}
-              resizeMode="cover"
-            />
+            {profile?.profilePicture ? (
+              <Image
+                source={{uri: profile?.profilePicture}}
+                style={styles.imagecircle}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.imagecircle,
+                  {
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: COLORS.greyD6D6D6,
+                  },
+                ]}>
+                <Text variant="semibold20" color={COLORS.black333333}>
+                  {profile?.firstname
+                    ? `${profile?.firstname
+                        ?.charAt(0)
+                        .toUpperCase()}${profile?.lastname
+                        ?.charAt(0)
+                        .toUpperCase()}`
+                    : ''}
+                </Text>
+              </View>
+            )}
 
             <Text
               variant="semibold20"
@@ -92,10 +111,10 @@ const MyProfile = ({navigation, route}) => {
                 width: '100%',
                 justifyContent: 'center',
               }}>
-              {['', '', ''].map(() => (
+              {profile?.topicsOfInterest?.map(u => (
                 <View style={styles.yellowview}>
                   <Text variant="medium12" color={COLORS.blue043142}>
-                    Design
+                    {u}
                   </Text>
                 </View>
               ))}
@@ -110,7 +129,7 @@ const MyProfile = ({navigation, route}) => {
               }}>
               <Pressable style={{alignItems: 'center'}}>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.contentCount}
+                  {profile?.contentCount ?? ''}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   posts
@@ -120,11 +139,11 @@ const MyProfile = ({navigation, route}) => {
                 style={{alignItems: 'center'}}
                 onPress={() =>
                   navigation.navigate(Routes.Followers, {
-                    id: type == 'user' ? '' : route?.params?.id,
+                    id: type == 'user' ? userData?.id : route?.params?.id,
                   })
                 }>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.followersCount}
+                  {profile?.followersCount ?? ''}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   followers
@@ -132,9 +151,13 @@ const MyProfile = ({navigation, route}) => {
               </Pressable>
               <Pressable
                 style={{alignItems: 'center'}}
-                onPress={() => navigation.navigate(Routes.Following)}>
+                onPress={() =>
+                  navigation.navigate(Routes.Following, {
+                    id: type == 'user' ? userData?.id : route?.params?.id,
+                  })
+                }>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.followingCount}
+                  {profile?.followingCount ?? ''}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   following

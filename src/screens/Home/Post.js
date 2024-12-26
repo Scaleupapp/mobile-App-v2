@@ -9,8 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import Text from '../../components/Text';
-import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import {images} from '../../assets/images';
+import {DEVICE_WIDTH, guidelineBaseWidth, nh, nw} from '../../helper/scales';
 import Icon from '../../helper/icon';
 import {COLORS} from '../../helper/colors';
 import ReadMore from '@fawazahmed/react-native-read-more';
@@ -32,7 +31,7 @@ import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  const [imageHeight, setImageHeight] = useState(200);
+  const [imageHeight, setImageHeight] = useState(250);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
   const [isLiked, setIsLiked] = useState(item.isLiked);
@@ -73,9 +72,19 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       const res = isLiked
         ? await unlikePostApi(item?._id)
         : await likePostApi(item?._id);
-      console.log('🚀 ~ likeHandler ~ res:', res?.data);
 
       setLikeCount(res?.data?.likeCount);
+    } catch (error) {
+      console.log(error, 'eeee');
+    }
+  };
+
+  const saveHandler = async () => {
+    try {
+      setIsSaved(!isSaved);
+      const res = isSaved
+        ? await unsavePostAPI(item?._id)
+        : await savePostAPI(item?._id);
     } catch (error) {
       console.log(error, 'eeee');
     }
@@ -84,7 +93,9 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   useEffect(() => {
     if (item?.contentType == 'Image' && item?.contentURL) {
       Image.getSize(item?.contentURL, (width, height) => {
-        setImageHeight(height / 6);
+        const aspectRatio = height / width;
+        const calculatedHeight = guidelineBaseWidth * aspectRatio;
+        setImageHeight(calculatedHeight);
       });
     }
   }, [item?.contentType]);
@@ -178,14 +189,26 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
               id: item?.userId?._id,
             })
           }>
-          <Image
-            source={
-              item?.userId?.profilePicture
-                ? {uri: item?.userId?.profilePicture}
-                : images.ciclelogo
-            }
-            style={styles.image}
-          />
+          {item?.userId?.profilePicture ? (
+            <Image
+              source={{uri: item?.userId?.profilePicture}}
+              style={styles.image}
+            />
+          ) : (
+            <View
+              style={[
+                styles.image,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                },
+              ]}>
+              <Text variant="semibold16" color={COLORS.black333333}>
+                {`${item?.userId?.username?.charAt(0).toUpperCase()}`}
+              </Text>
+            </View>
+          )}
           <Text variant="medium14" color={COLORS.blue043142}>
             {item?.userId?.username}
           </Text>
@@ -205,13 +228,9 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           style={{marginVertical: nh(10)}}>
           <Image
             source={{uri: item?.contentURL}}
-            style={{
-              height: imageHeight,
-              width: '100%',
-              backgroundColor: COLORS.whiteFFFFFF,
-              marginBottom: nh(6),
-            }}
+            style={[styles.postimage, {height: nh(imageHeight)}]}
             resizeMode="cover"
+            // resizeMode="contain"
           />
         </Pressable>
       ) : null}
@@ -219,16 +238,17 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         <Pressable
           onPress={() => setIsPlaying(index)}
           style={{
-            marginVertical: nh(10),
-            // alignContent: 'center',
-            // justifyContent: 'center',
+            marginTop: nh(10),
+            borderRadius: nh(12),
+            marginBottom: nh(15),
+            overflow: 'hidden',
           }}>
           {item?.isVerified && (
             <View
               style={{
                 height: nh(30),
                 width: nw(30),
-                borderRadius: 15,
+                borderRadius: nh(15),
                 backgroundColor: COLORS.blue043142,
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -260,13 +280,11 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
                     ),
                     width: DEVICE_WIDTH - nw(32),
                     backgroundColor: COLORS.whiteFFFFFF,
-                    marginBottom: nh(6),
                   }
                 : {
                     height: nh(250),
                     width: DEVICE_WIDTH - nw(32),
                     backgroundColor: COLORS.whiteFFFFFF,
-                    marginBottom: nh(6),
                   }
             }
             resizeMode="cover"
@@ -304,7 +322,10 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             onPress={() => likeHandler()}
             style={{marginRight: nw(3)}}
           />
-          <Text variant="medium12" style={{marginRight: nw(10), marginTop: 5}}>
+          <Text
+            variant="medium12"
+            color={COLORS.black333333}
+            style={{marginRight: nw(10), marginTop: 5}}>
             {likeCount}
           </Text>
           <Icon
@@ -398,11 +419,10 @@ const styles = StyleSheet.create({
     marginRight: nw(7),
   },
   postimage: {
-    height: nh(175),
-    backgroundColor: COLORS.grey999999,
-    borderRadius: 10,
-    marginTop: nh(10),
-    marginBottom: nh(15),
+    width: '100%',
+    backgroundColor: COLORS.whiteFFFFFF,
+    marginBottom: nh(6),
+    borderRadius: nh(12),
   },
   yellowview: {
     backgroundColor: 'rgba(245, 190, 0, 0.15)',

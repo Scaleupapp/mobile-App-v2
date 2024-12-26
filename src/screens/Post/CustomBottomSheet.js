@@ -11,7 +11,7 @@ import {
 import React, {forwardRef, useEffect, useMemo, useRef, useState} from 'react';
 import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
 import {COLORS} from '../../helper/colors';
-import {nh, nw} from '../../helper/scales';
+import {isAndroid, nh, nw} from '../../helper/scales';
 import CustomTextInput from '../../components/TextInput';
 import {icons} from '../../assets/icons';
 import {
@@ -50,6 +50,8 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
       id: item?.userId?._id,
     });
   };
+  const profilePicture = item?.userId?.profilePicture || item?.profilePicture;
+  const username = item?.userId?.username || item?.username;
   return (
     <View key={index}>
       <View
@@ -60,21 +62,23 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
           flex: 1,
         }}>
         <Pressable onPress={goToProfile}>
-          <Image
-            source={
-              item?.userId?.profilePicture
-                ? {uri: item?.userId?.profilePicture}
-                : item?.profilePicture
-                ? {uri: item?.profilePicture}
-                : images.ciclelogo
-            }
-            style={{
-              height: nw(65),
-              width: nw(65),
-              borderRadius: nw(65 / 2),
-              marginRight: nw(11),
-            }}
-          />
+          {profilePicture ? (
+            <Image source={{uri: profilePicture}} style={styles.image} />
+          ) : (
+            <View
+              style={[
+                styles.image,
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                },
+              ]}>
+              <Text variant="semibold18" color={COLORS.black333333}>
+                {`${username?.charAt(0).toUpperCase()}`}
+              </Text>
+            </View>
+          )}
         </Pressable>
         <View style={{flex: 1}}>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
@@ -84,7 +88,7 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
                 style={{
                   color: COLORS.black000000,
                 }}>
-                {item?.userId?.username ?? item?.username}
+                {username}
               </Text>
             </Pressable>
             <Text
@@ -134,7 +138,7 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
             onPress={() =>
               onReplyPress({
                 parentCommentId: item?._id,
-                username: item?.userId?.username,
+                username: username,
                 userId: item?.userId?._id,
               })
             }>
@@ -197,7 +201,7 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
 
 const CommentBottomSheetModal = forwardRef(
   ({postId, comments = [], setComments}, ref) => {
-    const snapPoints = useMemo(() => ['100%', '90%'], []);
+    const snapPoints = useMemo(() => [isAndroid ? '68%' : '100%'], []);
     const userData = useSelector(state => state?.userData);
     const [text, setText] = useState('');
     const [selectedComment, setSelectedComment] = useState({
@@ -205,7 +209,7 @@ const CommentBottomSheetModal = forwardRef(
       username: null,
       userId: null,
     });
-    console.log({selectedComment});
+    // console.log({selectedComment});
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
     const TextInputRef = useRef();
     const FlatRef = useRef();
@@ -292,6 +296,7 @@ const CommentBottomSheetModal = forwardRef(
         containerStyle={{
           borderTopLeftRadius: 24,
         }}
+        enableContentPanningGesture={false}
         // onDismiss={() => setSelectedComment(null)}
         style={{
           borderRadius: 24,
@@ -320,8 +325,8 @@ const CommentBottomSheetModal = forwardRef(
                 height: nh(
                   isKeyboardVisible
                     ? selectedComment?.username
-                      ? 260
-                      : 280
+                      ? 325
+                      : 350
                     : 400,
                 ),
               }}>
@@ -378,7 +383,7 @@ const CommentBottomSheetModal = forwardRef(
               value={text}
               onChangeText={setText}
               placeholder={'Write here'}
-              placeholderTextColor={COLORS.grey646464}
+              placeholderTextColor={COLORS.grey777777}
               rightIcon={icons.send}
               onRightIconPress={() => {
                 if (selectedComment?.username) sendReply();
@@ -428,6 +433,12 @@ const styles = StyleSheet.create({
     padding: 6,
     margin: 6,
     backgroundColor: '#eee',
+  },
+  image: {
+    height: nw(65),
+    width: nw(65),
+    borderRadius: nw(65 / 2),
+    marginRight: nw(11),
   },
 });
 

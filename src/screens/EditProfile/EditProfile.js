@@ -159,7 +159,7 @@ const EditProfile = ({navigation, route}) => {
   const getProfileData = async () => {
     try {
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data);
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
       ); // Dispatch the updated data
@@ -258,17 +258,37 @@ const EditProfile = ({navigation, route}) => {
                   <View style={styles.greenbar}></View>
                 </View> */}
                 <View>
-                  <Image
-                    source={{
-                      uri: form?.profilePicture
-                        ? `${
-                            form.profilePicture
-                          }?timestamp=${new Date().getTime()}`
-                        : null,
-                    }}
-                    style={styles.image}
-                    resizeMode="cover"
-                  />
+                  {form?.profilePicture ? (
+                    <Image
+                      source={{
+                        uri: form?.profilePicture
+                          ? `${
+                              form.profilePicture
+                            }?timestamp=${new Date().getTime()}`
+                          : null,
+                      }}
+                      style={styles.image}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.image,
+                        {
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: COLORS.greyD6D6D6,
+                        },
+                      ]}>
+                      <Text variant="semibold20" color={COLORS.black333333}>
+                        {`${userData?.firstname
+                          ?.charAt(0)
+                          .toUpperCase()}${userData?.lastname
+                          ?.charAt(0)
+                          .toUpperCase()}`}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.circle}>
                     <Icon
                       type="antdesign"
