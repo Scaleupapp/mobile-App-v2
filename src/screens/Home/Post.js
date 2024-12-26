@@ -108,7 +108,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     try {
       // First, check if the post is already in the playlist
       const checkResponse = await axios.get(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/check?userId=${userId}&postId=${postId}`,
+        `https://api.scaleupapp.club/api/playlists/check?userId=${userId}&postId=${postId}`,
       );
 
       if (checkResponse.data.exists) {
@@ -127,7 +127,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
       // If not bookmarked, proceed with bookmarking
       await axios.post(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists',
+        'https://api.scaleupapp.club/api/playlists',
         {
           userId, // Send userId in the body
           playlistName: 'My Playlist', // Optional: Customize the playlist name

@@ -40,7 +40,7 @@ const PlaylistCommentsModal = ({
 
   const checkPlaylistOwnership = async () => {
     try {
-      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/${playlistId}/ownership`, {
+      const response = await axios.get(`https://api.scaleupapp.club/api/playlists/${playlistId}/ownership`, {
         params: { userId }
       });
       setIsPlaylistOwner(response.data.isOwner);
@@ -51,7 +51,7 @@ const PlaylistCommentsModal = ({
 
   const fetchUsername = async (userId) => {
     try {
-        const response = await fetch(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user/${userId}`);
+        const response = await fetch(`https://api.scaleupapp.club/api/user/${userId}`);
         
         if (!response.ok) {
             console.warn(`Failed to fetch username for user ${userId}. Status: ${response.status}`);
@@ -81,7 +81,7 @@ const PlaylistCommentsModal = ({
   const pinComment = async (commentId) => {
     try {
       setIsLoading(true);
-      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/pin', {
+      await axios.post('https://api.scaleupapp.club/api/playlists/comments/pin', {
         userId,
         playlistId,
         commentId
@@ -97,7 +97,7 @@ const PlaylistCommentsModal = ({
   const fetchComments = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/${playlistId}/comments`);
+      const response = await axios.get(`https://api.scaleupapp.club/api/playlists/${playlistId}/comments`);
       
       // Fetch usernames for comment userIds and reply userIds
       const commentsWithUserData = await Promise.all(
@@ -135,7 +135,7 @@ const PlaylistCommentsModal = ({
 
     try {
       setIsLoading(true);
-      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/add', {
+      await axios.post('https://api.scaleupapp.club/api/playlists/comments/add', {
         userId,
         playlistId,
         text: newCommentText,
@@ -156,7 +156,7 @@ const PlaylistCommentsModal = ({
 
     try {
       setIsLoading(true);
-      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/reply', {
+      await axios.post('https://api.scaleupapp.club/api/playlists/comments/reply', {
         userId,
         playlistId,
         commentId,
@@ -177,7 +177,7 @@ const PlaylistCommentsModal = ({
   const likeComment = async (commentId, replyId = null) => {
     try {
       setIsLoading(true);
-      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/comments/like', {
+      await axios.post('https://api.scaleupapp.club/api/playlists/comments/like', {
         userId,
         playlistId,
         commentId,

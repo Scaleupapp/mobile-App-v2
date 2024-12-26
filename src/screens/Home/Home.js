@@ -55,7 +55,7 @@ const Home = ({navigation, route}) => {
       const parsedUser = JSON.parse(user);
 
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      console.log('Homeeeeee', res?.data?.userProfileInfo);
 
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
@@ -69,7 +69,7 @@ const Home = ({navigation, route}) => {
   const homePageData = async (page, refresh = false) => {
     try {
       const {data} = await getHomePageData(page);
-      console.log('🚀 ~ homePageData ~ data:', data);
+      // console.log('🚀 ~ homePageData ~ data:', data);
       if (data?.content.length > 0) {
         setPage(prevPage => prevPage + 1);
         if (refresh) setHome(data.content);

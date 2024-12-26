@@ -54,7 +54,7 @@ const PlaylistSelectionModal = ({
 
   const fetchUserPlaylists = async () => {
     try {
-      const response = await axios.get(`http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${profileData.id}`);
+      const response = await axios.get(`https://api.scaleupapp.club/api/playlists?userId=${profileData.id}`);
       setPlaylists(response.data);
       setLoading(false);
     } catch (error) {
@@ -67,7 +67,7 @@ const PlaylistSelectionModal = ({
     if (!newPlaylistName.trim() || !profileData?.id) return;
 
     try {
-      const response = await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/create', {
+      const response = await axios.post('https://api.scaleupapp.club/api/playlists/create', {
         userId: profileData.id,
         playlistName: newPlaylistName
       });
@@ -92,7 +92,7 @@ const PlaylistSelectionModal = ({
     if (!profileData?.id) return;
 
     try {
-      await axios.post('http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/add-to-playlist', {
+      await axios.post('https://api.scaleupapp.club/api/playlists/add-to-playlist', {
         userId: profileData.id,
         playlistId,
         postId

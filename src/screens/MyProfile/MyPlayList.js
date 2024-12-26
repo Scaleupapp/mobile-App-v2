@@ -81,7 +81,7 @@ const MyPlaylists = ({navigation}) => {
   const fetchUsername = async userId => {
     try {
       const response = await fetch(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user/${userId}`,
+        `https://api.scaleupapp.club/api/user/${userId}`,
       );
 
       if (!response.ok) {
@@ -107,7 +107,7 @@ const MyPlaylists = ({navigation}) => {
   const markPostAsViewed = async (playlistId, postId) => {
     try {
       await axios.post(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/mark-viewed',
+        'https://api.scaleupapp.club/api/playlists/mark-viewed',
         {
           userId,
           playlistId,
@@ -143,13 +143,13 @@ const fetchPostDetails = async (postId) => {
     let response;
     try {
       response = await axios.get(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/post/${postId}`
+        `https://api.scaleupapp.club/api/content/post/${postId}`
       );
     } catch (err) {
       // If that fails and we have a token, try with authentication
       if (currentToken) {
         response = await axios.get(
-          `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/post/${postId}`,
+          `https://api.scaleupapp.club/api/content/post/${postId}`,
           {
             headers: {
               Authorization: `Bearer ${currentToken}`,
@@ -185,7 +185,7 @@ useEffect(() => {
 
       // Fetch playlists for the specific user
       const response = await axios.get(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists?userId=${userId}`,
+        `https://api.scaleupapp.club/api/playlists?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${currentToken}`,
@@ -256,7 +256,7 @@ useEffect(() => {
   const togglePlaylistStatus = async playlistId => {
     try {
       const response = await axios.put(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/toggle-status',
+        'https://api.scaleupapp.club/api/playlists/toggle-status',
         {
           userId,
           playlistId,
@@ -282,7 +282,7 @@ useEffect(() => {
   const fetchPublicPlaylists = async () => {
     try {
       const response = await axios.get(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/public',
+        'https://api.scaleupapp.club/api/playlists/public',
       );
       setPublicPlaylists(response.data);
       setIsPublicPlaylistsExpanded(true);
@@ -310,7 +310,7 @@ useEffect(() => {
   
       // Include token in the playlist request
       const response = await axios.get(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/public/${playlistId}`,
+        `https://api.scaleupapp.club/api/playlists/public/${playlistId}`,
         {
           headers: {
             Authorization: `Bearer ${currentToken}`,
@@ -366,7 +366,7 @@ useEffect(() => {
 
     try {
       const response = await axios.post(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/create',
+        'https://api.scaleupapp.club/api/playlists/create',
         {
           userId,
           playlistName: newPlaylistName,
@@ -397,7 +397,7 @@ useEffect(() => {
 
     try {
       const response = await axios.put(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/rename',
+        'https://api.scaleupapp.club/api/playlists/rename',
         {
           userId,
           playlistId: playlistToEdit._id,
@@ -430,7 +430,7 @@ useEffect(() => {
   const deletePlaylist = async playlistId => {
     try {
       await axios.delete(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/delete',
+        'https://api.scaleupapp.club/api/playlists/delete',
         {
           data: {userId, playlistId},
         },
@@ -637,7 +637,7 @@ useEffect(() => {
   const removePostFromPlaylist = async (playlistId, postId) => {
     try {
       const response = await axios.delete(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/remove-from-playlist',
+        'https://api.scaleupapp.club/api/playlists/remove-from-playlist',
         {
           data: {
             userId,
@@ -695,7 +695,7 @@ useEffect(() => {
 
     try {
       await axios.put(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/playlists/update-order',
+        'https://api.scaleupapp.club/api/playlists/update-order',
         {
           playlistId,
           items: updatedPlaylist.items,
@@ -911,7 +911,7 @@ useEffect(() => {
   const getUsernameById = async userId => {
     try {
       const response = await fetch(
-        `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/user/${userId}`,
+        `https://api.scaleupapp.club/api/user/${userId}`,
       );
       const userData = await response.json();
       return userData.username;

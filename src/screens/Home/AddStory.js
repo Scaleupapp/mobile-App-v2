@@ -92,7 +92,7 @@ export const AddStory = ({ onStoryAdded }) => {
 
         // Make the API request with authentication header
         const response = await axios.post(
-          'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories',
+          'https://api.scaleupapp.club/api/stories',
           formData,
           {
             headers: { 

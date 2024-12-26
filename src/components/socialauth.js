@@ -25,7 +25,7 @@ const SocialLogin = ({signup = false}) => {
   useEffect(() => {
     GoogleSignin.configure({
       webClientId:
-        '280212722139-rqi3g53qtp54othg98lrfqlp0gjk0h7v.apps.googleusercontent.com',
+        '280212722139-1hp4dvf54v6l755blp4ghbvmma1oqf6d.apps.googleusercontent.com',
       offlineAccess: true,
       scopes: ['profile', 'email'],
       forceCodeForRefreshToken: true,

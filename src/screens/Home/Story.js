@@ -21,7 +21,7 @@ import {getProfile} from '../../services/apiService';
 
 const { width, height } = Dimensions.get('window');
 const STORY_DURATION = 5000;
-const API_BASE_URL = 'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api';
+const API_BASE_URL = 'https://api.scaleupapp.club/api';
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -361,11 +361,11 @@ export const Story = () => {
               {currentStory?.type === 'image' ? (
                 <>
                   {/* Log the URI for the image */}
-                  {console.log('Image URI:', `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}`)}
+                  {console.log('Image URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
 
                   <Image
                     source={{
-                      uri: `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}`,
+                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
                     }}
                     style={styles.storyMedia}
                     resizeMode="contain"
@@ -374,11 +374,11 @@ export const Story = () => {
               ) : currentStory?.type === 'video' ? (
                 <>
                   {/* Log the URI for the video */}
-                  {console.log('Video URI:', `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}`)}
+                  {console.log('Video URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
 
                   <Video
                     source={{
-                      uri: `http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api${currentStory?.url}`,
+                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
                     }}
                     style={styles.storyMedia}
                     resizeMode="contain"
