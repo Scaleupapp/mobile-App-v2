@@ -111,7 +111,7 @@ const CreatePost = ({navigation}) => {
       });
 
       const response = await axios.post(
-        'http://192.168.39.240:3000/api/content/create',
+        'https://api.scaleupapp.club/api/content/create',
         formData,
         {
           headers: {

@@ -82,7 +82,7 @@ const MyPlaylists = ({navigation}) => {
   const fetchUsername = async userId => {
     try {
       const response = await fetch(
-        `http://192.168.39.240:3000/api/user/${userId}`,
+        `https://api.scaleupapp.club/api/user/${userId}`,
       );
 
       if (!response.ok) {
@@ -108,7 +108,7 @@ const MyPlaylists = ({navigation}) => {
   const markPostAsViewed = async (playlistId, postId) => {
     try {
       await axios.post(
-        'http://192.168.39.240:3000/api/playlists/mark-viewed',
+        'https://api.scaleupapp.club/api/playlists/mark-viewed',
         {
           userId,
           playlistId,
@@ -144,13 +144,13 @@ const fetchPostDetails = async (postId) => {
     let response;
     try {
       response = await axios.get(
-        `http://192.168.39.240:3000/api/content/post/${postId}`
+        `https://api.scaleupapp.club/api/content/post/${postId}`
       );
     } catch (err) {
       // If that fails and we have a token, try with authentication
       if (currentToken) {
         response = await axios.get(
-          `http://192.168.39.240:3000/api/content/post/${postId}`,
+          `https://api.scaleupapp.club/api/content/post/${postId}`,
           {
             headers: {
               Authorization: `Bearer ${currentToken}`,
@@ -186,7 +186,7 @@ useEffect(() => {
 
       // Fetch playlists for the specific user
       const response = await axios.get(
-        `http://192.168.39.240:3000/api/playlists?userId=${userId}`,
+        `https://api.scaleupapp.club/api/playlists?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${currentToken}`,
@@ -256,7 +256,7 @@ const handleVideoEnd = async () => {
     if (selectedVideo.isPublic && expandedPublicPlaylist) {
       // Update progress for public playlist
       const response = await axios.get(
-        `http://192.168.39.240:3000/api/playlists/public/${selectedVideo.playlistId}/progress`,
+        `https://api.scaleupapp.club/api/playlists/public/${selectedVideo.playlistId}/progress`,
         {
           params: { userId },
           headers: {
@@ -280,7 +280,7 @@ const handleVideoEnd = async () => {
   const togglePlaylistStatus = async playlistId => {
     try {
       const response = await axios.put(
-        'http://192.168.39.240:3000/api/playlists/toggle-status',
+        'https://api.scaleupapp.club/api/playlists/toggle-status',
         {
           userId,
           playlistId,
@@ -306,7 +306,7 @@ const handleVideoEnd = async () => {
   const fetchPublicPlaylists = async () => {
     try {
       const response = await axios.get(
-        'http://192.168.39.240:3000/api/playlists/public',
+        'https://api.scaleupapp.club/api/playlists/public',
       );
       setPublicPlaylists(response.data);
       setIsPublicPlaylistsExpanded(true);
@@ -334,7 +334,7 @@ const handleVideoEnd = async () => {
   
       // Include token in the playlist request
       const response = await axios.get(
-        `http://192.168.39.240:3000/api/playlists/public/${playlistId}`,
+        `https://api.scaleupapp.club/api/playlists/public/${playlistId}`,
         {
           headers: {
             Authorization: `Bearer ${currentToken}`,
@@ -390,7 +390,7 @@ const handleVideoEnd = async () => {
 
     try {
       const response = await axios.post(
-        'http://192.168.39.240:3000/api/playlists/create',
+        'https://api.scaleupapp.club/api/playlists/create',
         {
           userId,
           playlistName: newPlaylistName,
@@ -421,7 +421,7 @@ const handleVideoEnd = async () => {
 
     try {
       const response = await axios.put(
-        'http://192.168.39.240:3000/api/playlists/rename',
+        'https://api.scaleupapp.club/api/playlists/rename',
         {
           userId,
           playlistId: playlistToEdit._id,
@@ -454,7 +454,7 @@ const handleVideoEnd = async () => {
   const deletePlaylist = async playlistId => {
     try {
       await axios.delete(
-        'http://192.168.39.240:3000/api/playlists/delete',
+        'https://api.scaleupapp.club/api/playlists/delete',
         {
           data: {userId, playlistId},
         },
@@ -661,7 +661,7 @@ const handleVideoEnd = async () => {
   const removePostFromPlaylist = async (playlistId, postId) => {
     try {
       const response = await axios.delete(
-        'http://192.168.39.240:3000/api/playlists/remove-from-playlist',
+        'https://api.scaleupapp.club/api/playlists/remove-from-playlist',
         {
           data: {
             userId,
@@ -719,7 +719,7 @@ const handleVideoEnd = async () => {
 
     try {
       await axios.put(
-        'http://192.168.39.240:3000/api/playlists/update-order',
+        'https://api.scaleupapp.club/api/playlists/update-order',
         {
           playlistId,
           items: updatedPlaylist.items,
@@ -935,7 +935,7 @@ const handleVideoEnd = async () => {
   const getUsernameById = async userId => {
     try {
       const response = await fetch(
-        `http://192.168.39.240:3000/api/user/${userId}`,
+        `https://api.scaleupapp.club/api/user/${userId}`,
       );
       const userData = await response.json();
       return userData.username;
@@ -980,7 +980,7 @@ const handleVideoEnd = async () => {
       try {
         setError(null);
         const response = await axios.get(
-          `http://192.168.39.240:3000/api/playlists/public/${playlist._id}/progress`,
+          `https://api.scaleupapp.club/api/playlists/public/${playlist._id}/progress`,
           {
             params: { userId },
             headers: {

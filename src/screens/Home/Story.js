@@ -21,8 +21,8 @@ import {getProfile} from '../../services/apiService';
 
 const { width, height } = Dimensions.get('window');
 const STORY_DURATION = 60000;
-// const API_BASE_URL = 'http://192.168.39.240:3000/api';
-const API_BASE_URL = 'http://192.168.39.240:3000/api';
+// const API_BASE_URL = 'https://api.scaleupapp.club/api';
+const API_BASE_URL = 'https://api.scaleupapp.club/api';
 
 
 export const Story = () => {
@@ -419,11 +419,11 @@ useEffect(() => {
               {currentStory?.type === 'image' ? (
                 <>
                   {/* Log the URI for the image */}
-                  {console.log('Image URI:', `http://192.168.39.240:3000/api${currentStory?.url}`)}
+                  {console.log('Image URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
 
                   <Image
                     source={{
-                      uri: `http://192.168.39.240:3000/api${currentStory?.url}`,
+                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
                     }}
                     style={styles.storyMedia}
                     resizeMode="contain"
@@ -432,11 +432,11 @@ useEffect(() => {
               ) : currentStory?.type === 'video' ? (
                 <>
                   {/* Log the URI for the video */}
-                  {console.log('Video URI:', `http://192.168.39.240:3000/api${currentStory?.url}`)}
+                  {console.log('Video URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
 
                   <Video
                     source={{
-                      uri: `http://192.168.39.240:3000/api${currentStory?.url}`,
+                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
                     }}
                     style={styles.storyMedia}
                     resizeMode="contain"
