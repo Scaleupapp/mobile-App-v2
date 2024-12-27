@@ -5,9 +5,7 @@ import {
   StatusBar,
   View,
   ScrollView,
-  Alert,
   Dimensions,
-  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
@@ -30,7 +28,6 @@ const CreatePost = ({navigation}) => {
   const [captions, setCaptions] = useState('');
   const [hashtags, setHashtags] = useState('');
   const [file, setFile] = useState(null);
-  const [thumbnailFile, setThumbnailFile] = useState(null);
   const [contentType, setContentType] = useState('image');
   
   // User data state
@@ -72,11 +69,6 @@ const CreatePost = ({navigation}) => {
         setContentType('Image');
       } else if (fileType.includes('video')) {
         setContentType('Video');
-        Alert.alert(
-          'Thumbnail Required',
-          'Please upload a thumbnail for your video',
-          [{text: 'Upload Thumbnail', onPress: handleThumbnailUpload}],
-        );
       } else if (fileType.includes('pdf') || fileType.includes('document')) {
         setContentType('Document');
       } else if (fileType.includes('gif')) {
@@ -91,25 +83,6 @@ const CreatePost = ({navigation}) => {
         console.error('Error selecting file:', err);
         showToast({
           text: 'Failed to select file',
-          type: 'error',
-        });
-      }
-    }
-  };
-
-  const handleThumbnailUpload = async () => {
-    try {
-      const res = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.images],
-      });
-      setThumbnailFile(res);
-    } catch (err) {
-      if (DocumentPicker.isCancel(err)) {
-        console.log('User cancelled thumbnail picker');
-      } else {
-        console.error('Error selecting thumbnail:', err);
-        showToast({
-          text: 'Failed to select thumbnail',
           type: 'error',
         });
       }
@@ -138,7 +111,7 @@ const CreatePost = ({navigation}) => {
       });
 
       const response = await axios.post(
-        'https://api.scaleupapp.club/api/content/create',
+        'http://192.168.39.240:3000/api/content/create',
         formData,
         {
           headers: {
@@ -174,7 +147,7 @@ const CreatePost = ({navigation}) => {
     }
 
     try {
-      console.log('Uploading main file...');
+      console.log('Uploading file...');
       const additionalFields = {
         heading,
         relatedTopics: topics,
@@ -187,14 +160,6 @@ const CreatePost = ({navigation}) => {
       const fileResponse = await uploadFile(file, additionalFields);
       console.log('File Upload Success:', fileResponse.data);
 
-      if (contentType === 'Video' && thumbnailFile) {
-        console.log('Uploading thumbnail...');
-        const thumbnailResponse = await uploadFile(thumbnailFile, {
-          isThumbnail: true,
-        });
-        console.log('Thumbnail Upload Success:', thumbnailResponse.data);
-      }
-
       showToast({text: 'Post created successfully!', type: 'success'});
       navigation.goBack();
     } catch (error) {
@@ -203,7 +168,6 @@ const CreatePost = ({navigation}) => {
     }
   };
 
-  // Rest of the component remains the same...
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
@@ -250,15 +214,6 @@ const CreatePost = ({navigation}) => {
                 textStyle={{fontSize: 14}}
               />
             </View>
-            {contentType === 'Video' && thumbnailFile && (
-              <View style={styles.thumbnailPreview}>
-                <Text>Thumbnail Preview:</Text>
-                <Image
-                  source={{uri: thumbnailFile.uri}}
-                  style={styles.thumbnailImage}
-                />
-              </View>
-            )}
             <View style={styles.actionButtonContainer}>
               <Button
                 variant="outline"
@@ -283,7 +238,6 @@ const CreatePost = ({navigation}) => {
   );
 };
 
-// Styles remain unchanged
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -316,15 +270,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: nh(30),
-  },
-  thumbnailPreview: {
-    marginTop: 10,
-    alignItems: 'center',
-  },
-  thumbnailImage: {
-    width: 100,
-    height: 100,
-    resizeMode: 'cover',
   },
 });
 

@@ -11,20 +11,29 @@ const ProgressCircle = ({
   // Ensure progress is between 0 and 1
   const normalizedProgress = Math.min(Math.max(progress, 0), 1);
   
-  // Animation value
+  // Animation values
+  const waveOffset = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
-  // Animate progress in a continuous loop
   useEffect(() => {
-    const loopAnimation = Animated.loop(
+    // Animate progress to target value
+    Animated.timing(progressAnim, {
+      toValue: normalizedProgress,
+      duration: 1000,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+
+    // Continuous wave animation
+    const waveAnimation = Animated.loop(
       Animated.sequence([
-        Animated.timing(progressAnim, {
-          toValue: normalizedProgress,
+        Animated.timing(waveOffset, {
+          toValue: 1,
           duration: 1000,
           easing: Easing.linear,
           useNativeDriver: false,
         }),
-        Animated.timing(progressAnim, {
+        Animated.timing(waveOffset, {
           toValue: 0,
           duration: 1000,
           easing: Easing.linear,
@@ -33,16 +42,31 @@ const ProgressCircle = ({
       ])
     );
 
-    loopAnimation.start();
+    waveAnimation.start();
 
-    // Clean up animation on unmount
-    return () => loopAnimation.stop();
+    return () => waveAnimation.stop();
   }, [normalizedProgress]);
 
-  // Interpolate height based on progress
+  // Create wave pattern using multiple sine waves
+  const createWavePattern = () => {
+    const amplitude = size * 0.1; // Wave height
+    const frequency = size * 0.15; // Wave frequency
+    
+    return waveOffset.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, size],
+    }).interpolate({
+      inputRange: Array.from({ length: 10 }, (_, i) => i * (size / 9)),
+      outputRange: Array.from({ length: 10 }, (_, i) => 
+        amplitude * Math.sin((i / frequency) * Math.PI)
+      ),
+    });
+  };
+
+  // Calculate fill height based on progress
   const fillHeight = progressAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
+    outputRange: [0, size],
   });
 
   return (
@@ -70,6 +94,11 @@ const ProgressCircle = ({
           right: 0,
           backgroundColor: '#2fa7b4',
           height: fillHeight,
+          transform: [
+            { 
+              translateY: createWavePattern()
+            }
+          ],
         }}
       />
       

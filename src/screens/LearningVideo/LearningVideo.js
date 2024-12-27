@@ -234,7 +234,7 @@ const LearningVideo = () => {
       const token = parsedData?.token;
 
       const response = await axios.get(
-        'https://api.scaleupapp.club/api/content/allcontent',
+        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/allcontent',
         {
           headers: token ? {
             Authorization: `Bearer ${token}`,

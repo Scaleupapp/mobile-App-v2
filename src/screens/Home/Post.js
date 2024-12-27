@@ -102,18 +102,33 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
   const handleBookmarkPress = () => {
     if (!profileData?.id) {
-      console.error('User ID not available');
+      Alert.alert('Authentication Required', 'Please log in to bookmark posts', [
+        {text: 'OK', style: 'default'},
+      ]);
       return;
     }
 
-    if (item?.contentType === 'Video') {
-      setIsPlaylistModalVisible(true);
-    } else {
+    // Check if the post belongs to the logged-in user
+    if (item?.userId?._id !== profileData?.id) {
+      Alert.alert(
+        'Action Not Allowed',
+        'You can only bookmark your own video posts',
+        [{text: 'OK', style: 'default'}]
+      );
+      return;
+    }
+
+    // Check if it's a video post
+    if (item?.contentType !== 'Video') {
       Alert.alert('Action Not Allowed', 'Cannot add image to the playlist', [
         {text: 'OK', style: 'default'},
       ]);
+      return;
     }
+
+    setIsPlaylistModalVisible(true);
   };
+
 
   const handleBookmark = async (userId, postId) => {
     try {

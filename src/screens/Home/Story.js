@@ -20,8 +20,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getProfile} from '../../services/apiService';
 
 const { width, height } = Dimensions.get('window');
-const STORY_DURATION = 5000;
-const API_BASE_URL = 'https://api.scaleupapp.club/api';
+const STORY_DURATION = 60000;
+// const API_BASE_URL = 'http://192.168.39.240:3000/api';
+const API_BASE_URL = 'http://192.168.39.240:3000/api';
+
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,6 +47,7 @@ export const Story = () => {
     };
   }, []);
 
+
   const getProfileData = async () => {
     try {
       const user = await AsyncStorage.getItem('userData');
@@ -64,52 +67,98 @@ export const Story = () => {
     }
   };
 
-  const fetchStories = async (userId) => {
-    if (!userId) return;
-    
-    try {
-      setIsLoading(true);
-      const [usersResponse, storiesResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/user`),
-        axios.get(`${API_BASE_URL}/stories?userId=${userId}`)
-      ]);
+const fetchStories = async (userId) => {
+  if (!userId) return;
+  
+  try {
+    setIsLoading(true);
+    const [usersResponse, storiesResponse] = await Promise.all([
+      axios.get(`${API_BASE_URL}/user`),
+      axios.get(`${API_BASE_URL}/stories?userId=${userId}`)
+    ]);
 
-      const users = usersResponse.data || [];
-      const stories = storiesResponse.data || [];
+    const users = usersResponse.data || [];
+    const stories = storiesResponse.data || [];
 
-      let grouped = users
-        .map(user => ({
-          ...user,
-          stories: stories.filter(story => 
-            story.user && story.user._id === user._id
-          ) || [],
-        }))
-        .filter(user => user.stories.length > 0);
+    // Filter out expired stories
+    const activeStories = stories.filter(story => 
+      getRemainingTime(story.expiresAt) > 0
+    );
 
-      grouped = grouped.map(user => ({
+    let grouped = users
+      .map(user => ({
         ...user,
-        allStoriesViewed: user.stories.every(story => story.isViewed),
-      }));
+        stories: activeStories.filter(story => 
+          story.user && story.user._id === user._id
+        ) || [],
+      }))
+      .filter(user => user.stories.length > 0);
 
-      grouped.sort((a, b) => {
-        if (a.allStoriesViewed !== b.allStoriesViewed) {
-          return a.allStoriesViewed ? 1 : -1;
-        }
-        return 0;
-      });
+    grouped = grouped.map(user => ({
+      ...user,
+      allStoriesViewed: user.stories.every(story => story.isViewed),
+    }));
 
-      setGroupedStories(grouped);
-      
-      if (grouped.length > 0) {
-        progressAnimations.current = grouped.map(user =>
-          user.stories.map(() => new Animated.Value(0))
-        );
+    // Sort by view status and expiration time
+    grouped.sort((a, b) => {
+      if (a.allStoriesViewed !== b.allStoriesViewed) {
+        return a.allStoriesViewed ? 1 : -1;
       }
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-    } finally {
-      setIsLoading(false);
+      // Sort by earliest expiring story within each user's stories
+      const aEarliestExpiry = Math.min(...a.stories.map(s => new Date(s.expiresAt).getTime()));
+      const bEarliestExpiry = Math.min(...b.stories.map(s => new Date(s.expiresAt).getTime()));
+      return aEarliestExpiry - bEarliestExpiry;
+    });
+
+    setGroupedStories(grouped);
+    
+    if (grouped.length > 0) {
+      progressAnimations.current = grouped.map(user =>
+        user.stories.map(() => new Animated.Value(0))
+      );
     }
+  } catch (error) {
+    console.error('Error fetching stories:', error);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+// Add expiration polling to check for expired stories
+useEffect(() => {
+  const checkExpiration = setInterval(() => {
+    setGroupedStories(prevStories => {
+      const updatedStories = prevStories.map(user => ({
+        ...user,
+        stories: user.stories.filter(story => 
+          getRemainingTime(story.expiresAt) > 0
+        ),
+      })).filter(user => user.stories.length > 0);
+
+      if (updatedStories.length !== prevStories.length) {
+        // If the current story expired, close the modal
+        if (modalVisible && currentUser && 
+            !updatedStories.find(u => u._id === currentUser._id)?.stories[currentStoryIndex]) {
+          setModalVisible(false);
+          resetAllProgress();
+        }
+        return updatedStories;
+      }
+      return prevStories;
+    });
+  }, 100000000); 
+
+  return () => clearInterval(checkExpiration);
+}, [modalVisible, currentUser, currentStoryIndex]);
+
+  const getRemainingTime = (expiresAt) => {
+    if (!expiresAt) return null;
+    const now = new Date().getTime();
+    const expiry = new Date(expiresAt).getTime();
+    const remaining = expiry - now;
+    return remaining > 0 ? remaining : 0;
   };
 
   const markStoryAsViewed = async (storyId) => {
@@ -269,11 +318,13 @@ export const Story = () => {
   // Modified thumbnail rendering to show view status
   const renderThumbnail = (user, userIndex) => {
     const allStoriesViewed = user.allStoriesViewed;
+    const earliestExpiry = Math.min(...user.stories.map(s => getRemainingTime(s.expiresAt)));
+    const hoursRemaining = Math.floor(earliestExpiry / (1000 * 60 * 60));
+    const minutesRemaining = Math.floor((earliestExpiry % (1000 * 60 * 60)) / (1000 * 60));
     
     return (
       <View key={user._id} style={[
         styles.thumbnailGroup,
-        // Add slight opacity to viewed stories
         allStoriesViewed && styles.viewedThumbnailGroup
       ]}>
         <TouchableOpacity
@@ -292,6 +343,13 @@ export const Story = () => {
               allStoriesViewed && styles.viewedThumbnailImage
             ]}
           />
+          <View style={styles.expiryBadge}>
+            <Text style={styles.expiryText}>
+              {hoursRemaining > 0 
+                ? `${hoursRemaining}h` 
+                : `${minutesRemaining}m`}
+            </Text>
+          </View>
         </TouchableOpacity>
         <Text style={[
           styles.username,
@@ -361,11 +419,11 @@ export const Story = () => {
               {currentStory?.type === 'image' ? (
                 <>
                   {/* Log the URI for the image */}
-                  {console.log('Image URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
+                  {console.log('Image URI:', `http://192.168.39.240:3000/api${currentStory?.url}`)}
 
                   <Image
                     source={{
-                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
+                      uri: `http://192.168.39.240:3000/api${currentStory?.url}`,
                     }}
                     style={styles.storyMedia}
                     resizeMode="contain"
@@ -374,11 +432,11 @@ export const Story = () => {
               ) : currentStory?.type === 'video' ? (
                 <>
                   {/* Log the URI for the video */}
-                  {console.log('Video URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
+                  {console.log('Video URI:', `http://192.168.39.240:3000/api${currentStory?.url}`)}
 
                   <Video
                     source={{
-                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
+                      uri: `http://192.168.39.240:3000/api${currentStory?.url}`,
                     }}
                     style={styles.storyMedia}
                     resizeMode="contain"
@@ -428,6 +486,21 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     paddingHorizontal: 10,
   },
+  expiryBadge: {
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 10,
+    padding: 3,
+    minWidth: 25,
+    alignItems: 'center',
+  },
+  expiryText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
   thumbnailGroup: {
     alignItems: 'center',
     marginHorizontal: 5,
@@ -444,8 +517,9 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 12,
-    color: '#fff',
+    color: 'black',
     textAlign: 'center',
+    fontWeight: 'bold',
     marginTop: 5,
   },
   modalContainer: {
