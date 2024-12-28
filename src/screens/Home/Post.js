@@ -304,19 +304,25 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             onBuffer={e => console.log('bufeer ', e)}
             onError={e => console.log('sdsds ', e)}
           />
-          {/* <View
+          <View
             style={{
               position: 'absolute',
               alignSelf: 'center',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
             }}>
             <Icon
               type="antdesign"
               name="playcircleo"
               size={nh(40)}
               color={COLORS.blue043142}
-              style={{marginRight: nw(10), opacity: 0.8}}
+              style={{
+                marginRight: nw(10),
+                opacity: 0.8,
+              }}
             />
-          </View> */}
+          </View>
         </Pressable>
       ) : null}
 

@@ -262,7 +262,7 @@ const Login = ({navigation}) => {
               />
               <View style={styles.rememberContainer}>
                 <View style={styles.checkboxContainer}>
-                  <CheckBox
+                  {/* <CheckBox
                     checkedIcon="check-box"
                     uncheckedIcon="check-box-outline-blank"
                     iconType="material"
@@ -276,7 +276,7 @@ const Login = ({navigation}) => {
                   />
                   <Text variant="medium12" color={COLORS.grey999999}>
                     Remember me
-                  </Text>
+                  </Text> */}
                 </View>
                 <TouchableOpacity
                   onPress={() => navigation.navigate(Routes.ForgotPassword)}>

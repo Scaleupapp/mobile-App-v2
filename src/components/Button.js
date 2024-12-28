@@ -9,6 +9,7 @@ import Icon from '../helper/icon';
 const Button = ({
   text = '',
   leftIcon = null,
+  leftimage = null,
   rightIcon = null,
   justIcon = null,
   onPress = () => {},
@@ -57,6 +58,12 @@ const Button = ({
             color={isSolid ? textColor : outlineColor}
             type="feather"
             style={{marginRight: 5}}
+          />
+        )}
+        {leftimage && (
+          <Image
+            source={leftimage}
+            style={{height: 20, width: 20, marginRight: 10}}
           />
         )}
         {text ? (

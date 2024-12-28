@@ -65,7 +65,10 @@ const SocialLogin = ({signup = false}) => {
         const stringifiedUserData = JSON.stringify(loginData);
         await AsyncStorage.setItem('userData', stringifiedUserData);
         dispatch(actions.setUserData(stringifiedUserData));
-        navigation.navigate(Routes.Home);
+        navigation.reset({
+          index: 0,
+          routes: [{name: Routes.Home}],
+        });
       } catch (loginError) {
         // If login fails, attempt to register
         try {
@@ -75,7 +78,10 @@ const SocialLogin = ({signup = false}) => {
           const stringifiedUserData = JSON.stringify(registrationData);
           await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(registrationData));
-          navigation.navigate(Routes.Home);
+          navigation.reset({
+            index: 0,
+            routes: [{name: Routes.Home}],
+          });
         } catch (registrationError) {
           // Handle registration error
           console.error('Registration Error:', registrationError);
@@ -120,12 +126,12 @@ const SocialLogin = ({signup = false}) => {
             fontSize: nh(12),
             fontFamily: APP_FONTS.PoppinsMedium,
           }}
-          width={DEVICE_WIDTH / 2 - nw(23)}
-          leftIcon={icons.google}
+          width={DEVICE_WIDTH - nw(32)}
+          leftimage={icons.google}
           onPress={handleGoogleAuth}
         />
 
-        <Button
+        {/* <Button
           variant="outline"
           text="Apple"
           textStyle={{
@@ -133,9 +139,9 @@ const SocialLogin = ({signup = false}) => {
             fontFamily: APP_FONTS.PoppinsMedium,
           }}
           width={DEVICE_WIDTH / 2 - nw(23)}
-          leftIcon={icons.apple}
+          leftimage={icons.apple}
           // Add Apple login logic here if needed
-        />
+        /> */}
       </View>
     </View>
   );
