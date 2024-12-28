@@ -1,8 +1,8 @@
 import {Dimensions, PixelRatio, Platform} from 'react-native';
 
 const {width, height} = Dimensions.get('window');
-const guidelineBaseWidth = 375;
-const guidelineBaseHeight = 812;
+export const guidelineBaseWidth = 375;
+export const guidelineBaseHeight = 812;
 
 export const normalize = (size: number) =>
   PixelRatio.roundToNearestPixel(size * (width / guidelineBaseWidth));
