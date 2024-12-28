@@ -131,7 +131,7 @@ const SignUp = ({navigation, route}) => {
           });
           showToast({type: 'success', title: data?.message});
           const stringifiedUserData = JSON.stringify(data);
-          AsyncStorage.setItem('userData', stringifiedUserData);
+          await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(stringifiedUserData));
           if (phoneNumberData?.isPhoneNumberVerified) {
             navigation.reset({

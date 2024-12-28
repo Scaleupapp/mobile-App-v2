@@ -88,9 +88,9 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            storeFile file('my-release-key.jks')
             storePassword 'android'
-            keyAlias 'androiddebugkey'
+            keyAlias 'my-key-alias'
             keyPassword 'android'
         }
     }
@@ -111,6 +111,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    implementation 'com.google.android.gms:play-services-auth:21.0.0'  // Make sure the version is correct
+
     // video cache
     // implementation('com.danikula:videocache:2.7.1')
     // implementation("org.slf4j:slf4j-api:2.0.9")
@@ -120,3 +122,4 @@ dependencies {
         implementation jscFlavor
     }
 }
+

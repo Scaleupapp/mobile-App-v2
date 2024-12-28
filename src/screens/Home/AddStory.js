@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -13,12 +13,40 @@ import axios from 'axios';
 import { COLORS } from '../../helper/colors';
 import { nw } from '../../helper/scales';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getProfile } from '../../services/apiService';
 
 export const AddStory = ({ onStoryAdded }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+
+  // Effect to fetch user profile data when component mounts
+  useEffect(() => {
+    getProfileData();
+  }, []);
+
+  // Function to get user profile data from AsyncStorage and API
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      // Fetch profile information using the API
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+    }
+  };
 
   // Open camera for capturing media
   const openCamera = async () => {
+    if (!profileData?.id) {
+      Alert.alert('Login Required', 'Please login to add stories');
+      return;
+    }
+
     setModalVisible(false);
     const result = await launchCamera({
       mediaType: 'mixed',
@@ -30,6 +58,11 @@ export const AddStory = ({ onStoryAdded }) => {
 
   // Open gallery for selecting media
   const openGallery = async () => {
+    if (!profileData?.id) {
+      Alert.alert('Login Required', 'Please login to add stories');
+      return;
+    }
+
     setModalVisible(false);
     const result = await launchImageLibrary({
       mediaType: 'mixed',
@@ -42,24 +75,33 @@ export const AddStory = ({ onStoryAdded }) => {
     if (result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
 
-      // Prepare the media data for upload
-      const formData = new FormData();
-      formData.append('file', {
-        uri: asset.uri,
-        name: asset.fileName || 'media', // Fallback name
-        type: asset.type || 'image/jpeg',
-      });
-      formData.append('userId', '6639f2882693d884adf47072'); // Replace with your actual user ID
-      formData.append('type', asset.type.includes('video') ? 'video' : 'image');
-
       try {
+        // Get fresh user data from AsyncStorage
+        const userData = await AsyncStorage.getItem('userData');
+        const parsedUser = JSON.parse(userData);
+
+        // Prepare the media data for upload
+        const formData = new FormData();
+        formData.append('file', {
+          uri: asset.uri,
+          name: asset.fileName || 'media', // Fallback name
+          type: asset.type || 'image/jpeg',
+        });
+        formData.append('userId', profileData.id); // Use profileData.id instead of userId from Redux
+        formData.append('type', asset.type.includes('video') ? 'video' : 'image');
+
+        // Make the API request with authentication header
         const response = await axios.post(
-          'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/stories',
+          'https://api.scaleupapp.club/api/stories',
           formData,
           {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            headers: { 
+              'Content-Type': 'multipart/form-data',
+              'Authorization': `Bearer ${parsedUser?.token}` // Add authorization header
+            },
           }
         );
+        
         Alert.alert('Success', 'Story added successfully');
         if (onStoryAdded) onStoryAdded(); // Trigger a refresh in the parent component
       } catch (error) {
