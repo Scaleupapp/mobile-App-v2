@@ -29,6 +29,8 @@ const CreatePost = ({navigation}) => {
   const [hashtags, setHashtags] = useState('');
   const [file, setFile] = useState(null);
   const [contentType, setContentType] = useState('image');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   
   // User data state
   const [profileData, setProfileData] = useState(null);
@@ -37,6 +39,17 @@ const CreatePost = ({navigation}) => {
   useEffect(() => {
     getProfileData();
   }, []);
+
+  // Function to reset form fields
+  const resetForm = () => {
+    setHeading('');
+    setTopics('');
+    setCaptions('');
+    setHashtags('');
+    setFile(null);
+    setContentType('image');
+    setUploadProgress(0);
+  };
 
   // Function to fetch profile data using AsyncStorage and API
   const getProfileData = async () => {
@@ -118,6 +131,12 @@ const CreatePost = ({navigation}) => {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`,
           },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
         },
       );
       return response;
@@ -147,6 +166,8 @@ const CreatePost = ({navigation}) => {
     }
 
     try {
+      setIsUploading(true);
+      setUploadProgress(0);
       console.log('Uploading file...');
       const additionalFields = {
         heading,
@@ -161,10 +182,13 @@ const CreatePost = ({navigation}) => {
       console.log('File Upload Success:', fileResponse.data);
 
       showToast({text: 'Post created successfully!', type: 'success'});
+      resetForm(); // Reset form fields after successful upload
       navigation.goBack();
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
       showToast({text: 'Failed to upload post.', type: 'error'});
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -213,7 +237,18 @@ const CreatePost = ({navigation}) => {
                 height={nh(35)}
                 textStyle={{fontSize: 14}}
               />
+              {file && (
+                <Text style={styles.fileName} numberOfLines={1}>
+                  {file.name}
+                </Text>
+              )}
             </View>
+            {isUploading && (
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                <Text style={styles.progressText}>{`${uploadProgress}%`}</Text>
+              </View>
+            )}
             <View style={styles.actionButtonContainer}>
               <Button
                 variant="outline"
@@ -229,6 +264,7 @@ const CreatePost = ({navigation}) => {
                 height={nh(35)}
                 textStyle={{fontSize: 14}}
                 onPress={handlePost}
+                disabled={isUploading}
               />
             </View>
           </View>
@@ -270,6 +306,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: nh(30),
+  },
+  fileName: {
+    marginTop: nh(5),
+    color: COLORS.greyBBBBBB,
+  },
+  progressContainer: {
+    marginTop: nh(10),
+    height: nh(20),
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: COLORS.yellowF5BE00,
+  },
+  progressText: {
+    position: 'absolute',
+    width: '100%',
+    textAlign: 'center',
+    lineHeight: nh(20),
+    color: '#000',
   },
 });
 

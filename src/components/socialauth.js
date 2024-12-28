@@ -1,5 +1,11 @@
-import React, {useEffect} from 'react';
-import {View, Alert} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Alert,
+  Platform,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import {
   GoogleSignin,
   statusCodes,
@@ -15,136 +21,166 @@ import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
 import {icons} from '../assets/icons';
 import {COLORS} from '../helper/colors';
 import {loginApi, registerApi} from '../services/apiService';
-import {actions} from '../redux/reducers'; // Adjust import based on your Redux setup
-import Routes from '../helper/routes'; // Adjust import based on your route configuration
+import {actions} from '../redux/reducers';
+import Routes from '../helper/routes';
 
 const SocialLogin = ({signup = false}) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    configureGoogleSignIn();
+  }, []);
+
+  const configureGoogleSignIn = () => {
     GoogleSignin.configure({
-      webClientId:
-        '280212722139-1hp4dvf54v6l755blp4ghbvmma1oqf6d.apps.googleusercontent.com',
+      // iOS client ID
+      iosClientId: '904486363410-khm24rnus7cfdhq6culdepe4jhunrsof.apps.googleusercontent.com',
+      // Android client ID
+      webClientId: '904486363410-gj81qip7agmdniss7tkt74fkan4alcf1.apps.googleusercontent.com',
       offlineAccess: true,
       scopes: ['profile', 'email'],
       forceCodeForRefreshToken: true,
     });
-  }, []);
+  };
+
+  const extractUserData = (user) => ({
+    username: (user.name || `${user.givenName}${user.familyName}`)?.trim(),
+    email: user.email?.trim() || '',
+    password: user.id?.toString() || '',
+    firstname: user.givenName?.trim() || '',
+    lastname: user.familyName?.trim() || '',
+    profilePicture: user.photo || '',
+    isbasicProfileComplete: true,
+  });
+
+  const handleAuthentication = async (userData) => {
+    try {
+      // Attempt login first
+      const {data: loginData} = await loginApi({
+        loginIdentifier: userData.email,
+        password: userData.password,
+      });
+
+      await handleSuccessfulAuth(loginData);
+    } catch (loginError) {
+      // If login fails, attempt registration
+      try {
+        const {data: registrationData} = await registerApi(userData);
+        await handleSuccessfulAuth(registrationData);
+      } catch (registrationError) {
+        throw new Error(
+          registrationError.response?.data?.message ||
+            'Unable to create account. Please try again.',
+        );
+      }
+    }
+  };
+
+  const handleSuccessfulAuth = async (data) => {
+    const stringifiedUserData = JSON.stringify(data);
+    await AsyncStorage.setItem('userData', stringifiedUserData);
+    dispatch(actions.setUserData(data));
+    navigation.reset({
+      index: 0,
+      routes: [{name: Routes.Home}],
+    });
+  };
 
   const handleGoogleAuth = async () => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
     try {
-      // Ensure Google Play services are available
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
 
-      // Initiate Google Sign-In
+      // Sign out first to ensure a fresh login attempt
+      await GoogleSignin.signOut();
+
       const userInfo = await GoogleSignin.signIn();
-
-      // Extract user data
-      const user = userInfo.data.user;
-      const userData = {
-        username: (user.name || `${user.givenName}${user.familyName}`)?.trim(),
-        email: user.email?.trim() || '',
-        password: user.id?.toString() || '', // Use Google ID as password
-        firstname: user.givenName?.trim() || '',
-        lastname: user.familyName?.trim() || '',
-        profilePicture: user.photo || '',
-        isbasicProfileComplete: true,
-      };
-
-      try {
-        // First, try to login
-        const {data: loginData} = await loginApi({
-          loginIdentifier: userData.email,
-          password: userData.password,
-        });
-
-        // Login successful
-        const stringifiedUserData = JSON.stringify(loginData);
-        await AsyncStorage.setItem('userData', stringifiedUserData);
-        dispatch(actions.setUserData(stringifiedUserData));
-        navigation.reset({
-          index: 0,
-          routes: [{name: Routes.Home}],
-        });
-      } catch (loginError) {
-        // If login fails, attempt to register
-        try {
-          const {data: registrationData} = await registerApi(userData);
-
-          // Registration successful, now login
-          const stringifiedUserData = JSON.stringify(registrationData);
-          await AsyncStorage.setItem('userData', stringifiedUserData);
-          dispatch(actions.setUserData(registrationData));
-          navigation.reset({
-            index: 0,
-            routes: [{name: Routes.Home}],
-          });
-        } catch (registrationError) {
-          // Handle registration error
-          console.error('Registration Error:', registrationError);
-          Alert.alert(
-            'Registration Failed',
-            registrationError.response?.data?.message ||
-              'Unable to create account. Please try again.',
-          );
-        }
+      
+      if (!userInfo.user) {
+        throw new Error('Failed to get user information');
       }
-    } catch (error) {
-      // Handle Google Sign-In errors
-      console.error('Google Auth Error:', JSON.stringify(error, null, 2));
 
-      const errorHandlers = {
-        [statusCodes.SIGN_IN_CANCELLED]: 'Login Cancelled',
+      const userData = extractUserData(userInfo.user);
+      await handleAuthentication(userData);
+    } catch (error) {
+      console.error('Google Auth Error:', error);
+
+      const errorMessages = {
+        [statusCodes.SIGN_IN_CANCELLED]: 'Sign in was cancelled',
         [statusCodes.IN_PROGRESS]: 'Sign in is already in progress',
         [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]:
-          'Google Play services is not available',
+          Platform.select({
+            android: 'Google Play services is not available',
+            ios: 'Google Sign In services are not available',
+          }) || 'Google services are not available',
+        DEFAULT: 'An unexpected error occurred. Please try again.',
       };
 
-      const errorMessage =
-        errorHandlers[error.code] || `Unexpected error: ${error.message}`;
-
-      Alert.alert('Authentication Error', errorMessage);
+      Alert.alert(
+        'Authentication Error',
+        errorMessages[error.code] || errorMessages.DEFAULT,
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <View style={{marginTop: signup ? nh(60) : 0}}>
+    <View style={styles.container(signup)}>
       <Text
         variant="medium12"
         color={COLORS.grey333333}
-        style={{textAlign: 'center', marginVertical: nh(15)}}>
+        style={styles.headerText}>
         {signup ? 'Connect to your social media handles' : 'Or continue with'}
       </Text>
-      <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+      <View style={styles.buttonContainer}>
         <Button
           variant="outline"
           text="Google"
-          textStyle={{
-            fontSize: nh(12),
-            fontFamily: APP_FONTS.PoppinsMedium,
-          }}
+          textStyle={styles.buttonText}
           width={DEVICE_WIDTH - nw(32)}
           leftimage={icons.google}
           onPress={handleGoogleAuth}
-        />
-
-        {/* <Button
-          variant="outline"
-          text="Apple"
-          textStyle={{
-            fontSize: 12,
-            fontFamily: APP_FONTS.PoppinsMedium,
-          }}
-          width={DEVICE_WIDTH / 2 - nw(23)}
-          leftimage={icons.apple}
-          // Add Apple login logic here if needed
-        /> */}
+          disabled={isLoading}
+        >
+          {isLoading && (
+            <ActivityIndicator
+              size="small"
+              color={COLORS.primary}
+              style={styles.loader}
+            />
+          )}
+        </Button>
       </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: (signup) => ({
+    marginTop: signup ? nh(60) : 0,
+  }),
+  headerText: {
+    textAlign: 'center',
+    marginVertical: nh(15),
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  buttonText: {
+    fontSize: nh(12),
+    fontFamily: APP_FONTS.PoppinsMedium,
+  },
+  loader: {
+    marginLeft: nw(8),
+  },
+});
 
 export default SocialLogin;
