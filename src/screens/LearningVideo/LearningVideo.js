@@ -63,7 +63,7 @@ const VideoItem = ({
       const parsedUser = JSON.parse(user);
 
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);

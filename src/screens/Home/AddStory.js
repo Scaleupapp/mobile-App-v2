@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -7,16 +7,16 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import Text from '../../components/Text';
 import axios from 'axios';
-import { COLORS } from '../../helper/colors';
-import { nw } from '../../helper/scales';
+import {COLORS} from '../../helper/colors';
+import {nw} from '../../helper/scales';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getProfile } from '../../services/apiService';
+import {getProfile} from '../../services/apiService';
 
-export const AddStory = ({ onStoryAdded }) => {
+export const AddStory = ({onStoryAdded}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
 
@@ -28,12 +28,9 @@ export const AddStory = ({ onStoryAdded }) => {
   // Function to get user profile data from AsyncStorage and API
   const getProfileData = async () => {
     try {
-      const user = await AsyncStorage.getItem('userData');
-      const parsedUser = JSON.parse(user);
-
       // Fetch profile information using the API
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -71,7 +68,7 @@ export const AddStory = ({ onStoryAdded }) => {
   };
 
   // Handle selected or captured media
-  const handleMedia = async (result) => {
+  const handleMedia = async result => {
     if (result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
 
@@ -88,20 +85,23 @@ export const AddStory = ({ onStoryAdded }) => {
           type: asset.type || 'image/jpeg',
         });
         formData.append('userId', profileData.id); // Use profileData.id instead of userId from Redux
-        formData.append('type', asset.type.includes('video') ? 'video' : 'image');
+        formData.append(
+          'type',
+          asset.type.includes('video') ? 'video' : 'image',
+        );
 
         // Make the API request with authentication header
         const response = await axios.post(
           'https://api.scaleupapp.club/api/stories',
           formData,
           {
-            headers: { 
+            headers: {
               'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${parsedUser?.token}` // Add authorization header
+              Authorization: `Bearer ${parsedUser?.token}`, // Add authorization header
             },
-          }
+          },
         );
-        
+
         Alert.alert('Success', 'Story added successfully');
         if (onStoryAdded) onStoryAdded(); // Trigger a refresh in the parent component
       } catch (error) {
@@ -118,10 +118,9 @@ export const AddStory = ({ onStoryAdded }) => {
   return (
     <View>
       {/* Add Story Button */}
-      <TouchableOpacity 
-        style={styles.addStoryButton} 
-        onPress={() => setModalVisible(true)}
-      >
+      <TouchableOpacity
+        style={styles.addStoryButton}
+        onPress={() => setModalVisible(true)}>
         <Icon name="add" size={30} color="white" />
       </TouchableOpacity>
 
@@ -130,32 +129,24 @@ export const AddStory = ({ onStoryAdded }) => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Add to Story</Text>
-            
-            <TouchableOpacity 
-              style={styles.modalOption} 
-              onPress={openCamera}
-            >
+
+            <TouchableOpacity style={styles.modalOption} onPress={openCamera}>
               <Icon name="camera" size={24} color={COLORS.blue043142} />
               <Text style={styles.modalOptionText}>Take Photo or Video</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.modalOption} 
-              onPress={openGallery}
-            >
+
+            <TouchableOpacity style={styles.modalOption} onPress={openGallery}>
               <Icon name="image" size={24} color={COLORS.blue043142} />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.modalCancelOption} 
-              onPress={() => setModalVisible(false)}
-            >
+
+            <TouchableOpacity
+              style={styles.modalCancelOption}
+              onPress={() => setModalVisible(false)}>
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -166,7 +157,7 @@ export const AddStory = ({ onStoryAdded }) => {
   );
 };
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   addStoryButton: {
@@ -201,7 +192,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 16,
-    marginTop:6,
+    marginTop: 6,
     color: COLORS.blue043142,
   },
   modalOption: {

@@ -33,12 +33,10 @@ const MyProfile = ({navigation, route}) => {
   }, []);
   const getprofiledetails = async () => {
     try {
-      let resp = await getProfile(route?.params?.id ?? userData?.id);
-      console.log(
-        '🚀 ~ getprofiledetails ~ resp?.data?.userProfileInfo:',
-        resp?.data?.userProfileInfo,
-      );
+      let resp = await getProfile(route?.params?.id ?? '');
+
       setProfile(resp?.data?.userProfileInfo);
+      console.log(resp?.data?.userProfileInfo, 'dgdgdgdggd');
     } catch (error) {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
