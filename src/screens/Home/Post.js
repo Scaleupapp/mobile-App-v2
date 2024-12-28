@@ -31,6 +31,7 @@ import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
+  // console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(250);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
@@ -38,7 +39,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
   const [comments, setComments] = useState(item?.comments);
   const commentRef = useRef(null);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(item?.isSaved);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
 
@@ -48,11 +49,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
   const getProfileData = async () => {
     try {
-      const user = await AsyncStorage.getItem('userData');
-      const parsedUser = JSON.parse(user);
-
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -81,7 +79,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
   const saveHandler = async () => {
     try {
-      setIsSaved(!isSaved);
+      setIsBookmarked(!isBookmarked);
       const res = isSaved
         ? await unsavePostAPI(item?._id)
         : await savePostAPI(item?._id);
@@ -363,12 +361,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             color={COLORS.blue043142}
           /> */}
         </View>
-        <Pressable onPress={handleBookmarkPress}>
+        <Pressable onPress={saveHandler}>
           <Icon
-            type="feather"
-            name="bookmark"
+            type="ionicon"
+            name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
             size={24}
-            color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
+            color={COLORS.blue043142}
           />
         </Pressable>
 

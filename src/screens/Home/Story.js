@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AddStory } from './AddStory';
+import React, {useState, useEffect, useRef} from 'react';
+import {AddStory} from './AddStory';
 import axios from 'axios';
 import {
   View,
@@ -19,11 +19,10 @@ import Text from '../../components/Text';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getProfile} from '../../services/apiService';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 const STORY_DURATION = 60000;
 // const API_BASE_URL = 'https://api.scaleupapp.club/api';
 const API_BASE_URL = 'https://api.scaleupapp.club/api';
-
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -47,14 +46,10 @@ export const Story = () => {
     };
   }, []);
 
-
   const getProfileData = async () => {
     try {
-      const user = await AsyncStorage.getItem('userData');
-      const parsedUser = JSON.parse(user);
-
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
 
       const userId = res?.data?.userProfileInfo?.id;
@@ -67,93 +62,103 @@ export const Story = () => {
     }
   };
 
-const fetchStories = async (userId) => {
-  if (!userId) return;
-  
-  try {
-    setIsLoading(true);
-    const [usersResponse, storiesResponse] = await Promise.all([
-      axios.get(`${API_BASE_URL}/user`),
-      axios.get(`${API_BASE_URL}/stories?userId=${userId}`)
-    ]);
+  const fetchStories = async userId => {
+    if (!userId) return;
 
-    const users = usersResponse.data || [];
-    const stories = storiesResponse.data || [];
+    try {
+      setIsLoading(true);
+      const [usersResponse, storiesResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/user`),
+        axios.get(`${API_BASE_URL}/stories?userId=${userId}`),
+      ]);
 
-    // Filter out expired stories
-    const activeStories = stories.filter(story => 
-      getRemainingTime(story.expiresAt) > 0
-    );
+      const users = usersResponse.data || [];
+      const stories = storiesResponse.data || [];
 
-    let grouped = users
-      .map(user => ({
-        ...user,
-        stories: activeStories.filter(story => 
-          story.user && story.user._id === user._id
-        ) || [],
-      }))
-      .filter(user => user.stories.length > 0);
-
-    grouped = grouped.map(user => ({
-      ...user,
-      allStoriesViewed: user.stories.every(story => story.isViewed),
-    }));
-
-    // Sort by view status and expiration time
-    grouped.sort((a, b) => {
-      if (a.allStoriesViewed !== b.allStoriesViewed) {
-        return a.allStoriesViewed ? 1 : -1;
-      }
-      // Sort by earliest expiring story within each user's stories
-      const aEarliestExpiry = Math.min(...a.stories.map(s => new Date(s.expiresAt).getTime()));
-      const bEarliestExpiry = Math.min(...b.stories.map(s => new Date(s.expiresAt).getTime()));
-      return aEarliestExpiry - bEarliestExpiry;
-    });
-
-    setGroupedStories(grouped);
-    
-    if (grouped.length > 0) {
-      progressAnimations.current = grouped.map(user =>
-        user.stories.map(() => new Animated.Value(0))
+      // Filter out expired stories
+      const activeStories = stories.filter(
+        story => getRemainingTime(story.expiresAt) > 0,
       );
-    }
-  } catch (error) {
-    console.error('Error fetching stories:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
 
+      let grouped = users
+        .map(user => ({
+          ...user,
+          stories:
+            activeStories.filter(
+              story => story.user && story.user._id === user._id,
+            ) || [],
+        }))
+        .filter(user => user.stories.length > 0);
 
-
-// Add expiration polling to check for expired stories
-useEffect(() => {
-  const checkExpiration = setInterval(() => {
-    setGroupedStories(prevStories => {
-      const updatedStories = prevStories.map(user => ({
+      grouped = grouped.map(user => ({
         ...user,
-        stories: user.stories.filter(story => 
-          getRemainingTime(story.expiresAt) > 0
-        ),
-      })).filter(user => user.stories.length > 0);
+        allStoriesViewed: user.stories.every(story => story.isViewed),
+      }));
 
-      if (updatedStories.length !== prevStories.length) {
-        // If the current story expired, close the modal
-        if (modalVisible && currentUser && 
-            !updatedStories.find(u => u._id === currentUser._id)?.stories[currentStoryIndex]) {
-          setModalVisible(false);
-          resetAllProgress();
+      // Sort by view status and expiration time
+      grouped.sort((a, b) => {
+        if (a.allStoriesViewed !== b.allStoriesViewed) {
+          return a.allStoriesViewed ? 1 : -1;
         }
-        return updatedStories;
+        // Sort by earliest expiring story within each user's stories
+        const aEarliestExpiry = Math.min(
+          ...a.stories.map(s => new Date(s.expiresAt).getTime()),
+        );
+        const bEarliestExpiry = Math.min(
+          ...b.stories.map(s => new Date(s.expiresAt).getTime()),
+        );
+        return aEarliestExpiry - bEarliestExpiry;
+      });
+
+      setGroupedStories(grouped);
+
+      if (grouped.length > 0) {
+        progressAnimations.current = grouped.map(user =>
+          user.stories.map(() => new Animated.Value(0)),
+        );
       }
-      return prevStories;
-    });
-  }, 100000000); 
+    } catch (error) {
+      console.error('Error fetching stories:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  return () => clearInterval(checkExpiration);
-}, [modalVisible, currentUser, currentStoryIndex]);
+  // Add expiration polling to check for expired stories
+  useEffect(() => {
+    const checkExpiration = setInterval(() => {
+      setGroupedStories(prevStories => {
+        const updatedStories = prevStories
+          .map(user => ({
+            ...user,
+            stories: user.stories.filter(
+              story => getRemainingTime(story.expiresAt) > 0,
+            ),
+          }))
+          .filter(user => user.stories.length > 0);
 
-  const getRemainingTime = (expiresAt) => {
+        if (updatedStories.length !== prevStories.length) {
+          // If the current story expired, close the modal
+          if (
+            modalVisible &&
+            currentUser &&
+            !updatedStories.find(u => u._id === currentUser._id)?.stories[
+              currentStoryIndex
+            ]
+          ) {
+            setModalVisible(false);
+            resetAllProgress();
+          }
+          return updatedStories;
+        }
+        return prevStories;
+      });
+    }, 100000000);
+
+    return () => clearInterval(checkExpiration);
+  }, [modalVisible, currentUser, currentStoryIndex]);
+
+  const getRemainingTime = expiresAt => {
     if (!expiresAt) return null;
     const now = new Date().getTime();
     const expiry = new Date(expiresAt).getTime();
@@ -161,23 +166,21 @@ useEffect(() => {
     return remaining > 0 ? remaining : 0;
   };
 
-  const markStoryAsViewed = async (storyId) => {
+  const markStoryAsViewed = async storyId => {
     if (!profileData?.id) return;
-    
+
     try {
       await axios.post(`${API_BASE_URL}/stories/view`, {
         userId: profileData.id,
-        storyId
+        storyId,
       });
-      
+
       setGroupedStories(prev => {
         return prev.map(user => ({
           ...user,
-          stories: user.stories.map(story => 
-            story._id === storyId 
-              ? { ...story, isViewed: true }
-              : story
-          )
+          stories: user.stories.map(story =>
+            story._id === storyId ? {...story, isViewed: true} : story,
+          ),
         }));
       });
     } catch (error) {
@@ -199,10 +202,12 @@ useEffect(() => {
     }
 
     const currentUserStories = groupedStories[currentUserIndex].stories;
-    
+
     // Ensure the animation array exists for current user
     if (!progressAnimations.current[currentUserIndex]) {
-      progressAnimations.current[currentUserIndex] = currentUserStories.map(() => new Animated.Value(0));
+      progressAnimations.current[currentUserIndex] = currentUserStories.map(
+        () => new Animated.Value(0),
+      );
     }
 
     // Reset progress for upcoming stories
@@ -220,11 +225,11 @@ useEffect(() => {
           toValue: 1,
           duration: STORY_DURATION,
           useNativeDriver: false,
-        }
+        },
       );
 
       currentAnimation.current = animation;
-      animation.start(({ finished }) => {
+      animation.start(({finished}) => {
         if (finished && !isPaused) {
           handleNextStory();
         }
@@ -237,14 +242,15 @@ useEffect(() => {
     if (!currentUser) return;
 
     const currentStory = currentUser.stories[currentStoryIndex];
-    
+
     // Mark current story as viewed
     if (currentStory && !currentStory.isViewed) {
       await markStoryAsViewed(currentStory._id);
     }
 
-    const isLastStoryInUser = currentStoryIndex === currentUser.stories.length - 1;
-    
+    const isLastStoryInUser =
+      currentStoryIndex === currentUser.stories.length - 1;
+
     if (isLastStoryInUser) {
       if (currentUserIndex === groupedStories.length - 1) {
         setModalVisible(false);
@@ -260,7 +266,9 @@ useEffect(() => {
 
   const handlePreviousStory = () => {
     if (currentStoryIndex > 0) {
-      progressAnimations.current[currentUserIndex]?.[currentStoryIndex]?.setValue(0);
+      progressAnimations.current[currentUserIndex]?.[
+        currentStoryIndex
+      ]?.setValue(0);
       setCurrentStoryIndex(prev => prev - 1);
     } else if (currentUserIndex > 0) {
       const prevUserIndex = currentUserIndex - 1;
@@ -271,9 +279,9 @@ useEffect(() => {
   };
 
   const resetAllProgress = () => {
-    progressAnimations.current.forEach((userProgressBars) => {
+    progressAnimations.current.forEach(userProgressBars => {
       if (userProgressBars) {
-        userProgressBars.forEach((progressBar) => {
+        userProgressBars.forEach(progressBar => {
           if (progressBar) {
             progressBar.setValue(0);
           }
@@ -282,9 +290,9 @@ useEffect(() => {
     });
   };
 
-  const handleStoryPress = (userIndex) => {
+  const handleStoryPress = userIndex => {
     if (!groupedStories[userIndex]) return;
-    
+
     setModalVisible(true);
     setCurrentUserIndex(userIndex);
     setCurrentStoryIndex(0);
@@ -314,19 +322,24 @@ useEffect(() => {
   const currentUser = groupedStories[currentUserIndex];
   const currentStory = currentUser?.stories[currentStoryIndex];
 
-
   // Modified thumbnail rendering to show view status
   const renderThumbnail = (user, userIndex) => {
     const allStoriesViewed = user.allStoriesViewed;
-    const earliestExpiry = Math.min(...user.stories.map(s => getRemainingTime(s.expiresAt)));
+    const earliestExpiry = Math.min(
+      ...user.stories.map(s => getRemainingTime(s.expiresAt)),
+    );
     const hoursRemaining = Math.floor(earliestExpiry / (1000 * 60 * 60));
-    const minutesRemaining = Math.floor((earliestExpiry % (1000 * 60 * 60)) / (1000 * 60));
-    
+    const minutesRemaining = Math.floor(
+      (earliestExpiry % (1000 * 60 * 60)) / (1000 * 60),
+    );
+
     return (
-      <View key={user._id} style={[
-        styles.thumbnailGroup,
-        allStoriesViewed && styles.viewedThumbnailGroup
-      ]}>
+      <View
+        key={user._id}
+        style={[
+          styles.thumbnailGroup,
+          allStoriesViewed && styles.viewedThumbnailGroup,
+        ]}>
         <TouchableOpacity
           onPress={() => handleStoryPress(userIndex)}
           style={[
@@ -337,24 +350,22 @@ useEffect(() => {
             },
           ]}>
           <Image
-            source={{ uri: user.profilePicture }}
+            source={{uri: user.profilePicture}}
             style={[
               styles.thumbnailImage,
-              allStoriesViewed && styles.viewedThumbnailImage
+              allStoriesViewed && styles.viewedThumbnailImage,
             ]}
           />
           <View style={styles.expiryBadge}>
             <Text style={styles.expiryText}>
-              {hoursRemaining > 0 
-                ? `${hoursRemaining}h` 
+              {hoursRemaining > 0
+                ? `${hoursRemaining}h`
                 : `${minutesRemaining}m`}
             </Text>
           </View>
         </TouchableOpacity>
-        <Text style={[
-          styles.username,
-          allStoriesViewed && styles.viewedUsername
-        ]}>
+        <Text
+          style={[styles.username, allStoriesViewed && styles.viewedUsername]}>
           {user.username}
         </Text>
       </View>
@@ -368,8 +379,9 @@ useEffect(() => {
         showsHorizontalScrollIndicator={false}
         style={styles.thumbnailScroll}>
         <AddStory />
-        {groupedStories.map((user, userIndex) => renderThumbnail(user, userIndex))}
-
+        {groupedStories.map((user, userIndex) =>
+          renderThumbnail(user, userIndex),
+        )}
       </ScrollView>
 
       <Modal
@@ -388,10 +400,13 @@ useEffect(() => {
                   style={[
                     styles.progressBarForeground,
                     {
-                      width: progressAnimations.current[currentUserIndex]?.[index]?.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0%', '100%'],
-                      }) || '0%',
+                      width:
+                        progressAnimations.current[currentUserIndex]?.[
+                          index
+                        ]?.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0%', '100%'],
+                        }) || '0%',
                     },
                   ]}
                 />
@@ -401,7 +416,7 @@ useEffect(() => {
 
           <View style={styles.userInfoContainer}>
             <Image
-              source={{ uri: currentUser?.profilePicture }}
+              source={{uri: currentUser?.profilePicture}}
               style={styles.modalUserProfilePicture}
             />
             <Text style={styles.modalUsername}>{currentUser?.username}</Text>
@@ -416,39 +431,43 @@ useEffect(() => {
           </View>
 
           <View style={styles.storyContent}>
-              {currentStory?.type === 'image' ? (
-                <>
-                  {/* Log the URI for the image */}
-                  {console.log('Image URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
+            {currentStory?.type === 'image' ? (
+              <>
+                {/* Log the URI for the image */}
+                {console.log(
+                  'Image URI:',
+                  `https://api.scaleupapp.club/api${currentStory?.url}`,
+                )}
 
-                  <Image
-                    source={{
-                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
-                    }}
-                    style={styles.storyMedia}
-                    resizeMode="contain"
-                  />
-                </>
-              ) : currentStory?.type === 'video' ? (
-                <>
-                  {/* Log the URI for the video */}
-                  {console.log('Video URI:', `https://api.scaleupapp.club/api${currentStory?.url}`)}
+                <Image
+                  source={{
+                    uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
+                  }}
+                  style={styles.storyMedia}
+                  resizeMode="contain"
+                />
+              </>
+            ) : currentStory?.type === 'video' ? (
+              <>
+                {/* Log the URI for the video */}
+                {console.log(
+                  'Video URI:',
+                  `https://api.scaleupapp.club/api${currentStory?.url}`,
+                )}
 
-                  <Video
-                    source={{
-                      uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
-                    }}
-                    style={styles.storyMedia}
-                    resizeMode="contain"
-                    paused={isPaused}
-                    onEnd={handleNextStory}
-                    repeat={false}
-                  />
-                </>
-              ) : null}
+                <Video
+                  source={{
+                    uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
+                  }}
+                  style={styles.storyMedia}
+                  resizeMode="contain"
+                  paused={isPaused}
+                  onEnd={handleNextStory}
+                  repeat={false}
+                />
+              </>
+            ) : null}
           </View>
-
-
 
           <View style={styles.navigationContainer}>
             <Pressable
