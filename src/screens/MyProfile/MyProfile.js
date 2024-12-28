@@ -187,7 +187,7 @@ const MyProfile = ({navigation, route}) => {
                 <Button text="Follow" />
               </View>
             )}
-            <AllPostoption type={type} />
+            <AllPostoption type={type} data={profile?.content} />
           </ScrollView>
         </View>
       </View>

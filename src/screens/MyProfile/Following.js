@@ -43,7 +43,7 @@ const Following = ({navigation, route}) => {
   };
 
   const UserView = ({item}) => {
-    const [follow, setFollow] = useState(item?.isFollowed);
+    const [follow, setFollow] = useState(true);
 
     const followApi = async () => {
       try {
