@@ -43,9 +43,7 @@ const Toast = ({visible, message}) => {
         />
 
         <Text style={styles.toastText}>
-          {message?.title ?? message?.type == 'error'
-            ? 'something went wrong'
-            : ''}
+          {message?.title ?? message?.type == 'error' ? '' : ''}
         </Text>
       </View>
     </Modal>

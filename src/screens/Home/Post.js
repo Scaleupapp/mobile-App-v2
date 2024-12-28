@@ -248,7 +248,19 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           onPress={() => saveHandler()}
         />
       </View>
-
+      <Text
+        color={COLORS.blue043142}
+        style={{
+          marginTop: 10,
+          backgroundColor: COLORS.blue043142 + 10,
+          alignSelf: 'flex-start', // Shrinks the background to fit text content
+          paddingHorizontal: 10, // Adds padding around the text for spacing
+          paddingVertical: 2, // Adjust vertical padding if needed
+          borderRadius: 5,
+        }}
+        variant="semibold14">
+        {item.heading}
+      </Text>
       <ReadMore
         numberOfLines={2}
         style={styles.textStyle}
@@ -299,7 +311,7 @@ const styles = StyleSheet.create({
   },
   image: {
     height: nh(30),
-    width: nw(30),
+    width: nh(30),
     borderRadius: nh(15),
     marginRight: nw(7),
   },
