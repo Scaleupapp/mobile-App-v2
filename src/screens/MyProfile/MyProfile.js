@@ -33,8 +33,10 @@ const MyProfile = ({navigation, route}) => {
   }, []);
   const getprofiledetails = async () => {
     try {
-      let resp = await getProfile(route?.params?.id ?? userData?.id);
+      let resp = await getProfile(route?.params?.id ?? '');
+
       setProfile(resp?.data?.userProfileInfo);
+      console.log(resp?.data?.userProfileInfo, 'dgdgdgdggd');
     } catch (error) {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
@@ -187,7 +189,7 @@ const MyProfile = ({navigation, route}) => {
                 <Button text="Follow" />
               </View>
             )}
-            <AllPostoption type={type} />
+            <AllPostoption type={type} data={profile?.content} />
           </ScrollView>
         </View>
       </View>

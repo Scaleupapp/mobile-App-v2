@@ -7,7 +7,7 @@ import {VideoList} from './VideoList';
 import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import {nh} from '../../helper/scales';
 
-const AllPostoption = ({type}) => {
+const AllPostoption = ({type, data}) => {
   const [selected, setSelected] = useState(0);
   const onToggle = index => {
     setSelected(index);
@@ -18,7 +18,7 @@ const AllPostoption = ({type}) => {
         <>
           <ToggleWithIconUnderline onToggle={onToggle} />
 
-          {selected == 0 && <AllPost />}
+          {selected == 0 && <AllPost data={data} />}
           {selected == 1 && <AllPost />}
           {selected == 2 && <AllPost />}
           {/* {selected == 3 && <Verified />}
@@ -34,7 +34,7 @@ const AllPostoption = ({type}) => {
               onToggle={onToggle}
             />
           </View>
-          {selected == 0 && <AllPost />}
+          {selected == 0 && <AllPost data={data} />}
           {selected == 1 && <VideoList />}
         </View>
       )}
