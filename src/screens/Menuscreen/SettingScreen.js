@@ -52,7 +52,7 @@ const Settings = ({navigation, route}) => {
     {
       heading: 'Posts',
       data: [
-        {title: 'Saved', icon: 'saved-icon', navKey: Routes.SavePost},
+        {title: 'Saved', icon: 'saved-icon', navKey: Routes.MyPlaylist},
         // commented
         // {title: 'Drafts', icon: 'drafts-icon', navKey: Routes.DraftPost},
         // {title: 'Verified', icon: 'verified-icon', navKey: Routes.VerifiedPost},

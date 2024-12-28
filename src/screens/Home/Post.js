@@ -1,5 +1,13 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {View, StyleSheet, Image, Pressable} from 'react-native';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  StatusBar,
+  Pressable,
+  Alert,
+} from 'react-native';
 import Text from '../../components/Text';
 import {DEVICE_WIDTH, guidelineBaseWidth, nh, nw} from '../../helper/scales';
 import Icon from '../../helper/icon';
@@ -12,13 +20,15 @@ import {
   savePostAPI,
   unlikePostApi,
   unsavePostAPI,
+  getProfile,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
 import ImageModal from '../Post/ImageModal';
 import CommentBottomSheetModal from '../Post/CustomBottomSheet';
-
-// import convertToProxyURL from 'react-native-video-cache';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import PlaylistSelectionModal from './PlaylistSelectionModal';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [imageHeight, setImageHeight] = useState(250);
@@ -26,15 +36,37 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const imageModalRef = useRef(null);
   const [isLiked, setIsLiked] = useState(item.isLiked);
   const [likeCount, setLikeCount] = useState(item?.likes?.length);
-  const [isSaved, setIsSaved] = useState(item?.isSaved);
   const [comments, setComments] = useState(item?.comments);
   const commentRef = useRef(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+
+  useEffect(() => {
+    getProfileData();
+  }, []);
+
+  const getProfileData = async () => {
+    try {
+      const user = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(user);
+
+      let res = await getProfile('');
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      console.log('Profile data fetch error:', error?.response?.data?.message);
+    }
+  };
+
   const onLoad = data => {
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
 
   const likeHandler = async () => {
+    if (!profileData?.id) return;
+
     try {
       setIsLiked(!isLiked);
       const res = isLiked
@@ -67,6 +99,91 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       });
     }
   }, [item?.contentType]);
+
+  const handleBookmarkPress = () => {
+    if (!profileData?.id) {
+      Alert.alert(
+        'Authentication Required',
+        'Please log in to bookmark posts',
+        [{text: 'OK', style: 'default'}],
+      );
+      return;
+    }
+
+    // Check if the post belongs to the logged-in user
+    if (item?.userId?._id !== profileData?.id) {
+      Alert.alert(
+        'Action Not Allowed',
+        'You can only bookmark your own video posts',
+        [{text: 'OK', style: 'default'}],
+      );
+      return;
+    }
+
+    // Check if it's a video post
+    if (item?.contentType !== 'Video') {
+      Alert.alert('Action Not Allowed', 'Cannot add image to the playlist', [
+        {text: 'OK', style: 'default'},
+      ]);
+      return;
+    }
+
+    setIsPlaylistModalVisible(true);
+  };
+
+  const handleBookmark = async (userId, postId) => {
+    try {
+      // First, check if the post is already in the playlist
+      const checkResponse = await axios.get(
+        `https://api.scaleupapp.club/api/playlists/check?userId=${userId}&postId=${postId}`,
+      );
+
+      if (checkResponse.data.exists) {
+        // If already bookmarked, show "Already in playlist" message
+        Alert.alert(
+          '',
+          'Already in your playlist',
+          [{text: 'OK', style: 'default'}],
+          {
+            cancelable: true,
+            onDismiss: () => {},
+          },
+        );
+        return;
+      }
+
+      // If not bookmarked, proceed with bookmarking
+      await axios.post('https://api.scaleupapp.club/api/playlists', {
+        userId, // Send userId in the body
+        playlistName: 'My Playlist', // Optional: Customize the playlist name
+        items: [{postId}], // Only send the postId, not the entire object
+      });
+
+      // Show added to playlist message
+      Alert.alert(
+        '',
+        'Added to your playlist',
+        [{text: 'OK', style: 'default'}],
+        {
+          cancelable: true,
+          onDismiss: () => {},
+        },
+      );
+
+      console.log('Post successfully bookmarked');
+      setIsBookmarked(true); // Update the UI state
+    } catch (error) {
+      console.error(
+        'Failed to bookmark post:',
+        error.response?.data || error.message,
+      );
+
+      // Show error message if something goes wrong
+      Alert.alert('Error', 'Failed to bookmark post', [
+        {text: 'OK', style: 'default'},
+      ]);
+    }
+  };
 
   return (
     <View
@@ -240,12 +357,24 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             color={COLORS.blue043142}
           /> */}
         </View>
-        <Icon
-          type="font-awesome"
-          name={isSaved ? 'bookmark' : 'bookmark-o'}
-          size={24}
-          color={COLORS.blue043142}
-          onPress={() => saveHandler()}
+        <Pressable onPress={handleBookmarkPress}>
+          <Icon
+            type="feather"
+            name="bookmark"
+            size={24}
+            color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
+          />
+        </Pressable>
+
+        {/* Playlist Selection Modal */}
+        <PlaylistSelectionModal
+          visible={isPlaylistModalVisible}
+          onClose={() => setIsPlaylistModalVisible(false)}
+          postId={item._id}
+          onPostAdded={() => {
+            // Optional: Update UI state to show post is bookmarked
+            setIsBookmarked(true);
+          }}
         />
       </View>
       <Text

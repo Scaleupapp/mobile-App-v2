@@ -17,6 +17,8 @@ export const registerApi = (payload: any) => {
   return axiosInstance.post(API.REGISTER, payload);
 };
 
+
+
 // export const changePassword = (payload: any) => {
 //   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
 // };
