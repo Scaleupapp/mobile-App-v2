@@ -7,6 +7,7 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import Text from '../../components/Text';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -29,6 +30,7 @@ import {APP_FONTS} from '../../assets/fonts';
 import ReadMore from '@fawazahmed/react-native-read-more';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
+import Header from '../../components/Header';
 
 const VideoItem = ({
   item,
@@ -146,6 +148,25 @@ const VideoItem = ({
           ]}
           resizeMode="cover"
         />
+        <View
+          style={{
+            position: 'absolute',
+            alignSelf: 'center',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}>
+          <Icon
+            type="antdesign"
+            name="playcircleo"
+            size={nh(40)}
+            color={COLORS.blue043142}
+            style={{
+              marginRight: nw(10),
+              opacity: 0.8,
+            }}
+          />
+        </View>
       </Pressable>
 
       <View style={styles.interactionBar}>
@@ -182,7 +203,19 @@ const VideoItem = ({
           />
         </Pressable>
       </View>
-
+      <Text
+        color={COLORS.blue043142}
+        style={{
+          marginVertical: 10,
+          backgroundColor: COLORS.blue043142 + 10,
+          alignSelf: 'flex-start', // Shrinks the background to fit text content
+          paddingHorizontal: 10, // Adds padding around the text for spacing
+          paddingVertical: 2, // Adjust vertical padding if needed
+          borderRadius: 5,
+        }}
+        variant="semibold14">
+        {item?.heading}
+      </Text>
       <ReadMore
         numberOfLines={2}
         style={styles.captionText}
@@ -247,7 +280,7 @@ const LearningVideo = () => {
       const token = parsedData?.token;
 
       const response = await axios.get(
-        'http://scaleup-backend-1-env.eba-58bcz4ix.ap-south-1.elasticbeanstalk.com/api/content/allcontent',
+        `https://api.scaleupapp.club/api/content/allcontent`,
         {
           headers: token
             ? {
@@ -289,26 +322,33 @@ const LearningVideo = () => {
   }
 
   return (
-    <FlatList
-      data={videos}
-      renderItem={({item, index}) => (
-        <VideoItem
-          item={item}
-          index={index}
-          currentlyPlaying={currentlyPlaying}
-          setCurrentlyPlaying={setCurrentlyPlaying}
-          onDimensionsLoad={onDimensionsLoad}
-          videoDimensions={videoDimensions}
-        />
-      )}
-      keyExtractor={item => item._id}
-      contentContainerStyle={styles.listContainer}
-      showsVerticalScrollIndicator={false}
-    />
+    <SafeAreaView style={styles.container}>
+      <Header title={'Learning Videos'} />
+      <FlatList
+        data={videos}
+        renderItem={({item, index}) => (
+          <VideoItem
+            item={item}
+            index={index}
+            currentlyPlaying={currentlyPlaying}
+            setCurrentlyPlaying={setCurrentlyPlaying}
+            onDimensionsLoad={onDimensionsLoad}
+            videoDimensions={videoDimensions}
+          />
+        )}
+        keyExtractor={item => item._id}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.yellowF5BE00,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -341,6 +381,8 @@ const styles = StyleSheet.create({
   videoWrapper: {
     position: 'relative',
     marginVertical: nh(10),
+    borderRadius: nh(12),
+    overflow: 'hidden',
   },
   verifiedBadge: {
     position: 'absolute',
@@ -356,7 +398,7 @@ const styles = StyleSheet.create({
   },
   video: {
     backgroundColor: COLORS.whiteFFFFFF,
-    marginBottom: nh(6),
+    // marginBottom: nh(6),
   },
   interactionBar: {
     flexDirection: 'row',
