@@ -243,7 +243,7 @@ const CreatePost = ({navigation}) => {
                 onPress={() => navigation.goBack()}
               />
               <Button
-                text="Next"
+                text="Publish"
                 width={nw(65)}
                 height={nh(35)}
                 textStyle={{fontSize: 14}}

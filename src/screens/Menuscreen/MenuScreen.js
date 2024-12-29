@@ -35,10 +35,10 @@ const MenuScreen = ({navigation, route}) => {
     //   title: 'Achievements',
     //   nav: '',
     // },
-    // {
-    //   title: 'Help Centre',
-    //   nav: '',
-    // },
+    {
+      title: 'Help Centre',
+      nav: Routes.HelpScreen,
+    },
     // {
     //   title: 'Report an Issue',
     //   nav: '',
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   card: {
     height: nh(40),
-    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.1)',
+    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderRadius: nh(10),
     width: DEVICE_WIDTH - nw(32),
     borderWidth: 1,

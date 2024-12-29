@@ -90,7 +90,7 @@ export const Card = ({
 const styles = StyleSheet.create({
   card: {
     height: nh(80),
-    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.1)',
+    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: 1,
     borderColor: 'rgba(214, 214, 214, 0.2)',
     borderRadius: 8,

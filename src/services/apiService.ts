@@ -17,8 +17,6 @@ export const registerApi = (payload: any) => {
   return axiosInstance.post(API.REGISTER, payload);
 };
 
-
-
 // export const changePassword = (payload: any) => {
 //   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
 // };
@@ -86,6 +84,10 @@ export const deleteProjects = (id: any) => {
 export const getProfile = (payload: any) => {
   return axiosInstance.get(`${API.PROFILE_DETAIL}/${payload}`);
 };
+export const getProfiledetails = (payload: any) => {
+  console.log("🚀 ~ getProfiledetails ~ payload:", payload)
+  return axiosInstance.get(`${API.PROFILE_CONTENT}/${payload}`);
+};
 
 export const updateProfile = (payload: any) => {
   return axiosInstance.put(API.PROFILE_DETAIL, payload);
@@ -145,7 +147,6 @@ export const unlikeComment = (id: any) => {
 };
 
 export const getFollowerlist = (id: any) => {
-  console.log("🚀 ~ getFollowerlist ~ id:", id)
   return axiosInstance.get(`${API.FOLLOW_UNFOLLOW}/${id}`);
 };
 
@@ -157,4 +158,18 @@ export const unlfollowUser = (payload: any) => {
 };
 export const globalSearch = (payload: any) => {
   return axiosInstance.post(`${API.SEARCH_USER}`, payload);
+};
+
+export const deleteAccont = (payload: any) => {
+  return axiosInstance.post(`${API.DELETE_ACCOUNT}`, payload);
+};
+export const blockUSerList = () => {
+  return axiosInstance.get(`${API.BLOCK_USER_LIST}`);
+};
+export const bockUser = (id: any) => {
+  console.log('🚀 ~ bockUser ~ id:', id);
+  return axiosInstance.post(`${API.USER_BLOCK}/${id}`);
+};
+export const userUnBlock = (id: any) => {
+  return axiosInstance.post(`${API.USER_UNBLOCK}/${id}`);
 };

@@ -60,8 +60,7 @@ const Search = () => {
   );
 
   const setUserData = item => {
-    navigationRef.navigate(Routes.MyProfile, {
-      type: 'other',
+    navigationRef.navigate(Routes.OtherProfile, {
       id: item,
     });
   };
@@ -234,7 +233,7 @@ const Search = () => {
             <View style={styles.emptyList}>
               <Text
                 style={{
-                  color: COLORS.gray_color,
+                  color: COLORS.grey777777,
                   width: '100%',
                   textAlign: 'center',
                   fontSize: 20,

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -17,8 +17,26 @@ import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
+import {blockUSerList, userUnBlock} from '../../services/apiService';
 
 const BlockUsers = ({navigation, route}) => {
+  const [pofileData, setProfileData] = useState([]);
+
+  useEffect(() => {
+    blockUSerList().then(res => {
+      console.log('🚀 ~ blockUSerList ~ res:', res.data);
+      setProfileData(res?.data);
+    });
+  }, []);
+
+  const unBlockUesrList = item => {
+    userUnBlock(item).then(res => {
+      blockUSerList().then(res => {
+        setProfileData(res?.data);
+      });
+    });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -40,32 +58,56 @@ const BlockUsers = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       <FlatList
-        data={['', '', '', '', '']}
-        renderItem={() => {
+        data={pofileData}
+        keyExtractor={(_, index) => index.toString()}
+        showsVerticalScrollIndicator={false}
+        renderItem={({item, index}) => {
           return (
-            <View>
+            <View key={index}>
               <View style={styles.card}>
-                <Image source={images.ciclelogo} style={styles.image} />
+                {item?.profilePicture ? (
+                  <Image
+                    source={{uri: item?.profilePicture}}
+                    style={styles.image}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.image,
+                      {
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.greyD6D6D6,
+                      },
+                    ]}>
+                    <Text variant="semibold18" color={COLORS.black333333}>
+                      {`${item?.username?.charAt(0).toUpperCase()}`}
+                    </Text>
+                  </View>
+                )}
 
                 <View style={{width: nw(195)}}>
                   <Text variant="medium14" color={COLORS.blue043142}>
-                    Name
+                    {item?.username}
                   </Text>
 
-                  <Text
+                  {/* <Text
                     variant="medium12"
                     color={COLORS.grey999999}
                     style={{width: nw(208)}}>
-                    Designation
-                  </Text>
+                    {item?.type}
+                  </Text> */}
                 </View>
 
                 <Button
+                  onPress={() => {
+                    unBlockUesrList(item?._id);
+                  }}
                   text="Unblock"
                   variant="outline"
                   width={nw(90)}
@@ -76,34 +118,21 @@ const BlockUsers = ({navigation, route}) => {
             </View>
           );
         }}
+        ListEmptyComponent={
+          <View style={styles.emptyList}>
+            <Text
+              style={{
+                color: COLORS.gray_color,
+                width: '100%',
+                textAlign: 'center',
+                fontSize: 20,
+                fontWeight: '500',
+              }}>
+              {'No Blocked Users Found'}
+            </Text>
+          </View>
+        }
       />
-
-      {/* <View>
-          <Image
-            source={images.notification}
-            resizeMode="contain"
-            style={styles.notimage}
-          />
-
-          <Text
-            variant="semibold20"
-            color={COLORS.blue043142}
-            style={{textAlign: 'center', marginTop: nh(30)}}>
-            You’re All Caught Up{' '}
-          </Text>
-          <Text
-            variant="medium14"
-            color={COLORS.grey999999}
-            style={{
-              textAlign: 'center',
-              marginTop: nh(5),
-              marginBottom: nh(20),
-            }}>
-            No new notifications right now. Check back later or explore more
-            content in the meantime.
-          </Text>
-          <Button text="Explore Content" />
-        </View> */}
     </SafeAreaView>
   );
 };
@@ -145,5 +174,11 @@ const styles = StyleSheet.create({
     width: nw(300),
     alignSelf: 'center',
     marginTop: nh(30),
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 28,
   },
 });

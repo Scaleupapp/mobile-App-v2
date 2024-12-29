@@ -11,95 +11,97 @@ import {nh, nw} from '../helper/scales';
 import {COLORS} from '../helper/colors';
 import {APP_FONTS} from '../assets/fonts';
 
-const CustomTextInput = (
-  {
-    placeholder = 'Enter text', // Placeholder text
-    errorMessage = '', // Error message (icon + text)
-    successMessage = '', // Success message (icon + text)
-    rightIcon, // Component for the right-side icon
-    onRightIconPress = () => {}, // Callback for right icon press
-    marginBottom = 15,
-    dropDown = false,
-    label = '',
-    textinputType = '',
-    width = '',
-    height = 40,
-    ...props
-  },
-  ref,
-) => {
-  const [selectedCountry, setSelectedCountry] = useState({
-    name: 'India',
-    flag: '🇮🇳',
-    code: '+91',
-  });
-  return (
-    <View>
-      {/* Input field */}
-      {label && (
-        <Text
-          style={{
-            fontSize: 14,
-            fontFamily: APP_FONTS.PoppinsMedium,
-            color: COLORS.greyBBBBBB,
-            marginBottom: 5,
-          }}>
-          {label}
-        </Text>
-      )}
-      <View
-        style={[
-          styles.inputContainer,
-          {
-            marginBottom: marginBottom,
-            height: textinputType == 'L' ? nh(150) : nh(height),
-            borderColor: errorMessage
-              ? COLORS.redEA4335
-              : 'rgba(214, 214, 214, 0.2)',
-          },
-          width && {
-            width: width,
-          },
-        ]}>
-        {/* Country Dropdown */}
-        {dropDown && (
-          <TouchableOpacity
-            style={styles.countryDropdown}
-            // onPress={() => setModalVisible(true)}
-          >
-            <Text style={styles.flagIcon}>{selectedCountry.flag}</Text>
-          </TouchableOpacity>
+const CustomTextInput = forwardRef(
+  (
+    {
+      placeholder = 'Enter text', // Placeholder text
+      errorMessage = '', // Error message (icon + text)
+      successMessage = '', // Success message (icon + text)
+      rightIcon, // Component for the right-side icon
+      onRightIconPress = () => {}, // Callback for right icon press
+      marginBottom = 15,
+      dropDown = false,
+      label = '',
+      textinputType = '',
+      width = '',
+      height = 40,
+      ...props
+    },
+    ref,
+  ) => {
+    const [selectedCountry, setSelectedCountry] = useState({
+      name: 'India',
+      flag: '🇮🇳',
+      code: '+91',
+    });
+    return (
+      <View>
+        {/* Input field */}
+        {label && (
+          <Text
+            style={{
+              fontSize: 14,
+              fontFamily: APP_FONTS.PoppinsMedium,
+              color: COLORS.greyBBBBBB,
+              marginBottom: 5,
+            }}>
+            {label}
+          </Text>
         )}
-        <TextInput
-          ref={ref}
+        <View
           style={[
-            styles.input,
+            styles.inputContainer,
             {
-              height: textinputType == 'L' ? nh(150) : nh(40),
-              textAlignVertical: textinputType === 'L' ? 'top' : 'center',
+              marginBottom: marginBottom,
+              height: textinputType == 'L' ? nh(150) : nh(height),
+              borderColor: errorMessage
+                ? COLORS.redEA4335
+                : 'rgba(214, 214, 214, 0.2)',
             },
-          ]}
-          placeholder={placeholder}
-          placeholderTextColor={COLORS.grey999999}
-          {...props}
-        />
-        {rightIcon && (
-          <TouchableOpacity onPress={onRightIconPress}>
-            <Image source={rightIcon} style={styles.icon} />
-          </TouchableOpacity>
-        )}
-      </View>
+            width && {
+              width: width,
+            },
+          ]}>
+          {/* Country Dropdown */}
+          {dropDown && (
+            <TouchableOpacity
+              style={styles.countryDropdown}
+              // onPress={() => setModalVisible(true)}
+            >
+              <Text style={styles.flagIcon}>{selectedCountry.flag}</Text>
+            </TouchableOpacity>
+          )}
+          <TextInput
+            ref={ref}
+            style={[
+              styles.input,
+              {
+                height: textinputType == 'L' ? nh(150) : nh(40),
+                textAlignVertical: textinputType === 'L' ? 'top' : 'center',
+              },
+            ]}
+            placeholder={placeholder}
+            placeholderTextColor={COLORS.grey999999}
+            {...props}
+          />
+          {rightIcon && (
+            <TouchableOpacity onPress={onRightIconPress}>
+              <Image source={rightIcon} style={styles.icon} />
+            </TouchableOpacity>
+          )}
+        </View>
 
-      {/* Error or Success Message */}
-      {(errorMessage || successMessage) &&
-        (errorMessage ? (
-          <Text style={styles.errorMessage}>{errorMessage}</Text>
-        ) : (
-          <Text style={styles.successMessage}>{successMessage}</Text>
-        ))}
-    </View>
-  );
-};
+        {/* Error or Success Message */}
+        {(errorMessage || successMessage) &&
+          (errorMessage ? (
+            <Text style={styles.errorMessage}>{errorMessage}</Text>
+          ) : (
+            <Text style={styles.successMessage}>{successMessage}</Text>
+          ))}
+      </View>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   inputContainer: {
@@ -114,7 +116,7 @@ const styles = StyleSheet.create({
     height: nh(40),
     backgroundColor: COLORS.whiteFFFFFF,
     borderColor: 'rgba(214, 214, 214, 0.2)',
-    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.1)',
+    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
   },
   input: {
     flex: 1,
@@ -162,4 +164,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default forwardRef(CustomTextInput);
+export default CustomTextInput;

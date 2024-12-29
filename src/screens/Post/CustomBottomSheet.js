@@ -23,13 +23,12 @@ import {
 import Text from '../../components/Text';
 import Icon from '../../helper/icon';
 import {timeAgo} from '../../helper/commonFunctions';
-import {images} from '../../assets/images';
 import {useSelector} from 'react-redux';
 import {APP_FONTS} from '../../assets/fonts';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 
-const RenderComment = ({item, index, onReplyPress, onClose}) => {
+const RenderComment = ({item, index, onReplyPress, onClose, myId}) => {
   const [isLiked, setIsLiked] = useState(item?.isLiked);
   const [showReplies, setShowReplies] = useState(false); // State to toggle replies visibility
 
@@ -45,10 +44,13 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
   };
   const goToProfile = () => {
     onClose();
-    navigationRef.navigate(Routes.MyProfile, {
-      type: 'other',
-      id: item?.userId?._id,
-    });
+    if (myId == item?.userId?._id) {
+      navigationRef.navigate(Routes.MyProfile);
+    } else {
+      navigationRef.navigate(Routes.OtherProfile, {
+        id: item?.userId?._id,
+      });
+    }
   };
   const profilePicture = item?.userId?.profilePicture || item?.profilePicture;
   const username = item?.userId?.username || item?.username;
@@ -112,10 +114,13 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
               }}
               onPress={() => {
                 onClose();
-                navigationRef.navigate(Routes.MyProfile, {
-                  type: 'other',
-                  id: item?.taggedUserId ?? item?.parentUserId,
-                });
+                if (myId == item?.taggedUserId ?? item?.parentUserId) {
+                  navigationRef.navigate(Routes.MyProfile);
+                } else {
+                  navigationRef.navigate(Routes.OtherProfile, {
+                    id: item?.taggedUserId ?? item?.parentUserId,
+                  });
+                }
               }}>
               {`@${item?.taggedUserName ?? item?.parentUsername} `}
               <RNText
@@ -192,6 +197,7 @@ const RenderComment = ({item, index, onReplyPress, onClose}) => {
                 })
               }
               onClose={onClose}
+              myId={myId}
             />
           </View>
         ))}
@@ -203,6 +209,7 @@ const CommentBottomSheetModal = forwardRef(
   ({postId, comments = [], setComments}, ref) => {
     const snapPoints = useMemo(() => [isAndroid ? '68%' : '100%'], []);
     const userData = useSelector(state => state?.userData);
+    console.log('🚀 ~ userData:', userData?.id);
     const [text, setText] = useState('');
     const [selectedComment, setSelectedComment] = useState({
       parentCommentId: null,
@@ -344,6 +351,7 @@ const CommentBottomSheetModal = forwardRef(
                       setSelectedComment(detail);
                     }}
                     onClose={() => ref.current?.dismiss()}
+                    myId={userData?.id}
                   />
                 )}
               />

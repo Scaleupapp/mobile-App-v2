@@ -31,7 +31,6 @@ import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  // console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(250);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
@@ -195,7 +194,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         <Pressable
           style={{flexDirection: 'row', alignItems: 'center'}}
           onPress={() =>
-            navigationRef.navigate(Routes.MyProfile, {
+            navigationRef.navigate(Routes.OtherProfile, {
               type: 'other',
               id: item?.userId?._id,
             })
@@ -225,12 +224,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </Text>
         </Pressable>
 
-        {/* <Icon
+         <Icon
           type="entypo"
           name="dots-three-vertical"
           size={21}
           color={COLORS.blue043142}
-        /> */}
+        /> 
       </View>
 
       {item?.contentType == 'Image' && item?.contentURL ? (
@@ -247,7 +246,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       ) : null}
       {item?.contentType == 'Video' && item?.contentURL ? (
         <Pressable
-          onPress={() => setIsPlaying(index)}
+          onPress={() => imageModalRef.current?.present()}
           style={{
             marginTop: nh(10),
             borderRadius: nh(12),
@@ -278,8 +277,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             </View>
           )}
           <Video
-            paused={isPlaying != index}
-            controls
+            paused={true}
+            controls={false}
             onLoad={onLoad}
             // source={{uri: convertToProxyURL(item?.contentURL)}}
             source={{uri: item?.contentURL}}
@@ -430,7 +429,11 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         comments={comments}
         setComments={setComments}
       />
-      <ImageModal ref={imageModalRef} imageUrl={item?.contentURL} />
+      <ImageModal
+        ref={imageModalRef}
+        type={item?.contentType}
+        URL={item?.contentURL}
+      />
     </View>
   );
 };

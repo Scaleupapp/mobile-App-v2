@@ -21,7 +21,7 @@ const Header = ({
   }, // Callback for back arrow press
   onRightIconPress = () => {}, // Callback for right icon press
   backIcon = icons.backarrow, // Back arrow icon source
-  rightIcon = true, // Right icon source
+  rightIcon = false, // Right icon source
   backgroundColor = COLORS.yellowF5BE00,
 }) => {
   return (
@@ -42,8 +42,7 @@ const Header = ({
       </View>
 
       {/* Right Icon */}
-      {/* commented */}
-      {/* <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
+      <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
         {rightIcon && (
           <Entypo
             name="dots-three-vertical"
@@ -52,7 +51,7 @@ const Header = ({
             style={styles.icon}
           />
         )}
-      </TouchableOpacity> */}
+      </TouchableOpacity>
     </View>
   );
 };
