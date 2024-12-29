@@ -72,5 +72,12 @@
 		<string>SimpleLineIcons.ttf</string>
 		<string>Zocial.ttf</string>
 	</array>
+	
+   <key>NSPhotoLibraryUsageDescription</key>
+   <string>We need access to your photo library to upload images.</string>
+   <key>NSPhotoLibraryAddUsageDescription</key>
+   <string>We need access to add photos to your library.</string>
+   <key>NSCameraUsageDescription</key>
+   <string>We need access to your camera to take photos.</string>
 </dict>
 </plist>

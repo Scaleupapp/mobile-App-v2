@@ -31,7 +31,6 @@ import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  // console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(250);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);

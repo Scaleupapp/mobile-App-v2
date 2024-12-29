@@ -51,6 +51,7 @@ export const setupAxiosInterceptors = showToast => {
           logoutUser();
         }, 1000);
       }
+
       return Promise.reject(error);
     },
   );
