@@ -16,4 +16,8 @@ export const icons = {
   account2: require('../icons/accountouline.png'),
   send: require('../icons/send.png'),
   backDark: require('../icons/backDark.png'),
+  changePass: require('../icons/lock.png'),
+  delete: require('../icons/deletesolid.png'),
+  saved: require('../icons/savesolid.png'),
+  block: require('../icons/userlocksolid.png'),
 };

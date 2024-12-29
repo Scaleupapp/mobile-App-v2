@@ -20,83 +20,92 @@ import Text from '../../components/Text';
 import Button from '../../components/Button';
 import Icon from '../../helper/icon';
 import Routes from '../../helper/routes';
+import {icons} from '../../assets/icons';
+import ConfirmDelete from './ConfirmDelete';
+
+const menuItems = [
+  // commented
+  // {
+  //   heading: '',
+  //   data: [
+  //     {
+  //       title: 'Notifications',
+  //       icon: 'bell-icon',
+  //       navKey: 'Notifications',
+  //     },
+  //   ],
+  // },
+  {
+    heading: 'Account',
+    data: [
+      {
+        title: 'Change Password',
+        icon: icons.changePass,
+        navKey: Routes.ChangePassword,
+      },
+      // commented
+      // {title: 'Your Activity', icon: 'activity-icon', navKey: 'YourActivity'},
+      // {title: 'Language', icon: 'language-icon', navKey: 'Language'},
+      // {title: 'Theme', icon: 'theme-icon', navKey: 'Theme'},
+      {title: 'Block List', icon: icons.block, navKey: Routes.BlockUsers},
+      {
+        title: 'Delete Account',
+        icon: icons.delete,
+        navKey: 'delete',
+      },
+    ],
+  },
+  {
+    heading: 'Posts',
+    data: [
+      {title: 'Saved', icon: icons.saved, navKey: Routes.MyPlaylist},
+      // commented
+      // {title: 'Drafts', icon: 'drafts-icon', navKey: Routes.DraftPost},
+      // {title: 'Verified', icon: 'verified-icon', navKey: Routes.VerifiedPost},
+      // {
+      //   title: 'Not Verified',
+      //   icon: 'not-verified-icon',
+      //   navKey: Routes.PendingPost,
+      // },
+      // {
+      //   title: 'Post Visibility',
+      //   icon: 'visibility-icon',
+      //   navKey: 'PostVisibility',
+      // },
+      // {
+      //   title: 'Performance & Analytics',
+      //   icon: 'analytics-icon',
+      //   navKey: 'PerformanceAnalytics',
+      // },
+    ],
+  },
+  // {
+  //   heading: 'Rewards',
+  //   data: [
+  //     {
+  //       title: 'Achievements',
+  //       icon: 'achievements-icon',
+  //       navKey: 'Achievements',
+  //     },
+  //   ],
+  // },
+  // {
+  //   heading: 'Help',
+  //   data: [
+  //     {title: 'Report an Issue', icon: 'report-icon', navKey: 'ReportIssue'},
+  //     {title: 'Help Center', icon: 'help-center-icon', navKey: 'HelpCenter'},
+  //     {title: 'Feedback', icon: 'feedback-icon', navKey: 'Feedback'},
+  //   ],
+  // },
+
+  // {
+  //   heading: '',
+  //   data: [{title: 'Log out', icon: 'logout-icon', navKey: 'Logout'}],
+  // },
+];
 
 const Settings = ({navigation, route}) => {
-  const menuItems = [
-    // commented
-    // {
-    //   heading: '',
-    //   data: [
-    //     {
-    //       title: 'Notifications',
-    //       icon: 'bell-icon',
-    //       navKey: 'Notifications',
-    //     },
-    //   ],
-    // },
-    {
-      heading: 'Account',
-      data: [
-        {
-          title: 'Change Password',
-          icon: 'password-icon',
-          navKey: Routes.ChangePassword,
-        },
-        // commented
-        // {title: 'Your Activity', icon: 'activity-icon', navKey: 'YourActivity'},
-        // {title: 'Language', icon: 'language-icon', navKey: 'Language'},
-        // {title: 'Theme', icon: 'theme-icon', navKey: 'Theme'},
-        // {title: 'Block List', icon: 'theme-icon', navKey: Routes.BlockUsers},
-      ],
-    },
-    {
-      heading: 'Posts',
-      data: [
-        {title: 'Saved', icon: 'saved-icon', navKey: Routes.MyPlaylist},
-        // commented
-        // {title: 'Drafts', icon: 'drafts-icon', navKey: Routes.DraftPost},
-        // {title: 'Verified', icon: 'verified-icon', navKey: Routes.VerifiedPost},
-        // {
-        //   title: 'Not Verified',
-        //   icon: 'not-verified-icon',
-        //   navKey: Routes.PendingPost,
-        // },
-        // {
-        //   title: 'Post Visibility',
-        //   icon: 'visibility-icon',
-        //   navKey: 'PostVisibility',
-        // },
-        // {
-        //   title: 'Performance & Analytics',
-        //   icon: 'analytics-icon',
-        //   navKey: 'PerformanceAnalytics',
-        // },
-      ],
-    },
-    // {
-    //   heading: 'Rewards',
-    //   data: [
-    //     {
-    //       title: 'Achievements',
-    //       icon: 'achievements-icon',
-    //       navKey: 'Achievements',
-    //     },
-    //   ],
-    // },
-    // {
-    //   heading: 'Help',
-    //   data: [
-    //     {title: 'Report an Issue', icon: 'report-icon', navKey: 'ReportIssue'},
-    //     {title: 'Help Center', icon: 'help-center-icon', navKey: 'HelpCenter'},
-    //     {title: 'Feedback', icon: 'feedback-icon', navKey: 'Feedback'},
-    //   ],
-    // },
-
-    // {
-    //   heading: '',
-    //   data: [{title: 'Log out', icon: 'logout-icon', navKey: 'Logout'}],
-    // },
-  ];
+  const [open, setOpen] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -136,15 +145,23 @@ const Settings = ({navigation, route}) => {
                 scrollEnabled={false}
                 data={item?.data}
                 contentContainerStyle={{marginBottom: nh(15)}}
-                renderItem={({item}) => {
+                renderItem={({item, index}) => {
                   return (
                     <Pressable
+                      key={index}
                       style={styles.card}
-                      onPress={() => navigation.navigate(item?.navKey)}>
-                      <View style={{flexDirection: 'row'}}>
+                      onPress={() => {
+                        if (item?.navKey == 'delete') {
+                          setOpen(true);
+                        } else {
+                          navigation.navigate(item?.navKey);
+                        }
+                      }}>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
                         <View style={styles.image}>
                           <Image
-                            source={images.ciclelogo}
+                            source={item.icon}
                             style={{width: nw(14), height: nh(17)}}
                           />
                         </View>
@@ -166,6 +183,8 @@ const Settings = ({navigation, route}) => {
           </>
         ))}
       </ScrollView>
+      <ConfirmDelete isVisible={open} setvisibleModal={setOpen} />
+
       {/* <View>
           <Image
             source={images.notification}

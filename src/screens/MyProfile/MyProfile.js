@@ -14,16 +14,18 @@ import Header from '../../components/Header';
 import {images} from '../../assets/images';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
-
 import AllPostoption from './AllPostoption';
 import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
-import {getProfile} from '../../services/apiService';
+import {bockUser, getProfile} from '../../services/apiService';
+import {MenuModal} from '../../components/MenuModal';
+import {icons} from '../../assets/icons';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  console.log('🚀 ~ MyProfile ~ profile:', profile);
+  console.log('🚀 ~ MyProfile ~ profile:', JSON.stringify(profile));
+  const [visible, setVisible] = useState(false);
   // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
   let type = route?.params?.type ?? 'user';
@@ -41,7 +43,16 @@ const MyProfile = ({navigation, route}) => {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
   };
-  console.log(profile);
+
+  const wantToBlock = () => {
+    setVisible(false);
+    bockUser(profile?.id)
+      .then(res => {
+        console.log(res?.data, 'blockuserData=====d>');
+      })
+      .catch(err => console.log('sndjksn ', err));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
@@ -52,9 +63,9 @@ const MyProfile = ({navigation, route}) => {
       <Header
         title={type == 'user' ? 'My Profile' : profile?.username ?? ''}
         // backIcon={icons.backArrow} // Provide your back arrow icon
-        // rightIcon={icons.menu} // Provide your right icon
+        rightIcon={true} // Provide your right icon
         // onBackPress={handleBackPress}
-        // onRightIconPress={handleRightIconPress}
+        onRightIconPress={() => setVisible(!visible)}
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
@@ -193,6 +204,18 @@ const MyProfile = ({navigation, route}) => {
           </ScrollView>
         </View>
       </View>
+      <MenuModal
+        visible={visible}
+        setVisible={setVisible}
+        menuItems={[
+          {
+            name: 'Block User',
+            // icon: icons.block,
+            image: icons.block,
+            onPress: () => wantToBlock(),
+          },
+        ]}
+      />
     </SafeAreaView>
   );
 };
