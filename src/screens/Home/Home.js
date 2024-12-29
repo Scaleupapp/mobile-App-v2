@@ -26,7 +26,10 @@ import {actions} from '../../redux/reducers';
 
 const Home = ({navigation, route}) => {
   const [home, setHome] = useState([]);
-  console.log('🚀 ~ Home ~ home:', home);
+  const userData = useSelector(state => state?.userData);
+  const dispatch = useDispatch();
+
+  // console.log('🚀 ~ Home ~ home:', home);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -47,15 +50,10 @@ const Home = ({navigation, route}) => {
   useEffect(() => {
     getProfileData();
   }, []);
-  
 
   const getProfileData = async () => {
     try {
-      const user = await AsyncStorage.getItem('userData');
-      const parsedUser = JSON.parse(user);
-
       let res = await getProfile('');
-      // console.log('Homeeeeee', res?.data?.userProfileInfo);
 
       dispatch(
         actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
@@ -64,7 +62,6 @@ const Home = ({navigation, route}) => {
       console.log(error?.response?.data?.message, 'errormsg');
     }
   };
-  
 
   const homePageData = async (page, refresh = false) => {
     try {

@@ -18,25 +18,24 @@ import Button from '../../components/Button';
 import AllPostoption from './AllPostoption';
 import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
-import {getProfile} from '../../services/apiService';
+import {getProfile, getProfiledetails} from '../../services/apiService';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  console.log('🚀 ~ MyProfile ~ profile:', profile);
+  console.log('🚀 ~ MyProfile ~ profile:', userData);
   // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
   let type = route?.params?.type ?? 'user';
 
   useEffect(() => {
-    getprofiledetails();
+    getprofiledetail();
   }, []);
-  const getprofiledetails = async () => {
+  const getprofiledetail = async () => {
     try {
-      let resp = await getProfile(route?.params?.id ?? '');
+      let resp = await getProfiledetails(route?.params?.id ?? userData?.id);
 
-      setProfile(resp?.data?.userProfileInfo);
-      console.log(resp?.data?.userProfileInfo, 'dgdgdgdggd');
+      setProfile(resp?.data);
     } catch (error) {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
