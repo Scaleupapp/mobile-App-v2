@@ -7,6 +7,7 @@ import {
   Image,
   ScrollView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -14,19 +15,29 @@ import Header from '../../components/Header';
 import {images} from '../../assets/images';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
-
 import AllPostoption from './AllPostoption';
 import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
-import {getProfile, getProfiledetails} from '../../services/apiService';
+import {
+  bockUser,
+  followUser,
+  getProfile,
+  getProfiledetails,
+  unlfollowUser,
+} from '../../services/apiService';
+import {MenuModal} from '../../components/MenuModal';
+import {icons} from '../../assets/icons';
+import {FlatList} from 'react-native-gesture-handler';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  // console.log('🚀 ~ MyProfile ~ profile:', userData);
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [follow, setFollow] = useState(false);
   // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
-  let type = 'user';
+  let type = route?.params?.id ? 'other' : 'user';
 
   useEffect(() => {
     getprofiledetail();
@@ -36,163 +47,218 @@ const MyProfile = ({navigation, route}) => {
       let resp = await getProfiledetails(route?.params?.id ?? userData?.id);
 
       setProfile(resp?.data);
-      console.log('🚀 ~ getprofiledetail ~ resp?.data:', resp?.data);
+      setFollow(resp?.data?.followers.includes(userData?.username));
     } catch (error) {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
+    } finally {
+      setLoading(false);
+    }
+    console.log('🚀 ~ getprofiledetail ~ resp?.data:', resp?.data);
+  };
+  const followApi = async () => {
+    try {
+      setFollow(!follow);
+      let res = follow
+        ? await unlfollowUser(route?.params?.id)
+        : await followUser(route?.params?.id);
+    } catch (error) {
+      console.log('🚀 ~ followApi ~ error:', error?.response?.data);
     }
   };
-  console.log(profile);
-  return (
+  const wantToBlock = () => {
+    setVisible(false);
+    bockUser(profile?.id)
+      .then(res => {
+        console.log(res?.data, 'blockuserData=====d>');
+      })
+      .catch(err => console.log('sndjksn ', err));
+  };
+
+  return loading ? (
+    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+      <ActivityIndicator size={30} />
+      <Text variant="medium12" style={{marginTop: 10}}>
+        {' '}
+        Profile Loading....
+      </Text>
+    </View>
+  ) : (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header
-        title={type == 'user' ? 'My Profile' : profile?.username ?? ''}
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        // rightIcon={icons.menu} // Provide your right icon
-        // onBackPress={handleBackPress}
-        // onRightIconPress={handleRightIconPress}
-      />
-      <View style={styles.layer1}>
-        <View style={styles.layer2}>
-          <ScrollView>
-            <Image source={images.profilebaground} style={styles.images} />
-            {profile?.profilePicture ? (
-              <Image
-                source={{uri: profile?.profilePicture}}
-                style={styles.imagecircle}
-                resizeMode="cover"
-              />
-            ) : (
-              <View
-                style={[
-                  styles.imagecircle,
-                  {
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: COLORS.greyD6D6D6,
-                  },
-                ]}>
-                <Text variant="semibold20" color={COLORS.black333333}>
-                  {profile?.firstname
-                    ? `${profile?.firstname
-                        ?.charAt(0)
-                        .toUpperCase()}${profile?.lastname
-                        ?.charAt(0)
-                        .toUpperCase()}`
-                    : ''}
-                </Text>
-              </View>
-            )}
 
-            <Text
-              variant="semibold20"
-              color={COLORS.blue043142}
-              style={{textAlign: 'center'}}>
-              {profile?.username}
-            </Text>
-
-            <Text
-              variant="medium16"
-              color={COLORS.grey777777}
-              style={{textAlign: 'center'}}>
-              {/* {profile} */}
-            </Text>
-            <Text
-              variant="medium12"
-              color={COLORS.grey999999}
-              style={{textAlign: 'center', marginBottom: nh(20)}}>
-              {profile?.bioAbout}
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                width: '100%',
-                justifyContent: 'center',
-              }}>
-              {profile?.bioInterests?.map(u => (
-                <View style={styles.yellowview}>
-                  <Text variant="medium12" color={COLORS.blue043142}>
-                    {u}
+      <>
+        <Header
+          title={type == 'user' ? 'My Profile' : profile?.username ?? ''}
+          // backIcon={icons.backArrow} // Provide your back arrow icon
+          rightIcon={route?.params?.id ? true : false} // Provide your right icon
+          // onBackPress={handleBackPress}
+          onRightIconPress={() => setVisible(!visible)}
+        />
+        <View style={styles.layer1}>
+          <View style={styles.layer2}>
+            <ScrollView nestedScrollEnabled>
+              <Image source={images.profilebaground} style={styles.images} />
+              {profile?.profilePicture ? (
+                <Image
+                  source={{uri: profile?.profilePicture}}
+                  style={styles.imagecircle}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.imagecircle,
+                    {
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLORS.greyD6D6D6,
+                    },
+                  ]}>
+                  <Text variant="semibold20" color={COLORS.black333333}>
+                    {profile?.firstname
+                      ? `${profile?.firstname
+                          ?.charAt(0)
+                          .toUpperCase()}${profile?.lastname
+                          ?.charAt(0)
+                          .toUpperCase()}`
+                      : ''}
                   </Text>
                 </View>
-              ))}
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
+              )}
 
-                justifyContent: 'space-between',
-                alignContent: 'center',
-                marginHorizontal: nw(44),
-              }}>
-              <Pressable style={{alignItems: 'center'}}>
-                <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.totalPosts ?? ''}
-                </Text>
-                <Text variant="medium16" color={COLORS.blue043142}>
-                  posts
-                </Text>
-              </Pressable>
-              <Pressable
-                style={{alignItems: 'center'}}
-                onPress={() =>
-                  navigation.navigate(Routes.Followers, {
-                    id: type == 'user' ? userData?.id : route?.params?.id,
-                  })
-                }>
-                <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.followersCount ?? ''}
-                </Text>
-                <Text variant="medium16" color={COLORS.blue043142}>
-                  followers
-                </Text>
-              </Pressable>
-              <Pressable
-                style={{alignItems: 'center'}}
-                onPress={() =>
-                  navigation.navigate(Routes.Following, {
-                    id: type == 'user' ? userData?.id : route?.params?.id,
-                  })
-                }>
-                <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.followingCount ?? ''}
-                </Text>
-                <Text variant="medium16" color={COLORS.blue043142}>
-                  following
-                </Text>
-              </Pressable>
-            </View>
-            {type == 'user' ? (
+              <Text
+                variant="semibold20"
+                color={COLORS.blue043142}
+                style={{textAlign: 'center'}}>
+                {profile?.username}
+              </Text>
+
+              <Text
+                variant="medium16"
+                color={COLORS.grey777777}
+                style={{textAlign: 'center'}}>
+                {/* {profile} */}
+              </Text>
+              <Text
+                variant="medium12"
+                color={COLORS.grey999999}
+                style={{textAlign: 'center', marginBottom: nh(20)}}>
+                {profile?.bioAbout}
+              </Text>
               <View
                 style={{
                   flexDirection: 'row',
-                  marginTop: nh(30),
-                  justifyContent: 'space-between',
+                  width: '100%',
+                  justifyContent: 'center',
                 }}>
-                <Button
-                  text="Edit Profile"
-                  width={nw(283)}
-                  onPress={() => navigation.navigate(Routes.EditProfile)}
-                />
-                <Button
-                  justIcon={'settings-sharp'}
-                  width={50}
-                  onPress={() => navigation.navigate(Routes.Settings)}
+                <FlatList
+                  data={profile?.bioInterests}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  renderItem={({item}) => {
+                    console.log('🚀 ~ MyProfile ~ u:', item);
+                    return (
+                      <View style={styles.yellowview}>
+                        <Text variant="medium12" color={COLORS.blue043142}>
+                          {item}
+                        </Text>
+                      </View>
+                    );
+                  }}
                 />
               </View>
-            ) : (
-              <View style={{marginTop: nh(30)}}>
-                <Button text="Follow" />
+              <View
+                style={{
+                  flexDirection: 'row',
+
+                  justifyContent: 'space-between',
+                  alignContent: 'center',
+                  marginHorizontal: nw(44),
+                }}>
+                <Pressable style={{alignItems: 'center'}}>
+                  <Text variant="bold20" color={COLORS.blue043142}>
+                    {profile?.totalPosts ?? ''}
+                  </Text>
+                  <Text variant="medium16" color={COLORS.blue043142}>
+                    posts
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={{alignItems: 'center'}}
+                  onPress={() =>
+                    navigation.navigate(Routes.Followers, {
+                      id: type == 'user' ? userData?.id : route?.params?.id,
+                    })
+                  }>
+                  <Text variant="bold20" color={COLORS.blue043142}>
+                    {profile?.followersCount ?? ''}
+                  </Text>
+                  <Text variant="medium16" color={COLORS.blue043142}>
+                    followers
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={{alignItems: 'center'}}
+                  onPress={() =>
+                    navigation.navigate(Routes.Following, {
+                      id: type == 'user' ? userData?.id : route?.params?.id,
+                    })
+                  }>
+                  <Text variant="bold20" color={COLORS.blue043142}>
+                    {profile?.followingCount ?? ''}
+                  </Text>
+                  <Text variant="medium16" color={COLORS.blue043142}>
+                    following
+                  </Text>
+                </Pressable>
               </View>
-            )}
-            <AllPostoption type={type} data={profile?.content} />
-          </ScrollView>
+              {type == 'user' ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    marginTop: nh(30),
+                    justifyContent: 'space-between',
+                  }}>
+                  <Button
+                    text="Edit Profile"
+                    width={nw(283)}
+                    onPress={() => navigation.navigate(Routes.EditProfile)}
+                  />
+                  <Button
+                    justIcon={'settings-sharp'}
+                    width={50}
+                    onPress={() => navigation.navigate(Routes.Settings)}
+                  />
+                </View>
+              ) : (
+                <View style={{marginTop: nh(30)}}>
+                  <Button
+                    onPress={followApi}
+                    text={follow ? 'Following' : 'Follow'}
+                  />
+                </View>
+              )}
+              <AllPostoption type={type} data={profile?.content} />
+            </ScrollView>
+          </View>
         </View>
-      </View>
+        <MenuModal
+          visible={visible}
+          setVisible={setVisible}
+          menuItems={[
+            {
+              name: 'Block User',
+              // icon: icons.block,
+              image: icons.block,
+              onPress: () => wantToBlock(),
+            },
+          ]}
+        />
+      </>
     </SafeAreaView>
   );
 };

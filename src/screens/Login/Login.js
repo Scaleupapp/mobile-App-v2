@@ -187,6 +187,7 @@ const Login = ({navigation}) => {
           });
           showToast({type: 'success', title: data?.message});
           const stringifiedUserData = JSON.stringify(data);
+
           await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(stringifiedUserData));
           if (phoneNumberData?.isPhoneNumberVerified) {

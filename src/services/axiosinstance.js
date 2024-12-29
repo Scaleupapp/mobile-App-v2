@@ -47,9 +47,9 @@ export const setupAxiosInterceptors = showToast => {
       if (error.response.status == 401) {
         showToast({type: 'error', title: error.response?.data?.message});
         console.log('error33', error.response?.data?.message);
-        setTimeout(() => {
-          logoutUser();
-        }, 1000);
+        // setTimeout(() => {
+        //   logoutUser();
+        // }, 1000);
       }
 
       return Promise.reject(error);

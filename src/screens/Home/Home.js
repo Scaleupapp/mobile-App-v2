@@ -25,10 +25,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {actions} from '../../redux/reducers';
 
 const Home = ({navigation, route}) => {
-  const [home, setHome] = useState([]);
-  const userData = useSelector(state => state?.userData);
   const dispatch = useDispatch();
-
+  const userData = useSelector(state => state?.userData);
+  const [home, setHome] = useState([]);
   // console.log('🚀 ~ Home ~ home:', home);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(true);
@@ -53,11 +52,12 @@ const Home = ({navigation, route}) => {
 
   const getProfileData = async () => {
     try {
-      let res = await getProfile('');
+      const res = await getProfile('');
 
-      dispatch(
-        actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
-      ); // Dispatch the updated data
+      const newdata = {...userData, ...res?.data?.userProfileInfo};
+      console.log('🚀 ~ getProfileData ~ newdata:', newdata);
+
+      dispatch(actions.setUserData(newdata)); // Dispatch the updated data
     } catch (error) {
       console.log(error?.response?.data?.message, 'errormsg');
     }

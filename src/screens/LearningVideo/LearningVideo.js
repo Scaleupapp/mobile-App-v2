@@ -100,8 +100,7 @@ const VideoItem = ({
         <Pressable
           style={styles.userInfo}
           onPress={() =>
-            navigationRef.navigate(Routes.MyProfile, {
-              type: 'other',
+            navigationRef.navigate(Routes.OtherProfile, {
               id: item?.userId?._id,
             })
           }>
