@@ -345,7 +345,7 @@ export const Story = () => {
           style={[
             styles.thumbnailBorder,
             {
-              borderColor: allStoriesViewed ? 'green' : '#ff3040',
+              borderColor: allStoriesViewed ? 'grey' : '#ff3040',
               borderWidth: allStoriesViewed ? 3 : 3,
             },
           ]}>

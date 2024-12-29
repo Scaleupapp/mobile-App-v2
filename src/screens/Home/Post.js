@@ -224,12 +224,12 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </Text>
         </Pressable>
 
-        {/* <Icon
+         <Icon
           type="entypo"
           name="dots-three-vertical"
           size={21}
           color={COLORS.blue043142}
-        /> */}
+        /> 
       </View>
 
       {item?.contentType == 'Image' && item?.contentURL ? (

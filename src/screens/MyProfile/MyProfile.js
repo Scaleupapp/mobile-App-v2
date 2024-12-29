@@ -184,7 +184,7 @@ const MyProfile = ({navigation, route}) => {
                     {profile?.totalPosts ?? ''}
                   </Text>
                   <Text variant="medium16" color={COLORS.blue043142}>
-                    posts
+                    Posts
                   </Text>
                 </Pressable>
                 <Pressable
@@ -198,7 +198,7 @@ const MyProfile = ({navigation, route}) => {
                     {profile?.followersCount ?? ''}
                   </Text>
                   <Text variant="medium16" color={COLORS.blue043142}>
-                    followers
+                    Followers
                   </Text>
                 </Pressable>
                 <Pressable
@@ -209,10 +209,10 @@ const MyProfile = ({navigation, route}) => {
                     })
                   }>
                   <Text variant="bold20" color={COLORS.blue043142}>
-                    {profile?.followingCount ?? ''}
+                    {profile?.following.length ?? ''}
                   </Text>
                   <Text variant="medium16" color={COLORS.blue043142}>
-                    following
+                    Following
                   </Text>
                 </Pressable>
               </View>

@@ -6,6 +6,9 @@ import {
   View,
   ScrollView,
   Dimensions,
+  Modal,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
@@ -14,10 +17,11 @@ import Header from '../../components/Header';
 import CustomTextInput from '../../components/TextInput';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
-import DocumentPicker from 'react-native-document-picker';
 import axios from 'axios';
 import {useToast} from '../../components/CustomToast';
 import {getProfile} from '../../services/apiService';
+import {launchImageLibrary} from 'react-native-image-picker';
+import Icon from 'react-native-vector-icons/Ionicons';
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
@@ -29,6 +33,9 @@ const CreatePost = ({navigation}) => {
   const [hashtags, setHashtags] = useState('');
   const [file, setFile] = useState(null);
   const [contentType, setContentType] = useState('image');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
   
   // User data state
   const [profileData, setProfileData] = useState(null);
@@ -37,6 +44,17 @@ const CreatePost = ({navigation}) => {
   useEffect(() => {
     getProfileData();
   }, []);
+
+  // Function to reset form fields
+  const resetForm = () => {
+    setHeading('');
+    setTopics('');
+    setCaptions('');
+    setHashtags('');
+    setFile(null);
+    setContentType('image');
+    setUploadProgress(0);
+  };
 
   // Function to fetch profile data using AsyncStorage and API
   const getProfileData = async () => {
@@ -56,74 +74,32 @@ const CreatePost = ({navigation}) => {
     }
   };
 
-  const handleFileUpload = async () => {
-    try {
-      const res = await DocumentPicker.pickSingle({
-        type: [DocumentPicker.types.allFiles],
+  const openGallery = async () => {
+    if (!profileData?.id) {
+      showToast({
+        text: 'Please log in to create a post',
+        type: 'error',
       });
-      console.log('Selected File:', res);
-      setFile(res);
+      return;
+    }
 
-      const fileType = res.type || res.name.split('.').pop().toLowerCase();
-      if (fileType.includes('image')) {
-        setContentType('Image');
-      } else if (fileType.includes('video')) {
-        setContentType('Video');
-      } else if (fileType.includes('pdf') || fileType.includes('document')) {
-        setContentType('Document');
-      } else if (fileType.includes('gif')) {
-        setContentType('GIF');
-      } else {
-        setContentType('Other');
+    setModalVisible(false);
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'mixed',
+      });
+
+      if (result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setFile(asset);
+        setContentType(asset.type.includes('video') ? 'Video' : 'Image');
       }
     } catch (err) {
-      if (DocumentPicker.isCancel(err)) {
-        console.log('User cancelled document picker');
-      } else {
-        console.error('Error selecting file:', err);
-        showToast({
-          text: 'Failed to select file',
-          type: 'error',
-        });
-      }
-    }
-  };
-
-  const uploadFile = async (fileData, additionalFields = {}) => {
-    try {
-      // Get the authentication token from AsyncStorage
-      const userData = await AsyncStorage.getItem('userData');
-      const {token} = JSON.parse(userData);
-
-      if (!token) {
-        throw new Error('Authentication token not found');
-      }
-
-      const formData = new FormData();
-      Object.keys(additionalFields).forEach(key => {
-        formData.append(key, additionalFields[key]);
+      console.error('Error selecting file:', err);
+      showToast({
+        text: 'Failed to select file',
+        type: 'error',
       });
-
-      formData.append('media', {
-        uri: fileData.uri,
-        type: fileData.type,
-        name: fileData.name,
-      });
-
-      const response = await axios.post(
-        'https://api.scaleupapp.club/api/content/create',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-      return response;
-    } catch (error) {
-      console.error('Upload Error:', error);
-      throw error;
     }
   };
 
@@ -147,24 +123,56 @@ const CreatePost = ({navigation}) => {
     }
 
     try {
-      console.log('Uploading file...');
-      const additionalFields = {
-        heading,
-        relatedTopics: topics,
-        hashtags,
-        verify: 'Yes',
-        captions,
-        contentType,
-      };
+      setIsUploading(true);
+      setUploadProgress(0);
 
-      const fileResponse = await uploadFile(file, additionalFields);
-      console.log('File Upload Success:', fileResponse.data);
+      // Get the authentication token from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const {token} = JSON.parse(userData);
 
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const formData = new FormData();
+      formData.append('heading', heading);
+      formData.append('relatedTopics', topics);
+      formData.append('hashtags', hashtags);
+      formData.append('verify', 'Yes');
+      formData.append('captions', captions);
+      formData.append('contentType', contentType);
+      formData.append('media', {
+        uri: file.uri,
+        type: file.type,
+        name: file.fileName || 'media',
+      });
+
+      const response = await axios.post(
+        'https://api.scaleupapp.club/api/content/create',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        },
+      );
+
+      console.log('Post Upload Success:', response.data);
       showToast({text: 'Post created successfully!', type: 'success'});
+      resetForm();
       navigation.goBack();
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
       showToast({text: 'Failed to upload post.', type: 'error'});
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -201,19 +209,30 @@ const CreatePost = ({navigation}) => {
               onChangeText={setHashtags}
             />
             <Text variant="medium14" color={COLORS.greyBBBBBB}>
-              Upload Image/Video/Doc/GIF
+              Upload Image/Video
             </Text>
             <View style={styles.uploadButtonContainer}>
               <Button
                 leftIcon={'upload'}
                 text="Upload"
                 variant="outline"
-                onPress={handleFileUpload}
+                onPress={() => setModalVisible(true)}
                 width={nw(96)}
                 height={nh(35)}
                 textStyle={{fontSize: 14}}
               />
+              {file && (
+                <Text style={styles.fileName} numberOfLines={1}>
+                  {file.fileName || 'Selected media'}
+                </Text>
+              )}
             </View>
+            {isUploading && (
+              <View style={styles.progressContainer}>
+                <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                <Text style={styles.progressText}>{`${uploadProgress}%`}</Text>
+              </View>
+            )}
             <View style={styles.actionButtonContainer}>
               <Button
                 variant="outline"
@@ -224,16 +243,45 @@ const CreatePost = ({navigation}) => {
                 onPress={() => navigation.goBack()}
               />
               <Button
-                text="Next"
+                text="Publish"
                 width={nw(65)}
                 height={nh(35)}
                 textStyle={{fontSize: 14}}
                 onPress={handlePost}
+                disabled={isUploading}
               />
             </View>
           </View>
         </ScrollView>
       </View>
+
+      {/* Modal for Media Selection */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Choose Media</Text>
+
+            <TouchableOpacity 
+              style={styles.modalOption} 
+              onPress={openGallery}
+              disabled={isUploading}>
+              <Icon name="image" size={24} color={COLORS.blue043142} />
+              <Text style={styles.modalOptionText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelOption}
+              onPress={() => setModalVisible(false)}
+              disabled={isUploading}>
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -270,6 +318,71 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: nh(30),
+  },
+  fileName: {
+    marginTop: nh(5),
+    color: COLORS.greyBBBBBB,
+  },
+  progressContainer: {
+    marginTop: nh(10),
+    height: nh(20),
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: COLORS.yellowF5BE00,
+  },
+  progressText: {
+    position: 'absolute',
+    width: '100%',
+    textAlign: 'center',
+    lineHeight: nh(20),
+    color: '#000',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    width: '100%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    color: COLORS.blue043142,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalOptionText: {
+    marginLeft: 15,
+    fontSize: 16,
+    color: COLORS.blue043142,
+  },
+  modalCancelOption: {
+    width: '100%',
+    paddingVertical: 15,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  modalCancelText: {
+    color: 'red',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
