@@ -39,9 +39,9 @@ const SocialLogin = ({signup = false}) => {
       iosClientId: '904486363410-khm24rnus7cfdhq6culdepe4jhunrsof.apps.googleusercontent.com',
       // Android client ID
       webClientId: '904486363410-gj81qip7agmdniss7tkt74fkan4alcf1.apps.googleusercontent.com',
-      offlineAccess: true,
+      offlineAccess: false,
       scopes: ['profile', 'email'],
-      forceCodeForRefreshToken: true,
+      forceCodeForRefreshToken: false,
     });
   };
 
