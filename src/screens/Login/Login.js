@@ -94,7 +94,7 @@ const Login = ({navigation}) => {
         setIsResendDisabled(true);
         setResendTimer(59);
       } catch (error) {
-        console.log('Get OTP Error:', error);
+        console.log('Get OTP Error:', error?.response?.data?.message);
       }
     }
   };
@@ -209,7 +209,7 @@ const Login = ({navigation}) => {
           setResendTimer(59);
           setState(prev => ({...prev, requestedOtp: true}));
         } catch (error) {
-          console.log('Get OTP Error:', error);
+          console.log('Get OTP Error:', error?.response?.data?.message);
         }
       }
     }

@@ -50,6 +50,7 @@ export const AddStory = ({onStoryAdded}) => {
       videoQuality: 'high',
       durationLimit: 60,
     });
+
     handleMedia(result);
   };
 
