@@ -53,8 +53,7 @@ const Home = ({navigation, route}) => {
   const getProfileData = async () => {
     try {
       const res = await getProfile('');
-      console.log('Homeeeeee 1', res?.data?.userProfileInfo);
-      console.log('Homeeeeee 2', userData);
+
       const newdata = {...userData, ...res?.data?.userProfileInfo};
       console.log('🚀 ~ getProfileData ~ newdata:', newdata);
 

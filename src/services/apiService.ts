@@ -84,6 +84,10 @@ export const deleteProjects = (id: any) => {
 export const getProfile = (payload: any) => {
   return axiosInstance.get(`${API.PROFILE_DETAIL}/${payload}`);
 };
+export const getProfiledetails = (payload: any) => {
+  console.log("🚀 ~ getProfiledetails ~ payload:", payload)
+  return axiosInstance.get(`${API.PROFILE_CONTENT}/${payload}`);
+};
 
 export const updateProfile = (payload: any) => {
   return axiosInstance.put(API.PROFILE_DETAIL, payload);

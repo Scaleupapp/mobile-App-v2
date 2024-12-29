@@ -43,6 +43,7 @@ export const API = {
   CERTIFICATION: 'users/certification',
   PROJECTS: 'users/project',
   PROFILE_DETAIL: 'users/profile',
+  PROFILE_CONTENT:"content/detail",
   LIKEPOST: 'content/like',
   UNLIKEPOST: 'content/unlike',
   SAVE: 'content/save',
