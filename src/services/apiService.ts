@@ -108,6 +108,9 @@ export const savePostAPI = (postId: any) => {
 export const unsavePostAPI = (postId: any) => {
   return axiosInstance.put(`${API.UNSAVE}/${postId}`);
 };
+export const getSavedPostsAPI = () => {
+  return axiosInstance.get(`${API.BASE_URL}content/saved-content`);
+};
 
 export const getNotificationAPI = () => {
   return axiosInstance.get(`${API.NOTIFICATION}`);

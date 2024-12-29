@@ -31,7 +31,9 @@ import ReadMore from '@fawazahmed/react-native-read-more';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import Header from '../../components/Header';
-
+import SavedPostsModal from '../Home/SavedPostsModal';
+import Toast from '../../components/CustomToast/Toast';
+import { useToast } from '../../components/CustomToast';
 const VideoItem = ({
   item,
   index,
@@ -45,6 +47,13 @@ const VideoItem = ({
   const [comments, setComments] = useState(item?.comments);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+    const [isSavedModalVisible, setIsSavedModalVisible] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const { showToast } = useToast();
+
+
+
+  
   const [profileData, setProfileData] = useState(null);
 
   const commentRef = useRef(null);
@@ -85,14 +94,74 @@ const VideoItem = ({
       console.log(error, 'eeee');
     }
   };
+// Replace the existing saveHandler function with this:
+const saveHandler = async () => {
 
-  const handleBookmarkPress = () => {
-    if (!profileData?.id) {
-      Alert.alert('Login Required', 'Please login to save videos to playlists');
+  try {
+    const token = profileData?.id;
+
+    if (!token) {
+      showToast({
+        text: 'Please login to save posts',
+        type: 'error',
+      });
       return;
     }
-    setIsPlaylistModalVisible(true);
-  };
+
+    setIsSaving(true);
+    setIsBookmarked(!isBookmarked);
+
+    if (isBookmarked) {
+      await unsavePostAPI(item?._id);
+    } else {
+      const res = await savePostAPI(item?._id);
+      if (res.data.error) {
+        setIsBookmarked(false);
+        showToast({
+          text: res.data.error,
+          type: 'error',
+        });
+      } else {
+        showToast({
+          text: 'Post saved successfully',
+          type: 'success',
+        });
+      }
+    }
+  } catch (error) {
+    setIsBookmarked(isBookmarked); // Revert on error
+    showToast({
+      text: error?.response?.data?.error || 'Failed to save post',
+      type: 'error',
+    });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+
+const handleBookmarkPress = () => {
+
+  if (!profileData?.id) {
+    showToast({
+      text: 'Please log in to bookmark posts',
+      type: 'error',
+    });
+    return;
+  }
+
+  // Check if the post belongs to the logged-in user
+  if (item?.userId?._id !== profileData?.id) {
+    showToast({
+      text: 'You can only bookmark your own video posts',
+      type: 'error',
+    });
+    return;
+  }
+
+  setIsPlaylistModalVisible(true);
+};
+
 
   return (
     <View style={styles.videoContainer}>
@@ -116,6 +185,14 @@ const VideoItem = ({
             {item?.userId?.username}
           </Text>
         </Pressable>
+        <Pressable onPress={handleBookmarkPress}>
+    <Icon
+      type="entypo"
+      name="dots-three-vertical"
+      size={21}
+      color={COLORS.blue043142}
+    />
+  </Pressable>
       </View>
 
       <Pressable
@@ -193,12 +270,12 @@ const VideoItem = ({
             />
           </Pressable>
         </View>
-        <Pressable onPress={handleBookmarkPress}>
+        <Pressable onPress={saveHandler} disabled={isSaving}>
           <Icon
-            type="feather"
-            name="bookmark"
+            type="ionicon"
+            name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
             size={24}
-            color={isBookmarked ? COLORS.yellowF5BE00 : COLORS.blue043142}
+            color={COLORS.blue043142}
           />
         </Pressable>
       </View>
@@ -258,6 +335,7 @@ const VideoItem = ({
           setIsPlaylistModalVisible(false);
         }}
       />
+          
     </View>
   );
 };
@@ -277,7 +355,7 @@ const LearningVideo = () => {
       const userData = await AsyncStorage.getItem('userData');
       const parsedData = JSON.parse(userData);
       const token = parsedData?.token;
-
+  
       const response = await axios.get(
         `https://api.scaleupapp.club/api/content/allcontent`,
         {
@@ -288,21 +366,25 @@ const LearningVideo = () => {
             : {},
         },
       );
-
+  
       const videoContent = response.data.content
         .filter(item => item.contentURL?.toLowerCase().includes('.mp4'))
         .map(video => ({
           ...video,
         }));
-
+  
       setVideos(videoContent);
     } catch (error) {
       console.error('Error fetching videos:', error);
-      Alert.alert('Error', 'Failed to load videos');
+      showToast({
+        text: 'Failed to load videos',
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
   };
+  
 
   const onDimensionsLoad = (data, videoId) => {
     const {width, height} = data.naturalSize;

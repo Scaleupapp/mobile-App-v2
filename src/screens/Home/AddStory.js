@@ -15,12 +15,14 @@ import {nw, nh} from '../../helper/scales';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getProfile} from '../../services/apiService';
+import { useToast } from '../../components/CustomToast';
 
 export const AddStory = ({onStoryAdded}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+      const { showToast } = useToast();
 
   // Effect to fetch user profile data when component mounts
   useEffect(() => {
@@ -39,95 +41,115 @@ export const AddStory = ({onStoryAdded}) => {
     }
   };
 
-  // Open camera for capturing media
-  const openCamera = async () => {
-    if (!profileData?.id) {
-      Alert.alert('Login Required', 'Please login to add stories');
-      return;
-    }
-
-    setModalVisible(false);
-    const result = await launchCamera({
-      mediaType: 'mixed',
-      videoQuality: 'high',
-      durationLimit: 60,
+// Open camera for capturing media
+const openCamera = async () => {
+  if (!profileData?.id) {
+    showToast({
+      text: 'Please login to add stories',
+      type: 'error',
     });
+    return;
+  }
 
-    handleMedia(result);
-  };
+  setModalVisible(false);
+  const result = await launchCamera({
+    mediaType: 'mixed',
+    videoQuality: 'high',
+    durationLimit: 60,
+  });
 
-  // Open gallery for selecting media
-  const openGallery = async () => {
-    if (!profileData?.id) {
-      Alert.alert('Login Required', 'Please login to add stories');
-      return;
-    }
+  handleMedia(result);
+};
 
-    setModalVisible(false);
-    const result = await launchImageLibrary({
-      mediaType: 'mixed',
+// Open gallery for selecting media
+const openGallery = async () => {
+  if (!profileData?.id) {
+    showToast({
+      text: 'Please login to add stories',
+      type: 'error',
     });
-    handleMedia(result);
-  };
+    return;
+  }
 
-  // Handle selected or captured media
-  const handleMedia = async result => {
-    if (result.assets && result.assets.length > 0) {
-      const asset = result.assets[0];
+  setModalVisible(false);
+  const result = await launchImageLibrary({
+    mediaType: 'mixed',
+  });
 
-      try {
-        setIsUploading(true);
-        setUploadProgress(0);
-        // Get fresh user data from AsyncStorage
-        const userData = await AsyncStorage.getItem('userData');
-        const parsedUser = JSON.parse(userData);
+  handleMedia(result);
+};
 
-        // Prepare the media data for upload
-        const formData = new FormData();
-        formData.append('file', {
-          uri: asset.uri,
-          name: asset.fileName || 'media', // Fallback name
-          type: asset.type || 'image/jpeg',
-        });
-        formData.append('userId', profileData.id);
-        formData.append(
-          'type',
-          asset.type.includes('video') ? 'video' : 'image',
-        );
+// Handle selected or captured media
+const handleMedia = async (result) => {
+  if (result.assets && result.assets.length > 0) {
+    const asset = result.assets[0];
 
-        // Make the API request with authentication header and progress tracking
-        const response = await axios.post(
-          'https://api.scaleupapp.club/api/stories',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${parsedUser?.token}`,
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(percentCompleted);
-            },
+    try {
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // Get fresh user data from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const parsedUser = JSON.parse(userData);
+
+      // Prepare the media data for upload
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: asset.fileName || 'media', // Fallback name
+        type: asset.type || 'image/jpeg',
+      });
+      formData.append('userId', profileData.id);
+      formData.append(
+        'type',
+        asset.type.includes('video') ? 'video' : 'image',
+      );
+
+      // Make the API request with authentication header and progress tracking
+      const response = await axios.post(
+        'https://api.scaleupapp.club/api/stories',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${parsedUser?.token}`,
           },
-        );
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(percentCompleted);
+          },
+        },
+      );
 
-        Alert.alert('Success', 'Story added successfully');
-        if (onStoryAdded) onStoryAdded();
-      } catch (error) {
-        console.error('Full Error Object:', JSON.stringify(error, null, 2));
-        console.error('Error Response:', error.response?.data);
-        console.error('Error Status:', error.response?.status);
-        Alert.alert('Error', `Failed to upload story: ${error.message}`);
-      } finally {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }
-    } else {
-      Alert.alert('Error', 'No media selected');
+      showToast({
+        text: 'Story added successfully',
+        type: 'success',
+      });
+
+      if (onStoryAdded) onStoryAdded();
+    } catch (error) {
+      console.error('Full Error Object:', JSON.stringify(error, null, 2));
+      console.error('Error Response:', error.response?.data);
+      console.error('Error Status:', error.response?.status);
+
+      showToast({
+        text: `Failed to upload story: ${error.message}`,
+        type: 'error',
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
-  };
+  } else {
+    showToast({
+      text: 'No media selected',
+      type: 'error',
+    });
+  }
+};
+
 
   return (
     <View>

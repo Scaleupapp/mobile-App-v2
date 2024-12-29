@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import {COLORS} from '../helper/colors';
 import {icons} from '../assets/icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
 
 import Entypo from 'react-native-vector-icons/Entypo';
 import Text from './Text';
@@ -57,13 +59,13 @@ const MainHeader = () => {
               navigation.navigate(Routes.MyProfile)
             }
           /> */}
-          <Icon
-            type="font-awesome"
-            name="bookmark"
-            color={COLORS.whiteFFFFFF}
-            size={nh(24)}
-            onPress={() => navigation.navigate(Routes.MyPlaylist)}
-          />
+          <Ionicons
+  name="list-outline"
+  color={COLORS.whiteFFFFFF}
+  size={nh(30)}
+  onPress={() => navigation.navigate(Routes.MyPlaylist)}
+/>
+
         </View>
       </View>
     </View>

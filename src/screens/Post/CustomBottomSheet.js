@@ -209,7 +209,7 @@ const CommentBottomSheetModal = forwardRef(
   ({postId, comments = [], setComments}, ref) => {
     const snapPoints = useMemo(() => [isAndroid ? '68%' : '100%'], []);
     const userData = useSelector(state => state?.userData);
-    console.log('🚀 ~ userData:', userData?.id);
+    // console.log('🚀 ~ userData:', userData?.id);
     const [text, setText] = useState('');
     const [selectedComment, setSelectedComment] = useState({
       parentCommentId: null,

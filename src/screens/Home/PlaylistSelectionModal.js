@@ -17,6 +17,7 @@ import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
 import Icon from '../../helper/icon';
 import {getProfile} from '../../services/apiService';
+import { useToast } from '../../components/CustomToast';
 
 const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   const [playlists, setPlaylists] = useState([]);
@@ -24,6 +25,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     getProfileData();
@@ -60,7 +62,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
 
   const handleCreateNewPlaylist = async () => {
     if (!newPlaylistName.trim() || !profileData?.id) return;
-
+  
     try {
       const response = await axios.post(
         'https://api.scaleupapp.club/api/playlists/create',
@@ -69,24 +71,29 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
           playlistName: newPlaylistName,
         },
       );
-
+  
       // Immediately add the post to the new playlist
       await addPostToPlaylist(response.data._id);
-
+  
       // Reset states
       setNewPlaylistName('');
       setShowNewPlaylistInput(false);
+      showToast({
+        text: 'Playlist created successfully!',
+        type: 'success',
+      });
     } catch (error) {
       console.error('Failed to create playlist:', error);
-      Alert.alert('Error', 'Failed to create playlist. Please try again.', [
-        {text: 'OK', style: 'cancel'},
-      ]);
+      showToast({
+        text: 'Failed to create playlist. Please try again.',
+        type: 'error',
+      });
     }
   };
-
-  const addPostToPlaylist = async playlistId => {
+  
+  const addPostToPlaylist = async (playlistId) => {
     if (!profileData?.id) return;
-
+  
     try {
       await axios.post(
         'https://api.scaleupapp.club/api/playlists/add-to-playlist',
@@ -96,26 +103,30 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
           postId,
         },
       );
-
+  
+      showToast({
+        text: 'Post added to playlist successfully!',
+        type: 'success',
+      });
+  
       onPostAdded();
       onClose();
     } catch (error) {
       if (error.response && error.response.status === 400) {
-        Alert.alert(
-          'Duplicate Post',
-          'This post is already present in the playlist.',
-          [{text: 'OK', style: 'cancel'}],
-        );
+        showToast({
+          text: 'This post is already present in the playlist.',
+          type: 'info',
+        });
       } else {
         console.error('Failed to add post to playlist:', error);
-        Alert.alert(
-          'Error',
-          'An error occurred while adding the post to the playlist.',
-          [{text: 'OK', style: 'cancel'}],
-        );
+        showToast({
+          text: 'An error occurred while adding the post to the playlist.',
+          type: 'error',
+        });
       }
     }
   };
+  
 
   const renderContent = () => {
     if (loading) {
