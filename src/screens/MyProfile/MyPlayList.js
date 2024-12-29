@@ -32,6 +32,7 @@ import PlaylistCommentsModal from './PlaylistCommentsModal';
 import VideoPlayerModal from './VideoPlayerModal';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import PlaylistSearch from './PlaylistSearch';
+import PlaylistInfoModal from './PlaylistInfoModal';
 
 
 const MyPlaylists = ({navigation}) => {
@@ -56,6 +57,8 @@ const MyPlaylists = ({navigation}) => {
   const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] = useState(false);
   const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
   const [filteredPublicPlaylists, setFilteredPublicPlaylists] = useState([]);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
   // User Authentication State
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
@@ -79,6 +82,17 @@ const MyPlaylists = ({navigation}) => {
 
     initializeAuth();
   }, []);
+
+  const openInfoModal = (playlist, e) => {
+    e?.stopPropagation();
+    setSelectedPlaylistForInfo(playlist);
+    setIsInfoModalVisible(true);
+  };
+  
+  const closeInfoModal = () => {
+    setIsInfoModalVisible(false);
+    setSelectedPlaylistForInfo(null);
+  };
 
   const fetchUsername = async userId => {
     try {
@@ -820,24 +834,33 @@ const handleVideoEnd = async () => {
             </Text>
           </View>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            {/* <ProgressCircle progress={progress} style={{marginRight: 8}} /> */}
-            <TouchableOpacity
-              onPress={() => openCommentsModal(playlist)}
-              style={{marginRight: 4}}>
-              <Icon
-                type="ionicon"
-                name="chatbubble-ellipses-outline"
-                size={28}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <Icon
-              type="ionicon"
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color={COLORS.blue043142}
-            />
-          </View>
+  <TouchableOpacity
+    onPress={() => openCommentsModal(playlist)}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="chatbubble-ellipses-outline"
+      size={28}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <TouchableOpacity
+    onPress={(e) => openInfoModal(playlist, e)}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="information-circle-outline"
+      size={28}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <Icon
+    type="ionicon"
+    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+    size={24}
+    color={COLORS.blue043142}
+  />
+</View>
         </TouchableOpacity>
 
         {isExpanded && (
@@ -1055,27 +1078,40 @@ const handleVideoEnd = async () => {
             </Text>
           </View>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <ProgressCircle progress={progress} style={{marginRight: 8}} />
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                openPublicPlaylistCommentsModal(playlist);
-              }}
-              style={{marginRight: 8}}>
-              <Icon
-                type="ionicon"
-                name="chatbubble-ellipses-outline"
-                size={24}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <Icon
-              type="ionicon"
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color={COLORS.blue043142}
-            />
-          </View>
+  <ProgressCircle progress={progress} style={{marginRight: 8}} />
+  <TouchableOpacity
+    onPress={(e) => {
+      e.stopPropagation();
+      openPublicPlaylistCommentsModal(playlist);
+    }}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="chatbubble-ellipses-outline"
+      size={24}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <TouchableOpacity
+    onPress={(e) => {
+      e.stopPropagation();
+      openInfoModal(playlist, e);
+    }}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="information-circle-outline"
+      size={24}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <Icon
+    type="ionicon"
+    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+    size={24}
+    color={COLORS.blue043142}
+  />
+</View>
         </TouchableOpacity>
   
         {isExpanded && publicPlaylistPosts && (
@@ -1280,6 +1316,11 @@ const renderPublicPlaylistItem = useCallback((playlist) => {
         isPublicPlaylist={true} // Add a flag to differentiate
         onClose={() => setIsPublicCommentsModalVisible(false)}
       />
+      <PlaylistInfoModal 
+  visible={isInfoModalVisible}
+  onClose={closeInfoModal}
+  playlist={selectedPlaylistForInfo}
+/>
       {/* New Components */}
       {/* <PublicPlaylistsModal />
     <PublicPlaylistPostsModal /> */}

@@ -7,10 +7,8 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {COLORS} from '../../helper/colors';
@@ -22,8 +20,13 @@ import { useToast } from '../../components/CustomToast';
 const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [newPlaylistName, setNewPlaylistName] = useState('');
-  const [showNewPlaylistInput, setShowNewPlaylistInput] = useState(false);
+  const [newPlaylist, setNewPlaylist] = useState({
+    playlistName: '',
+    description: '',
+    visibility: 'public',
+    relatedTopics: '',
+  });
+  const [showNewPlaylistForm, setShowNewPlaylistForm] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const { showToast } = useToast();
 
@@ -40,7 +43,6 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   const getProfileData = async () => {
     try {
       let res = await getProfile('');
-      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -61,23 +63,30 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   };
 
   const handleCreateNewPlaylist = async () => {
-    if (!newPlaylistName.trim() || !profileData?.id) return;
+    if (!newPlaylist.playlistName.trim() || !profileData?.id) return;
   
     try {
       const response = await axios.post(
         'https://api.scaleupapp.club/api/playlists/create',
         {
           userId: profileData.id,
-          playlistName: newPlaylistName,
+          playlistName: newPlaylist.playlistName,
+          description: newPlaylist.description,
+          visibility: newPlaylist.visibility,
+          relatedTopics: newPlaylist.relatedTopics.split(',').map(topic => topic.trim()),
         },
       );
   
       // Immediately add the post to the new playlist
       await addPostToPlaylist(response.data._id);
   
-      // Reset states
-      setNewPlaylistName('');
-      setShowNewPlaylistInput(false);
+      setNewPlaylist({
+        playlistName: '',
+        description: '',
+        visibility: 'public',
+        relatedTopics: '',
+      });
+      setShowNewPlaylistForm(false);
       showToast({
         text: 'Playlist created successfully!',
         type: 'success',
@@ -127,6 +136,60 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
     }
   };
   
+  const renderNewPlaylistForm = () => (
+    <View style={styles.formContainer}>
+      <TextInput
+        placeholder="Playlist name"
+        value={newPlaylist.playlistName}
+        onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, playlistName: text }))}
+        style={styles.input}
+        placeholderTextColor={COLORS.grey999999}
+      />
+      <TextInput
+        placeholder="Description"
+        value={newPlaylist.description}
+        onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, description: text }))}
+        style={[styles.input, styles.textArea]}
+        multiline
+        placeholderTextColor={COLORS.grey999999}
+      />
+      <TextInput
+        placeholder="Related topics (comma-separated)"
+        value={newPlaylist.relatedTopics}
+        onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, relatedTopics: text }))}
+        style={styles.input}
+        placeholderTextColor={COLORS.grey999999}
+      />
+      <View style={styles.visibilityContainer}>
+        <Text variant="medium14" color={COLORS.blue043142}>Visibility:</Text>
+        <TouchableOpacity 
+          style={[
+            styles.visibilityButton,
+            newPlaylist.visibility === 'public' && styles.visibilityButtonActive
+          ]}
+          onPress={() => setNewPlaylist(prev => ({ ...prev, visibility: 'public' }))}>
+          <Text variant="medium14" color={newPlaylist.visibility === 'public' ? 'white' : COLORS.blue043142}>
+            Public
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            styles.visibilityButton,
+            newPlaylist.visibility === 'private' && styles.visibilityButtonActive
+          ]}
+          onPress={() => setNewPlaylist(prev => ({ ...prev, visibility: 'private' }))}>
+          <Text variant="medium14" color={newPlaylist.visibility === 'private' ? 'white' : COLORS.blue043142}>
+            Private
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <Button
+        text="Create"
+        onPress={handleCreateNewPlaylist}
+        width={nw(100)}
+      />
+    </View>
+  );
 
   const renderContent = () => {
     if (loading) {
@@ -154,24 +217,12 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
           ))}
         </ScrollView>
 
-        {showNewPlaylistInput ? (
-          <View style={styles.newPlaylistContainer}>
-            <TextInput
-              placeholder="Enter playlist name"
-              value={newPlaylistName}
-              onChangeText={setNewPlaylistName}
-              style={styles.input}
-            />
-            <Button
-              text="Create"
-              onPress={handleCreateNewPlaylist}
-              width={nw(100)}
-            />
-          </View>
+        {showNewPlaylistForm ? (
+          renderNewPlaylistForm()
         ) : (
           <TouchableOpacity
             style={styles.createPlaylistButton}
-            onPress={() => setShowNewPlaylistInput(true)}>
+            onPress={() => setShowNewPlaylistForm(true)}>
             <Icon
               type="feather"
               name="plus"
@@ -247,11 +298,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
+    gap: 10,
   },
-  newPlaylistContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 15,
+  formContainer: {
+    padding: 15,
   },
   input: {
     flex: 1,
@@ -259,8 +309,30 @@ const styles = StyleSheet.create({
     borderColor: COLORS.grey999999,
     borderRadius: 10,
     padding: 10,
-    marginRight: 10,
-    color: 'black', // Added to set the text color to black
+    marginBottom: 15,
+    color: COLORS.blue043142,
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  visibilityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    gap: 10,
+  },
+  visibilityButton: {
+    padding: 8,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: COLORS.grey999999,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  visibilityButtonActive: {
+    backgroundColor: COLORS.blue043142,
+    borderColor: COLORS.blue043142,
   },
 });
 

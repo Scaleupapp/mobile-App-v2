@@ -185,7 +185,7 @@ const Login = ({navigation}) => {
             phoneNumber: state.mobileNumber,
             userOTP: state.otp,
           });
-          showToast({type: 'success', title: data?.message});
+          showToast({type: 'success', title: 'OTP Sent Successfully'});
           const stringifiedUserData = JSON.stringify(data);
 
           await AsyncStorage.setItem('userData', stringifiedUserData);
@@ -339,14 +339,14 @@ const Login = ({navigation}) => {
             onPress={loginUser}
           />
           <SocialLogin navigation={navigation} />
-          {phoneNumberData?.loginOtp ? (
-            <View
-              style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
-              <Text style={{color: 'red', fontSize: 20}}>
-                test otp: {phoneNumberData?.loginOtp}
-              </Text>
-            </View>
-          ) : null}
+          {/* {phoneNumberData?.loginOtp ? (
+            // <View
+            //   style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
+            //   <Text style={{color: 'red', fontSize: 20}}>
+            //     test otp: {phoneNumberData?.loginOtp}
+            //   </Text>
+            // </View>
+          ) : null} */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don’t have an account! </Text>
             <RNText
