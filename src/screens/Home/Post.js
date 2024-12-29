@@ -246,7 +246,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       ) : null}
       {item?.contentType == 'Video' && item?.contentURL ? (
         <Pressable
-          onPress={() => setIsPlaying(index)}
+          onPress={() => imageModalRef.current?.present()}
           style={{
             marginTop: nh(10),
             borderRadius: nh(12),
@@ -277,8 +277,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             </View>
           )}
           <Video
-            paused={isPlaying != index}
-            controls
+            paused={true}
+            controls={false}
             onLoad={onLoad}
             // source={{uri: convertToProxyURL(item?.contentURL)}}
             source={{uri: item?.contentURL}}
@@ -429,7 +429,11 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         comments={comments}
         setComments={setComments}
       />
-      <ImageModal ref={imageModalRef} imageUrl={item?.contentURL} />
+      <ImageModal
+        ref={imageModalRef}
+        type={item?.contentType}
+        URL={item?.contentURL}
+      />
     </View>
   );
 };

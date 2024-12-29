@@ -55,6 +55,8 @@ const Routes = {
   ChangePassword: 'ChangePassword',
   Search: 'Search',
   OtherProfile: 'OtherProfile',
+  HelpScreen: 'HelpScreen',
+  Terms: 'Terms',
 };
 
 export default Routes;

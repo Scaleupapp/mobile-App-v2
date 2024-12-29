@@ -35,10 +35,10 @@ const MenuScreen = ({navigation, route}) => {
     //   title: 'Achievements',
     //   nav: '',
     // },
-    // {
-    //   title: 'Help Centre',
-    //   nav: '',
-    // },
+    {
+      title: 'Help Centre',
+      nav: Routes.HelpScreen,
+    },
     // {
     //   title: 'Report an Issue',
     //   nav: '',

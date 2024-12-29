@@ -51,6 +51,8 @@ import {COLORS} from './helper/colors';
 import {APP_FONTS} from './assets/fonts';
 import Text from './components/Text';
 import Search from './screens/Search/Search';
+import HelpScreen from './screens/Menuscreen/HelpCentre';
+import Terms from './screens/Menuscreen/HelpCentre/Terms';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -390,6 +392,16 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.ChangePassword}
         component={ChangePassword}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.HelpScreen}
+        component={HelpScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.Terms}
+        component={Terms}
         options={{headerShown: false}}
       />
     </Stack.Navigator>
