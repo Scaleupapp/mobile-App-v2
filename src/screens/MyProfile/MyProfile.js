@@ -23,19 +23,20 @@ import {getProfile, getProfiledetails} from '../../services/apiService';
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  console.log('🚀 ~ MyProfile ~ profile:', userData);
+  // console.log('🚀 ~ MyProfile ~ profile:', userData);
   // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
-  let type = route?.params?.type ?? 'user';
+  let type = 'user';
 
   useEffect(() => {
     getprofiledetail();
-  }, []);
+  }, [route?.params?.id]);
   const getprofiledetail = async () => {
     try {
       let resp = await getProfiledetails(route?.params?.id ?? userData?.id);
 
       setProfile(resp?.data);
+      console.log('🚀 ~ getprofiledetail ~ resp?.data:', resp?.data);
     } catch (error) {
       console.log('🚀 ~ getprofiledetails ~ error:', error);
     }
@@ -104,7 +105,7 @@ const MyProfile = ({navigation, route}) => {
               variant="medium12"
               color={COLORS.grey999999}
               style={{textAlign: 'center', marginBottom: nh(20)}}>
-              {profile?.bio?.bioAbout}
+              {profile?.bioAbout}
             </Text>
             <View
               style={{
@@ -112,7 +113,7 @@ const MyProfile = ({navigation, route}) => {
                 width: '100%',
                 justifyContent: 'center',
               }}>
-              {profile?.topicsOfInterest?.map(u => (
+              {profile?.bioInterests?.map(u => (
                 <View style={styles.yellowview}>
                   <Text variant="medium12" color={COLORS.blue043142}>
                     {u}
@@ -130,7 +131,7 @@ const MyProfile = ({navigation, route}) => {
               }}>
               <Pressable style={{alignItems: 'center'}}>
                 <Text variant="bold20" color={COLORS.blue043142}>
-                  {profile?.contentCount ?? ''}
+                  {profile?.totalPosts ?? ''}
                 </Text>
                 <Text variant="medium16" color={COLORS.blue043142}>
                   posts
