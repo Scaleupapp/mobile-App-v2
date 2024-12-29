@@ -54,7 +54,7 @@ const MainHeader = () => {
             size={nh(24)}
             style={{marginRight: nw(14)}}
             onPress={() =>
-              navigation.navigate(Routes.MyProfile, {type: 'user'})
+              navigation.navigate(Routes.MyProfile)
             }
           /> */}
           <Icon

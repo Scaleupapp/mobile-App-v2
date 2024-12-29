@@ -24,11 +24,10 @@ import {icons} from '../../assets/icons';
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
-  console.log('🚀 ~ MyProfile ~ profile:', JSON.stringify(profile));
   const [visible, setVisible] = useState(false);
   // console.log('🚀 ~ MyProfile ~ userReducer:', userData);
   // const {username, firstname} = userReducer;
-  let type = route?.params?.type ?? 'user';
+  let type = route?.params?.id ? 'other' : 'user';
 
   useEffect(() => {
     getprofiledetails();
@@ -63,7 +62,7 @@ const MyProfile = ({navigation, route}) => {
       <Header
         title={type == 'user' ? 'My Profile' : profile?.username ?? ''}
         // backIcon={icons.backArrow} // Provide your back arrow icon
-        rightIcon={true} // Provide your right icon
+        rightIcon={route?.params?.id ? true : false} // Provide your right icon
         // onBackPress={handleBackPress}
         onRightIconPress={() => setVisible(!visible)}
       />

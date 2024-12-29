@@ -307,7 +307,7 @@ export const RootNavigator = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
-        name={Routes.MyProfile}
+        name={Routes.OtherProfile}
         component={MyProfile}
         options={{headerShown: false}}
       />

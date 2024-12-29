@@ -194,7 +194,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         <Pressable
           style={{flexDirection: 'row', alignItems: 'center'}}
           onPress={() =>
-            navigationRef.navigate(Routes.MyProfile, {
+            navigationRef.navigate(Routes.OtherProfile, {
               type: 'other',
               id: item?.userId?._id,
             })

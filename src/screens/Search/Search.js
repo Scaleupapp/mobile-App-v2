@@ -60,8 +60,7 @@ const Search = () => {
   );
 
   const setUserData = item => {
-    navigationRef.navigate(Routes.MyProfile, {
-      type: 'other',
+    navigationRef.navigate(Routes.OtherProfile, {
       id: item,
     });
   };
