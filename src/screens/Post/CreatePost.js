@@ -22,6 +22,7 @@ import {useToast} from '../../components/CustomToast';
 import {getProfile} from '../../services/apiService';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
+import {compressImage, compressVideo} from '../../helper/commonFunctions';
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
@@ -102,12 +103,17 @@ const CreatePost = ({navigation}) => {
 
       if (result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        setFile(asset);
 
         // Determine content type
         if (asset.type && asset.type.toLowerCase().includes('video')) {
           setContentType('Video');
+          let compress_video = await compressVideo(asset?.uri);
+
+          setFile({...asset, uri: compress_video});
         } else {
+          let compress_image = await compressImage(asset?.uri);
+
+          setFile({...asset, uri: compress_image});
           setContentType('Image');
         }
       }
@@ -178,9 +184,9 @@ const CreatePost = ({navigation}) => {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`,
           },
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: progressEvent => {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
+              (progressEvent.loaded * 100) / progressEvent.total,
             );
             setUploadProgress(percentCompleted);
           },
@@ -204,18 +210,20 @@ const CreatePost = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
       <Header title="New Post" />
 
       {/* ScrollView that fills screen, becomes scrollable if content > screen height */}
       <ScrollView
-        style={{ flex: 1 }}
+        style={{flex: 1}}
         contentContainerStyle={{
           flexGrow: 1,
           minHeight: '100%',
         }}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.layer1}>
           <View style={styles.layer2}>
             <CustomTextInput
@@ -251,7 +259,7 @@ const CreatePost = ({navigation}) => {
                 onPress={() => setModalVisible(true)}
                 width={nw(96)}
                 height={nh(35)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
               />
 
               {/* Show filename if selected */}
@@ -266,22 +274,27 @@ const CreatePost = ({navigation}) => {
                 <View style={styles.previewContainer}>
                   {contentType === 'Image' ? (
                     <Image
-                      source={{ uri: file.uri }}
+                      source={{uri: file.uri}}
                       style={styles.previewImage}
                       resizeMode="cover"
                     />
                   ) : (
                     <View style={styles.videoPreviewBox}>
-                      <Icon name="videocam" size={20} color={COLORS.grey999999} />
-                      <Text style={styles.videoPreviewText}>Video Selected</Text>
+                      <Icon
+                        name="videocam"
+                        size={20}
+                        color={COLORS.grey999999}
+                      />
+                      <Text style={styles.videoPreviewText}>
+                        Video Selected
+                      </Text>
                     </View>
                   )}
 
                   {/* Cross/Close button to remove file */}
                   <TouchableOpacity
                     style={styles.closeIconContainer}
-                    onPress={removeFile}
-                  >
+                    onPress={removeFile}>
                     <Icon name="close-circle" size={24} color="red" />
                   </TouchableOpacity>
                 </View>
@@ -291,7 +304,9 @@ const CreatePost = ({navigation}) => {
             {/* Upload Progress */}
             {isUploading && (
               <View style={styles.progressContainer}>
-                <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                <View
+                  style={[styles.progressBar, {width: `${uploadProgress}%`}]}
+                />
                 <Text style={styles.progressText}>{`${uploadProgress}%`}</Text>
               </View>
             )}
@@ -303,7 +318,7 @@ const CreatePost = ({navigation}) => {
                 text="Cancel"
                 width={nw(85)}
                 height={nh(40)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => navigation.goBack()}
                 disabled={isUploading}
               />
@@ -311,7 +326,7 @@ const CreatePost = ({navigation}) => {
                 text="Publish"
                 width={nw(85)}
                 height={nh(40)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => handlePost(false)}
                 disabled={isUploading}
               />
@@ -319,7 +334,7 @@ const CreatePost = ({navigation}) => {
                 text="Save Draft"
                 width={nw(85)}
                 height={nh(40)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => handlePost(true)}
                 disabled={isUploading}
               />
@@ -333,8 +348,7 @@ const CreatePost = ({navigation}) => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Choose Media</Text>
@@ -342,8 +356,7 @@ const CreatePost = ({navigation}) => {
             <TouchableOpacity
               style={styles.modalOption}
               onPress={openGallery}
-              disabled={isUploading}
-            >
+              disabled={isUploading}>
               <Icon name="image" size={24} color={COLORS.blue043142} />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
@@ -351,8 +364,7 @@ const CreatePost = ({navigation}) => {
             <TouchableOpacity
               style={styles.modalCancelOption}
               onPress={() => setModalVisible(false)}
-              disabled={isUploading}
-            >
+              disabled={isUploading}>
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>

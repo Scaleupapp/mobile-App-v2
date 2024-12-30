@@ -3,6 +3,7 @@ import {navigationRef} from '../../App';
 import {actions} from '../redux/reducers';
 import reduxStore from '../redux/store';
 import Routes from './routes';
+import Compressor from 'react-native-compressor';
 
 export const logoutUser = async () => {
   try {
@@ -87,4 +88,39 @@ export const timeAgo = dateString => {
   }
 
   return 'just now';
+};
+
+export const compressImage = async uri => {
+  console.log(uri, 'uri======>');
+  try {
+    const compressedImage = await Compressor.Image.compress(uri, {
+      compressionMethod: 'manual',
+    });
+    return compressedImage;
+  } catch (error) {
+    console.error('Error compressing image:', error);
+  }
+};
+
+export const compressVideo = async uri => {
+  console.log(uri, 'uri======>');
+  try {
+    const compressedVideo = await Compressor.Video.compress(
+      uri,
+      {
+        //compressionMethod: 'manual',
+        compressionMethod: 'auto', // Use auto compression method for better quality
+        maxSize: 1920, // Max resolution to keep quality high
+        quality: 'high', // Set quality to high
+        bitrate: 2000000, // Set bitrate to 2Mbps
+      },
+      progress => {
+        console.log(progress, 'progress====>');
+      },
+    );
+
+    return compressedVideo;
+  } catch (error) {
+    console.error('Error compressing image:', error);
+  }
 };
