@@ -160,7 +160,7 @@ const MyProfile = ({navigation, route}) => {
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   renderItem={({item}) => {
-                    console.log('🚀 ~ MyProfile ~ u:', item);
+                    // console.log('🚀 ~ MyProfile ~ u:', item);
                     return (
                       <View style={styles.yellowview}>
                         <Text variant="medium12" color={COLORS.blue043142}>

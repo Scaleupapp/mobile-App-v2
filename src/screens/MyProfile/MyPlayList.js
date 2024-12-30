@@ -31,6 +31,8 @@ import ProgressCircle from '../../components/ProgressCircle';
 import PlaylistCommentsModal from './PlaylistCommentsModal';
 import VideoPlayerModal from './VideoPlayerModal';
 import DraggableFlatList from 'react-native-draggable-flatlist';
+import PlaylistSearch from './PlaylistSearch';
+import PlaylistInfoModal from './PlaylistInfoModal';
 
 
 const MyPlaylists = ({navigation}) => {
@@ -54,7 +56,9 @@ const MyPlaylists = ({navigation}) => {
   const [selectedPlaylistForComments, setSelectedPlaylistForComments] = useState(null);
   const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] = useState(false);
   const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
-  
+  const [filteredPublicPlaylists, setFilteredPublicPlaylists] = useState([]);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
   // User Authentication State
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
@@ -78,6 +82,17 @@ const MyPlaylists = ({navigation}) => {
 
     initializeAuth();
   }, []);
+
+  const openInfoModal = (playlist, e) => {
+    e?.stopPropagation();
+    setSelectedPlaylistForInfo(playlist);
+    setIsInfoModalVisible(true);
+  };
+  
+  const closeInfoModal = () => {
+    setIsInfoModalVisible(false);
+    setSelectedPlaylistForInfo(null);
+  };
 
   const fetchUsername = async userId => {
     try {
@@ -308,7 +323,12 @@ const handleVideoEnd = async () => {
       const response = await axios.get(
         'https://api.scaleupapp.club/api/playlists/public',
       );
-      setPublicPlaylists(response.data);
+      const fetchedPlaylists = Array.isArray(response?.data) ? response?.data : [response?.data];
+      console.log("aaaaaaaaaaa",fetchedPlaylists);
+      setPublicPlaylists(fetchedPlaylists);
+      console.log("aaaaaaaaaaa",publicPlaylists);
+
+      setFilteredPublicPlaylists(fetchedPlaylists); // Initialize filtered playlists
       setIsPublicPlaylistsExpanded(true);
     } catch (error) {
       console.error('Failed to fetch public playlists:', error);
@@ -318,6 +338,16 @@ const handleVideoEnd = async () => {
       );
     }
   };
+  useEffect(() => {
+    if (publicPlaylists) {
+      console.log("Updated publicPlaylists:", publicPlaylists);
+    }
+  }, [publicPlaylists]);
+  useEffect(() => {
+    if (filteredPublicPlaylists) {
+      console.log("Updated filteredPublicPlaylists:", filteredPublicPlaylists);
+    }
+  }, [filteredPublicPlaylists]);
   
   const fetchPublicPlaylistDetails = async (playlistId) => {
     try {
@@ -804,24 +834,33 @@ const handleVideoEnd = async () => {
             </Text>
           </View>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            {/* <ProgressCircle progress={progress} style={{marginRight: 8}} /> */}
-            <TouchableOpacity
-              onPress={() => openCommentsModal(playlist)}
-              style={{marginRight: 4}}>
-              <Icon
-                type="ionicon"
-                name="chatbubble-ellipses-outline"
-                size={28}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <Icon
-              type="ionicon"
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color={COLORS.blue043142}
-            />
-          </View>
+  <TouchableOpacity
+    onPress={() => openCommentsModal(playlist)}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="chatbubble-ellipses-outline"
+      size={28}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <TouchableOpacity
+    onPress={(e) => openInfoModal(playlist, e)}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="information-circle-outline"
+      size={28}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <Icon
+    type="ionicon"
+    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+    size={24}
+    color={COLORS.blue043142}
+  />
+</View>
         </TouchableOpacity>
 
         {isExpanded && (
@@ -915,10 +954,10 @@ const handleVideoEnd = async () => {
 
   const togglePublicPlaylists = async () => {
     if (!isPublicPlaylistsExpanded) {
-      // If not expanded, fetch public playlists
-      await fetchPublicPlaylists();
+      const fetchedPlaylists = await fetchPublicPlaylists();
+      // setPublicPlaylists(fetchedPlaylists);
+      // setFilteredPublicPlaylists(fetchedPlaylists);
     }
-    // Toggle the expansion state
     setIsPublicPlaylistsExpanded(!isPublicPlaylistsExpanded);
   };
 
@@ -1039,27 +1078,40 @@ const handleVideoEnd = async () => {
             </Text>
           </View>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <ProgressCircle progress={progress} style={{marginRight: 8}} />
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                openPublicPlaylistCommentsModal(playlist);
-              }}
-              style={{marginRight: 8}}>
-              <Icon
-                type="ionicon"
-                name="chatbubble-ellipses-outline"
-                size={24}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <Icon
-              type="ionicon"
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color={COLORS.blue043142}
-            />
-          </View>
+  <ProgressCircle progress={progress} style={{marginRight: 8}} />
+  <TouchableOpacity
+    onPress={(e) => {
+      e.stopPropagation();
+      openPublicPlaylistCommentsModal(playlist);
+    }}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="chatbubble-ellipses-outline"
+      size={24}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <TouchableOpacity
+    onPress={(e) => {
+      e.stopPropagation();
+      openInfoModal(playlist, e);
+    }}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="information-circle-outline"
+      size={24}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <Icon
+    type="ionicon"
+    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+    size={24}
+    color={COLORS.blue043142}
+  />
+</View>
         </TouchableOpacity>
   
         {isExpanded && publicPlaylistPosts && (
@@ -1183,27 +1235,32 @@ const renderPublicPlaylistItem = useCallback((playlist) => {
               />
             </View>
             <Button
-              text={
-                isPublicPlaylistsExpanded
-                  ? 'Hide Public Playlists'
-                  : 'Public Playlists'
-              }
-              width={nw(163)}
-              textStyle={{fontSize: 14}}
-              onPress={togglePublicPlaylists}
-            />
+  text={isPublicPlaylistsExpanded ? 'Hide Public Playlists' : 'Public Playlists'}
+  width={nw(163)}
+  textStyle={{fontSize: 14}}
+  onPress={togglePublicPlaylists}
+/>
 
-            {isPublicPlaylistsExpanded && publicPlaylists.length > 0 ? (
-              <View>{publicPlaylists.map(renderPublicPlaylistItem)}</View>
-            ) : (
-              isPublicPlaylistsExpanded && (
-                <View style={styles.emptyState}>
-                  <Text variant="medium16" color={COLORS.grey999999}>
-                    No public playlists available
-                  </Text>
-                </View>
-              )
-            )}
+{isPublicPlaylistsExpanded && (
+  <>
+    <PlaylistSearch 
+      playlists={publicPlaylists}
+      onSearchResults={setFilteredPublicPlaylists}
+    />
+    
+    {filteredPublicPlaylists && filteredPublicPlaylists.length > 0 ? (
+      <View>
+        {filteredPublicPlaylists.map(renderPublicPlaylistItem)}
+      </View>
+    ) : (
+      <View style={styles.emptyState}>
+        <Text variant="medium16" color={COLORS.grey999999}>
+          No playlists found
+        </Text>
+      </View>
+    )}
+  </>
+)}
 
             <View
               style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -1259,6 +1316,11 @@ const renderPublicPlaylistItem = useCallback((playlist) => {
         isPublicPlaylist={true} // Add a flag to differentiate
         onClose={() => setIsPublicCommentsModalVisible(false)}
       />
+      <PlaylistInfoModal 
+  visible={isInfoModalVisible}
+  onClose={closeInfoModal}
+  playlist={selectedPlaylistForInfo}
+/>
       {/* New Components */}
       {/* <PublicPlaylistsModal />
     <PublicPlaylistPostsModal /> */}
@@ -1271,6 +1333,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.yellowF5BE00,
+  },
+  searchContainer: {
+    marginVertical: 10,
+    paddingHorizontal: 15,
+  },
+  searchInput: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.greyEEEEEE,
   },
   swipeActionContainer: {
     flexDirection: 'row',

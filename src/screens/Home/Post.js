@@ -29,6 +29,8 @@ import CommentBottomSheetModal from '../Post/CustomBottomSheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
+import SavedPostsModal from './SavedPostsModal';
+import { useToast } from '../../components/CustomToast';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [imageHeight, setImageHeight] = useState(250);
@@ -41,6 +43,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [isBookmarked, setIsBookmarked] = useState(item?.isSaved);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [isSavedModalVisible, setIsSavedModalVisible] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     getProfileData();
@@ -49,7 +53,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const getProfileData = async () => {
     try {
       let res = await getProfile('');
-      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -75,18 +79,6 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       console.log(error, 'eeee');
     }
   };
-
-  const saveHandler = async () => {
-    try {
-      setIsBookmarked(!isBookmarked);
-      const res = isSaved
-        ? await unsavePostAPI(item?._id)
-        : await savePostAPI(item?._id);
-    } catch (error) {
-      console.log(error, 'eeee');
-    }
-  };
-
   useEffect(() => {
     if (item?.contentType == 'Image' && item?.contentURL) {
       Image.getSize(item?.contentURL, (width, height) => {
@@ -97,36 +89,76 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     }
   }, [item?.contentType]);
 
+  const saveHandler = async () => {
+    try {
+      const token = profileData?.id;
+      
+      if (!token) {
+        showToast({
+          text: 'Please login to save posts',
+          type: 'error',
+        });
+        return;
+      }
+  
+      // Toggle bookmark state immediately for better UX
+      setIsBookmarked(!isBookmarked);
+  
+      // Make API call based on current state
+      if (isBookmarked) {
+        await unsavePostAPI(item?._id);
+      } else {
+        const res = await savePostAPI(item?._id);
+        
+        if (res.data.error) {
+          // Revert state if API call fails
+          setIsBookmarked(isBookmarked);
+          showToast({
+            text: res.data.error,
+            type: 'error',
+          });
+        }
+      }
+    } catch (error) {
+      // Revert state if API call fails
+      setIsBookmarked(isBookmarked);
+      showToast({
+        text: error?.response?.data?.error || 'Failed to save post',
+        type: 'error',
+      });
+    }
+  };
+  
   const handleBookmarkPress = () => {
     if (!profileData?.id) {
-      Alert.alert(
-        'Authentication Required',
-        'Please log in to bookmark posts',
-        [{text: 'OK', style: 'default'}],
-      );
+      showToast({
+        text: 'Please log in to bookmark posts',
+        type: 'error',
+      });
       return;
     }
-
+  
     // Check if the post belongs to the logged-in user
     if (item?.userId?._id !== profileData?.id) {
-      Alert.alert(
-        'Action Not Allowed',
-        'You can only bookmark your own video posts',
-        [{text: 'OK', style: 'default'}],
-      );
+      showToast({
+        text: 'You can only bookmark your own video posts',
+        type: 'error',
+      });
       return;
     }
-
+  
     // Check if it's a video post
     if (item?.contentType !== 'Video') {
-      Alert.alert('Action Not Allowed', 'Cannot add image to the playlist', [
-        {text: 'OK', style: 'default'},
-      ]);
+      showToast({
+        text: 'Cannot add image to the playlist',
+        type: 'error',
+      });
       return;
     }
-
+  
     setIsPlaylistModalVisible(true);
   };
+  
 
   const handleBookmark = async (userId, postId) => {
     try {
@@ -183,6 +215,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   };
 
   return (
+    
     <View
       key={index}
       style={{
@@ -223,6 +256,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             {item?.userId?.username}
           </Text>
         </Pressable>
+        <Pressable onPress={handleBookmarkPress}>
 
          <Icon
           type="entypo"
@@ -230,6 +264,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           size={21}
           color={COLORS.blue043142}
         /> 
+                </Pressable>
+
       </View>
 
       {item?.contentType == 'Image' && item?.contentURL ? (
@@ -434,8 +470,16 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         type={item?.contentType}
         URL={item?.contentURL}
       />
+
+      {/* <SavedPostsModal
+        // visible={isSavedModalVisible}
+        //onClose={() => setIsSavedModalVisible(false)}
+        currentPost={item}
+      /> */}
     </View>
+    
   );
+  
 };
 
 const styles = StyleSheet.create({

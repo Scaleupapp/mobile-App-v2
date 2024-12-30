@@ -48,6 +48,7 @@ export const API = {
   UNLIKEPOST: 'content/unlike',
   SAVE: 'content/save',
   UNSAVE: 'content/unsave',
+  SAVED_POSTS: 'content/saved-content',
   NOTIFICATION: 'content/notifications',
   INNERCIRCLE: 'users/inner-circle/requests',
   ACCEPTREQ: 'users/inner-circle/handle-request',
