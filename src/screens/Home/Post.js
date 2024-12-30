@@ -114,7 +114,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           // Revert state if API call fails
           setIsBookmarked(isBookmarked);
           showToast({
-            text: res.data.error,
+            title: res.data.error,
             type: 'error',
           });
         }
@@ -123,7 +123,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       // Revert state if API call fails
       setIsBookmarked(isBookmarked);
       showToast({
-        text: error?.response?.data?.error || 'Failed to save post',
+        title: error?.response?.data?.error || 'Failed to save post',
         type: 'error',
       });
     }
@@ -132,7 +132,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const handleBookmarkPress = () => {
     if (!profileData?.id) {
       showToast({
-        text: 'Please log in to bookmark posts',
+        title: 'Please log in to bookmark posts',
         type: 'error',
       });
       return;
@@ -141,7 +141,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     // Check if the post belongs to the logged-in user
     if (item?.userId?._id !== profileData?.id) {
       showToast({
-        text: 'You can only bookmark your own video posts',
+        title: 'You can only bookmark your own video posts',
         type: 'error',
       });
       return;
@@ -150,7 +150,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     // Check if it's a video post
     if (item?.contentType !== 'Video') {
       showToast({
-        text: 'Cannot add image to the playlist',
+        title: 'Cannot add image to the playlist',
         type: 'error',
       });
       return;
@@ -172,7 +172,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         Alert.alert(
           '',
           'Already in your playlist',
-          [{text: 'OK', style: 'default'}],
+          [{title: 'OK', style: 'default'}],
           {
             cancelable: true,
             onDismiss: () => {},
@@ -192,7 +192,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       Alert.alert(
         '',
         'Added to your playlist',
-        [{text: 'OK', style: 'default'}],
+        [{title: 'OK', style: 'default'}],
         {
           cancelable: true,
           onDismiss: () => {},
@@ -209,7 +209,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
 
       // Show error message if something goes wrong
       Alert.alert('Error', 'Failed to bookmark post', [
-        {text: 'OK', style: 'default'},
+        {title: 'OK', style: 'default'},
       ]);
     }
   };

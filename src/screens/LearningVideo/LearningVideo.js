@@ -102,7 +102,7 @@ const saveHandler = async () => {
 
     if (!token) {
       showToast({
-        text: 'Please login to save posts',
+        title: 'Please login to save posts',
         type: 'error',
       });
       return;
@@ -118,12 +118,12 @@ const saveHandler = async () => {
       if (res.data.error) {
         setIsBookmarked(false);
         showToast({
-          text: res.data.error,
+          title: res.data.error,
           type: 'error',
         });
       } else {
         showToast({
-          text: 'Post saved successfully',
+          title: 'Post saved successfully',
           type: 'success',
         });
       }
@@ -131,7 +131,7 @@ const saveHandler = async () => {
   } catch (error) {
     setIsBookmarked(isBookmarked); // Revert on error
     showToast({
-      text: error?.response?.data?.error || 'Failed to save post',
+      title: error?.response?.data?.error || 'Failed to save post',
       type: 'error',
     });
   } finally {
@@ -144,7 +144,7 @@ const handleBookmarkPress = () => {
 
   if (!profileData?.id) {
     showToast({
-      text: 'Please log in to bookmark posts',
+      title: 'Please log in to bookmark posts',
       type: 'error',
     });
     return;
@@ -153,7 +153,7 @@ const handleBookmarkPress = () => {
   // Check if the post belongs to the logged-in user
   if (item?.userId?._id !== profileData?.id) {
     showToast({
-      text: 'You can only bookmark your own video posts',
+      title: 'You can only bookmark your own video posts',
       type: 'error',
     });
     return;
