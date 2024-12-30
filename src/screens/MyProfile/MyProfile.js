@@ -32,6 +32,7 @@ import {FlatList} from 'react-native-gesture-handler';
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [profile, setProfile] = useState();
+  console.log('🚀 ~ MyProfile ~ profile:', profile);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [follow, setFollow] = useState(false);
@@ -103,11 +104,29 @@ const MyProfile = ({navigation, route}) => {
             <ScrollView nestedScrollEnabled>
               <Image source={images.profilebaground} style={styles.images} />
               {profile?.profilePicture ? (
-                <Image
-                  source={{uri: profile?.profilePicture}}
-                  style={styles.imagecircle}
-                  resizeMode="cover"
-                />
+                <View>
+                  <Image
+                    source={{uri: profile?.profilePicture}}
+                    style={styles.imagecircle}
+                    resizeMode="cover"
+                  />
+                  {profile?.role === 'SME' && (
+                    <Image
+                      resizeMode="cover"
+                      tintColor={'#F6BE00'}
+                      source={require('../../assets/icons/medal-star.png')}
+                      style={{
+                        height: 30,
+                        width: 30,
+                        // backgroundColor: 'white',
+                        // borderRadius: 9,
+                        position: 'absolute',
+                        right: DEVICE_WIDTH / 2 - nw(80),
+                        top: 20,
+                      }}
+                    />
+                  )}
+                </View>
               ) : (
                 <View
                   style={[
@@ -138,10 +157,19 @@ const MyProfile = ({navigation, route}) => {
               </Text>
 
               <Text
-                variant="medium16"
+                variant="medium14"
                 color={COLORS.grey777777}
-                style={{textAlign: 'center'}}>
-                {/* {profile} */}
+                style={{
+                  textAlign: 'center',
+                  backgroundColor: COLORS.blue043142 + 10,
+                  paddingHorizontal: 10, // Optional padding for better readability
+                  paddingVertical: 2,
+                  alignSelf: 'center',
+                  borderRadius: 8,
+                  marginBottom: 3,
+                }}>
+                {profile?.role != 'SME' &&
+                  profile?.badges[profile?.badges?.length - 1]}
               </Text>
               <Text
                 variant="medium12"
