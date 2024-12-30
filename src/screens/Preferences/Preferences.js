@@ -306,20 +306,20 @@ const Preferences = ({navigation, route}) => {
           )}
           {currentQuestion.type == 'textinput' && (
             <View>
-              <FlatList
-                data={words}
-                horizontal
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({item, index}) => (
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap', // Enables wrapping to the next line
+                  marginBottom: 10,
+                }}>
+                {words.map((item, index) => (
                   <View
+                    key={index.toString()}
                     style={{
                       padding: 10,
-                      marginVertical: 4,
-
+                      margin: 4, // Adds spacing between items
                       borderRadius: 8,
-                      marginRight: 10,
                       borderWidth: 1,
-                      marginBottom: 10,
                       flexDirection: 'row',
                       alignItems: 'center',
                     }}>
@@ -330,8 +330,9 @@ const Preferences = ({navigation, route}) => {
                       <Text style={styles.crossText}>✕</Text>
                     </TouchableOpacity>
                   </View>
-                )}
-              />
+                ))}
+              </View>
+
               <CustomTextInput
                 placeholder="Please specify"
                 errorMessage=""
