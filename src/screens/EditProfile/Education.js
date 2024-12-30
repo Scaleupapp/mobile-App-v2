@@ -47,59 +47,54 @@ const Education = ({navigation, route}) => {
     endDate: '',
   });
   const [errors, setErrors] = useState({});
+
   useEffect(() => {
     getEducationDetails();
   }, []);
+
+  // Fetch the user's education list
   const getEducationDetails = async () => {
     try {
       let res = await getEducation();
+      setEducation(res?.data?.educationInfo || []);
 
-      setEducation(res?.data?.educationInfo);
       if (res?.data?.educationInfo?.length > 0) {
         setSaved(true);
       }
     } catch (error) {
       setSaved(false);
       console.log(error, 'error from getEducationDetails');
-    } finally {
     }
-    console.log(
-      '🚀 ~ getEducationDetails ~ res?.data?.educationInfo:',
-      res?.data?.educationInfo,
-    );
   };
 
+  // Handle form input changes
   const handleInputChange = (field, value) => {
     setState({...state, [field]: value});
 
+    // Clear existing error for this field
     if (errors[field]) {
       setErrors({...errors, [field]: ''});
     }
   };
 
+  // Validate required fields
   const validateFields = () => {
     let isValid = true;
     const newErrors = {};
 
-    // Degree validation
     if (!state.degree) {
       newErrors.degree = 'Degree is required';
       isValid = false;
     }
-
-    // University validation
     if (!state.university) {
       newErrors.university = 'University is required';
       isValid = false;
     }
-
-    // Start Date validation
     if (!state.startDate) {
       newErrors.startDate = 'Start Date is required';
       isValid = false;
     }
-
-    // End Date validation
+    // If not currently pursuing, endDate is required
     if (!state.endDate && !isChecked) {
       newErrors.endDate = 'End Date is required';
       isValid = false;
@@ -108,37 +103,36 @@ const Education = ({navigation, route}) => {
     setErrors(newErrors);
     return isValid;
   };
-  console.log({edit});
+
+  // Save new or update existing education
   const saveEducationAPI = async () => {
     if (validateFields()) {
       let payload = {
-        degree: state?.degree,
-        university: state?.university,
-        startDate: state?.startDate,
-        endDate: state?.endDate,
+        degree: state.degree,
+        university: state.university,
+        startDate: state.startDate,
+        endDate: state.endDate,
         currentltPursuing: isChecked,
       };
       if (edit) payload.id = edit;
-      console.log({payload});
+
       try {
         const {data} = await saveEducation(payload);
-        console.log(data?.educationInfo, 'saved');
         getEducationDetails();
         setSaved(true);
         if (edit) setEdit(false);
-        setState({
-          degree: '',
-          university: '',
-          startDate: '',
-          endDate: '',
-        });
+
+        // Clear the form
+        setState({degree: '', university: '', startDate: '', endDate: ''});
         showToast({type: 'success', title: data?.message});
       } catch (error) {
-        console.log(error?.response?.data, 'errror');
+        console.log(error?.response?.data, 'error saving education');
       }
     }
   };
-  const onEdit = item => {
+
+  // Edit an existing entry
+  const onEdit = (item) => {
     setSaved(false);
     setEdit(item?._id);
     setState({
@@ -147,20 +141,23 @@ const Education = ({navigation, route}) => {
       startDate: item?.startDate,
       endDate: item?.endDate,
     });
+
+    // Pre-fill date pickers
     if (item?.startDate) {
-      const newDate = new Date(item?.startDate);
+      const newDate = new Date(item.startDate);
       const formattedDate = formatDate(newDate);
       setStartDate({show: false, date: newDate, format: formattedDate});
     }
     if (item?.endDate) {
-      const endDate = new Date(item?.endDate);
-      const formattedDate = formatDate(endDate);
-      setEndDate({show: false, date: endDate, format: formattedDate});
+      const eDate = new Date(item.endDate);
+      const formattedDate = formatDate(eDate);
+      setEndDate({show: false, date: eDate, format: formattedDate});
     }
     setIsChecked(item?.currentltPursuing);
   };
 
-  const onDelete = async item => {
+  // Delete an entry
+  const onDelete = async (item) => {
     try {
       const {data} = await deleteEducation(item?._id);
       showToast({type: 'success', title: data?.message});
@@ -172,17 +169,11 @@ const Education = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.yellowF5BE00}
-      />
-      <Header
-        title="Educational Info"
-        onBackPress={() => navigation.goBack()}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <Header title="Educational Info" onBackPress={() => navigation.goBack()} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
+          {/* Show the form if not 'saved' */}
           {!saved && (
             <>
               <View style={styles.input}>
@@ -191,7 +182,7 @@ const Education = ({navigation, route}) => {
                   label="Degree"
                   placeholder="Enter Degree"
                   value={state.degree}
-                  onChangeText={value => handleInputChange('degree', value)}
+                  onChangeText={(value) => handleInputChange('degree', value)}
                   errorMessage={errors.degree}
                 />
                 <CustomTextInput
@@ -199,10 +190,11 @@ const Education = ({navigation, route}) => {
                   label="College"
                   placeholder="Enter College Name"
                   value={state.university}
-                  onChangeText={value => handleInputChange('university', value)}
+                  onChangeText={(value) => handleInputChange('university', value)}
                   errorMessage={errors.university}
                 />
               </View>
+
               <View style={styles.input}>
                 <Pressable
                   style={{
@@ -211,12 +203,8 @@ const Education = ({navigation, route}) => {
                     width: '48%',
                     zIndex: 1,
                   }}
-                  onPress={() =>
-                    setStartDate({
-                      ...startDate,
-                      show: true,
-                    })
-                  }></Pressable>
+                  onPress={() => setStartDate({...startDate, show: true})}
+                />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
                   label="Start Year"
@@ -234,9 +222,8 @@ const Education = ({navigation, route}) => {
                     width: '48%',
                     zIndex: 1,
                   }}
-                  onPress={() =>
-                    setEndDate({...endDate, show: true})
-                  }></Pressable>
+                  onPress={() => setEndDate({...endDate, show: true})}
+                />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
                   label="End Year"
@@ -246,6 +233,8 @@ const Education = ({navigation, route}) => {
                   errorMessage={errors.endDate}
                 />
               </View>
+
+              {/* Month pickers for start/end date */}
               <MonthPickerComponent
                 pickerState={startDate}
                 onPickerStateChange={setStartDate}
@@ -258,6 +247,8 @@ const Education = ({navigation, route}) => {
                 field="endDate"
                 handleInputChange={handleInputChange}
               />
+
+              {/* Currently pursuing checkbox */}
               <View style={styles.checkboxContainer}>
                 <CheckBox
                   checkedIcon="check-box"
@@ -273,12 +264,15 @@ const Education = ({navigation, route}) => {
                   Currently pursuing
                 </Text>
               </View>
+
+              {/* Save button */}
               <View
                 style={{
                   marginTop: 30,
                   marginLeft: DEVICE_WIDTH - 105,
                   marginBottom: nh(100),
-                }}>
+                }}
+              >
                 <Button
                   text="Save"
                   width={nw(63)}
@@ -289,6 +283,8 @@ const Education = ({navigation, route}) => {
               </View>
             </>
           )}
+
+          {/* Show existing records if 'saved' is true */}
           {education.length > 0 && saved && (
             <>
               <View style={{marginBottom: nh(10), width: nw(96)}}>
@@ -304,18 +300,38 @@ const Education = ({navigation, route}) => {
               </View>
               <FlatList
                 data={education}
-                renderItem={({item}) => (
-                  <Card
-                    title={item?.university}
-                    subtitle={item?.degree}
-                    text1={new Date(item?.startDate).getFullYear()}
-                    text2={new Date(item?.endDate).getFullYear()}
-                    checked={!item?.currentltPursuing}
-                    onEdit={() => onEdit(item)}
-                    onDelete={() => onDelete(item)}
-                    type={'education'}
-                  />
-                )}
+                renderItem={({item}) => {
+                  // If 'endDate' is null => show 'Pursuing'
+                  // Else => show the end year
+                  let endDateLabel = 'Pursuing';
+                  if (item?.endDate) {
+                    // Possibly check if in the past vs future
+                    const endYear = new Date(item.endDate).getFullYear();
+                    endDateLabel = endYear.toString();
+                  }
+
+                  return (
+                    <Card
+                      title={item?.university}
+                      subtitle={item?.degree}
+                      // text1 => start year if present
+                      text1={
+                        item?.startDate
+                          ? new Date(item.startDate).getFullYear().toString()
+                          : ''
+                      }
+                      // text2 => show end date year if present, else 'Pursuing'
+                      text2={endDateLabel}
+                      // If you want to highlight 'Completed' in green vs 'Pursuing' in red,
+                      // pass style or color props to the Card
+                      checked={!item?.currentltPursuing} // or item.currentltPursuing
+                      onEdit={() => onEdit(item)}
+                      onDelete={() => onDelete(item)}
+                      type={'education'}
+                    />
+                  );
+                }}
+                keyExtractor={(item, index) => `${item._id}-${index}`}
               />
             </>
           )}
