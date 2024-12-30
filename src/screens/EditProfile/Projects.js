@@ -312,9 +312,10 @@ const Projects = ({navigation, route}) => {
                     title={item?.name}
                     subtitle={item?.projectLink}
                     text1={new Date(item?.endDate).getFullYear()}
-                    checked={item?.currentlyWorking}
+                    checked={!item?.currentlyWorking}
                     onEdit={() => onEdit(item)}
                     onDelete={() => onDelete(item)}
+                    type={'project'}
                   />
                 )}
               />

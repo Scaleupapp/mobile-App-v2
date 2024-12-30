@@ -63,6 +63,10 @@ const Education = ({navigation, route}) => {
       console.log(error, 'error from getEducationDetails');
     } finally {
     }
+    console.log(
+      '🚀 ~ getEducationDetails ~ res?.data?.educationInfo:',
+      res?.data?.educationInfo,
+    );
   };
 
   const handleInputChange = (field, value) => {
@@ -306,9 +310,10 @@ const Education = ({navigation, route}) => {
                     subtitle={item?.degree}
                     text1={new Date(item?.startDate).getFullYear()}
                     text2={new Date(item?.endDate).getFullYear()}
-                    checked={item?.currentltPursuing}
+                    checked={!item?.currentltPursuing}
                     onEdit={() => onEdit(item)}
                     onDelete={() => onDelete(item)}
+                    type={'education'}
                   />
                 )}
               />

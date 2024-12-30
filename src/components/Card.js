@@ -13,15 +13,23 @@ export const Card = ({
   checked,
   onEdit,
   onDelete,
+  type = 'work',
 }) => {
   return (
     <View style={styles.card}>
       <View style={styles.cardimage}>
-        {/* <Image
-          source={item.image}
-          style={{height: nh(29), width: nw(29)}}
-          resizeMode="contain"
-        /> */}
+        <Icon
+          type={type == 'work' || type == 'project' ? 'antdesign' : 'entypo'}
+          name={
+            type == 'work'
+              ? 'profile'
+              : type == 'project'
+              ? 'filetext1'
+              : 'graduation-cap'
+          }
+          size={28}
+          color={COLORS.blue043142}
+        />
       </View>
       <View>
         <Text variant="semibold14" color={COLORS.blue043142}>

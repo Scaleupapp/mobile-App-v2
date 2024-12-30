@@ -329,9 +329,10 @@ const WorkExperience = ({navigation, route}) => {
                     subtitle={item?.company}
                     text1={new Date(item?.startDate).getFullYear()}
                     text2={new Date(item?.endDate).getFullYear()}
-                    checked={item?.currentlyWorking}
+                    checked={!item?.currentlyWorking}
                     onEdit={() => onEdit(item)}
                     onDelete={() => onDelete(item)}
+                    type={'work'}
                   />
                 )}
               />

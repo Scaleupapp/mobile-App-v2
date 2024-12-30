@@ -326,9 +326,10 @@ const Certifications = ({navigation, route}) => {
                     subtitle={item?.issuedBy}
                     text1={new Date(item?.endDate).getFullYear()}
                     text2={item?.IDCredentials}
-                    checked={item?.currentlyPursuing}
+                    checked={!item?.currentlyPursuing}
                     onEdit={() => onEdit(item)}
                     onDelete={() => onDelete(item)}
+                    type={'project'}
                   />
                 )}
               />

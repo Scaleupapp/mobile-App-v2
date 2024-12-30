@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -9,12 +9,12 @@ import {
   TouchableOpacity,
   Pressable,
 } from 'react-native';
-import { COLORS } from '../../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
+import {COLORS} from '../../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
 import SquareToggle from '../../components/ToggleButton';
 import Text from '../../components/Text';
-import { images } from '../../assets/images';
+import {images} from '../../assets/images';
 import Icon from '../../helper/icon';
 import CustomTextInput from '../../components/TextInput';
 import Button from '../../components/Button';
@@ -23,11 +23,11 @@ import {
   isValidEmail,
   isvalidMobileNumber,
 } from '../../helper/commonFunctions';
-import { useDispatch, useSelector } from 'react-redux';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { getProfile, updateProfile } from '../../services/apiService';
-import { actions } from '../../redux/reducers';
-import { useToast } from '../../components/CustomToast';
+import {useDispatch, useSelector} from 'react-redux';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {getProfile, updateProfile} from '../../services/apiService';
+import {actions} from '../../redux/reducers';
+import {useToast} from '../../components/CustomToast';
 import DatePicker from 'react-native-date-picker';
 
 const professionData = [
@@ -63,8 +63,8 @@ const professionData = [
   },
 ];
 
-const EditProfile = ({ navigation }) => {
-  const { showToast } = useToast();
+const EditProfile = ({navigation}) => {
+  const {showToast} = useToast();
   const [selected, setSelected] = useState(0);
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
@@ -100,7 +100,7 @@ const EditProfile = ({ navigation }) => {
     about: '',
   });
 
-  const onSelect = (number) => {
+  const onSelect = number => {
     setSelected(number);
   };
 
@@ -168,7 +168,9 @@ const EditProfile = ({ navigation }) => {
   const getProfileData = async () => {
     try {
       const res = await getProfile('');
-      dispatch(actions.setUserData({ ...userData, ...res?.data?.userProfileInfo }));
+      dispatch(
+        actions.setUserData({...userData, ...res?.data?.userProfileInfo}),
+      );
     } catch (error) {
       console.log(error?.response?.data?.message, 'errormsg');
     }
@@ -207,8 +209,8 @@ const EditProfile = ({ navigation }) => {
       }
 
       try {
-        const { data } = await updateProfile(formData);
-        showToast({ type: 'success', title: data?.message });
+        const {data} = await updateProfile(formData);
+        showToast({type: 'success', title: data?.message});
         getProfileData();
         console.log('Profile Update Response:', data);
       } catch (error) {
@@ -218,12 +220,12 @@ const EditProfile = ({ navigation }) => {
   };
 
   // Handle selected or captured media
-  const handleMedia = (result) => {
+  const handleMedia = result => {
     if (result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
 
       // Update the form's displayed profile picture
-      setForm((prevForm) => ({
+      setForm(prevForm => ({
         ...prevForm,
         profilePicture: asset.uri,
       }));
@@ -250,17 +252,20 @@ const EditProfile = ({ navigation }) => {
 
   // Generic input change handler
   const handleInputChange = (field, value) => {
-    setForm({ ...form, [field]: value });
+    setForm({...form, [field]: value});
 
     // Clear error for that field
     if (errors[field]) {
-      setErrors({ ...errors, [field]: '' });
+      setErrors({...errors, [field]: ''});
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
       <Header title="Edit Profile" onBackPress={() => navigation.goBack()} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
@@ -277,7 +282,9 @@ const EditProfile = ({ navigation }) => {
                   {form.profilePicture ? (
                     <Image
                       source={{
-                        uri: `${form.profilePicture}?timestamp=${new Date().getTime()}`,
+                        uri: `${
+                          form.profilePicture
+                        }?timestamp=${new Date().getTime()}`,
                       }}
                       style={styles.image}
                       resizeMode="cover"
@@ -291,12 +298,11 @@ const EditProfile = ({ navigation }) => {
                           justifyContent: 'center',
                           backgroundColor: COLORS.greyD6D6D6,
                         },
-                      ]}
-                    >
+                      ]}>
                       <Text variant="semibold20" color={COLORS.black333333}>
-                        {`${userData?.firstname?.charAt(0)?.toUpperCase() || ''}${
-                          userData?.lastname?.charAt(0)?.toUpperCase() || ''
-                        }`}
+                        {`${
+                          userData?.firstname?.charAt(0)?.toUpperCase() || ''
+                        }${userData?.lastname?.charAt(0)?.toUpperCase() || ''}`}
                       </Text>
                     </View>
                   )}
@@ -304,7 +310,7 @@ const EditProfile = ({ navigation }) => {
                     <Icon
                       type="antdesign"
                       name="edit"
-                      style={{ marginLeft: 0.5 }}
+                      style={{marginLeft: 0.5}}
                       size={16}
                       onPress={openGallery}
                     />
@@ -316,35 +322,35 @@ const EditProfile = ({ navigation }) => {
                   label="First Name"
                   placeholder="Enter First Name"
                   value={form.firstname}
-                  onChangeText={(value) => handleInputChange('firstname', value)}
+                  onChangeText={value => handleInputChange('firstname', value)}
                   errorMessage={errors.firstname}
                 />
                 <CustomTextInput
                   label="Last Name"
                   placeholder="Enter Last Name"
                   value={form.lastname}
-                  onChangeText={(value) => handleInputChange('lastname', value)}
+                  onChangeText={value => handleInputChange('lastname', value)}
                   errorMessage={errors.lastname}
                 />
                 <CustomTextInput
                   label="Email"
                   placeholder="Enter Email"
                   value={form.email}
-                  onChangeText={(value) => handleInputChange('email', value)}
+                  onChangeText={value => handleInputChange('email', value)}
                   errorMessage={errors.email}
                 />
                 <CustomTextInput
                   label="Mobile No"
                   placeholder="Enter Mobile No"
                   value={form.mobile}
-                  onChangeText={(value) => handleInputChange('mobile', value)}
+                  onChangeText={value => handleInputChange('mobile', value)}
                   errorMessage={errors.mobile}
                 />
                 <CustomTextInput
                   label="Location"
                   placeholder="Enter Location"
                   value={form.location}
-                  onChangeText={(value) => handleInputChange('location', value)}
+                  onChangeText={value => handleInputChange('location', value)}
                   errorMessage={errors.location}
                 />
 
@@ -378,8 +384,9 @@ const EditProfile = ({ navigation }) => {
                   placeholder="Enter About Yourself"
                   textinputType="L"
                   value={form.about}
-                  onChangeText={(value) => handleInputChange('about', value)}
+                  onChangeText={value => handleInputChange('about', value)}
                   errorMessage={errors.about}
+                  multiline
                 />
 
                 {/* Save Button */}
@@ -388,14 +395,13 @@ const EditProfile = ({ navigation }) => {
                     marginTop: 30,
                     marginLeft: DEVICE_WIDTH - 105,
                     marginBottom: nh(100),
-                  }}
-                >
+                  }}>
                   <Button
                     text="Save"
                     onPress={handleSave}
                     width={nw(63)}
                     height={nh(35)}
-                    textStyle={{ fontSize: 14 }}
+                    textStyle={{fontSize: 14}}
                   />
                 </View>
 
@@ -407,7 +413,7 @@ const EditProfile = ({ navigation }) => {
                   mode="date"
                   minimumDate={new Date('1970-01-01')}
                   maximumDate={new Date()}
-                  onConfirm={(selectedDate) => {
+                  onConfirm={selectedDate => {
                     // Save the new date in form
                     handleInputChange('dob', selectedDate);
                     setShowDOBPicker(false);
@@ -423,12 +429,11 @@ const EditProfile = ({ navigation }) => {
                 <TouchableOpacity
                   key={index}
                   style={styles.card}
-                  onPress={() => navigation.navigate(item.nav)}
-                >
+                  onPress={() => navigation.navigate(item.nav)}>
                   <View style={styles.cardimage}>
                     <Image
                       source={item.image}
-                      style={{ height: nh(29), width: nw(29) }}
+                      style={{height: nh(29), width: nw(29)}}
                       resizeMode="contain"
                     />
                   </View>
