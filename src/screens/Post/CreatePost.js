@@ -9,7 +9,6 @@ import {
   Modal,
   TouchableOpacity,
   Image, // for image preview
-  Image, // for image preview
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
