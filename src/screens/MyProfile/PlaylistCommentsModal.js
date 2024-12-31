@@ -5,11 +5,15 @@ import {
   TextInput, 
   FlatList, 
   TouchableOpacity, 
-  StyleSheet 
+  StyleSheet,
+  SafeAreaView,
+  StatusBar
 } from 'react-native';
 import axios from 'axios';
 import Icon from '../../helper/icon';
 import Text from '../../components/Text';
+import Header from '../../components/Header';
+
 //import { COLORS } from '../../helper/colors';
 
 
@@ -21,7 +25,8 @@ const COLORS = {
   lightYellow: '#FFF9E6',  // Very light yellow
   grey: '#6B7280',         // Soft grey for text
   white: '#FFFFFF',
-  lightGrey: '#E5E7EB'
+  lightGrey: '#E5E7EB',
+  yellowF5BE00: '#F5BE00' // Added to match MyPlaylists styling
 };
 
 const PlaylistCommentsModal = ({ 
@@ -246,7 +251,7 @@ const renderComment = ({ item: comment }) => (
           onPress={() => setReplyingTo(comment._id)}
           style={styles.actionButton}
         >
-          <Icon type="ionicon" name="reply" color={COLORS.primaryBlue} size={20} />
+          <Icon type="ionicon" name="return-down-back" color={COLORS.primaryBlue} size={20} />
         </TouchableOpacity>
       </View>
     </View>
@@ -287,60 +292,72 @@ const renderComment = ({ item: comment }) => (
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
+      transparent={false}
     >
-      <View style={styles.modalContainer}>
-        {isLoading && (
-          <View style={styles.loadingOverlay}>
-            <Text style={styles.loadingText}>Loading...</Text>
-          </View>
-        )}
-        
-        <FlatList
-          data={comments}
-          renderItem={renderComment}
-          keyExtractor={(item) => item._id}
-          ListEmptyComponent={
-            <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyStateText}>No comments yet. Be the first to comment!</Text>
-            </View>
-          }
-          refreshing={isLoading}
-          onRefresh={fetchComments}
+      <SafeAreaView style={styles.modalContainer}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
         />
         
-        {replyingTo && (
-          <View style={styles.replyingToContainer}>
-            <Text style={styles.replyingToText}>Replying to a comment</Text>
-            <TouchableOpacity onPress={() => setReplyingTo(null)}>
-              <Icon type="ionicon" name="close" color={COLORS.primaryBlue} size={20} />
+        {/* Added Header component to match MyPlaylists */}
+        <Header 
+          title="Comments" 
+          onBackPress={onClose}
+        />
+
+        <View style={styles.contentContainer}>
+          {isLoading && (
+            <View style={styles.loadingOverlay}>
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          )}
+          
+          <FlatList
+            data={comments}
+            renderItem={renderComment}
+            keyExtractor={(item) => item._id}
+            ListEmptyComponent={
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>No comments yet. Be the first to comment!</Text>
+              </View>
+            }
+            refreshing={isLoading}
+            onRefresh={fetchComments}
+          />
+          
+          {replyingTo && (
+            <View style={styles.replyingToContainer}>
+              <Text style={styles.replyingToText}>Replying to a comment</Text>
+              <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                <Icon type="ionicon" name="close" color={COLORS.primaryBlue} size={20} />
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          <View style={styles.commentInputContainer}>
+            <TextInput
+              value={newCommentText}
+              onChangeText={setNewCommentText}
+              placeholder="Add a comment..."
+              placeholderTextColor={COLORS.grey}
+              style={styles.commentInput}
+              multiline
+            />
+            <TouchableOpacity 
+              onPress={replyingTo ? () => replyToComment(replyingTo) : addComment}
+              disabled={!newCommentText.trim() || isLoading}
+            >
+              <Icon 
+                type="ionicon" 
+                name={replyingTo ? "send" : "paper-plane"} 
+                size={24} 
+                color={newCommentText.trim() && !isLoading ? COLORS.primaryBlue : COLORS.grey} 
+              />
             </TouchableOpacity>
           </View>
-        )}
-        
-        <View style={styles.commentInputContainer}>
-          <TextInput
-            value={newCommentText}
-            onChangeText={setNewCommentText}
-            placeholder="Add a comment..."
-            placeholderTextColor={COLORS.grey}
-            style={styles.commentInput}
-            multiline
-          />
-          <TouchableOpacity 
-            onPress={replyingTo ? () => replyToComment(replyingTo) : addComment}
-            disabled={!newCommentText.trim() || isLoading}
-          >
-            <Icon 
-              type="ionicon" 
-              name={replyingTo ? "send" : "paper-plane"} 
-              size={24} 
-              color={newCommentText.trim() && !isLoading ? COLORS.primaryBlue : COLORS.grey} 
-            />
-          </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -348,7 +365,15 @@ const renderComment = ({ item: comment }) => (
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
+    backgroundColor: COLORS.yellowF5BE00, // Matches MyPlaylists background
+  },
+  contentContainer: {
+    flex: 1,
     backgroundColor: COLORS.background,
+    marginTop: 32,
+    marginHorizontal: 2,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
     padding: 20,
   },
   loadingOverlay: {
@@ -458,6 +483,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
+    borderRadius: 8,
+
     borderTopColor: COLORS.lightGrey,
     paddingVertical: 10,
     backgroundColor: COLORS.white,

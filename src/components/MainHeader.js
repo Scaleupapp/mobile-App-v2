@@ -39,34 +39,21 @@ const MainHeader = () => {
         />
 
         {/* Title */}
-        <View style={{flexDirection: 'row'}}>
-          {/* commented */}
-          {/* <Icon
-            type="material-community"
-            name="bell-badge"
-            color={COLORS.whiteFFFFFF}
-            size={nh(24)}
-            style={{marginRight: nw(14)}}
-            onPress={() => navigation.navigate(Routes.Notifications)}
-          />
-          <Icon
-            type="material-community"
-            name="message-reply-text"
-            color={COLORS.whiteFFFFFF}
-            size={nh(24)}
-            style={{marginRight: nw(14)}}
-            onPress={() =>
-              navigation.navigate(Routes.MyProfile)
-            }
-          /> */}
-          <Ionicons
-  name="list-outline"
-  color={COLORS.whiteFFFFFF}
-  size={nh(30)}
-  onPress={() => navigation.navigate(Routes.MyPlaylist)}
-/>
-
-        </View>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+  <Ionicons 
+    name="list"
+    color={COLORS.whiteFFFFFF}
+    size={nh(24)}
+    style={{marginRight: -nh(8)}}
+    onPress={() => navigation.navigate(Routes.MyPlaylist)}
+  />
+  <Ionicons
+    name="musical-note-outline"
+    color={COLORS.whiteFFFFFF}
+    size={nh(26)}
+    onPress={() => navigation.navigate(Routes.MyPlaylist)}
+  />
+</View>
       </View>
     </View>
   );

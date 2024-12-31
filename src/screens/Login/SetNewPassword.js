@@ -197,12 +197,12 @@ const SetNewPassword = ({navigation, route}) => {
           />
           <View style={{marginBottom: nh(20)}} />
           <Button text={'Reset password'} onPress={handleSubmit} />
-          {otp ? (
+          {/* {otp ? (
             <View
               style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
               <Text style={{color: 'red', fontSize: 20}}>test otp: {otp}</Text>
             </View>
-          ) : null}
+          ) : null} */}
           <View style={styles.backToLogin}>
             <Text style={styles.backToLoginText}>Back to </Text>
             <RNText

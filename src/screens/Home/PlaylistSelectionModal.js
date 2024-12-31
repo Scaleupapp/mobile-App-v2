@@ -137,58 +137,74 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   };
   
   const renderNewPlaylistForm = () => (
-    <View style={styles.formContainer}>
-      <TextInput
-        placeholder="Playlist name"
-        value={newPlaylist.playlistName}
-        onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, playlistName: text }))}
-        style={styles.input}
-        placeholderTextColor={COLORS.grey999999}
-      />
-      <TextInput
-        placeholder="Description"
-        value={newPlaylist.description}
-        onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, description: text }))}
-        style={[styles.input, styles.textArea]}
-        multiline
-        placeholderTextColor={COLORS.grey999999}
-      />
-      <TextInput
-        placeholder="Related topics (comma-separated)"
-        value={newPlaylist.relatedTopics}
-        onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, relatedTopics: text }))}
-        style={styles.input}
-        placeholderTextColor={COLORS.grey999999}
-      />
-      <View style={styles.visibilityContainer}>
-        <Text variant="medium14" color={COLORS.blue043142}>Visibility:</Text>
-        <TouchableOpacity 
-          style={[
-            styles.visibilityButton,
-            newPlaylist.visibility === 'public' && styles.visibilityButtonActive
-          ]}
-          onPress={() => setNewPlaylist(prev => ({ ...prev, visibility: 'public' }))}>
-          <Text variant="medium14" color={newPlaylist.visibility === 'public' ? 'white' : COLORS.blue043142}>
-            Public
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            styles.visibilityButton,
-            newPlaylist.visibility === 'private' && styles.visibilityButtonActive
-          ]}
-          onPress={() => setNewPlaylist(prev => ({ ...prev, visibility: 'private' }))}>
-          <Text variant="medium14" color={newPlaylist.visibility === 'private' ? 'white' : COLORS.blue043142}>
-            Private
-          </Text>
-        </TouchableOpacity>
+    <ScrollView style={styles.formScrollContainer}>
+      <View style={styles.formContainer}>
+        <Text variant="medium14" color={COLORS.blue043142} style={styles.inputLabel}>
+          Playlist Name
+        </Text>
+        <TextInput
+          placeholder="Enter playlist name"
+          value={newPlaylist.playlistName}
+          onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, playlistName: text }))}
+          style={styles.input}
+          placeholderTextColor={COLORS.grey999999}
+        />
+        
+        <Text variant="medium14" color={COLORS.blue043142} style={styles.inputLabel}>
+          Description
+        </Text>
+        <TextInput
+          placeholder="Enter playlist description"
+          value={newPlaylist.description}
+          onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, description: text }))}
+          style={[styles.input, styles.textArea]}
+          multiline
+          placeholderTextColor={COLORS.grey999999}
+        />
+        
+        <Text variant="medium14" color={COLORS.blue043142} style={styles.inputLabel}>
+          Related Topics
+        </Text>
+        <TextInput
+          placeholder="Enter topics separated by commas"
+          value={newPlaylist.relatedTopics}
+          onChangeText={(text) => setNewPlaylist(prev => ({ ...prev, relatedTopics: text }))}
+          style={styles.input}
+          placeholderTextColor={COLORS.grey999999}
+        />
+        
+        <View style={styles.visibilityContainer}>
+          <Text variant="medium14" color={COLORS.blue043142}>Visibility:</Text>
+          <TouchableOpacity 
+            style={[
+              styles.visibilityButton,
+              newPlaylist.visibility === 'public' && styles.visibilityButtonActive
+            ]}
+            onPress={() => setNewPlaylist(prev => ({ ...prev, visibility: 'public' }))}>
+            <Text variant="medium14" color={newPlaylist.visibility === 'public' ? 'white' : COLORS.blue043142}>
+              Public
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.visibilityButton,
+              newPlaylist.visibility === 'private' && styles.visibilityButtonActive
+            ]}
+            onPress={() => setNewPlaylist(prev => ({ ...prev, visibility: 'private' }))}>
+            <Text variant="medium14" color={newPlaylist.visibility === 'private' ? 'white' : COLORS.blue043142}>
+              Private
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        <Button
+          text="Create"
+          onPress={handleCreateNewPlaylist}
+          width={nw(100)}
+          style={styles.createButton}
+        />
       </View>
-      <Button
-        text="Create"
-        onPress={handleCreateNewPlaylist}
-        width={nw(100)}
-      />
-    </View>
+    </ScrollView>
   );
 
   const renderContent = () => {

@@ -22,10 +22,14 @@ import {useToast} from '../../components/CustomToast';
 import {getProfile} from '../../services/apiService';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { useRoute } from '@react-navigation/native';
+
 import {compressImage, compressVideo} from '../../helper/commonFunctions';
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
+  const route = useRoute();
+  const draftData = route.params?.draftData;
 
   // Form state
   const [heading, setHeading] = useState('');
@@ -38,10 +42,43 @@ const CreatePost = ({navigation}) => {
   const [isUploading, setIsUploading] = useState(false);
 
   // Modal for selecting media
+
+  // Modal for selecting media
   const [modalVisible, setModalVisible] = useState(false);
+
 
   // User data state
   const [profileData, setProfileData] = useState(null);
+
+  // Initialize form with draft data if available
+  useEffect(() => {
+    if (draftData) {
+      setHeading(draftData.heading);
+      // Map relatedTopics to topics field
+      // Handle topics - ensure proper string format
+    const topicsString = Array.isArray(draftData.relatedTopics)
+    ? draftData.relatedTopics.join(', ')
+    : draftData.relatedTopics || '';
+  setTopics(topicsString);
+  
+  // Handle hashtags - ensure proper string format
+  const hashtagsString = Array.isArray(draftData.hashtags)
+    ? draftData.hashtags.join(' ')
+    : draftData.hashtags || '';
+  setHashtags(hashtagsString);
+  
+  setCaptions(draftData.captions);
+      setContentType(draftData.contentType);
+      // Ensure we have a proper file object
+      if (draftData.file) {
+        setFile({
+          uri: draftData.file.uri,
+          type: draftData.file.type,
+          name: draftData.file.name
+        });
+      }
+    }
+  }, [draftData]);
 
   // Fetch profile data on component mount
   useEffect(() => {
@@ -77,7 +114,7 @@ const CreatePost = ({navigation}) => {
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
       showToast({
-        text: 'Failed to load profile data',
+        title: 'Failed to load profile data',
         type: 'error',
       });
     }
@@ -87,7 +124,7 @@ const CreatePost = ({navigation}) => {
   const openGallery = async () => {
     if (!profileData?.id) {
       showToast({
-        text: 'Please log in to create a post',
+        title: 'Please log in to create a post',
         type: 'error',
       });
       return;
@@ -120,7 +157,7 @@ const CreatePost = ({navigation}) => {
     } catch (err) {
       console.error('Error selecting file:', err);
       showToast({
-        text: 'Failed to select file',
+        title: 'Failed to select file',
         type: 'error',
       });
       // Close modal in case of error
@@ -133,33 +170,55 @@ const CreatePost = ({navigation}) => {
     // Validate user authentication
     if (!profileData?.id) {
       showToast({
-        text: 'Please log in to create a post',
+        title: 'Please log in to create a post',
         type: 'error',
       });
       return;
     }
-
-    // Validate form fields
+  
     if (!heading || !topics || !hashtags || !file || !captions) {
       showToast({
-        text: 'Please fill all fields and upload a file.',
+        title: 'Please fill all fields and upload a file.',
         type: 'error',
       });
       return;
     }
-
+  
     try {
       setIsUploading(true);
       setUploadProgress(0);
-
-      // Get the authentication token from AsyncStorage
+  
       const userData = await AsyncStorage.getItem('userData');
       const {token} = JSON.parse(userData);
-
+  
       if (!token) {
         throw new Error('Authentication token not found');
       }
-
+  
+      // If we're editing an existing draft and publishing it
+      if (draftData?.id && !isDraft) {
+        // Call the publish draft endpoint
+        const response = await axios.put(
+          `https://api.scaleupapp.club/api/content/publish/${draftData.id}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Draft Published:', response.data);
+        showToast({
+          title: response.data?.message || 'Post published successfully!',
+          type: 'success',
+        });
+        resetForm();
+        navigation.goBack();
+        return;
+      }
+  
+      // For new posts or saving as draft
       const formData = new FormData();
       formData.append('heading', heading);
       formData.append('relatedTopics', topics);
@@ -167,15 +226,14 @@ const CreatePost = ({navigation}) => {
       formData.append('verify', 'Yes');
       formData.append('captions', captions);
       formData.append('contentType', contentType);
-      // Pass isDraft as 'true' or 'false'
       formData.append('isDraft', isDraft ? 'true' : 'false');
-
+  
       formData.append('media', {
         uri: file.uri,
         type: file.type,
-        name: file.fileName || 'media',
+        name: file.name || 'media'
       });
-
+  
       const response = await axios.post(
         'https://api.scaleupapp.club/api/content/create',
         formData,
@@ -192,17 +250,17 @@ const CreatePost = ({navigation}) => {
           },
         },
       );
-
+  
       console.log('Post Upload Success:', response.data);
       showToast({
-        text: response.data?.message || 'Post created successfully!',
+        title: response.data?.message || 'Post created successfully!',
         type: 'success',
       });
       resetForm();
       navigation.goBack();
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
-      showToast({text: 'Failed to upload post.', type: 'error'});
+      showToast({title: 'Failed to upload post.', type: 'error'});
     } finally {
       setIsUploading(false);
     }
@@ -210,20 +268,18 @@ const CreatePost = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.yellowF5BE00}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
       <Header title="New Post" />
 
       {/* ScrollView that fills screen, becomes scrollable if content > screen height */}
       <ScrollView
-        style={{flex: 1}}
+        style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
           minHeight: '100%',
         }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.layer1}>
           <View style={styles.layer2}>
             <CustomTextInput
@@ -259,7 +315,7 @@ const CreatePost = ({navigation}) => {
                 onPress={() => setModalVisible(true)}
                 width={nw(96)}
                 height={nh(35)}
-                textStyle={{fontSize: 14}}
+                textStyle={{ fontSize: 14 }}
               />
 
               {/* Show filename if selected */}
@@ -348,7 +404,8 @@ const CreatePost = ({navigation}) => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}>
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Choose Media</Text>
@@ -356,7 +413,8 @@ const CreatePost = ({navigation}) => {
             <TouchableOpacity
               style={styles.modalOption}
               onPress={openGallery}
-              disabled={isUploading}>
+              disabled={isUploading}
+            >
               <Icon name="image" size={24} color={COLORS.blue043142} />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
@@ -364,7 +422,8 @@ const CreatePost = ({navigation}) => {
             <TouchableOpacity
               style={styles.modalCancelOption}
               onPress={() => setModalVisible(false)}
-              disabled={isUploading}>
+              disabled={isUploading}
+            >
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>

@@ -1,137 +1,199 @@
-import React, {useEffect, useState} from 'react';
+// AllPost.js
+import React from 'react';
 import {
   FlatList,
   View,
   Text,
   StyleSheet,
-  Dimensions,
-  ScrollView,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
-import {COLORS} from '../helper/colors';
-import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
-import {Image} from 'react-native';
-import Icon from '../helper/icon';
+import { COLORS } from '../helper/colors';
+import { DEVICE_WIDTH, nh, nw } from '../helper/scales';
+import { Image } from 'react-native';
 import Video from 'react-native-video';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
 
-const CARD_WIDTH = nw(163); // Two columns with margins
+const CARD_WIDTH = nw(163);
 
-export const AllPost = ({data}) => {
-  // const leftColumnData = data?.filter((_, index) => index % 2 === 0); // Items for left column
-  // const rightColumnData = data?.filter((_, index) => index % 2 !== 0); // Items for right column
+export const AllPost = ({ data, isDrafts = false }) => {
+  const navigation = useNavigation();
 
-  const Postcard = ({item}) => {
+  
+
+  // Navigate to CreatePost with the draft data
+  const handlePublish = (item) => {
+    // Create a file object from the content URL
+    const fileExtension = item.contentURL.split('.').pop();
+    const fileName = `draft_media.${fileExtension}`;
+    
+    // Determine the correct mime type based on content type and extension
+    let mimeType = 'image/jpeg';
+    if (item.contentType === 'Video') {
+      mimeType = 'video/mp4';
+    } else if (fileExtension === 'png') {
+      mimeType = 'image/png';
+    }
+
+    // Format topics and hashtags properly
+  const formattedTopics = Array.isArray(item.relatedTopics) 
+  ? item.relatedTopics.join(', ')
+  : item.relatedTopics;
+
+const formattedHashtags = Array.isArray(item.hashtags)
+  ? item.hashtags.join(' ')
+  : item.hashtags;
+
+  
+    navigation.navigate('CreatePost', {
+      draftData: {
+        id: item._id, // Add the draft post ID
+        heading: item.heading,
+      relatedTopics: formattedTopics, // Changed from topics to relatedTopics
+        captions: item.captions,
+        hashtags: formattedHashtags,
+        contentType: item.contentType,
+        file: {
+          uri: item.contentURL,
+          type: mimeType,
+          name: fileName
+        }
+      }
+    });
+  };
+
+  const Postcard = ({ item }) => {
     return (
-      <View>
-        {(item?.contentType == 'Image' || item?.contentType == 'Document') &&
-        item?.contentURL ? (
-          <Pressable
-            // onPress={() => imageModalRef.current?.present()}
-            style={{marginVertical: nh(10)}}>
-            <Image
-              source={{uri: item?.contentURL}}
-              style={{
-                height: 200,
-                width: (DEVICE_WIDTH - nw(48)) / 2,
-                backgroundColor: COLORS.whiteFFFFFF,
-                // marginBottom: nh(6),
-                borderRadius: nh(12),
-                backgroundColor: 'grey',
-                borderWidth: 1,
-                borderColor: COLORS.grey333333 + 10,
-              }}
-              resizeMode="cover"
-            />
-          </Pressable>
-        ) : null}
-        {item?.contentType == 'Video' && item?.contentURL ? (
-          <Pressable
-            // onPress={() => setIsPlaying(index)}
-            style={{
-              // marginTop: nh(10),
-              borderRadius: nh(12),
-              // marginBottom: nh(15),
-              marginRight: 10,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: COLORS.grey333333 + 10,
-            }}>
-            <Video
-              paused={true}
-              controls
-              // onLoad={onLoad}
-              // source={{uri: convertToProxyURL(item?.contentURL)}}
-              source={{uri: item?.contentURL}}
-              style={{
-                height: nh(250),
-                width: (DEVICE_WIDTH - nw(48)) / 2,
-                backgroundColor: COLORS.whiteFFFFFF,
-                marginBottom: nh(6),
-              }}
-              resizeMode="cover"
-              onBuffer={e => console.log('bufeer ', e)}
-              onError={e => console.log('sdsds ', e)}
-            />
-            {/* <View
-            style={{
-              position: 'absolute',
-              alignSelf: 'center',
-            }}>
-            <Icon
-              type="antdesign"
-              name="playcircleo"
-              size={nh(40)}
-              color={COLORS.blue043142}
-              style={{marginRight: nw(10), opacity: 0.8}}
-            />
-          </View> */}
-          </Pressable>
-        ) : null}
+      <View style={styles.postContainer}>
+        {/* Content Display */}
+        <View>
+          {(item?.contentType === 'Image' || item?.contentType === 'Document') && 
+           item?.contentURL ? (
+            <Pressable style={styles.imageContainer}>
+              <Image
+                source={{ uri: item?.contentURL }}
+                style={styles.mediaContent}
+                resizeMode="cover"
+              />
+            </Pressable>
+          ) : null}
+          
+          {item?.contentType === 'Video' && item?.contentURL ? (
+            <Pressable style={styles.videoContainer}>
+              <Video
+                paused={true}
+                controls
+                source={{ uri: item?.contentURL }}
+                style={styles.mediaContent}
+                resizeMode="cover"
+                onBuffer={e => console.log('buffer ', e)}
+                onError={e => console.log('video error ', e)}
+              />
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Draft Controls */}
+        {isDrafts && (
+          <View style={styles.draftControls}>
+            <Text style={styles.draftLabel}>DRAFT</Text>
+            <TouchableOpacity
+              style={styles.publishButton}
+              onPress={() => handlePublish(item)}
+            >
+              <Icon name="cloud-upload" size={20} color={COLORS.blue043142} />
+              <Text style={styles.publishText}>Publish</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     );
   };
 
-  const RenderColumn = ({columnData}) => {
-    return (
-      <View style={styles.column}>
-        <FlatList
-          data={columnData}
-          renderItem={({item}) => <Postcard item={item} />}
-          numColumns={2}
-          columnWrapperStyle={{
-            justifyContent: 'space-between',
-            // marginBottom: 10,
-          }} // Adds space between columns and rows
-        />
-      </View>
-    );
-  };
   return (
     <View style={styles.container}>
-      <RenderColumn columnData={data} />
+      <FlatList
+        data={data}
+        renderItem={({ item }) => <Postcard item={item} />}
+        numColumns={2}
+        columnWrapperStyle={styles.columnWrapper}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {isDrafts ? 'No draft posts yet' : 'No posts available'}
+            </Text>
+          </View>
+        )}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    paddingHorizontal: nw(10),
+  },
+  postContainer: {
+    marginVertical: nh(2),
+  },
+  imageContainer: {
+    marginVertical: nh(2),
+  },
+  videoContainer: {
+    borderRadius: nh(10),
+    marginRight: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.grey333333 + '10',
+  },
+  mediaContent: {
+    height: 200,
+    width: (DEVICE_WIDTH - nw(48)) / 2,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nh(12),
+    borderWidth: 1,
+    borderColor: COLORS.grey333333 + '10',
+  },
+  draftControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-  },
-  column: {
-    flex: 1,
-  },
-  card: {
-    width: CARD_WIDTH,
-    backgroundColor: COLORS.grey999999,
-    borderRadius: 10,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: nh(16),
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(4),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nh(6),
+    marginTop: nh(4),
   },
-  cardText: {
-    color: '#fff',
-    fontSize: 16,
+  draftLabel: {
+    color: COLORS.grey999999,
+    fontSize: 12,
     fontWeight: 'bold',
+  },
+  publishButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: nh(4),
+  },
+  publishText: {
+    color: COLORS.blue043142,
+    marginLeft: nw(4),
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: nh(40),
+  },
+  emptyText: {
+    color: COLORS.grey999999,
+    fontSize: 16,
   },
 });

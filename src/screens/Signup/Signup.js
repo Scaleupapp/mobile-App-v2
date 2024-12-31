@@ -240,14 +240,14 @@ const SignUp = ({navigation, route}) => {
             text={state.requestedOtp ? 'Sign up' : 'Request OTP'}
             onPress={registerUser}
           />
-          {phoneNumberData?.loginOtp ? (
+          {/* {phoneNumberData?.loginOtp ? (
             <View
               style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
               <Text style={{color: 'red', fontSize: 20}}>
                 test otp: {phoneNumberData?.loginOtp}
               </Text>
             </View>
-          ) : null}
+          ) : null} */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account! </Text>
             <RNText

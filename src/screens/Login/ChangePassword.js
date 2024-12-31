@@ -197,12 +197,12 @@ const ChangePassword = ({navigation, route}) => {
           />
           <View style={{marginBottom: nh(20)}} />
           <Button text={'Change Password'} onPress={handleSubmit} />
-          {otp ? (
+          {/* {otp ? (
             <View
               style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
               <Text style={{color: 'red', fontSize: 20}}>test otp: {otp}</Text>
             </View>
-          ) : null}
+          ) : null} */}
         </View>
       </View>
     </SafeAreaView>
