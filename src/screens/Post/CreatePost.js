@@ -9,6 +9,7 @@ import {
   Modal,
   TouchableOpacity,
   Image, // for image preview
+  Image, // for image preview
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
@@ -24,6 +25,7 @@ import {launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useRoute } from '@react-navigation/native';
 
+import {compressImage, compressVideo} from '../../helper/commonFunctions';
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
@@ -41,7 +43,10 @@ const CreatePost = ({navigation}) => {
   const [isUploading, setIsUploading] = useState(false);
 
   // Modal for selecting media
+
+  // Modal for selecting media
   const [modalVisible, setModalVisible] = useState(false);
+
 
   // User data state
   const [profileData, setProfileData] = useState(null);
@@ -136,12 +141,17 @@ const CreatePost = ({navigation}) => {
 
       if (result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
-        setFile(asset);
 
         // Determine content type
         if (asset.type && asset.type.toLowerCase().includes('video')) {
           setContentType('Video');
+          let compress_video = await compressVideo(asset?.uri);
+
+          setFile({...asset, uri: compress_video});
         } else {
+          let compress_image = await compressImage(asset?.uri);
+
+          setFile({...asset, uri: compress_image});
           setContentType('Image');
         }
       }
@@ -158,6 +168,7 @@ const CreatePost = ({navigation}) => {
 
   // Main function to handle post (publish or draft)
   const handlePost = async (isDraft = false) => {
+    // Validate user authentication
     if (!profileData?.id) {
       showToast({
         title: 'Please log in to create a post',
@@ -232,9 +243,9 @@ const CreatePost = ({navigation}) => {
             'Content-Type': 'multipart/form-data',
             Authorization: `Bearer ${token}`,
           },
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: progressEvent => {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
+              (progressEvent.loaded * 100) / progressEvent.total,
             );
             setUploadProgress(percentCompleted);
           },
@@ -320,22 +331,27 @@ const CreatePost = ({navigation}) => {
                 <View style={styles.previewContainer}>
                   {contentType === 'Image' ? (
                     <Image
-                      source={{ uri: file.uri }}
+                      source={{uri: file.uri}}
                       style={styles.previewImage}
                       resizeMode="cover"
                     />
                   ) : (
                     <View style={styles.videoPreviewBox}>
-                      <Icon name="videocam" size={20} color={COLORS.grey999999} />
-                      <Text style={styles.videoPreviewText}>Video Selected</Text>
+                      <Icon
+                        name="videocam"
+                        size={20}
+                        color={COLORS.grey999999}
+                      />
+                      <Text style={styles.videoPreviewText}>
+                        Video Selected
+                      </Text>
                     </View>
                   )}
 
                   {/* Cross/Close button to remove file */}
                   <TouchableOpacity
                     style={styles.closeIconContainer}
-                    onPress={removeFile}
-                  >
+                    onPress={removeFile}>
                     <Icon name="close-circle" size={24} color="red" />
                   </TouchableOpacity>
                 </View>
@@ -345,7 +361,9 @@ const CreatePost = ({navigation}) => {
             {/* Upload Progress */}
             {isUploading && (
               <View style={styles.progressContainer}>
-                <View style={[styles.progressBar, { width: `${uploadProgress}%` }]} />
+                <View
+                  style={[styles.progressBar, {width: `${uploadProgress}%`}]}
+                />
                 <Text style={styles.progressText}>{`${uploadProgress}%`}</Text>
               </View>
             )}
@@ -357,7 +375,7 @@ const CreatePost = ({navigation}) => {
                 text="Cancel"
                 width={nw(85)}
                 height={nh(40)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => navigation.goBack()}
                 disabled={isUploading}
               />
@@ -365,7 +383,7 @@ const CreatePost = ({navigation}) => {
                 text="Publish"
                 width={nw(85)}
                 height={nh(40)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => handlePost(false)}
                 disabled={isUploading}
               />
@@ -373,7 +391,7 @@ const CreatePost = ({navigation}) => {
                 text="Save Draft"
                 width={nw(85)}
                 height={nh(40)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 onPress={() => handlePost(true)}
                 disabled={isUploading}
               />

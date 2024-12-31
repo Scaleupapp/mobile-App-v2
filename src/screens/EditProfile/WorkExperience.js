@@ -5,6 +5,7 @@ import {
   StatusBar,
   View,
   Pressable,
+  FlatList,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -14,7 +15,6 @@ import {CheckBox} from 'react-native-elements';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {Card} from '../../components/Card';
-import {FlatList} from 'react-native';
 import {
   deleteWorkExperience,
   getWorkExperience,
@@ -24,11 +24,13 @@ import {useToast} from '../../components/CustomToast';
 import {formatDate} from '../../helper/commonFunctions';
 import MonthPickerComponent from '../../components/MonthPickerComponent';
 
-const WorkExperience = ({navigation, route}) => {
+const WorkExperience = ({navigation}) => {
   const {showToast} = useToast();
   const [isChecked, setIsChecked] = useState(false);
   const [workexperience, setWorkExperience] = useState([]);
   const [saved, setSaved] = useState(true);
+
+  // Date pickers
   const [startDate, setStartDate] = useState({
     show: false,
     date: new Date(),
@@ -39,6 +41,8 @@ const WorkExperience = ({navigation, route}) => {
     date: new Date(),
     format: '',
   });
+
+  // Form fields
   const [state, setState] = useState({
     designation: '',
     companyName: '',
@@ -46,16 +50,20 @@ const WorkExperience = ({navigation, route}) => {
     endDate: '',
     rolesResponsibilities: '',
   });
+
+  // Validation errors
   const [errors, setErrors] = useState({});
+  // Track if we’re editing an existing record (store its _id)
   const [edit, setEdit] = useState(false);
 
   useEffect(() => {
     getWorkExperiencedetail();
   }, []);
+
+  // Fetch existing work experiences
   const getWorkExperiencedetail = async () => {
     try {
       let res = await getWorkExperience();
-
       if (res?.data?.workExperienceInfo?.length > 0) {
         setWorkExperience(res?.data?.workExperienceInfo);
         setSaved(true);
@@ -66,6 +74,7 @@ const WorkExperience = ({navigation, route}) => {
     }
   };
 
+  // Input change handler
   const handleInputChange = (field, value) => {
     setState({...state, [field]: value});
 
@@ -74,35 +83,32 @@ const WorkExperience = ({navigation, route}) => {
     }
   };
 
+  // Validate required fields
   const validateFields = () => {
     let isValid = true;
     const newErrors = {};
 
-    // Designation validation
+    // Designation
     if (!state.designation) {
       newErrors.designation = 'Designation is required';
       isValid = false;
     }
-
-    // Company Name validation
+    // Company
     if (!state.companyName) {
       newErrors.companyName = 'Company Name is required';
       isValid = false;
     }
-
-    // Start Date validation
+    // Start date
     if (!state.startDate) {
       newErrors.startDate = 'Start Date is required';
       isValid = false;
     }
-
-    // End Date validation
+    // End date required if not checked
     if (!state.endDate && !isChecked) {
       newErrors.endDate = 'End Date is required';
       isValid = false;
     }
-
-    // Roles & Responsibilities validation
+    // Roles & responsibilities
     if (!state.rolesResponsibilities) {
       newErrors.rolesResponsibilities = 'Roles & Responsibilities are required';
       isValid = false;
@@ -112,24 +118,27 @@ const WorkExperience = ({navigation, route}) => {
     return isValid;
   };
 
+  // Save or update
   const saveWorkExperienceAPI = async () => {
     if (validateFields()) {
-      // Perform your API call or other actions here
       let payload = {
-        designation: state?.designation,
-        company: state?.companyName,
-        startDate: state?.startDate,
-        endDate: state?.endDate,
-        role: state?.rolesResponsibilities,
+        designation: state.designation,
+        company: state.companyName,
+        startDate: state.startDate,
+        endDate: state.endDate,
+        role: state.rolesResponsibilities,
         currentlyWorking: isChecked,
       };
       if (edit) payload.id = edit;
+
       try {
         const {data} = await saveWorkExperience(payload);
         console.log(data, payload, 'saved');
         getWorkExperiencedetail();
         setSaved(true);
         if (edit) setEdit(false);
+
+        // Clear form
         setState({
           designation: '',
           companyName: '',
@@ -144,6 +153,7 @@ const WorkExperience = ({navigation, route}) => {
     }
   };
 
+  // Edit existing
   const onEdit = item => {
     setSaved(false);
     setEdit(item?._id);
@@ -154,19 +164,22 @@ const WorkExperience = ({navigation, route}) => {
       endDate: item?.endDate,
       rolesResponsibilities: item?.role,
     });
+
+    // Pre-set date pickers
     if (item?.startDate) {
-      const newDate = new Date(item?.startDate);
+      const newDate = new Date(item.startDate);
       const formattedDate = formatDate(newDate);
       setStartDate({show: false, date: newDate, format: formattedDate});
     }
     if (item?.endDate) {
-      const endDate = new Date(item?.endDate);
-      const formattedDate = formatDate(endDate);
-      setEndDate({show: false, date: endDate, format: formattedDate});
+      const eDate = new Date(item.endDate);
+      const formattedDate = formatDate(eDate);
+      setEndDate({show: false, date: eDate, format: formattedDate});
     }
     setIsChecked(item?.currentlyWorking);
   };
 
+  // Delete existing
   const onDelete = async item => {
     try {
       const {data} = await deleteWorkExperience(item?._id);
@@ -180,13 +193,12 @@ const WorkExperience = ({navigation, route}) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.yellowF5BE00}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
       <Header title="Work Experience" onBackPress={() => navigation.goBack()} />
+
       <View style={styles.layer1}>
         <View style={styles.layer2}>
+          {/* If not saved, show the form */}
           {!saved && (
             <>
               <View style={styles.input}>
@@ -195,9 +207,7 @@ const WorkExperience = ({navigation, route}) => {
                   label="Designation"
                   placeholder="Enter Designation"
                   value={state.designation}
-                  onChangeText={value =>
-                    handleInputChange('designation', value)
-                  }
+                  onChangeText={value => handleInputChange('designation', value)}
                   errorMessage={errors.designation}
                 />
                 <CustomTextInput
@@ -205,13 +215,13 @@ const WorkExperience = ({navigation, route}) => {
                   label="Company Name"
                   placeholder="Enter Company Name"
                   value={state.companyName}
-                  onChangeText={value =>
-                    handleInputChange('companyName', value)
-                  }
+                  onChangeText={value => handleInputChange('companyName', value)}
                   errorMessage={errors.companyName}
                 />
               </View>
+
               <View style={styles.input}>
+                {/* Start date - Pressable */}
                 <Pressable
                   style={{
                     position: 'absolute',
@@ -219,12 +229,8 @@ const WorkExperience = ({navigation, route}) => {
                     width: '48%',
                     zIndex: 1,
                   }}
-                  onPress={() =>
-                    setStartDate({
-                      ...startDate,
-                      show: true,
-                    })
-                  }></Pressable>
+                  onPress={() => setStartDate(prev => ({...prev, show: true}))}
+                />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
                   label="Start Date"
@@ -233,6 +239,8 @@ const WorkExperience = ({navigation, route}) => {
                   value={startDate.format}
                   errorMessage={errors.startDate}
                 />
+
+                {/* End date - Pressable */}
                 <Pressable
                   disabled={isChecked}
                   style={{
@@ -242,9 +250,8 @@ const WorkExperience = ({navigation, route}) => {
                     width: '48%',
                     zIndex: 1,
                   }}
-                  onPress={() =>
-                    setEndDate({...endDate, show: true})
-                  }></Pressable>
+                  onPress={() => setEndDate(prev => ({...prev, show: true}))}
+                />
                 <CustomTextInput
                   width={(DEVICE_WIDTH - 55) / 2}
                   label="End Date"
@@ -254,6 +261,7 @@ const WorkExperience = ({navigation, route}) => {
                   errorMessage={errors.endDate}
                 />
               </View>
+
               <CustomTextInput
                 label="Roles & Responsibilities"
                 placeholder="Enter Roles & Responsibilities"
@@ -265,6 +273,8 @@ const WorkExperience = ({navigation, route}) => {
                 errorMessage={errors.rolesResponsibilities}
                 multiline
               />
+
+              {/* Currently Working checkbox */}
               <View style={styles.checkboxContainer}>
                 <CheckBox
                   checkedIcon="check-box"
@@ -280,6 +290,8 @@ const WorkExperience = ({navigation, route}) => {
                   I currently work here
                 </Text>
               </View>
+
+              {/* Save button */}
               <View
                 style={{
                   marginTop: 30,
@@ -296,6 +308,8 @@ const WorkExperience = ({navigation, route}) => {
               </View>
             </>
           )}
+
+          {/* Month pickers */}
           <MonthPickerComponent
             pickerState={startDate}
             onPickerStateChange={setStartDate}
@@ -308,6 +322,8 @@ const WorkExperience = ({navigation, route}) => {
             field="endDate"
             handleInputChange={handleInputChange}
           />
+
+          {/* Show existing work experiences */}
           {workexperience.length > 0 && saved && (
             <>
               <View style={{marginBottom: nh(10), width: nw(96)}}>
@@ -321,19 +337,37 @@ const WorkExperience = ({navigation, route}) => {
                   onPress={() => setSaved(false)}
                 />
               </View>
+
               <FlatList
                 data={workexperience}
-                renderItem={({item}) => (
-                  <Card
-                    title={item?.designation}
-                    subtitle={item?.company}
-                    text1={new Date(item?.startDate).getFullYear()}
-                    text2={new Date(item?.endDate).getFullYear()}
-                    checked={item?.currentlyWorking}
-                    onEdit={() => onEdit(item)}
-                    onDelete={() => onDelete(item)}
-                  />
-                )}
+                renderItem={({item}) => {
+                  // If item.endDate is null => display "Currently Working"
+                  // Otherwise => show endDate year
+                  let endLabel = 'Currently Working';
+                  if (item.endDate) {
+                    endLabel = new Date(item.endDate).getFullYear().toString();
+                  }
+
+                  return (
+                    <Card
+                      title={item?.designation}
+                      subtitle={item?.company}
+                      // Start year if present
+                      text1={
+                        item?.startDate
+                          ? new Date(item.startDate).getFullYear().toString()
+                          : ''
+                      }
+                      // "Currently Working" or end date's year
+                      text2={endLabel}
+                      checked={!item?.currentlyWorking}
+                      onEdit={() => onEdit(item)}
+                      onDelete={() => onDelete(item)}
+                      type="work"
+                    />
+                  );
+                }}
+                keyExtractor={(item, index) => `${item._id}-${index}`}
               />
             </>
           )}

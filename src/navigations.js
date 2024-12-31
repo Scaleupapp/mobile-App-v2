@@ -205,7 +205,7 @@ const TabNavigator = ({navigation, route}) => {
         component={CreatePost}
         options={{
           headerShown: false,
-          tabBarLabel: ({focused}) => setBottomIconText('Add', focused),
+          tabBarLabel: ({focused}) => setBottomIconText('Create', focused),
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.add1 : icons.add2, focused),
         }}

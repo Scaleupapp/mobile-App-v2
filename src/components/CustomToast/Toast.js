@@ -5,7 +5,7 @@ import Modal from 'react-native-modal';
 import {COLORS} from '../../helper/colors';
 import {APP_FONTS} from '../../assets/fonts';
 import Icon from '../../helper/icon';
-import {nh} from '../../helper/scales';
+import {nh, nw} from '../../helper/scales';
 
 const Toast = ({visible, message}) => {
   if (!visible) {
@@ -52,9 +52,10 @@ const styles = StyleSheet.create({
   toastText: {
     color: COLORS.black333333,
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: 'left',
     fontFamily: APP_FONTS.PoppinsMedium,
     letterSpacing: 0.3,
+    marginRight: nw(20),
   },
 });
 
