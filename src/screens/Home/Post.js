@@ -32,6 +32,39 @@ import PlaylistSelectionModal from './PlaylistSelectionModal';
 import SavedPostsModal from './SavedPostsModal';
 import {useToast} from '../../components/CustomToast';
 
+
+
+const getTimeAgo = (date) => {
+  // Create dates in Asia/Kolkata timezone by adding 5 hours 30 minutes offset
+  const now = new Date();
+  const utcOffset = now.getTime() + (now.getTimezoneOffset() * 60000); // Convert to UTC
+  const indiaTime = new Date(utcOffset + (5.5 * 60 * 60000)); // Add India offset (5.5 hours)
+  
+  // Convert post date to India time
+  const postDate = new Date(date);
+  const postIndiaTime = new Date(postDate.getTime());
+  
+  const diffTime = Math.abs(indiaTime - postIndiaTime);
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  
+  // Handle cases less than a day
+  if (diffMinutes < 1) return 'just now';
+  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffMinutes < 120) return '1 hour ago';
+  if (diffMinutes < 1440) return `${Math.floor(diffMinutes/60)} hours ago`;
+  
+  // Handle longer time periods
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 14) return '1 week ago';
+  if (diffDays < 30) return `${Math.floor(diffDays/7)} weeks ago`;
+  if (diffDays < 60) return '1 month ago';
+  if (diffDays < 365) return `${Math.floor(diffDays/30)} months ago`;
+  return `${Math.floor(diffDays/365)} years ago`;
+};
+
+
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [imageHeight, setImageHeight] = useState(250);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
@@ -163,7 +196,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
     try {
       // First, check if the post is already in the playlist
       const checkResponse = await axios.get(
-        `https://api.scaleupapp.club/api/playlists/check?userId=${userId}&postId=${postId}`,
+        `http://192.168.1.6:3000/api/playlists/check?userId=${userId}&postId=${postId}`,
       );
 
       if (checkResponse.data.exists) {
@@ -181,7 +214,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       }
 
       // If not bookmarked, proceed with bookmarking
-      await axios.post('https://api.scaleupapp.club/api/playlists', {
+      await axios.post('http://192.168.1.6:3000/api/playlists', {
         userId, // Send userId in the body
         playlistName: 'My Playlist', // Optional: Customize the playlist name
         items: [{postId}], // Only send the postId, not the entire object
@@ -391,6 +424,30 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             size={24}
             color={COLORS.blue043142}
           /> */}
+          {item?.contentType === 'Video' && (
+      <>
+        <Icon
+          type="feather"
+          name="eye"
+          size={24}
+          color={COLORS.blue043142}
+          style={{marginRight: nw(3)}}
+        />
+        <Text
+          variant="medium12"
+          color={COLORS.black333333}
+          style={{marginRight: nw(10), marginTop: 5}}>
+          {item?.viewCount || 0}
+        </Text>
+        
+      </>
+    )}
+    <Text
+                variant="medium12"
+                color={COLORS.grey333333}
+                style={{marginTop: 5}}>
+                • {getTimeAgo(item?.postdate)}
+              </Text>
         </View>
         <Pressable onPress={saveHandler}>
           <Icon

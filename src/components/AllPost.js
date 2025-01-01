@@ -1,5 +1,4 @@
-// AllPost.js
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   FlatList,
   View,
@@ -7,6 +6,7 @@ import {
   StyleSheet,
   Pressable,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import {COLORS} from '../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
@@ -14,20 +14,90 @@ import {Image} from 'react-native';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
-import Routes from '../helper/routes';
+import PlaylistSelectionModal from '../screens/Home/PlaylistSelectionModal';
+import {useToast} from './CustomToast';
+import {getProfile} from '../services/apiService';
+import axios from 'axios';
 
 const CARD_WIDTH = nw(163);
 
 export const AllPost = ({data, isDrafts = false}) => {
+  // console.log('AllPost Component Rendered with data:', data);
+
   const navigation = useNavigation();
+  const {showToast} = useToast();
+  const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
+  const [selectedPost, setSelectedPost] = useState(null);
+  const [profileData, setProfileData] = useState(null);
 
   // Navigate to CreatePost with the draft data
+
+  // Determine the correct mime type based on content type and extension
+  useEffect(() => {
+    // console.log('Initial useEffect running - fetching profile data');
+
+    getProfileData();
+  }, []);
+
+  useEffect(() => {
+    //console.log('Modal visibility changed:', isPlaylistModalVisible);
+    // console.log('Selected post:', selectedPost);
+  }, [isPlaylistModalVisible, selectedPost]);
+
+  const getProfileData = async () => {
+    try {
+      const res = await getProfile('');
+      //console.log('Profile data response:', res?.data?.userProfileInfo);
+
+      setProfileData(res?.data?.userProfileInfo);
+    } catch (error) {
+      // console.log('Profile data fetch error:', error?.response?.data?.message);
+    }
+  };
+
+  const checkPostInPlaylists = async postId => {
+    //console.log('Checking post in playlists. PostId:', postId);
+    //console.log('Current profileData:', profileData);
+
+    if (!profileData?.id) {
+      //console.log('No profile ID available');
+      return false;
+    } //console.log('sddsfdsf',profileData)
+
+    try {
+      // Updated to use the correct endpoint
+      const response = await axios.get(
+        `https://api.scaleupapp.club/api/playlists/check?userId=${profileData.id}&postId=${postId}`,
+      );
+
+      //console.log('Check playlist response:', response.data);
+
+      // Handle the response based on the backend's structure
+      if (response.data.exists) {
+        showToast({
+          title: response.data.message || 'This post is already in a playlist',
+          type: 'info',
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error(
+        'Error checking post in playlists:',
+        error?.response?.data?.message || error.message,
+      );
+      showToast({
+        title: 'Error checking playlist status',
+        type: 'error',
+      });
+      return false;
+    }
+  };
+
   const handlePublish = item => {
-    // Create a file object from the content URL
     const fileExtension = item.contentURL.split('.').pop();
     const fileName = `draft_media.${fileExtension}`;
 
-    // Determine the correct mime type based on content type and extension
     let mimeType = 'image/jpeg';
     if (item.contentType === 'Video') {
       mimeType = 'video/mp4';
@@ -35,7 +105,6 @@ export const AllPost = ({data, isDrafts = false}) => {
       mimeType = 'image/png';
     }
 
-    // Format topics and hashtags properly
     const formattedTopics = Array.isArray(item.relatedTopics)
       ? item.relatedTopics.join(', ')
       : item.relatedTopics;
@@ -46,9 +115,9 @@ export const AllPost = ({data, isDrafts = false}) => {
 
     navigation.navigate('CreatePost', {
       draftData: {
-        id: item._id, // Add the draft post ID
+        id: item._id,
         heading: item.heading,
-        relatedTopics: formattedTopics, // Changed from topics to relatedTopics
+        relatedTopics: formattedTopics,
         captions: item.captions,
         hashtags: formattedHashtags,
         contentType: item.contentType,
@@ -82,6 +151,13 @@ export const AllPost = ({data, isDrafts = false}) => {
                 style={styles.mediaContent}
                 resizeMode="cover"
               />
+              <View style={styles.metricsContainer}>
+                <View style={styles.metricItem}>
+                  <Icon name="heart" size={16} color={COLORS.whiteFFFFFF} />
+                  <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
+                </View>
+                <View style={styles.metricItem}></View>
+              </View>
             </Pressable>
           ) : null}
 
@@ -100,13 +176,23 @@ export const AllPost = ({data, isDrafts = false}) => {
                 onBuffer={e => console.log('buffer ', e)}
                 onError={e => console.log('video error ', e)}
               />
+              <View style={styles.metricsContainer}>
+                <View style={styles.metricItem}>
+                  <Icon name="heart" size={16} color={COLORS.whiteFFFFFF} />
+                  <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
+                </View>
+                <View style={styles.metricItem}>
+                  <Icon name="eye" size={16} color={COLORS.whiteFFFFFF} />
+                  <Text style={styles.metricText}>{item?.viewCount || 0}</Text>
+                </View>
+              </View>
             </Pressable>
           ) : null}
         </Pressable>
 
-        {/* Draft Controls */}
         {isDrafts && (
           <View style={styles.draftControls}>
+            {/* <Text style={styles.draftLabel}>DRAFT</Text> */}
             <TouchableOpacity
               style={styles.publishButton}
               onPress={() => handlePublish(item)}>
@@ -134,6 +220,23 @@ export const AllPost = ({data, isDrafts = false}) => {
           </View>
         )}
       />
+
+      {/* {console.log('Rendering PlaylistSelectionModal with:', {
+        visible: isPlaylistModalVisible,
+        postId: selectedPost?.contentId
+      })} */}
+
+      <PlaylistSelectionModal
+        visible={isPlaylistModalVisible}
+        onClose={() => {
+          //console.log('Modal onClose called');
+
+          setIsPlaylistModalVisible(false);
+          setSelectedPost(null);
+        }}
+        postId={selectedPost?.contentId}
+        onPostAdded={handlePlaylistSuccess}
+      />
     </View>
   );
 };
@@ -149,8 +252,20 @@ const styles = StyleSheet.create({
   postContainer: {
     marginVertical: nh(2),
   },
+  headerContainer: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 1,
+  },
+  dotsButton: {
+    padding: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 12,
+  },
   imageContainer: {
     marginVertical: nh(2),
+    position: 'relative',
   },
   videoContainer: {
     borderRadius: nh(10),
@@ -158,6 +273,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: COLORS.grey333333 + '10',
+    position: 'relative',
   },
   mediaContent: {
     height: 200,
@@ -167,9 +283,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.grey333333 + '10',
   },
+  metricsContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 16,
+    padding: 6,
+  },
+  metricItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  metricText: {
+    color: COLORS.whiteFFFFFF,
+    marginLeft: 4,
+    fontSize: 12,
+  },
   draftControls: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: nw(8),
     paddingVertical: nh(4),

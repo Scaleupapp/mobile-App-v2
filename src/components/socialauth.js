@@ -1,11 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Alert,
-  Platform,
-  StyleSheet,
-  ActivityIndicator,
-} from 'react-native';
+import React, {useEffect} from 'react';
+import {View, Alert} from 'react-native';
 import {
   GoogleSignin,
   statusCodes,
@@ -27,7 +21,6 @@ import Routes from '../helper/routes';
 const SocialLogin = ({signup = false}) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     configureGoogleSignIn();
@@ -35,152 +28,206 @@ const SocialLogin = ({signup = false}) => {
 
   const configureGoogleSignIn = () => {
     GoogleSignin.configure({
-      // iOS client ID
-      iosClientId: '904486363410-khm24rnus7cfdhq6culdepe4jhunrsof.apps.googleusercontent.com',
-      // Android client ID
-      webClientId: '904486363410-gj81qip7agmdniss7tkt74fkan4alcf1.apps.googleusercontent.com',
-      offlineAccess: false,
+      webClientId:
+        '280212722139-v7lh28rve2vgdjr6t6lvbnrnljvml5rg.apps.googleusercontent.com',
+      offlineAccess: true,
       scopes: ['profile', 'email'],
-      forceCodeForRefreshToken: false,
+      forceCodeForRefreshToken: true,
     });
   };
 
-  const extractUserData = (user) => ({
-    username: (user.name || `${user.givenName}${user.familyName}`)?.trim(),
-    email: user.email?.trim() || '',
-    password: user.id?.toString() || '',
-    firstname: user.givenName?.trim() || '',
-    lastname: user.familyName?.trim() || '',
-    profilePicture: user.photo || '',
-    isbasicProfileComplete: true,
-  });
-
-  const handleAuthentication = async (userData) => {
+  const saveUserDataAndNavigate = async (userData) => {
     try {
-      // Attempt login first
-      const {data: loginData} = await loginApi({
-        loginIdentifier: userData.email,
-        password: userData.password,
-      });
-
-      await handleSuccessfulAuth(loginData);
-    } catch (loginError) {
-      // If login fails, attempt registration
-      try {
-        const {data: registrationData} = await registerApi(userData);
-        await handleSuccessfulAuth(registrationData);
-      } catch (registrationError) {
-        throw new Error(
-          registrationError.response?.data?.message ||
-            'Unable to create account. Please try again.',
-        );
-      }
+      console.log('Saving user data:', userData);
+      await AsyncStorage.setItem('userData', JSON.stringify(userData));
+      dispatch(actions.setUserData(userData));
+      navigation.navigate(Routes.Home);
+    } catch (error) {
+      console.error('Error saving user data:', error);
+      Alert.alert('Error', 'Failed to save user data. Please try again.');
     }
   };
 
-  const handleSuccessfulAuth = async (data) => {
-    const stringifiedUserData = JSON.stringify(data);
-    await AsyncStorage.setItem('userData', stringifiedUserData);
-    dispatch(actions.setUserData(data));
-    navigation.reset({
-      index: 0,
-      routes: [{name: Routes.Home}],
-    });
+  const processGoogleUser = (googleResponse) => {
+    // Access the user data from the correct path in the response
+    const user = googleResponse?.data?.user;
+    console.log('Processing Google user:', user);
+    
+    if (!user || !user.email) {
+      throw new Error('Invalid Google user data received');
+    }
+
+    const userData = {
+      username: user.email.split('@')[0].toLowerCase().trim(),
+      email: user.email.toLowerCase().trim(),
+      password: `google_${user.id}`,
+      firstname: user.givenName || user.name.split(' ')[0] || '',
+      lastname: user.familyName || user.name.split(' ').slice(1).join(' ') || '',
+      profilePicture: user.photo || '',
+      isbasicProfileComplete: false,
+    };
+    
+    console.log('Processed user data:', userData);
+    return userData;
+  };
+
+  const attemptLogin = async (userData) => {
+    try {
+      const { data } = await loginApi({
+        loginIdentifier: userData.email,
+        password: userData.password
+      });
+      return { success: true, data };
+    } catch (error) {
+      if (error.response?.status === 401) {
+        return { success: false };
+      }
+      throw error; // Rethrow other errors
+    }
+  };
+
+  const attemptRegistration = async (userData) => {
+    console.log('Attempting registration with:', userData);
+    
+    try {
+      const {data} = await registerApi({
+        ...userData,
+        // Ensure these fields are properly formatted for your API
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        firstname: userData.firstname || userData.username,
+        lastname: userData.lastname || '',
+        profilePicture: userData.profilePicture,
+        isbasicProfileComplete: false,
+      });
+      return {success: true, data};
+    } catch (error) {
+      console.log('Registration error:', error.response?.data);
+      throw error;
+    }
   };
 
   const handleGoogleAuth = async () => {
-    if (isLoading) return;
-    
-    setIsLoading(true);
     try {
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-
-      // Sign out first to ensure a fresh login attempt
-      await GoogleSignin.signOut();
-
+      // 1. Google Sign In
+      await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
+      console.log('Google Sign-In successful:', userInfo);
+  
+      // The email is nested in userInfo.user.email
+      const googleUser = userInfo?.data?.user;
+      console.log('bbbbbbbbbbb',googleUser)
       
-      if (!userInfo.user) {
-        throw new Error('Failed to get user information');
+      if (!googleUser?.email) {
+        throw new Error('No email received from Google');
       }
-
-      const userData = extractUserData(userInfo.user);
-      await handleAuthentication(userData);
+  
+      // 2. First try login
+      try {
+        const loginPayload = {
+          loginIdentifier: googleUser.email,
+          password: `google_${googleUser.id}`
+        };
+  
+        console.log('Attempting login with:', loginPayload);
+        const loginResponse = await loginApi(loginPayload);
+        
+        if (loginResponse?.data) {
+          await saveUserDataAndNavigate(loginResponse?.data);
+          return;
+        }
+  
+      } catch (loginError) {
+        console.log('Login error:', loginError.response?.data);
+        
+        // If login fails with 401, means user needs to register
+        if (loginError.response?.status === 401) {
+          console.log('Login failed, attempting registration');
+  
+          const registrationPayload = {
+            username: googleUser.email.split('@')[0].toLowerCase(),
+            email: googleUser.email.toLowerCase(),
+            password: `google_${googleUser.id}`,
+            firstname: googleUser.givenName || googleUser.name.split(' ')[0],
+            lastname: googleUser.familyName || googleUser.name.split(' ').slice(1).join(' ') || '',
+            profilePicture: googleUser.photo || '',
+            isbasicProfileComplete: false,
+          };
+  
+          console.log('Attempting registration with:', registrationPayload);
+  
+          try {
+            const registerResponse = await registerApi(registrationPayload);
+  
+            if (registerResponse?.data?.message === "Registration successful") {
+              console.log('Registration successful, navigating to Preferences');
+              navigation.navigate(Routes.Preferences);
+              return;
+            }
+            
+          } catch (registrationError) {
+            console.error('Registration error:', registrationError.response?.data);
+            Alert.alert(
+              'Registration Failed',
+              registrationError.response?.data?.message || 'Registration failed. Please try again.'
+            );
+            return;
+          }
+        }
+  
+        // If not a 401 error or registration failed
+        Alert.alert(
+          'Login Failed',
+          loginError.response?.data?.message || 'Authentication failed. Please try again.'
+        );
+      }
+  
     } catch (error) {
       console.error('Google Auth Error:', error);
-
+  
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        return; // User cancelled the login flow
+      }
+  
       const errorMessages = {
-        [statusCodes.SIGN_IN_CANCELLED]: 'Sign in was cancelled',
         [statusCodes.IN_PROGRESS]: 'Sign in is already in progress',
-        [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]:
-          Platform.select({
-            android: 'Google Play services is not available',
-            ios: 'Google Sign In services are not available',
-          }) || 'Google services are not available',
-        DEFAULT: 'An unexpected error occurred. Please try again.',
+        [statusCodes.PLAY_SERVICES_NOT_AVAILABLE]: 'Please install or update Google Play Services',
+        DEFAULT: 'Authentication failed. Please try again.'
       };
-
+  
       Alert.alert(
         'Authentication Error',
-        errorMessages[error.code] || errorMessages.DEFAULT,
+        error.message || errorMessages[error.code] || errorMessages.DEFAULT
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  
+
   return (
-    <View style={styles.container(signup)}>
+    <View style={{marginTop: signup ? nh(60) : 0}}>
       <Text
         variant="medium12"
         color={COLORS.grey333333}
-        style={styles.headerText}>
+        style={{textAlign: 'center', marginVertical: nh(15)}}>
         {signup ? 'Connect to your social media handles' : 'Or continue with'}
       </Text>
-      <View style={styles.buttonContainer}>
+      <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
         <Button
           variant="outline"
           text="Google"
-          textStyle={styles.buttonText}
+          textStyle={{
+            fontSize: nh(12),
+            fontFamily: APP_FONTS.PoppinsMedium
+          }}
           width={DEVICE_WIDTH - nw(32)}
           leftimage={icons.google}
           onPress={handleGoogleAuth}
-          disabled={isLoading}
-        >
-          {isLoading && (
-            <ActivityIndicator
-              size="small"
-              color={COLORS.primary}
-              style={styles.loader}
-            />
-          )}
-        </Button>
+        />
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: (signup) => ({
-    marginTop: signup ? nh(60) : 0,
-  }),
-  headerText: {
-    textAlign: 'center',
-    marginVertical: nh(15),
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  buttonText: {
-    fontSize: nh(12),
-    fontFamily: APP_FONTS.PoppinsMedium,
-  },
-  loader: {
-    marginLeft: nw(8),
-  },
-});
 
 export default SocialLogin;

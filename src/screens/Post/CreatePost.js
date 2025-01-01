@@ -165,7 +165,6 @@ const CreatePost = ({navigation}) => {
     }
   };
 
-  // Main function to handle post (publish or draft)
   const handlePost = async (isDraft = false) => {
     // Validate user authentication
     if (!profileData?.id) {
@@ -195,67 +194,102 @@ const CreatePost = ({navigation}) => {
         throw new Error('Authentication token not found');
       }
   
-      // If we're editing an existing draft and publishing it
-      if (draftData?.id && !isDraft) {
-        // Call the publish draft endpoint
-        const response = await axios.put(
-          `https://api.scaleupapp.club/api/content/publish/${draftData.id}`,
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-  
-        console.log('Draft Published:', response.data);
-        showToast({
-          title: response.data?.message || 'Post published successfully!',
-          type: 'success',
-        });
-        resetForm();
-        navigation.goBack();
-        return;
-      }
-  
-      // For new posts or saving as draft
+      // Create FormData for either update or create
       const formData = new FormData();
       formData.append('heading', heading);
-      formData.append('relatedTopics', topics);
-      formData.append('hashtags', hashtags);
+       // Format topics and hashtags as arrays
+    const topicsArray = topics.split(',').map(t => t.trim());
+    const hashtagsArray = hashtags.split(' ').filter(h => h.startsWith('#'));
+    
+    formData.append('relatedTopics', JSON.stringify(topicsArray));
+    formData.append('hashtags', JSON.stringify(hashtagsArray));
       formData.append('verify', 'Yes');
       formData.append('captions', captions);
       formData.append('contentType', contentType);
       formData.append('isDraft', isDraft ? 'true' : 'false');
   
-      formData.append('media', {
-        uri: file.uri,
-        type: file.type,
-        name: file.name || 'media'
-      });
+      // Only append media if it's changed (new file selected)
+      if (file && (!draftData?.file || file.uri !== draftData.file.uri)) {
+        formData.append('media', {
+          uri: file.uri,
+          type: file.type,
+          name: file.name || 'media'
+        });
+      }
   
-      const response = await axios.post(
-        'https://api.scaleupapp.club/api/content/create',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-          onUploadProgress: progressEvent => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total,
-            );
-            setUploadProgress(percentCompleted);
-          },
-        },
-      );
+      let response;
   
-      console.log('Post Upload Success:', response.data);
-      showToast({
-        title: response.data?.message || 'Post created successfully!',
-        type: 'success',
-      });
+      // If we're editing an existing draft
+      if (draftData?.id) {
+        if (isDraft) {
+          // Update the existing draft
+          response = await axios.put(
+            `https://api.scaleupapp.club/api/content/${draftData.id}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${token}`,
+              },
+              onUploadProgress: progressEvent => {
+                const percentCompleted = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total,
+                );
+                setUploadProgress(percentCompleted);
+              },
+            }
+          );
+          
+          console.log('Draft Updated:', response.data);
+          showToast({
+            title: 'Draft updated successfully!',
+            type: 'success',
+          });
+        } else {
+          // Publishing existing draft
+          response = await axios.put(
+            `https://api.scaleupapp.club/api/content/publish/${draftData.id}`,
+            formData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+  
+          console.log('Draft Published:', response.data);
+          showToast({
+            title: response.data?.message || 'Post published successfully!',
+            type: 'success',
+          });
+        }
+      } else {
+        // Creating a new post or draft
+        response = await axios.post(
+          'https://api.scaleupapp.club/api/content/create',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${token}`,
+            },
+            onUploadProgress: progressEvent => {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total,
+              );
+              setUploadProgress(percentCompleted);
+            },
+          },
+        );
+  
+        console.log('Post Upload Success:', response.data);
+        showToast({
+          title: isDraft ? 'Draft saved successfully!' : 'Post published successfully!',
+          type: 'success',
+        });
+      }
+  
       resetForm();
       navigation.goBack();
     } catch (error) {
