@@ -369,6 +369,8 @@ const styles = StyleSheet.create({
     padding: nh(4),
   },
   publishText: {
+    alignItems: 'center',
+    justifyContent: 'center',
     color: COLORS.blue043142,
     marginLeft: nw(4),
     fontSize: 12,

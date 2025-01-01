@@ -164,20 +164,7 @@ const MyProfile = ({navigation, route}) => {
               >
                 {profile?.username || ''}
               </Text>
-              {profile?.role === 'SME' && (
-                <Image
-                  source={require('../../assets/icons/medal-star.png')}
-                  tintColor={'#F6BE00'}
-                  style={[
-                    styles.smeSuperscript,
-                    {
-                      tintColor: '#F6BE00',
-                    },
-                  ]}
-                  resizeMode="contain"
-                />
 
-              )}
             </View>
 
             {/* Show all badges with distinct colors */}
