@@ -4,7 +4,6 @@ import {
   SafeAreaView,
   StatusBar,
   View,
-  ScrollView,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
@@ -13,7 +12,6 @@ import {DEVICE_HEIGHT, nh, nw} from '../../helper/scales';
 import MainHeader from '../../components/MainHeader';
 import Text from '../../components/Text';
 import {FlatList} from 'react-native-gesture-handler';
-import {images} from '../../assets/images';
 import {Image} from 'react-native';
 import {getHomePageData, getProfile} from '../../services/apiService';
 import {useFocusEffect} from '@react-navigation/native';
@@ -21,14 +19,12 @@ import PostView from './Post';
 import {Story} from './Story';
 import {throttle} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {actions} from '../../redux/reducers';
 
 const Home = ({navigation, route}) => {
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
   const [home, setHome] = useState([]);
-  // console.log('🚀 ~ Home ~ home:', home);
   const [hasMore, setHasMore] = useState(true);
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -36,16 +32,16 @@ const Home = ({navigation, route}) => {
   const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
 
+  // Refetch whenever we focus on this screen
   useFocusEffect(
     useCallback(() => {
       homePageData(1);
       setHasMore(true);
-      return () => {
-        // setPage(1);
-        // setHome([]);
-      };
-    }, []),
+      return () => {};
+    }, [])
   );
+
+  // On mount, also fetch user profile
   useEffect(() => {
     getProfileData();
   }, []);
@@ -53,60 +49,73 @@ const Home = ({navigation, route}) => {
   const getProfileData = async () => {
     try {
       const res = await getProfile('');
-
       const newdata = {...userData, ...res?.data?.userProfileInfo};
-      console.log('🚀 ~ getProfileData ~ newdata:', newdata);
-
-      dispatch(actions.setUserData(newdata)); // Dispatch the updated data
+      dispatch(actions.setUserData(newdata));
     } catch (error) {
       console.log(error?.response?.data?.message, 'errormsg');
     }
   };
 
-  const homePageData = async (page, refresh = false) => {
+  // Load home feed data (with pagination)
+  const homePageData = async (pageNum, refresh = false) => {
     try {
-      const {data} = await getHomePageData(page);
-      // console.log('🚀 ~ homePageData ~ data:', data);
+      const {data} = await getHomePageData(pageNum);
       if (data?.content.length > 0) {
         setPage(prevPage => prevPage + 1);
-        if (refresh) setHome(data.content);
-        else setHome(prev => [...prev, ...data.content]);
+        if (refresh) {
+          setHome(data.content);
+        } else {
+          setHome(prev => [...prev, ...data.content]);
+        }
       } else {
         setHasMore(false);
       }
     } catch (error) {
-      console.log('🚀 ~ homePageData ~ error:', {refresh}, error);
+      console.log('homePageData error:', {refresh}, error);
     } finally {
       setRefreshing(false);
       setLoading(false);
     }
   };
 
+  // Throttle the endReached to avoid multiple calls
   const handleOnReachEnd = useCallback(
     throttle(() => {
       if (hasMore) {
         setLoading(true);
         homePageData(page + 1);
       }
-      console.log('handleOnReachEnd');
+      console.log('handleOnReachEnd triggered');
     }, 1000),
-    [],
+    [hasMore, page]
   );
+
+  // Render each post
+  const renderItem = ({item, index}) => {
+    return (
+      <PostView
+        item={item}
+        index={index}
+        isPlaying={isPlaying}
+        setIsPlaying={setIsPlaying}
+      />
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
       <MainHeader />
+
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <FlatList
             ref={flatListRef}
-            keyExtractor={(_, index) => index.toString()}
             data={home}
+            keyExtractor={(_, index) => index.toString()}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl
@@ -119,27 +128,19 @@ const Home = ({navigation, route}) => {
                 tintColor={COLORS.blue043142}
               />
             }
-            ListHeaderComponent={() => {
-              return (
-                <>
-                  <Story />
-                  <Text
-                    variant="semibold16"
-                    style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}
-                    color={COLORS.blue043142}>
-                    Post
-                  </Text>
-                </>
-              );
-            }}
-            renderItem={({item, index}) => (
-              <PostView
-                item={item}
-                index={index}
-                isPlaying={isPlaying}
-                setIsPlaying={setIsPlaying}
-              />
+            ListHeaderComponent={() => (
+              <>
+                <Story />
+                <Text
+                  variant="semibold16"
+                  style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}
+                  color={COLORS.blue043142}
+                >
+                  Post
+                </Text>
+              </>
             )}
+            renderItem={renderItem}
             ListFooterComponent={() =>
               loading && (
                 <View
@@ -147,30 +148,24 @@ const Home = ({navigation, route}) => {
                     height: page > 1 ? nh(40) : DEVICE_HEIGHT,
                     paddingVertical: nh(20),
                     backgroundColor: COLORS.whiteFFFFFF,
-                  }}>
+                  }}
+                >
                   <ActivityIndicator size={'small'} color={COLORS.blue043142} />
                 </View>
               )
             }
             ListEmptyComponent={
-              <>
-                {!loading && (
-                  <View style={styles.emptyList}>
-                    <Text
-                      variant="semibold16"
-                      style={{
-                        width: '100%',
-                        textAlign: 'center',
-                      }}>
-                      {
-                        'Your Home Feed is empty right now. Start exploring and following users from the search page to see their content here!'
-                      }
-                    </Text>
-                  </View>
-                )}
-              </>
+              !loading && (
+                <View style={styles.emptyList}>
+                  <Text variant="semibold16" style={{width: '100%', textAlign: 'center'}}>
+                    {
+                      'Your Home Feed is empty right now. Start exploring and following users from the search page to see their content here!'
+                    }
+                  </Text>
+                </View>
+              )
             }
-            // onEndReached={handleOnReachEnd}
+            onEndReached={handleOnReachEnd}
             onEndReachedThreshold={0.5}
           />
         </View>
@@ -201,7 +196,6 @@ const styles = StyleSheet.create({
     marginHorizontal: nw(-16),
     borderTopLeftRadius: nh(25),
     borderTopRightRadius: nh(25),
-    // paddingHorizontal: nw(16),
     paddingTop: nh(20),
   },
   emptyList: {
