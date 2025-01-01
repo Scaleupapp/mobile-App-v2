@@ -30,9 +30,6 @@ export const AllPost = ({data, isDrafts = false}) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [profileData, setProfileData] = useState(null);
 
-  // Navigate to CreatePost with the draft data
-
-  // Determine the correct mime type based on content type and extension
   useEffect(() => {
     // console.log('Initial useEffect running - fetching profile data');
 
@@ -130,14 +127,67 @@ export const AllPost = ({data, isDrafts = false}) => {
     });
   };
 
+  const handleBookmarkPress = async item => {
+    //console.log('handleBookmarkPress called with item:', item);
+    //console.log('Current profileData:', profileData);
+
+    if (!profileData?.id) {
+      showToast({
+        title: 'Please login to bookmark posts',
+        type: 'error',
+      });
+      return;
+    }
+
+    if (item?.contentType !== 'Video') {
+      showToast({
+        title: 'Cannot add image to the playlist',
+        type: 'error',
+      });
+      return;
+    }
+
+    // Check if post is already in any playlist
+    //console.log('Checking if post is in playlist...');
+    const isInPlaylist = await checkPostInPlaylists(item._id);
+    //console.log('isInPlaylist result:', isInPlaylist);
+
+    if (!isInPlaylist) {
+      //console.log('Setting selected post:', item);
+      setSelectedPost(item);
+      //console.log('Setting modal visible to true');
+      setIsPlaylistModalVisible(true);
+    }
+  };
+
+  const handlePlaylistSuccess = () => {
+    showToast({
+      title: 'Post added to playlist successfully',
+      type: 'success',
+    });
+    setIsPlaylistModalVisible(false);
+    setSelectedPost(null);
+  };
+
   const Postcard = ({item, index}) => {
     return (
       <View style={styles.postContainer}>
-        {/* Content Display */}
-        <Pressable
-          onPress={() =>
-            navigation.navigate(Routes.UserPost, {data, item, index})
-          }>
+        <View>
+          <View style={styles.headerContainer}>
+            <TouchableOpacity
+              style={styles.dotsButton}
+              onPress={() => {
+                //console.log('Dots button pressed for item:', item?._id);
+                handleBookmarkPress(item);
+              }}>
+              <Icon
+                name="ellipsis-vertical"
+                size={20}
+                color={COLORS.blue043142}
+              />
+            </TouchableOpacity>
+          </View>
+
           {(item?.contentType === 'Image' ||
             item?.contentType === 'Document') &&
           item?.contentURL ? (
@@ -188,7 +238,7 @@ export const AllPost = ({data, isDrafts = false}) => {
               </View>
             </Pressable>
           ) : null}
-        </Pressable>
+        </View>
 
         {isDrafts && (
           <View style={styles.draftControls}>
