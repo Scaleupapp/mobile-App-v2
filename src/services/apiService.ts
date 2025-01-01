@@ -33,6 +33,10 @@ export const getHomePageData = (payload: any) => {
   return axiosInstance.get(`${API.HOMEPAGE}?page=${payload}&pageSize=10`);
 };
 
+export const getvideoPageData = (payload: any) => {
+  return axiosInstance.get(`${API.ALL_VIDEOS}?page=${payload}&pageSize=10`);
+};
+
 export const savePreferences = (payload: any) => {
   return axiosInstance.post(API.PREFERENCES, payload);
 };
@@ -84,9 +88,10 @@ export const deleteProjects = (id: any) => {
 export const getProfile = (payload: any) => {
   return axiosInstance.get(`${API.PROFILE_DETAIL}/${payload}`);
 };
-export const getProfiledetails = (payload: any) => {
-  console.log("🚀 ~ getProfiledetails ~ payload:", payload)
-  return axiosInstance.get(`${API.PROFILE_CONTENT}/${payload}`);
+export const getProfiledetails = (id: any, page: any) => {
+  return axiosInstance.get(
+    `${API.PROFILE_CONTENT}/${id}?page=${page}&pageSize=10`,
+  );
 };
 
 export const updateProfile = (payload: any) => {

@@ -31,42 +31,11 @@ import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 import SavedPostsModal from './SavedPostsModal';
 import {useToast} from '../../components/CustomToast';
+import {getTimeAgo} from '../../helper/commonFunctions';
+import convertToProxyURL from 'react-native-video-cache';
 
-
-
-const getTimeAgo = (date) => {
-  // Create dates in Asia/Kolkata timezone by adding 5 hours 30 minutes offset
-  const now = new Date();
-  const utcOffset = now.getTime() + (now.getTimezoneOffset() * 60000); // Convert to UTC
-  const indiaTime = new Date(utcOffset + (5.5 * 60 * 60000)); // Add India offset (5.5 hours)
-  
-  // Convert post date to India time
-  const postDate = new Date(date);
-  const postIndiaTime = new Date(postDate.getTime());
-  
-  const diffTime = Math.abs(indiaTime - postIndiaTime);
-  const diffMinutes = Math.floor(diffTime / (1000 * 60));
-  
-  // Handle cases less than a day
-  if (diffMinutes < 1) return 'just now';
-  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-  if (diffMinutes < 120) return '1 hour ago';
-  if (diffMinutes < 1440) return `${Math.floor(diffMinutes/60)} hours ago`;
-  
-  // Handle longer time periods
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  if (diffDays === 1) return 'yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 14) return '1 week ago';
-  if (diffDays < 30) return `${Math.floor(diffDays/7)} weeks ago`;
-  if (diffDays < 60) return '1 month ago';
-  if (diffDays < 365) return `${Math.floor(diffDays/30)} months ago`;
-  return `${Math.floor(diffDays/365)} years ago`;
-};
-
-
-const PostView = ({item, index, isPlaying, setIsPlaying}) => {
-  const [imageHeight, setImageHeight] = useState(250);
+const PostView = ({item, index}) => {
+  const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
   const [isLiked, setIsLiked] = useState(item.isLiked);
@@ -76,7 +45,6 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [isBookmarked, setIsBookmarked] = useState(item?.isSaved);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
-  const [isSavedModalVisible, setIsSavedModalVisible] = useState(false);
   const {showToast} = useToast();
 
   useEffect(() => {
@@ -112,15 +80,16 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       console.log(error, 'eeee');
     }
   };
-  useEffect(() => {
-    if (item?.contentType == 'Image' && item?.contentURL) {
-      Image.getSize(item?.contentURL, (width, height) => {
-        const aspectRatio = height / width;
-        const calculatedHeight = guidelineBaseWidth * aspectRatio;
-        setImageHeight(calculatedHeight);
-      });
-    }
-  }, [item?.contentType]);
+  const onImageLoad = data => {
+    const {
+      nativeEvent: {
+        source: {height, width},
+      },
+    } = data;
+    const aspectRatio = nh(height) / nw(width);
+    const calculatedHeight = guidelineBaseWidth * aspectRatio;
+    setImageHeight(calculatedHeight || 300);
+  };
 
   const saveHandler = async () => {
     try {
@@ -303,7 +272,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           style={{marginVertical: nh(10)}}>
           <Image
             source={{uri: item?.contentURL}}
-            style={[styles.postimage, {height: nh(imageHeight)}]}
+            style={[styles.postimage, {height: imageHeight}]}
+            onLoad={onImageLoad}
             resizeMode="cover"
             // resizeMode="contain"
           />
@@ -345,8 +315,8 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             paused={true}
             controls={false}
             onLoad={onLoad}
-            // source={{uri: convertToProxyURL(item?.contentURL)}}
-            source={{uri: item?.contentURL}}
+            source={{uri: convertToProxyURL(item?.contentURL)}}
+            // source={{uri: item?.contentURL}}
             style={
               videoDimensions?.height
                 ? {
@@ -425,29 +395,28 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
             color={COLORS.blue043142}
           /> */}
           {item?.contentType === 'Video' && (
-      <>
-        <Icon
-          type="feather"
-          name="eye"
-          size={24}
-          color={COLORS.blue043142}
-          style={{marginRight: nw(3)}}
-        />
-        <Text
-          variant="medium12"
-          color={COLORS.black333333}
-          style={{marginRight: nw(10), marginTop: 5}}>
-          {item?.viewCount || 0}
-        </Text>
-        
-      </>
-    )}
-    <Text
+            <>
+              <Icon
+                type="feather"
+                name="eye"
+                size={24}
+                color={COLORS.blue043142}
+                style={{marginRight: nw(3)}}
+              />
+              <Text
                 variant="medium12"
-                color={COLORS.grey333333}
-                style={{marginTop: 5}}>
-                • {getTimeAgo(item?.postdate)}
+                color={COLORS.black333333}
+                style={{marginRight: nw(10), marginTop: 5}}>
+                {item?.viewCount || 0}
               </Text>
+            </>
+          )}
+          <Text
+            variant="medium12"
+            color={COLORS.grey333333}
+            style={{marginTop: 5}}>
+            • {getTimeAgo(item?.postdate)}
+          </Text>
         </View>
         <Pressable onPress={saveHandler}>
           <Icon

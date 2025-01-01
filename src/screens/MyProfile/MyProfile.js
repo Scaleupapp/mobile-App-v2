@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -50,15 +50,31 @@ const MyProfile = ({navigation, route}) => {
   };
 
   useEffect(() => {
-    getprofiledetail();
+    getprofiledetail(1);
   }, [route?.params?.id]);
 
-  const getprofiledetail = async () => {
+  const getprofiledetail = async pageNum => {
     try {
-      let resp = await getProfiledetails(route?.params?.id ?? userData?.id);
-      setProfile(resp?.data);
+      let resp = await getProfiledetails(
+        route?.params?.id ?? userData?.id,
+        pageNum,
+      );
+      setProfile(prev => ({
+        ...prev, // Spread the existing properties of prev
+        ...resp?.data,
+        content: [
+          ...(prev?.content || []), // Spread the existing content array or use an empty array if it's undefined
+          ...resp?.data?.content, // Append the new content from resp.data.content
+        ],
+      }));
       setFollow(resp?.data?.followers.includes(userData?.username));
-      console.log(resp.data);
+
+      if (resp?.data?.pagination?.totalPages > pageNum) {
+        setTimeout(() => {
+          getprofiledetail(pageNum + 1);
+          console.log('api triggered');
+        }, 500);
+      }
     } catch (error) {
       console.log('Error fetching profile details:', error);
     } finally {

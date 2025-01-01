@@ -11,26 +11,6 @@ import Header from '../../components/Header';
 const UserPost = ({navigation, route}) => {
   const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
-  console.log(route?.params?.item);
-  // Throttle the endReached to avoid multiple calls
-  //   const handleOnReachEnd = useCallback(
-  //     throttle(() => {
-  //       if (hasMore) {
-  //         setLoading(true);
-  //         homePageData(page + 1);
-  //       }
-  //       console.log('handleOnReachEnd triggered');
-  //     }, 1000),
-  //     [hasMore, page],
-  //   );
-  console.log(route?.params?.index, 'route?.pams?.index');
-  // Render each post
-  const ITEM_HEIGHT = 400;
-  const getItemLayout = (data, index) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * route?.params?.index,
-    index: route?.params?.index,
-  });
 
   useEffect(() => {
     // Automatically scroll to the selected index
@@ -42,6 +22,16 @@ const UserPost = ({navigation, route}) => {
       });
     }, 500);
   }, [route?.params?.index]);
+
+  const handleScrollToIndexFailed = info => {
+    setTimeout(() => {
+      flatListRef.current?.scrollToIndex({
+        index: route?.params?.index,
+        animated: true,
+      });
+    }, 500);
+  };
+
   const renderItem = ({item, index}) => {
     return (
       <PostView
@@ -65,59 +55,11 @@ const UserPost = ({navigation, route}) => {
         <View style={styles.layer2}>
           <FlatList
             ref={flatListRef}
-            data={route?.params?.data?.content}
             keyExtractor={(_, index) => index.toString()}
             showsVerticalScrollIndicator={false}
-            // refreshControl={
-            //   <RefreshControl
-            //     refreshing={refreshing}
-            //     onRefresh={() => {
-            //       setPage(1);
-            //       setRefreshing(true);
-            //       homePageData(1, true);
-            //     }}
-            //     tintColor={COLORS.blue043142}
-            //   />
-            // }
-            // ListHeaderComponent={() => (
-            //   <>
-            //     <Text
-            //       variant="semibold16"
-            //       style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}
-            //       color={COLORS.blue043142}>
-            //       Post
-            //     </Text>
-            //   </>
-            // )}
             renderItem={renderItem}
-            getItemLayout={getItemLayout}
-            // ListFooterComponent={() =>
-            //   loading && (
-            //     <View
-            //       style={{
-            //         height: page > 1 ? nh(40) : DEVICE_HEIGHT,
-            //         paddingVertical: nh(20),
-            //         backgroundColor: COLORS.whiteFFFFFF,
-            //       }}>
-            //       <ActivityIndicator size={'small'} color={COLORS.blue043142} />
-            //     </View>
-            //   )
-            // }
-            // ListEmptyComponent={
-            //   !loading && (
-            //     <View style={styles.emptyList}>
-            //       <Text
-            //         variant="semibold16"
-            //         style={{width: '100%', textAlign: 'center'}}>
-            //         {
-            //           'Your Home Feed is empty right now. Start exploring and following users from the search page to see their content here!'
-            //         }
-            //       </Text>
-            //     </View>
-            //   )
-            // }
-            // onEndReached={handleOnReachEnd}
-            onEndReachedThreshold={0.5}
+            onScrollToIndexFailed={handleScrollToIndexFailed}
+            initialNumToRender={50}
           />
         </View>
       </View>
