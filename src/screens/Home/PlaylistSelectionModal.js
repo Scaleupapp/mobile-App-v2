@@ -88,13 +88,13 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
       });
       setShowNewPlaylistForm(false);
       showToast({
-        text: 'Playlist created successfully!',
+        title: 'Playlist created successfully!',
         type: 'success',
       });
     } catch (error) {
       console.error('Failed to create playlist:', error);
       showToast({
-        text: 'Failed to create playlist. Please try again.',
+        title: 'Failed to create playlist. Please try again.',
         type: 'error',
       });
     }
@@ -114,7 +114,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
       );
   
       showToast({
-        text: 'Post added to playlist successfully!',
+        title: 'Post added to playlist successfully!',
         type: 'success',
       });
   
@@ -123,7 +123,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
     } catch (error) {
       if (error.response && error.response.status === 400) {
         showToast({
-          text: 'This post is already present in the playlist.',
+          title: 'This post is already present in the playlist.',
           type: 'info',
         });
       } else {

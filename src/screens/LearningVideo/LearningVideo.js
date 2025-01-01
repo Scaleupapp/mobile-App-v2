@@ -34,6 +34,37 @@ import Header from '../../components/Header';
 import SavedPostsModal from '../Home/SavedPostsModal';
 import Toast from '../../components/CustomToast/Toast';
 import { useToast } from '../../components/CustomToast';
+// Add this helper function at the top of the file after the imports
+const getTimeAgo = (date) => {
+  // Create dates in Asia/Kolkata timezone by adding 5 hours 30 minutes offset
+  const now = new Date();
+  const utcOffset = now.getTime() + (now.getTimezoneOffset() * 60000); // Convert to UTC
+  const indiaTime = new Date(utcOffset + (5.5 * 60 * 60000)); // Add India offset (5.5 hours)
+  
+  // Convert post date to India time
+  const postDate = new Date(date);
+  const postIndiaTime = new Date(postDate.getTime());
+  
+  const diffTime = Math.abs(indiaTime - postIndiaTime);
+  const diffMinutes = Math.floor(diffTime / (1000 * 60));
+  
+  // Handle cases less than a day
+  if (diffMinutes < 1) return 'just now';
+  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffMinutes < 120) return '1 hour ago';
+  if (diffMinutes < 1440) return `${Math.floor(diffMinutes/60)} hours ago`;
+  
+  // Handle longer time periods
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  if (diffDays === 1) return 'yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 14) return '1 week ago';
+  if (diffDays < 30) return `${Math.floor(diffDays/7)} weeks ago`;
+  if (diffDays < 60) return '1 month ago';
+  if (diffDays < 365) return `${Math.floor(diffDays/30)} months ago`;
+  return `${Math.floor(diffDays/365)} years ago`;
+};
+
 const VideoItem = ({
   item,
   index,
@@ -269,6 +300,22 @@ const handleBookmarkPress = () => {
               color={COLORS.blue043142}
             />
           </Pressable>
+          <View style={styles.iconContainer}>
+            <Icon
+              type="feather"
+              name="eye"
+              size={24}
+              color={COLORS.blue043142}
+            />
+            <Text variant="medium12" style={styles.countText}>
+              {item?.viewCount || 0}
+            </Text>
+          </View>
+          <Text
+            variant="medium12"
+            style={[styles.countText, { color: COLORS.grey333333 }]}>
+            • {getTimeAgo(item?.postdate)}
+          </Text>
         </View>
         <Pressable onPress={saveHandler} disabled={isSaving}>
           <Icon
@@ -498,6 +545,8 @@ const styles = StyleSheet.create({
   },
   countText: {
     marginLeft: nw(5),
+    color: COLORS.black333333,
+
     marginTop: 5,
   },
   captionText: {
