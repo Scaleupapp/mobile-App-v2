@@ -8,26 +8,25 @@ import {
   Pressable,
   TouchableOpacity,
 } from 'react-native';
-import { COLORS } from '../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../helper/scales';
-import { Image } from 'react-native';
+import {COLORS} from '../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
+import {Image} from 'react-native';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import Routes from '../helper/routes';
 
 const CARD_WIDTH = nw(163);
 
-export const AllPost = ({ data, isDrafts = false }) => {
+export const AllPost = ({data, isDrafts = false}) => {
   const navigation = useNavigation();
 
-  
-
   // Navigate to CreatePost with the draft data
-  const handlePublish = (item) => {
+  const handlePublish = item => {
     // Create a file object from the content URL
     const fileExtension = item.contentURL.split('.').pop();
     const fileName = `draft_media.${fileExtension}`;
-    
+
     // Determine the correct mime type based on content type and extension
     let mimeType = 'image/jpeg';
     if (item.contentType === 'Video') {
@@ -37,54 +36,65 @@ export const AllPost = ({ data, isDrafts = false }) => {
     }
 
     // Format topics and hashtags properly
-  const formattedTopics = Array.isArray(item.relatedTopics) 
-  ? item.relatedTopics.join(', ')
-  : item.relatedTopics;
+    const formattedTopics = Array.isArray(item.relatedTopics)
+      ? item.relatedTopics.join(', ')
+      : item.relatedTopics;
 
-const formattedHashtags = Array.isArray(item.hashtags)
-  ? item.hashtags.join(' ')
-  : item.hashtags;
+    const formattedHashtags = Array.isArray(item.hashtags)
+      ? item.hashtags.join(' ')
+      : item.hashtags;
 
-  
     navigation.navigate('CreatePost', {
       draftData: {
         id: item._id, // Add the draft post ID
         heading: item.heading,
-      relatedTopics: formattedTopics, // Changed from topics to relatedTopics
+        relatedTopics: formattedTopics, // Changed from topics to relatedTopics
         captions: item.captions,
         hashtags: formattedHashtags,
         contentType: item.contentType,
         file: {
           uri: item.contentURL,
           type: mimeType,
-          name: fileName
-        }
-      }
+          name: fileName,
+        },
+      },
     });
   };
 
-  const Postcard = ({ item }) => {
+  const Postcard = ({item, index}) => {
     return (
       <View style={styles.postContainer}>
         {/* Content Display */}
-        <View>
-          {(item?.contentType === 'Image' || item?.contentType === 'Document') && 
-           item?.contentURL ? (
-            <Pressable style={styles.imageContainer}>
+        <Pressable
+          onPress={() =>
+            navigation.navigate(Routes.UserPost, {data, item, index})
+          }>
+          {(item?.contentType === 'Image' ||
+            item?.contentType === 'Document') &&
+          item?.contentURL ? (
+            <Pressable
+              style={styles.imageContainer}
+              onPress={() =>
+                navigation.navigate(Routes.UserPost, {data, item, index})
+              }>
               <Image
-                source={{ uri: item?.contentURL }}
+                source={{uri: item?.contentURL}}
                 style={styles.mediaContent}
                 resizeMode="cover"
               />
             </Pressable>
           ) : null}
-          
+
           {item?.contentType === 'Video' && item?.contentURL ? (
-            <Pressable style={styles.videoContainer}>
+            <Pressable
+              style={styles.videoContainer}
+              onPress={() =>
+                navigation.navigate(Routes.UserPost, {data, item, index})
+              }>
               <Video
                 paused={true}
                 controls
-                source={{ uri: item?.contentURL }}
+                source={{uri: item?.contentURL}}
                 style={styles.mediaContent}
                 resizeMode="cover"
                 onBuffer={e => console.log('buffer ', e)}
@@ -92,16 +102,14 @@ const formattedHashtags = Array.isArray(item.hashtags)
               />
             </Pressable>
           ) : null}
-        </View>
+        </Pressable>
 
         {/* Draft Controls */}
         {isDrafts && (
           <View style={styles.draftControls}>
-            
             <TouchableOpacity
               style={styles.publishButton}
-              onPress={() => handlePublish(item)}
-            >
+              onPress={() => handlePublish(item)}>
               <Icon name="cloud-upload" size={20} color={COLORS.blue043142} />
               <Text style={styles.publishText}>Publish</Text>
             </TouchableOpacity>
@@ -114,8 +122,8 @@ const formattedHashtags = Array.isArray(item.hashtags)
   return (
     <View style={styles.container}>
       <FlatList
-        data={data}
-        renderItem={({ item }) => <Postcard item={item} />}
+        data={data?.content}
+        renderItem={({item, index}) => <Postcard item={item} index={index} />}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         ListEmptyComponent={() => (
@@ -133,7 +141,6 @@ const formattedHashtags = Array.isArray(item.hashtags)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    
   },
   columnWrapper: {
     justifyContent: 'space-between',

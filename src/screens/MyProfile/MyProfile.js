@@ -41,11 +41,11 @@ const MyProfile = ({navigation, route}) => {
   // Example color map for badges (from lowest to highest rank).
   // Adjust as needed for your design.
   const badgeColorMap = {
-    Novice: '#C0C0C0',           // silver/gray
-    Explorer: '#2E8B57',         // sea-green
-    Creator: '#FF8C00',          // dark orange
-    Specialist: '#800080',       // purple
-    Influencer: '#008B8B',       // dark cyan
+    Novice: '#C0C0C0', // silver/gray
+    Explorer: '#2E8B57', // sea-green
+    Creator: '#FF8C00', // dark orange
+    Specialist: '#800080', // purple
+    Influencer: '#008B8B', // dark cyan
     'Subject Matter Expert': '#FFD700', // gold
   };
 
@@ -97,7 +97,10 @@ const MyProfile = ({navigation, route}) => {
     </View>
   ) : (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
 
       <Header
         title={type === 'user' ? 'My Profile' : profile?.username ?? ''}
@@ -131,7 +134,6 @@ const MyProfile = ({navigation, route}) => {
                       },
                     ]}
                   />
-
                 )}
               </View>
             ) : (
@@ -143,11 +145,12 @@ const MyProfile = ({navigation, route}) => {
                     justifyContent: 'center',
                     backgroundColor: COLORS.greyD6D6D6,
                   },
-                ]}
-              >
+                ]}>
                 <Text variant="semibold20" color={COLORS.black333333}>
                   {profile?.firstname
-                    ? `${profile?.firstname?.charAt(0)?.toUpperCase()}${profile?.lastname
+                    ? `${profile?.firstname
+                        ?.charAt(0)
+                        ?.toUpperCase()}${profile?.lastname
                         ?.charAt(0)
                         ?.toUpperCase()}`
                     : ''}
@@ -160,11 +163,9 @@ const MyProfile = ({navigation, route}) => {
               <Text
                 variant="semibold20"
                 color={COLORS.blue043142}
-                style={styles.usernameText}
-              >
+                style={styles.usernameText}>
                 {profile?.username || ''}
               </Text>
-
             </View>
 
             {/* Show all badges with distinct colors */}
@@ -178,12 +179,10 @@ const MyProfile = ({navigation, route}) => {
                       style={[
                         styles.badgeWrapper,
                         {backgroundColor: color + '20'}, // lighten or adjust alpha
-                      ]}
-                    >
+                      ]}>
                       <Text
                         variant="medium12"
-                        style={{color: color, fontWeight: 'bold'}}
-                      >
+                        style={{color: color, fontWeight: 'bold'}}>
                         {badge}
                       </Text>
                     </View>
@@ -202,8 +201,7 @@ const MyProfile = ({navigation, route}) => {
             <Text
               variant="medium12"
               color={COLORS.grey999999}
-              style={{textAlign: 'center', marginBottom: nh(20)}}
-            >
+              style={{textAlign: 'center', marginBottom: nh(20)}}>
               {profile?.bioAbout}
             </Text>
 
@@ -243,8 +241,7 @@ const MyProfile = ({navigation, route}) => {
                   navigation.navigate(Routes.Followers, {
                     id: type === 'user' ? userData.id : route?.params?.id,
                   })
-                }
-              >
+                }>
                 <Text variant="bold20" color={COLORS.blue043142}>
                   {profile?.followersCount ?? ''}
                 </Text>
@@ -259,8 +256,7 @@ const MyProfile = ({navigation, route}) => {
                   navigation.navigate(Routes.Following, {
                     id: type === 'user' ? userData.id : route?.params?.id,
                   })
-                }
-              >
+                }>
                 <Text variant="bold20" color={COLORS.blue043142}>
                   {profile?.following?.length ?? 0}
                 </Text>
@@ -294,7 +290,7 @@ const MyProfile = ({navigation, route}) => {
             )}
 
             {/* All Posts Option */}
-            <AllPostoption type={type} data={profile?.content} />
+            <AllPostoption type={type} data={profile} />
           </ScrollView>
         </View>
       </View>
@@ -381,7 +377,6 @@ const styles = StyleSheet.create({
     right: -25,
     width: 20,
     height: 20,
-    
   },
   badgesContainer: {
     flexDirection: 'row',

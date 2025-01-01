@@ -30,7 +30,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
 import SavedPostsModal from './SavedPostsModal';
-import { useToast } from '../../components/CustomToast';
+import {useToast} from '../../components/CustomToast';
 
 const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [imageHeight, setImageHeight] = useState(250);
@@ -44,7 +44,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [isSavedModalVisible, setIsSavedModalVisible] = useState(false);
-  const { showToast } = useToast();
+  const {showToast} = useToast();
 
   useEffect(() => {
     getProfileData();
@@ -53,7 +53,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const getProfileData = async () => {
     try {
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -92,7 +92,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   const saveHandler = async () => {
     try {
       const token = profileData?.id;
-      
+
       if (!token) {
         showToast({
           text: 'Please login to save posts',
@@ -100,16 +100,16 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         });
         return;
       }
-  
+
       // Toggle bookmark state immediately for better UX
       setIsBookmarked(!isBookmarked);
-  
+
       // Make API call based on current state
       if (isBookmarked) {
         await unsavePostAPI(item?._id);
       } else {
         const res = await savePostAPI(item?._id);
-        
+
         if (res.data.error) {
           // Revert state if API call fails
           setIsBookmarked(isBookmarked);
@@ -128,7 +128,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       });
     }
   };
-  
+
   const handleBookmarkPress = () => {
     if (!profileData?.id) {
       showToast({
@@ -137,7 +137,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       });
       return;
     }
-  
+
     // Check if the post belongs to the logged-in user
     if (item?.userId?._id !== profileData?.id) {
       showToast({
@@ -146,7 +146,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       });
       return;
     }
-  
+
     // Check if it's a video post
     if (item?.contentType !== 'Video') {
       showToast({
@@ -155,10 +155,9 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
       });
       return;
     }
-  
+
     setIsPlaylistModalVisible(true);
   };
-  
 
   const handleBookmark = async (userId, postId) => {
     try {
@@ -215,7 +214,6 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
   };
 
   return (
-    
     <View
       key={index}
       style={{
@@ -257,15 +255,13 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
           </Text>
         </Pressable>
         <Pressable onPress={handleBookmarkPress}>
-
-         <Icon
-          type="entypo"
-          name="dots-three-vertical"
-          size={21}
-          color={COLORS.blue043142}
-        /> 
-                </Pressable>
-
+          <Icon
+            type="entypo"
+            name="dots-three-vertical"
+            size={21}
+            color={COLORS.blue043142}
+          />
+        </Pressable>
       </View>
 
       {item?.contentType == 'Image' && item?.contentURL ? (
@@ -477,9 +473,7 @@ const PostView = ({item, index, isPlaying, setIsPlaying}) => {
         currentPost={item}
       /> */}
     </View>
-    
   );
-  
 };
 
 const styles = StyleSheet.create({
