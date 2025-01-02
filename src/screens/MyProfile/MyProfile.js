@@ -53,34 +53,73 @@ const MyProfile = ({navigation, route}) => {
     getprofiledetail(1);
   }, [route?.params?.id]);
 
-  const getprofiledetail = async pageNum => {
+  const getprofiledetail = async (pageNum) => {
     try {
+      // Log the current page number being fetched
+      console.log(`Fetching profile details for page: ${pageNum}`);
+  
+      // Make the API call to fetch profile details
       let resp = await getProfiledetails(
         route?.params?.id ?? userData?.id,
         pageNum,
       );
-      setProfile(prev => ({
+  
+      // Log the entire response object
+      console.log('API Response:', resp);
+  
+      // Optionally, log specific parts of the response for clarity
+      console.log('Response Data:', resp?.data);
+      console.log('Content Array:', resp?.data?.content);
+      console.log('Followers:', resp?.data?.followers);
+      console.log('Pagination Info:', resp?.data?.pagination);
+  
+      // Update the profile state with the new data
+      setProfile((prev) => ({
         ...prev, // Spread the existing properties of prev
         ...resp?.data,
         content: [
           ...(prev?.content || []), // Spread the existing content array or use an empty array if it's undefined
-          ...resp?.data?.content, // Append the new content from resp.data.content
+          ...(resp?.data?.content || []), // Append the new content from resp.data.content
         ],
       }));
+  
+      // Log the updated profile state (optional)
+      console.log('Updated Profile State:', {
+        ...profile,
+        ...resp?.data,
+        content: [
+          ...(profile?.content || []),
+          ...(resp?.data?.content || []),
+        ],
+      });
+  
+      // Update the follow status
       setFollow(resp?.data?.followers.includes(userData?.username));
-
+  
+      // Log the follow status
+      console.log(`Is Following: ${resp?.data?.followers.includes(userData?.username)}`);
+  
+      // Handle pagination by checking if more pages are available
       if (resp?.data?.pagination?.totalPages > pageNum) {
+        console.log(`Total Pages: ${resp?.data?.pagination?.totalPages} > Current Page: ${pageNum}`);
+        
         setTimeout(() => {
           getprofiledetail(pageNum + 1);
-          console.log('api triggered');
+          console.log('API triggered for next page');
         }, 500);
+      } else {
+        console.log('No more pages to fetch.');
       }
     } catch (error) {
+      // Log detailed error information
       console.log('Error fetching profile details:', error);
     } finally {
+      // Log the loading state (optional)
+      console.log('Setting loading state to false');
       setLoading(false);
     }
   };
+  
 
   const followApi = async () => {
     try {
