@@ -1,32 +1,35 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, SafeAreaView, StatusBar, View} from 'react-native';
+import {
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  View,
+  FlatList,
+} from 'react-native';
 import {COLORS} from '../../helper/colors';
-import {DEVICE_HEIGHT, nh, nw} from '../../helper/scales';
-
-import {FlatList} from 'react-native-gesture-handler';
-
+import {nh, nw} from '../../helper/scales';
 import PostView from '../Home/Post';
 import Header from '../../components/Header';
 
-const UserPost = ({navigation, route}) => {
+const UserPost = ({route}) => {
+  const {index, data} = route?.params;
   const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
 
   useEffect(() => {
     // Automatically scroll to the selected index
-    if (route?.params?.index) console.log('herere');
     setTimeout(() => {
       flatListRef.current?.scrollToIndex({
-        index: route?.params?.index,
+        index: index ?? 0,
         animated: true,
       });
     }, 500);
-  }, [route?.params?.index]);
+  }, [index]);
 
   const handleScrollToIndexFailed = info => {
     setTimeout(() => {
       flatListRef.current?.scrollToIndex({
-        index: route?.params?.index,
+        index: index ?? 0,
         animated: true,
       });
     }, 500);
@@ -49,12 +52,13 @@ const UserPost = ({navigation, route}) => {
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header title={route?.params?.data?.username} />
+      <Header title={data?.username} />
 
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <FlatList
             ref={flatListRef}
+            data={data?.content}
             keyExtractor={(_, index) => index.toString()}
             showsVerticalScrollIndicator={false}
             renderItem={renderItem}

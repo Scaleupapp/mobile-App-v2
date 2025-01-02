@@ -19,6 +19,7 @@ import {useToast} from './CustomToast';
 import {getProfile} from '../services/apiService';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Routes from '../helper/routes';
 const CARD_WIDTH = nw(163);
 
 export const AllPost = ({data, isDrafts = false}) => {
@@ -30,7 +31,6 @@ export const AllPost = ({data, isDrafts = false}) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [profileData, setProfileData] = useState(null);
   const [postDetails, setPostDetails] = useState({});
-
 
   useEffect(() => {
     // console.log('Initial useEffect running - fetching profile data');
@@ -129,54 +129,52 @@ export const AllPost = ({data, isDrafts = false}) => {
     });
   };
 
-    // Add the fetchPostDetails function
-    const fetchPostDetails = async (postId) => {
-      console.log('ddfffd',postId)
+  // Add the fetchPostDetails function
+  const fetchPostDetails = async postId => {
+    try {
+      // Get the latest token from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const currentToken = userData ? JSON.parse(userData).token : null;
+
+      let response;
       try {
-        // Get the latest token from AsyncStorage
-        const userData = await AsyncStorage.getItem('userData');
-        const currentToken = userData ? JSON.parse(userData).token : null;
-        
-        let response;
-        try {
-          // First attempt without token
-          response = await axios.get(
-            `https://api.scaleupapp.club/api/content/post/${postId}`
-          );
-        } catch (err) {
-          // If that fails and we have a token, try with authentication
-          if (currentToken) {
-            response = await axios.get(
-              `https://api.scaleupapp.club/api/content/post/${postId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${currentToken}`,
-                },
-              }
-            );
-          } else {
-            throw err;
-          }
-        }
-        
-        // Store the post details in state
-        setPostDetails(prevDetails => ({
-          ...prevDetails,
-          [postId]: response.data.contentDetails
-        }));
-        
-        return response.data.contentDetails;
+        // First attempt without token
+        response = await axios.get(
+          `https://api.scaleupapp.club/api/content/post/${postId}`,
+        );
       } catch (err) {
-        if (err?.response?.status !== 403) {
-          console.error(`Failed to fetch details for post ${postId}:`, err);
+        // If that fails and we have a token, try with authentication
+        if (currentToken) {
+          response = await axios.get(
+            `https://api.scaleupapp.club/api/content/post/${postId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${currentToken}`,
+              },
+            },
+          );
+        } else {
+          throw err;
         }
-        return null;
       }
-    };
 
-  const handleBookmarkPress = async (item) => {
+      // Store the post details in state
+      setPostDetails(prevDetails => ({
+        ...prevDetails,
+        [postId]: response.data.contentDetails,
+      }));
 
-    console.log('handleBookmarkPress called with item:', item);
+      return response.data.contentDetails;
+    } catch (err) {
+      if (err?.response?.status !== 403) {
+        console.error(`Failed to fetch details for post ${postId}:`, err);
+      }
+      return null;
+    }
+  };
+
+  const handleBookmarkPress = async item => {
+    // console.log('handleBookmarkPress called with item:', item);
     //console.log('Current profileData:', profileData);
 
     if (!profileData?.id) {
@@ -187,23 +185,22 @@ export const AllPost = ({data, isDrafts = false}) => {
       return;
     }
 
-     // Fetch post details if we don't have them yet
-     let currentPostDetails = postDetails[item?.contentId];
-     console.log(currentPostDetails)
-     if (!currentPostDetails) {
-       currentPostDetails = await fetchPostDetails(item?.contentId);
-       if (!currentPostDetails) {
-         showToast({
-           title: 'Unable to fetch post details',
-           type: 'error',
-         });
-         return;
-       }
-     }
+    // Fetch post details if we don't have them yet
+    let currentPostDetails = postDetails[item?.contentId];
+    // console.log(currentPostDetails);
+    if (!currentPostDetails) {
+      currentPostDetails = await fetchPostDetails(item?.contentId);
+      if (!currentPostDetails) {
+        showToast({
+          title: 'Unable to fetch post details',
+          type: 'error',
+        });
+        return;
+      }
+    }
 
-
-     // Check if the post belongs to the logged-in user
-     if (currentPostDetails?.username !== profileData?.username) {
+    // Check if the post belongs to the logged-in user
+    if (currentPostDetails?.username !== profileData?.username) {
       showToast({
         title: 'You can only bookmark your own video posts',
         type: 'error',
@@ -249,7 +246,7 @@ export const AllPost = ({data, isDrafts = false}) => {
             <TouchableOpacity
               style={styles.dotsButton}
               onPress={() => {
-                console.log('Dots button pressed for item:', item?.contentId);
+                // console.log('Dots button pressed for item:', item?.contentId);
                 handleBookmarkPress(item);
               }}>
               <Icon
@@ -266,7 +263,11 @@ export const AllPost = ({data, isDrafts = false}) => {
             <Pressable
               style={styles.imageContainer}
               onPress={() =>
-                navigation.navigate(Routes.UserPost, {data, item, index})
+                navigation.navigate(Routes.UserPost, {
+                  data: data,
+                  item: item,
+                  index: index,
+                })
               }>
               <Image
                 source={{uri: item?.contentURL}}
@@ -287,7 +288,11 @@ export const AllPost = ({data, isDrafts = false}) => {
             <Pressable
               style={styles.videoContainer}
               onPress={() =>
-                navigation.navigate(Routes.UserPost, {data, item, index})
+                navigation.navigate(Routes.UserPost, {
+                  data: data,
+                  item: item,
+                  index: index,
+                })
               }>
               <Video
                 paused={true}
