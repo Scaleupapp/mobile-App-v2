@@ -5,6 +5,7 @@ import {
   StatusBar,
   View,
   ScrollView,
+  Platform,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -201,7 +202,7 @@ const BasicDetails = ({navigation, route}) => {
               errorMessage={errors.confirmPassword}
             />
             <Button text="Submit" onPress={registerUser} />
-            <SocialLogin signup={true} />
+            {Platform.OS === 'android' ? <SocialLogin signup={true} /> : null}
             <View style={{height: nh(50)}} />
           </ScrollView>
         </View>

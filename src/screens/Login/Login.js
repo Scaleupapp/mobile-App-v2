@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Text as RNText,
   Alert,
+  Platform,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -338,7 +339,9 @@ const Login = ({navigation}) => {
             }
             onPress={loginUser}
           />
-          <SocialLogin navigation={navigation} />
+          {Platform.OS === 'android' ? (
+            <SocialLogin navigation={navigation} />
+          ) : null}
           {/* {phoneNumberData?.loginOtp ? (
             // <View
             //   style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
