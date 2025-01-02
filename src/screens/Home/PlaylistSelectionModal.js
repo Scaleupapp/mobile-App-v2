@@ -123,6 +123,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
     } catch (error) {
       if (error.response && error.response.status === 400) {
         showToast({
+        
           title: 'This post is already present in the playlist.',
           type: 'info',
         });

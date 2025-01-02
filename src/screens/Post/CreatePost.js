@@ -9,6 +9,7 @@ import {
   Modal,
   TouchableOpacity,
   Image, // for image preview
+  ActivityIndicator
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
@@ -40,6 +41,7 @@ const CreatePost = ({navigation}) => {
   const [contentType, setContentType] = useState('Image'); // default
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // Modal for selecting media
 
@@ -120,6 +122,32 @@ const CreatePost = ({navigation}) => {
     }
   };
 
+
+  // Separate function for handling file selection and compression
+ const handleFileSelection = async (asset) => {
+    try {
+      setIsCompressing(true);
+      
+      if (asset.type && asset.type.toLowerCase().includes('video')) {
+        setContentType('Video');
+        let compress_video = await compressVideo(asset?.uri);
+        setFile({...asset, uri: compress_video});
+      } else {
+        setContentType('Image');
+        let compress_image = await compressImage(asset?.uri);
+        setFile({...asset, uri: compress_image});
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      showToast({
+        title: 'Failed to process file',
+        type: 'error',
+      });
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
   // Open gallery to pick media
   const openGallery = async () => {
     if (!profileData?.id) {
@@ -137,23 +165,11 @@ const CreatePost = ({navigation}) => {
 
       // Always close modal so we can re-open it next time
       setModalVisible(false);
-
       if (result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-
-        // Determine content type
-        if (asset.type && asset.type.toLowerCase().includes('video')) {
-          setContentType('Video');
-          let compress_video = await compressVideo(asset?.uri);
-
-          setFile({...asset, uri: compress_video});
-        } else {
-          let compress_image = await compressImage(asset?.uri);
-
-          setFile({...asset, uri: compress_image});
-          setContentType('Image');
-        }
+        await handleFileSelection(result.assets[0]);
       }
+
+      
     } catch (err) {
       console.error('Error selecting file:', err);
       showToast({
@@ -218,6 +234,19 @@ const CreatePost = ({navigation}) => {
       }
   
       let response;
+
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
+        onUploadProgress: progressEvent => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total,
+          );
+          setUploadProgress(percentCompleted);
+        },
+      };
   
       // If we're editing an existing draft
       if (draftData?.id) {
@@ -226,18 +255,8 @@ const CreatePost = ({navigation}) => {
           response = await axios.put(
             `https://api.scaleupapp.club/api/content/${draftData.id}`,
             formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                Authorization: `Bearer ${token}`,
-              },
-              onUploadProgress: progressEvent => {
-                const percentCompleted = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total,
-                );
-                setUploadProgress(percentCompleted);
-              },
-            }
+            config
+            
           );
           
           console.log('Draft Updated:', response.data);
@@ -250,12 +269,7 @@ const CreatePost = ({navigation}) => {
           response = await axios.put(
             `https://api.scaleupapp.club/api/content/publish/${draftData.id}`,
             formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
-                Authorization: `Bearer ${token}`,
-              },
-            }
+            config
           );
   
           console.log('Draft Published:', response.data);
@@ -269,18 +283,7 @@ const CreatePost = ({navigation}) => {
         response = await axios.post(
           'https://api.scaleupapp.club/api/content/create',
           formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${token}`,
-            },
-            onUploadProgress: progressEvent => {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total,
-              );
-              setUploadProgress(percentCompleted);
-            },
-          },
+          config
         );
   
         console.log('Post Upload Success:', response.data);
@@ -290,13 +293,16 @@ const CreatePost = ({navigation}) => {
         });
       }
   
-      resetForm();
-      navigation.goBack();
+      setTimeout(() => {
+        resetForm();
+        navigation.goBack();
+      }, 500);
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
       showToast({title: 'Failed to upload post.', type: 'error'});
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -350,17 +356,29 @@ const CreatePost = ({navigation}) => {
                 width={nw(96)}
                 height={nh(35)}
                 textStyle={{ fontSize: 14 }}
+                disabled={isCompressing || isUploading}
+
               />
 
+              {/* Compression Status */}
+              {isCompressing && (
+                <View style={styles.compressionContainer}>
+                  <ActivityIndicator size="small" color={COLORS.yellowF5BE00} />
+                  <Text style={styles.compressionText}>
+                    Compressing {contentType.toLowerCase()}...
+                  </Text>
+                </View>
+              )}
+
               {/* Show filename if selected */}
-              {file && (
+              {file && !isCompressing && (
                 <Text style={styles.fileName} numberOfLines={1}>
                   {file.fileName || 'Selected media'}
                 </Text>
               )}
 
               {/* Preview + remove button */}
-              {file && (
+              {file && !isCompressing && (
                 <View style={styles.previewContainer}>
                   {contentType === 'Image' ? (
                     <Image
@@ -384,7 +402,8 @@ const CreatePost = ({navigation}) => {
                   {/* Cross/Close button to remove file */}
                   <TouchableOpacity
                     style={styles.closeIconContainer}
-                    onPress={removeFile}>
+                    onPress={removeFile}
+                                        disabled={isUploading}>
                     <Icon name="close-circle" size={24} color="red" />
                   </TouchableOpacity>
                 </View>
@@ -392,7 +411,7 @@ const CreatePost = ({navigation}) => {
             </View>
 
             {/* Upload Progress */}
-            {isUploading && (
+            {isUploading && !isCompressing && (
               <View style={styles.progressContainer}>
                 <View
                   style={[styles.progressBar, {width: `${uploadProgress}%`}]}
@@ -489,6 +508,17 @@ const styles = StyleSheet.create({
     borderTopRightRadius: nh(25),
     paddingHorizontal: nw(16),
     paddingTop: nh(30),
+  },
+  compressionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: nh(10),
+    justifyContent: 'center',
+  },
+  compressionText: {
+    marginLeft: nw(10),
+    color: COLORS.grey999999,
+    fontSize: 14,
   },
   uploadButtonContainer: {
     marginTop: nh(10),

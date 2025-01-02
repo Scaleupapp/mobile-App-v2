@@ -46,6 +46,8 @@ const PostView = ({item, index}) => {
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const {showToast} = useToast();
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     getProfileData();
@@ -159,6 +161,19 @@ const PostView = ({item, index}) => {
     }
 
     setIsPlaylistModalVisible(true);
+  };
+
+  const handleVideoPress = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleVideoError = (error) => {
+    console.log('Video Error:', error);
+    // Optionally show an error message to the user
+    showToast({
+      title: 'Error playing video',
+      type: 'error',
+    });
   };
 
   const handleBookmark = async (userId, postId) => {
@@ -281,8 +296,8 @@ const PostView = ({item, index}) => {
       ) : null}
       {item?.contentType == 'Video' && item?.contentURL ? (
         <Pressable
-          onPress={() => imageModalRef.current?.present()}
-          style={{
+        onPress={handleVideoPress}
+        style={{
             marginTop: nh(10),
             borderRadius: nh(12),
             marginBottom: nh(15),
@@ -312,8 +327,9 @@ const PostView = ({item, index}) => {
             </View>
           )}
           <Video
-            paused={true}
-            controls={false}
+            ref={videoRef}
+            paused={!isPlaying}
+            controls={isPlaying}
             onLoad={onLoad}
             source={{uri: convertToProxyURL(item?.contentURL)}}
             // source={{uri: item?.contentURL}}
@@ -332,31 +348,25 @@ const PostView = ({item, index}) => {
                     backgroundColor: COLORS.whiteFFFFFF,
                   }
             }
-            resizeMode="cover"
+            resizeMode="contain"
             onBuffer={e => console.log('bufeer ', e)}
             onError={e => console.log('sdsds ', e)}
           />
-          <View
+          {!isPlaying && (
+        <View style={styles.playButtonContainer}>
+          <Icon
+            type="antdesign"
+            name="playcircleo"
+            size={nh(40)}
+            color={COLORS.blue043142}
             style={{
-              position: 'absolute',
-              alignSelf: 'center',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-            }}>
-            <Icon
-              type="antdesign"
-              name="playcircleo"
-              size={nh(40)}
-              color={COLORS.blue043142}
-              style={{
-                marginRight: nw(10),
-                opacity: 0.8,
-              }}
-            />
-          </View>
-        </Pressable>
-      ) : null}
+              opacity: 0.8,
+            }}
+          />
+        </View>
+      )}
+    </Pressable>
+  ) : null}
 
       <View style={styles.view}>
         <View
@@ -538,6 +548,25 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     marginTop: nh(10),
     color: COLORS.grey333333,
+  },
+  playButtonContainer: {
+    position: 'absolute',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+  },
+  verifiedBadge: {
+    height: nh(30),
+    width: nw(30),
+    borderRadius: nh(15),
+    backgroundColor: COLORS.blue043142,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    zIndex: 1,
   },
 });
 

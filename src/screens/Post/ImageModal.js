@@ -12,6 +12,8 @@ import {
 } from '../../helper/scales';
 import Video from 'react-native-video';
 import {View} from 'react-native';
+import convertToProxyURL from 'react-native-video-cache';
+
 
 const ImageModal = forwardRef(({type, URL}, ref) => {
   const snapPoints = useMemo(() => ['100%'], []);

@@ -19,6 +19,7 @@ import {useToast} from './CustomToast';
 import {getProfile} from '../services/apiService';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Routes from '../helper/routes';
 const CARD_WIDTH = nw(163);
 
 export const AllPost = ({data, isDrafts = false}) => {

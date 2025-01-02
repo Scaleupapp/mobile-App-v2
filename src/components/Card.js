@@ -15,6 +15,17 @@ export const Card = ({
   onDelete,
   type = '',
 }) => {
+
+  const getStatusText = (type, checked) => {
+    if (type === 'work') {
+      return checked ? 'Worked' : 'Working';
+    } else if (type === 'education') {
+      return checked ? 'Completed' : 'Pursuing';
+    } else {
+      return checked ? 'Completed' : 'Pursuing';
+    }
+  };
+
   return (
     <View style={styles.card}>
       <View style={styles.cardimage}>
@@ -88,9 +99,7 @@ export const Card = ({
         <Text
           variant="medium12"
           color={checked ? COLORS.green34A853 : COLORS.redEA4335}>
-          {checked
-            ? (type = 'work' ? 'Worked' : 'Completed')
-            : (type = 'work' ? 'Working' : 'Pursuing')}
+          {getStatusText(type, checked)}
         </Text>
       </View>
     </View>
