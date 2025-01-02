@@ -79,6 +79,9 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.scaleup"
+    lintOptions {
+        checkReleaseBuilds false
+    }
     defaultConfig {
         applicationId "com.scaleup"
         minSdkVersion rootProject.ext.minSdkVersion

@@ -29,7 +29,7 @@ const SocialLogin = ({signup = false}) => {
   const configureGoogleSignIn = () => {
     GoogleSignin.configure({
       webClientId:
-        '280212722139-v7lh28rve2vgdjr6t6lvbnrnljvml5rg.apps.googleusercontent.com',
+        '904486363410-s58snm1cq4nahervn6fvkoifsj5qn5k9.apps.googleusercontent.com',
       offlineAccess: true,
       scopes: ['profile', 'email'],
       forceCodeForRefreshToken: true,
