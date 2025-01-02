@@ -77,7 +77,8 @@ const ImageModal = forwardRef(({type, URL}, ref) => {
               <Video
                 controls
                 onLoad={onLoad}
-                source={{uri: URL}}
+                // source={{uri: URL}}
+                source={{uri: convertToProxyURL(URL)}}
                 style={
                   videoDimensions?.height
                     ? {

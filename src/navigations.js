@@ -53,6 +53,7 @@ import Text from './components/Text';
 import Search from './screens/Search/Search';
 import HelpScreen from './screens/Menuscreen/HelpCentre';
 import Terms from './screens/Menuscreen/HelpCentre/Terms';
+import UserPost from './screens/Post/UserPost';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -402,6 +403,11 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.Terms}
         component={Terms}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.UserPost}
+        component={UserPost}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

@@ -6,13 +6,12 @@ import {
   View,
   RefreshControl,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_HEIGHT, nh, nw} from '../../helper/scales';
 import MainHeader from '../../components/MainHeader';
 import Text from '../../components/Text';
-import {FlatList} from 'react-native-gesture-handler';
-import {Image} from 'react-native';
 import {getHomePageData, getProfile} from '../../services/apiService';
 import {useFocusEffect} from '@react-navigation/native';
 import PostView from './Post';
@@ -29,7 +28,6 @@ const Home = ({navigation, route}) => {
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(null);
   const flatListRef = useRef(null);
 
   // Refetch whenever we focus on this screen
@@ -38,7 +36,7 @@ const Home = ({navigation, route}) => {
       homePageData(1);
       setHasMore(true);
       return () => {};
-    }, [])
+    }, []),
   );
 
   // On mount, also fetch user profile
@@ -87,19 +85,12 @@ const Home = ({navigation, route}) => {
       }
       console.log('handleOnReachEnd triggered');
     }, 1000),
-    [hasMore, page]
+    [hasMore, page],
   );
 
   // Render each post
   const renderItem = ({item, index}) => {
-    return (
-      <PostView
-        item={item}
-        index={index}
-        isPlaying={isPlaying}
-        setIsPlaying={setIsPlaying}
-      />
-    );
+    return <PostView item={item} index={index} />;
   };
 
   return (
@@ -134,8 +125,7 @@ const Home = ({navigation, route}) => {
                 <Text
                   variant="semibold16"
                   style={{paddingVertical: nh(16), marginHorizontal: nw(16)}}
-                  color={COLORS.blue043142}
-                >
+                  color={COLORS.blue043142}>
                   Post
                 </Text>
               </>
@@ -148,8 +138,7 @@ const Home = ({navigation, route}) => {
                     height: page > 1 ? nh(40) : DEVICE_HEIGHT,
                     paddingVertical: nh(20),
                     backgroundColor: COLORS.whiteFFFFFF,
-                  }}
-                >
+                  }}>
                   <ActivityIndicator size={'small'} color={COLORS.blue043142} />
                 </View>
               )
@@ -157,7 +146,9 @@ const Home = ({navigation, route}) => {
             ListEmptyComponent={
               !loading && (
                 <View style={styles.emptyList}>
-                  <Text variant="semibold16" style={{width: '100%', textAlign: 'center'}}>
+                  <Text
+                    variant="semibold16"
+                    style={{width: '100%', textAlign: 'center'}}>
                     {
                       'Your Home Feed is empty right now. Start exploring and following users from the search page to see their content here!'
                     }

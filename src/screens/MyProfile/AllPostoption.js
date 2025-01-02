@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import ToggleWithIconUnderline from '../../components/TogglewithIconUnderline';
 import SavedPosts from '../Home/SavedPostsModal';
-import { AllPost } from '../../components/AllPost';
-import { VideoList } from './VideoList';
+import {AllPost} from '../../components/AllPost';
+import {VideoList} from './VideoList';
 import ToggleWithUnderline from '../../components/TogglewithUnderline';
-import { nh } from '../../helper/scales';
-import { useToast } from '../../components/CustomToast';
+import {nh} from '../../helper/scales';
+import {useToast} from '../../components/CustomToast';
 
-const AllPostoption = ({ type, data }) => {
+const AllPostoption = ({type, data}) => {
   // Navigation hook for screen transitions
   const navigation = useNavigation();
-  const { showToast } = useToast();
-  
+  const {showToast} = useToast();
+
   // State management for selected tab and draft posts
   const [selected, setSelected] = useState(0);
   const [draftPosts, setDraftPosts] = useState([]);
@@ -31,7 +31,7 @@ const AllPostoption = ({ type, data }) => {
   const fetchDraftPosts = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
-      const { token } = JSON.parse(userData);
+      const {token} = JSON.parse(userData);
 
       if (!token) {
         showToast({
@@ -47,7 +47,7 @@ const AllPostoption = ({ type, data }) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       setDraftPosts(response.data.drafts);
@@ -61,7 +61,7 @@ const AllPostoption = ({ type, data }) => {
   };
 
   // This function is passed to the AllPost component to handle draft publishing
-  const handlePublishDraft = async (draftPost) => {
+  const handlePublishDraft = async draftPost => {
     try {
       // First validate user authentication
       const userData = await AsyncStorage.getItem('userData');
@@ -83,12 +83,12 @@ const AllPostoption = ({ type, data }) => {
           contentType: draftPost.contentType,
           file: {
             uri: draftPost.contentURL,
-            type: draftPost.contentType === 'Video' ? 'video/mp4' : 'image/jpeg',
-            name: draftPost.contentURL.split('/').pop()
-          }
-        }
+            type:
+              draftPost.contentType === 'Video' ? 'video/mp4' : 'image/jpeg',
+            name: draftPost.contentURL.split('/').pop(),
+          },
+        },
       });
-
     } catch (error) {
       console.error('Error handling draft publish:', error);
       showToast({
@@ -100,24 +100,24 @@ const AllPostoption = ({ type, data }) => {
 
   // Render the appropriate content based on the selected tab and user type
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{flex: 1}}>
       {type === 'user' ? (
         <>
           <ToggleWithIconUnderline onToggle={setSelected} />
           {selected === 0 && <AllPost data={data} />}
           {selected === 1 && <SavedPosts />}
           {selected === 2 && (
-            <AllPost 
-              data={draftPosts} 
+            <AllPost
+              data={draftPosts}
               isDrafts={true}
-              onPublish={handlePublishDraft}  // Pass the entire draft post object
+              onPublish={handlePublishDraft} // Pass the entire draft post object
             />
           )}
           {selected === 3 && <VideoList />}
         </>
       ) : (
-        <View style={{ marginTop: nh(30), flex: 1 }}>
-          <View style={{ marginBottom: nh(30) }}>
+        <View style={{marginTop: nh(30), flex: 1}}>
+          <View style={{marginBottom: nh(30)}}>
             <ToggleWithUnderline
               options={['ALL POSTS', 'PLAYLISTS']}
               onToggle={setSelected}

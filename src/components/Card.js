@@ -13,7 +13,7 @@ export const Card = ({
   checked,
   onEdit,
   onDelete,
-  type = 'work',
+  type = '',
 }) => {
   return (
     <View style={styles.card}>
@@ -88,7 +88,9 @@ export const Card = ({
         <Text
           variant="medium12"
           color={checked ? COLORS.green34A853 : COLORS.redEA4335}>
-          {checked ? 'Completed' : 'Pursuing'}
+          {checked
+            ? (type = 'work' ? 'Worked' : 'Completed')
+            : (type = 'work' ? 'Working' : 'Pursuing')}
         </Text>
       </View>
     </View>

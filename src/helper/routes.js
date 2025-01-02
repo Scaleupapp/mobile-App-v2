@@ -57,6 +57,7 @@ const Routes = {
   OtherProfile: 'OtherProfile',
   HelpScreen: 'HelpScreen',
   Terms: 'Terms',
+  UserPost: 'UserPost',
 };
 
 export default Routes;

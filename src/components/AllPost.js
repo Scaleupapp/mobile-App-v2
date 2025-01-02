@@ -6,27 +6,26 @@ import {
   StyleSheet,
   Pressable,
   TouchableOpacity,
-  Alert
+  Alert,
 } from 'react-native';
-import { COLORS } from '../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../helper/scales';
-import { Image } from 'react-native';
+import {COLORS} from '../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
+import {Image} from 'react-native';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import PlaylistSelectionModal from '../screens/Home/PlaylistSelectionModal';
-import { useToast } from './CustomToast';
-import { getProfile } from '../services/apiService';
+import {useToast} from './CustomToast';
+import {getProfile} from '../services/apiService';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const CARD_WIDTH = nw(163);
 
-export const AllPost = ({ data, isDrafts = false }) => {
-
- // console.log('AllPost Component Rendered with data:', data);
+export const AllPost = ({data, isDrafts = false}) => {
+  // console.log('AllPost Component Rendered with data:', data);
 
   const navigation = useNavigation();
-  const { showToast } = useToast();
+  const {showToast} = useToast();
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [profileData, setProfileData] = useState(null);
@@ -34,14 +33,14 @@ export const AllPost = ({ data, isDrafts = false }) => {
 
 
   useEffect(() => {
-   // console.log('Initial useEffect running - fetching profile data');
+    // console.log('Initial useEffect running - fetching profile data');
 
     getProfileData();
   }, []);
 
   useEffect(() => {
     //console.log('Modal visibility changed:', isPlaylistModalVisible);
-   // console.log('Selected post:', selectedPost);
+    // console.log('Selected post:', selectedPost);
   }, [isPlaylistModalVisible, selectedPost]);
 
   const getProfileData = async () => {
@@ -51,28 +50,26 @@ export const AllPost = ({ data, isDrafts = false }) => {
 
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
-     // console.log('Profile data fetch error:', error?.response?.data?.message);
+      // console.log('Profile data fetch error:', error?.response?.data?.message);
     }
   };
 
-  const checkPostInPlaylists = async (postId) => {
-
+  const checkPostInPlaylists = async postId => {
     //console.log('Checking post in playlists. PostId:', postId);
     //console.log('Current profileData:', profileData);
 
-if (!profileData?.id) {
+    if (!profileData?.id) {
       //console.log('No profile ID available');
       return false;
-    }    //console.log('sddsfdsf',profileData)
-    
+    } //console.log('sddsfdsf',profileData)
+
     try {
       // Updated to use the correct endpoint
       const response = await axios.get(
-        `https://api.scaleupapp.club/api/playlists/check?userId=${profileData.id}&postId=${postId}`
+        `https://api.scaleupapp.club/api/playlists/check?userId=${profileData.id}&postId=${postId}`,
       );
-      
-      //console.log('Check playlist response:', response.data);
 
+      //console.log('Check playlist response:', response.data);
 
       // Handle the response based on the backend's structure
       if (response.data.exists) {
@@ -84,7 +81,10 @@ if (!profileData?.id) {
       }
       return false;
     } catch (error) {
-      console.error('Error checking post in playlists:', error?.response?.data?.message || error.message);
+      console.error(
+        'Error checking post in playlists:',
+        error?.response?.data?.message || error.message,
+      );
       showToast({
         title: 'Error checking playlist status',
         type: 'error',
@@ -93,10 +93,10 @@ if (!profileData?.id) {
     }
   };
 
-  const handlePublish = (item) => {
+  const handlePublish = item => {
     const fileExtension = item.contentURL.split('.').pop();
     const fileName = `draft_media.${fileExtension}`;
-    
+
     let mimeType = 'image/jpeg';
     if (item.contentType === 'Video') {
       mimeType = 'video/mp4';
@@ -104,14 +104,14 @@ if (!profileData?.id) {
       mimeType = 'image/png';
     }
 
-    const formattedTopics = Array.isArray(item.relatedTopics) 
+    const formattedTopics = Array.isArray(item.relatedTopics)
       ? item.relatedTopics.join(', ')
       : item.relatedTopics;
 
     const formattedHashtags = Array.isArray(item.hashtags)
       ? item.hashtags.join(' ')
       : item.hashtags;
-    
+
     navigation.navigate('CreatePost', {
       draftData: {
         id: item._id,
@@ -123,9 +123,9 @@ if (!profileData?.id) {
         file: {
           uri: item.contentURL,
           type: mimeType,
-          name: fileName
-        }
-      }
+          name: fileName,
+        },
+      },
     });
   };
 
@@ -220,7 +220,7 @@ if (!profileData?.id) {
     }
 
     // Check if post is already in any playlist
-//console.log('Checking if post is in playlist...');
+    //console.log('Checking if post is in playlist...');
     const isInPlaylist = await checkPostInPlaylists(item._id);
     //console.log('isInPlaylist result:', isInPlaylist);
 
@@ -241,31 +241,35 @@ if (!profileData?.id) {
     setSelectedPost(null);
   };
 
-  const Postcard = ({ item }) => {
+  const Postcard = ({item, index}) => {
     return (
       <View style={styles.postContainer}>
         <View>
           <View style={styles.headerContainer}>
-          <TouchableOpacity 
+            <TouchableOpacity
               style={styles.dotsButton}
               onPress={() => {
                 console.log('Dots button pressed for item:', item?.contentId);
                 handleBookmarkPress(item);
-              }}
-            >
-              <Icon 
-                name="ellipsis-vertical" 
-                size={20} 
+              }}>
+              <Icon
+                name="ellipsis-vertical"
+                size={20}
                 color={COLORS.blue043142}
               />
             </TouchableOpacity>
           </View>
 
-          {(item?.contentType === 'Image' || item?.contentType === 'Document') && 
-           item?.contentURL ? (
-            <Pressable style={styles.imageContainer}>
+          {(item?.contentType === 'Image' ||
+            item?.contentType === 'Document') &&
+          item?.contentURL ? (
+            <Pressable
+              style={styles.imageContainer}
+              onPress={() =>
+                navigation.navigate(Routes.UserPost, {data, item, index})
+              }>
               <Image
-                source={{ uri: item?.contentURL }}
+                source={{uri: item?.contentURL}}
                 style={styles.mediaContent}
                 resizeMode="cover"
               />
@@ -274,18 +278,21 @@ if (!profileData?.id) {
                   <Icon name="heart" size={16} color={COLORS.whiteFFFFFF} />
                   <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
                 </View>
-                <View style={styles.metricItem}>
-                </View>
+                <View style={styles.metricItem}></View>
               </View>
             </Pressable>
           ) : null}
-          
+
           {item?.contentType === 'Video' && item?.contentURL ? (
-            <Pressable style={styles.videoContainer}>
+            <Pressable
+              style={styles.videoContainer}
+              onPress={() =>
+                navigation.navigate(Routes.UserPost, {data, item, index})
+              }>
               <Video
                 paused={true}
                 controls
-                source={{ uri: item?.contentURL }}
+                source={{uri: item?.contentURL}}
                 style={styles.mediaContent}
                 resizeMode="cover"
                 onBuffer={e => console.log('buffer ', e)}
@@ -310,8 +317,7 @@ if (!profileData?.id) {
             {/* <Text style={styles.draftLabel}>DRAFT</Text> */}
             <TouchableOpacity
               style={styles.publishButton}
-              onPress={() => handlePublish(item)}
-            >
+              onPress={() => handlePublish(item)}>
               <Icon name="cloud-upload" size={20} color={COLORS.blue043142} />
               <Text style={styles.publishText}>Publish</Text>
             </TouchableOpacity>
@@ -324,8 +330,8 @@ if (!profileData?.id) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={data}
-        renderItem={({ item }) => <Postcard item={item} />}
+        data={data?.content}
+        renderItem={({item, index}) => <Postcard item={item} index={index} />}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         ListEmptyComponent={() => (
@@ -337,11 +343,10 @@ if (!profileData?.id) {
         )}
       />
 
-{/* {console.log('Rendering PlaylistSelectionModal with:', {
+      {/* {console.log('Rendering PlaylistSelectionModal with:', {
         visible: isPlaylistModalVisible,
         postId: selectedPost?.contentId
       })} */}
-
 
       <PlaylistSelectionModal
         visible={isPlaylistModalVisible}
