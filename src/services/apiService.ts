@@ -29,8 +29,8 @@ export const resetMyPassword = (payload: any) => {
   return axiosInstance.post(API.AUTH_RESET, payload);
 };
 
-export const getHomePageData = (payload: any) => {
-  return axiosInstance.get(`${API.HOMEPAGE}?page=${payload}&pageSize=10`);
+export const getHomePageData = (page: any, pageSize: any) => {
+  return axiosInstance.get(`${API.HOMEPAGE}?page=${page}&pageSize=${pageSize}`);
 };
 
 export const getvideoPageData = (payload: any) => {

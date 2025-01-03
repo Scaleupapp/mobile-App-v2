@@ -13,15 +13,16 @@ import Header from '../../components/Header';
 
 const UserPost = ({route}) => {
   const {data} = route?.params;
-  const [isPlaying, setIsPlaying] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   const renderItem = ({item, index}) => {
     return (
       <PostView
         item={item}
         index={index}
-        isPlaying={isPlaying}
-        setIsPlaying={setIsPlaying}
+        selectedIndex={selectedIndex}
+        setSelectedIndex={setSelectedIndex}
+        myProfile={true}
       />
     );
   };
