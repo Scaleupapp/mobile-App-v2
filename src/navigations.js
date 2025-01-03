@@ -54,6 +54,13 @@ import Search from './screens/Search/Search';
 import HelpScreen from './screens/Menuscreen/HelpCentre';
 import Terms from './screens/Menuscreen/HelpCentre/Terms';
 import UserPost from './screens/Post/UserPost';
+import QuizList from './screens/Quiz/QuizList';
+import QuizDetails from './screens/Quiz/QuizDetails';
+import QuizWaitingRoom from './screens/Quiz/QuizWaitingRoom';
+import QuizGame from './screens/Quiz/QuizGame';
+import QuizResults from './screens/Quiz/QuizResults';
+import QuizNavigator from './QuizNavigator';
+
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -181,6 +188,9 @@ const TabNavigator = ({navigation, route}) => {
           },
         };
       }}>
+        <Tab.Screen name="Quiz" component={QuizNavigator} />
+
+
       <Tab.Screen
         name={'MainHome'}
         component={Home}
@@ -409,6 +419,41 @@ export const RootNavigator = () => {
         name={Routes.UserPost}
         component={UserPost}
         options={{headerShown: false}}
+      />
+      <Stack.Screen 
+        name="QuizList" 
+        component={QuizList} 
+        options={{ title: 'Available Quizzes' }}
+      />
+      <Stack.Screen 
+        name="QuizDetails" 
+        component={QuizDetails}
+        options={{ title: 'Quiz Details' }}
+      />
+      <Stack.Screen 
+        name="QuizWaitingRoom" 
+        component={QuizWaitingRoom}
+        options={{ 
+          title: 'Waiting Room',
+          headerLeft: null // Prevent going back once in waiting room
+        }}
+      />
+      <Stack.Screen 
+        name="QuizGame" 
+        component={QuizGame}
+        options={{ 
+          title: 'Quiz',
+          headerLeft: null, // Prevent going back during quiz
+          gestureEnabled: false // Disable gesture-based navigation
+        }}
+      />
+      <Stack.Screen 
+        name="QuizResults" 
+        component={QuizResults}
+        options={{ 
+          title: 'Results',
+          headerLeft: null // Prevent going back from results
+        }}
       />
     </Stack.Navigator>
   );

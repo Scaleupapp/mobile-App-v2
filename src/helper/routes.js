@@ -1,3 +1,5 @@
+import QuizDetails from "../screens/Quiz/QuizDetails";
+
 const Routes = {
   LoginStack: 'LoginStack',
   SplashScreen: 'SplashScreen',
@@ -47,6 +49,7 @@ const Routes = {
   CreatePost: 'CreatePost',
   InnerCircleRequest: 'InnerCircleRequest',
   InnerCircle: 'InnerCircle',
+  QuizDetails: 'QuizDetails',
   Followers: 'Followers',
   Following: 'Following',
   Likes: 'Likes',

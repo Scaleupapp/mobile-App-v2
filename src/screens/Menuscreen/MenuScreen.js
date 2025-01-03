@@ -18,14 +18,14 @@ import {logoutUser} from '../../helper/commonFunctions';
 const MenuScreen = ({navigation, route}) => {
   const menu = [
     // commented
-    // {
-    //   title: 'Quiz',
-    //   nav: '',
-    // },
-    // {
-    //   title: 'My Inner Circle',
-    //   nav: Routes.InnerCircle,
-    // },
+    {
+      title: 'Quiz',
+      nav: 'Routes.Quiz',
+    },
+    {
+      title: 'My Inner Circle',
+      nav: Routes.InnerCircle,
+    },
     // {
     //   title: 'My Inner Request',
     //   nav: Routes.InnerCircleRequest,
