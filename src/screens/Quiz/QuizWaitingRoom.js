@@ -5,7 +5,7 @@ import axios from 'axios';
 import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'https://api.scaleupapp.club/api';
+const API_URL = 'http://192.168.43.240:3000/api';
 
 const QuizWaitingRoom = ({ route, navigation }) => {
   const { quizId } = route.params;
@@ -33,6 +33,7 @@ const QuizWaitingRoom = ({ route, navigation }) => {
             }
           );
           const quiz = response.data.quizzes.find(q => q._id === quizId);
+          console.log('dataaaaaaaaa',quiz)
           if (quiz) {
             // Set quiz start time
             setQuizStartTime(new Date(quiz.startTime));
