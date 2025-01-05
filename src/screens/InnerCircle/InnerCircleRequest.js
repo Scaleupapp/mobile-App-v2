@@ -44,11 +44,11 @@ const InnerCircleRequest = ({navigation, route}) => {
     setSelected(number);
   };
 
-  let acceptRequest = async id => {
+  let acceptRequest = async (id, type) => {
     try {
       let payload = {
         requestId: id,
-        action: 'accept',
+        action: type,
       };
       let resp = await acceptInnerCircleRequestAPI(payload);
       console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
@@ -84,14 +84,14 @@ const InnerCircleRequest = ({navigation, route}) => {
                 name="closecircle"
                 color={COLORS.redEA4335}
                 size={25}
-                // onPress={() => declineRequest(item?.id)}
+                onPress={() => acceptRequest(item?.id, 'reject')}
               />
               <Icon
                 type="antdesign"
                 name="checkcircle"
                 color={COLORS.green34A853}
                 size={25}
-                onPress={() => acceptRequest(item?.id)}
+                onPress={() => acceptRequest(item?.id, 'accept')}
               />
             </View>
           </View>
@@ -121,9 +121,9 @@ const InnerCircleRequest = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       <View>
         <View style={{marginHorizontal: nw(16), marginBottom: nh(8)}}>

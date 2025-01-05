@@ -72,9 +72,9 @@ const InnerCircle = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       {innerCircle?.length > 0 ? (
         <FlatList

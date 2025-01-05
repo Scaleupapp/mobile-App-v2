@@ -175,9 +175,14 @@ export const blockUSerList = () => {
   return axiosInstance.get(`${API.BLOCK_USER_LIST}`);
 };
 export const bockUser = (id: any) => {
-  console.log('🚀 ~ bockUser ~ id:', id);
+
   return axiosInstance.post(`${API.USER_BLOCK}/${id}`);
 };
 export const userUnBlock = (id: any) => {
   return axiosInstance.post(`${API.USER_UNBLOCK}/${id}`);
+};
+
+export const sendInnerCircle = (payload: any) => {
+ 
+  return axiosInstance.post(`${API.SENDINNERREQUEST}`,payload);
 };

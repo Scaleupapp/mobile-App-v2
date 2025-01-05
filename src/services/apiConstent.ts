@@ -55,4 +55,5 @@ export const API = {
   ACCEPTREQ: 'users/inner-circle/handle-request',
   REMOVEREQ: 'users/inner-circle/remove',
   GETINNERCIRCLE: 'users/inner-circle',
+ SENDINNERREQUEST :'users/inner-circle/request',
 };
