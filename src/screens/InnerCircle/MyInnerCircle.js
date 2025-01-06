@@ -7,6 +7,7 @@ import {
   Image,
   ImageBackground,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -27,6 +28,7 @@ import Routes from '../../helper/routes';
 
 const InnerCircle = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
+  const [loader, setLoader] = useState(true);
   useEffect(() => {
     getInnerCircleList();
   }, []);
@@ -38,6 +40,8 @@ const InnerCircle = ({navigation, route}) => {
       console.log(resp?.data, 'myInnerCircleRequestAPI');
     } catch (error) {
       console.log(error, 'rerrr');
+    } finally {
+      setLoader(false);
     }
   };
   let declineRequest = async id => {
@@ -51,7 +55,14 @@ const InnerCircle = ({navigation, route}) => {
       setInnerCircle(data);
     } catch (error) {}
   };
-  return (
+  return loader ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size={30} />
+      {/* <Text variant="medium12" style={{marginTop: 10}}>
+          Inner Circle  Loading....
+        </Text> */}
+    </View>
+  ) : (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
       <StatusBar
@@ -72,9 +83,9 @@ const InnerCircle = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
+      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
         <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View>
+      </View> */}
 
       {innerCircle?.length > 0 ? (
         <FlatList
@@ -214,5 +225,10 @@ const styles = StyleSheet.create({
     width: nw(300),
     alignSelf: 'center',
     marginTop: nh(30),
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

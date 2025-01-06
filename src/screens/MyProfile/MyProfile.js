@@ -24,10 +24,12 @@ import {
   followUser,
   getProfile,
   getProfiledetails,
+  sendInnerCircle,
   unlfollowUser,
 } from '../../services/apiService';
 import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
+import {useToast} from '../../components/CustomToast';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -37,7 +39,7 @@ const MyProfile = ({navigation, route}) => {
   const [follow, setFollow] = useState(false);
 
   let type = route?.params?.id ? 'other' : 'user';
-
+  const {showToast} = useToast();
   // Example color map for badges (from lowest to highest rank).
   // Adjust as needed for your design.
   const badgeColorMap = {
@@ -53,28 +55,28 @@ const MyProfile = ({navigation, route}) => {
     getprofiledetail(1);
   }, [route?.params?.id]);
 
-  const getprofiledetail = async (pageNum) => {
+  const getprofiledetail = async pageNum => {
     try {
       // Log the current page number being fetched
-      console.log(`Fetching profile details for page: ${pageNum}`);
-  
+      // console.log(`Fetching profile details for page: ${pageNum}`);
+
       // Make the API call to fetch profile details
       let resp = await getProfiledetails(
         route?.params?.id ?? userData?.id,
         pageNum,
       );
-  
+
       // Log the entire response object
-      console.log('API Response:', resp);
-  
+      // console.log('API Response:', resp);
+
       // Optionally, log specific parts of the response for clarity
-      console.log('Response Data:', resp?.data);
-      console.log('Content Array:', resp?.data?.content);
-      console.log('Followers:', resp?.data?.followers);
-      console.log('Pagination Info:', resp?.data?.pagination);
-  
+      // console.log('Response Data:', resp?.data);
+      // console.log('Content Array:', resp?.data?.content);
+      // console.log('Followers:', resp?.data?.followers);
+      // console.log('Pagination Info:', resp?.data?.pagination);
+
       // Update the profile state with the new data
-      setProfile((prev) => ({
+      setProfile(prev => ({
         ...prev, // Spread the existing properties of prev
         ...resp?.data,
         content: [
@@ -82,27 +84,28 @@ const MyProfile = ({navigation, route}) => {
           ...(resp?.data?.content || []), // Append the new content from resp.data.content
         ],
       }));
-  
+
       // Log the updated profile state (optional)
-      console.log('Updated Profile State:', {
-        ...profile,
-        ...resp?.data,
-        content: [
-          ...(profile?.content || []),
-          ...(resp?.data?.content || []),
-        ],
-      });
-  
+      // console.log('Updated Profile State:', {
+      //   ...profile,
+      //   ...resp?.data,
+      //   content: [...(profile?.content || []), ...(resp?.data?.content || [])],
+      // });
+
       // Update the follow status
       setFollow(resp?.data?.followers.includes(userData?.username));
-  
+
       // Log the follow status
-      console.log(`Is Following: ${resp?.data?.followers.includes(userData?.username)}`);
-  
+      // console.log(
+      //   `Is Following: ${resp?.data?.followers.includes(userData?.username)}`,
+      // );
+
       // Handle pagination by checking if more pages are available
       if (resp?.data?.pagination?.totalPages > pageNum) {
-        console.log(`Total Pages: ${resp?.data?.pagination?.totalPages} > Current Page: ${pageNum}`);
-        
+        // console.log(
+        //   `Total Pages: ${resp?.data?.pagination?.totalPages} > Current Page: ${pageNum}`,
+        // );
+
         setTimeout(() => {
           getprofiledetail(pageNum + 1);
           console.log('API triggered for next page');
@@ -119,7 +122,6 @@ const MyProfile = ({navigation, route}) => {
       setLoading(false);
     }
   };
-  
 
   const followApi = async () => {
     try {
@@ -134,15 +136,57 @@ const MyProfile = ({navigation, route}) => {
     }
   };
 
-  const wantToBlock = () => {
+  const wantToBlock = async () => {
     setVisible(false);
-    bockUser(profile?.id)
+
+    await bockUser(profile?.userId)
       .then(res => {
+        showToast({type: 'success', title: res?.data?.message});
         console.log('Block user response:', res?.data);
       })
       .catch(err => console.log('Block user error:', err));
   };
 
+  const sendRequest = async () => {
+    setVisible(false);
+
+    try {
+      let body = {
+        targetUserIds: [profile?.userId],
+      };
+      console.log('🚀 ~ sendRequest ~ body:', body);
+
+      let res = await sendInnerCircle(body);
+      showToast({type: 'success', title: res?.data?.message});
+      console.log('🚀 ~ sendRequest ~ res:', res?.data);
+    } catch (error) {
+      console.log('🚀 ~ sendRequest ~ res:', error?.response?.data?.errors);
+      showToast({
+        type: 'error',
+        title: error?.response?.data?.errors[0],
+      });
+      console.log(
+        '🚀 ~ sendRequest ~ error:',
+        error?.response?.data?.message?.errors,
+      );
+    }
+  };
+  const menuItems = [
+    {
+      name: 'Block User',
+      image: icons.block,
+      onPress: () => wantToBlock(),
+    },
+    ...(follow
+      ? [
+          {
+            name: 'Send Inner Circle Request',
+            image: icons.account1,
+            onPress: () => sendRequest(),
+          },
+        ]
+      : []),
+  ];
   return loading ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size={30} />
@@ -354,13 +398,7 @@ const MyProfile = ({navigation, route}) => {
       <MenuModal
         visible={visible}
         setVisible={setVisible}
-        menuItems={[
-          {
-            name: 'Block User',
-            image: icons.block,
-            onPress: () => wantToBlock(),
-          },
-        ]}
+        menuItems={menuItems}
       />
     </SafeAreaView>
   );

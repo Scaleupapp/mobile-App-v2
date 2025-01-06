@@ -41,7 +41,7 @@ const PostView = ({
   setSelectedIndex,
   myProfile = false,
 }) => {
-  console.log('🚀 ~ PostView ~ item:', item);
+  // console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   },
   verifiedBadge: {
     height: nh(30),
-    width: nw(30),
+    width: nh(30),
     borderRadius: nh(15),
     backgroundColor: COLORS.blue043142,
     alignItems: 'center',
