@@ -22,14 +22,14 @@ const MenuScreen = ({navigation, route}) => {
     //   title: 'Quiz',
     //   nav: '',
     // },
-    // {
-    //   title: 'My Inner Circle',
-    //   nav: Routes.InnerCircle,
-    // },
-    // {
-    //   title: 'My Inner Request',
-    //   nav: Routes.InnerCircleRequest,
-    // },
+    {
+      title: 'My Inner Circle',
+      nav: Routes.InnerCircle,
+    },
+    {
+      title: 'My Inner Request',
+      nav: Routes.InnerCircleRequest,
+    },
 
     // {
     //   title: 'Achievements',
