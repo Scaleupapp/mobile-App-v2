@@ -24,6 +24,7 @@ import {
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
+  const [sent, setSentRequest] = useState([]);
 
   useEffect(() => {
     getInnerCircleList();
@@ -32,7 +33,8 @@ const InnerCircleRequest = ({navigation, route}) => {
   let getInnerCircleList = async () => {
     try {
       let resp = await myInnerCircleRequestAPI();
-      setInnerCircle(resp?.data);
+      setInnerCircle(resp?.data?.reqReceived);
+      setSentRequest(resp?.data?.reqSent);
       console.log(resp?.data, 'myInnerCircleRequestAPI');
     } catch (error) {
       console.log(error, 'rerrr');
@@ -170,12 +172,15 @@ const InnerCircleRequest = ({navigation, route}) => {
       )}
       {selected == 1 && (
         <FlatList
-          data={['', '', '', '', '']}
-          renderItem={() => {
+          data={sent}
+          renderItem={({item}) => {
             return (
               <View>
                 <View style={styles.card}>
-                  <Image source={images.ciclelogo} style={styles.image} />
+                  <Image
+                    source={{uri: item?.profilePicture}}
+                    style={styles.image}
+                  />
                   <View>
                     <View
                       style={{
@@ -183,12 +188,12 @@ const InnerCircleRequest = ({navigation, route}) => {
                       }}>
                       <View
                         style={{
-                          width: '65%',
+                          width: '100%',
                           flexDirection: 'row',
                           justifyContent: 'space-between',
                         }}>
                         <Text variant="medium14" color={COLORS.blue043142}>
-                          Name
+                          {item?.username}
                         </Text>
                         <Text variant="medium12" color={COLORS.blue043142}>
                           28/04/24
@@ -198,8 +203,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                         variant="medium12"
                         color={COLORS.grey999999}
                         style={{width: '70%'}}>
-                        Lorem ipsum dolor sit amet, con sectetur adipiscing
-                        elit, sit amet, con sectetur
+                        {item?.status}
                       </Text>
                     </View>
                   </View>
