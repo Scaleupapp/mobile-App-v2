@@ -20,7 +20,9 @@ import Icon from '../../helper/icon';
 import {
   acceptInnerCircleRequestAPI,
   myInnerCircleRequestAPI,
+  widrawInnerCircleRequestAPI,
 } from '../../services/apiService';
+import Routes from '../../helper/routes';
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
@@ -56,6 +58,19 @@ const InnerCircleRequest = ({navigation, route}) => {
       console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
       let data = innerCircle.filter(user => user.id !== id);
       setInnerCircle(data);
+    } catch (error) {}
+  };
+
+  const Widraw = async id => {
+    try {
+      let payload = {
+        requestId: id,
+      };
+      // console.log('🚀 ~ InnerCircleRequest ~ payload:', payload);
+      // let res = await widrawInnerCircleRequestAPI(payload);
+      let data = sent?.filter(user => user.id !== id);
+      setSentRequest(data);
+      // console.log('🚀 ~ InnerCircleRequest ~ res:', res?.data);
     } catch (error) {}
   };
 
@@ -166,14 +181,18 @@ const InnerCircleRequest = ({navigation, route}) => {
               It’s quiet here. Why not create your first post and share your
               thoughts with the community?
             </Text>
-            <Button text="Explore Content" />
+            <Button
+              text="Explore Content"
+              onPress={() => navigation.navigate(Routes.Home)}
+            />
           </View>
         )
       )}
-      {selected == 1 && (
+      {selected == 1 && sent?.length > 0 ? (
         <FlatList
           data={sent}
           renderItem={({item}) => {
+            console.log('🚀 ~ InnerCircleRequest ~ item:', item);
             return (
               <View>
                 <View style={styles.card}>
@@ -196,15 +215,30 @@ const InnerCircleRequest = ({navigation, route}) => {
                           {item?.username}
                         </Text>
                         <Text variant="medium12" color={COLORS.blue043142}>
-                          28/04/24
+                          {item?.Timestamp}
                         </Text>
                       </View>
-                      <Text
-                        variant="medium12"
-                        color={COLORS.grey999999}
-                        style={{width: '70%'}}>
-                        {item?.status}
-                      </Text>
+                      <View
+                        style={{
+                          width: '100%',
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                        }}>
+                        <Text
+                          variant="medium12"
+                          color={COLORS.grey999999}
+                          style={{width: '70%'}}>
+                          {item?.status}
+                        </Text>
+                        <Button
+                          onPress={() => Widraw(item.id)}
+                          height={25}
+                          width={90}
+                          variant="outline"
+                          text="Widraw"
+                          textStyle={{fontSize: nh(12)}}
+                        />
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -212,6 +246,38 @@ const InnerCircleRequest = ({navigation, route}) => {
             );
           }}
         />
+      ) : (
+        selected == 1 && (
+          <View>
+            <Image
+              source={images.norequest}
+              resizeMode="contain"
+              style={styles.notimage}
+            />
+
+            <Text
+              variant="semibold20"
+              color={COLORS.blue043142}
+              style={{textAlign: 'center', marginTop: nh(30)}}>
+              No Inner Circle Requests Sent
+            </Text>
+            <Text
+              variant="medium14"
+              color={COLORS.grey999999}
+              style={{
+                textAlign: 'center',
+                marginTop: nh(5),
+                marginBottom: nh(20),
+              }}>
+              It’s quiet here. Why not create your first post and share your
+              thoughts with the community?
+            </Text>
+            <Button
+              text="Send Requests"
+              // onPress={() => navigation.navigate(Routes.Home)}
+            />
+          </View>
+        )
       )}
     </SafeAreaView>
   );

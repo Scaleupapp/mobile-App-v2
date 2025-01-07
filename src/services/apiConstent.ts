@@ -53,6 +53,7 @@ export const API = {
   NOTIFICATION: 'content/notifications',
   INNERCIRCLE: 'users/inner-circle/requests',
   ACCEPTREQ: 'users/inner-circle/handle-request',
+  WIDRAW:'users/inner-circle/withdraw',
   REMOVEREQ: 'users/inner-circle/remove',
   GETINNERCIRCLE: 'users/inner-circle',
  SENDINNERREQUEST :'users/inner-circle/request',
