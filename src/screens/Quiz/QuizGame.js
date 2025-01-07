@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,ScrollView } from 'react-native';
 import io from 'socket.io-client/dist/socket.io';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.43.240:3000/api';
-const SOCKET_URL = 'http://192.168.43.240:3000';
+const API_URL = 'http://192.168.185.240:3000/api';
+const SOCKET_URL = 'http://192.168.185.240:3000';
 
 const QuizGame = ({ route, navigation }) => {
   const { quizId } = route.params;
@@ -17,12 +17,18 @@ const QuizGame = ({ route, navigation }) => {
   const [error, setError] = useState(null);
   const [quizStatus, setQuizStatus] = useState('waiting');
   const [isConnected, setIsConnected] = useState(false);
-  const [questions, setQuestions] = useState([]);
+  const [questionNumber, setQuestionNumber] = useState(0);
+  const [score, setScore] = useState(0);
+  const [isCorrect, setIsCorrect] = useState(null);
+  const [correctAnswer, setCorrectAnswer] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState(0);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [canProgress, setCanProgress] = useState(false);
   const [isWaitingForNextQuestion, setIsWaitingForNextQuestion] = useState(false);
-  const [answeredQuestions, setAnsweredQuestions] = useState(new Set());
-
+  const [feedback, setFeedback] = useState(null);
+  const [totalQuestions, setTotalQuestions] = useState(15);
 
   const startTimeRef = useRef(null);
   const socketRef = useRef(null);
@@ -30,12 +36,16 @@ const QuizGame = ({ route, navigation }) => {
   const isMountedRef = useRef(true);
   const maxReconnectAttempts = 5;
 
+
+
   const initializeSocket = async (authToken) => {
     try {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
 
+      console.log('Initializing socket connection for quiz:', quizId);
+      
       socketRef.current = io(SOCKET_URL, {
         auth: { token: authToken },
         transports: ['websocket'],
@@ -47,56 +57,69 @@ const QuizGame = ({ route, navigation }) => {
 
       socketRef.current.on('connect', () => {
         if (!isMountedRef.current) return;
-        console.log('Socket connected with ID:', socketRef.current.id);
+        console.log('Socket connected successfully. Socket ID:', socketRef.current.id);
         setIsConnected(true);
         setConnectionAttempts(0);
         
+        // Join quiz room and request initial state
         socketRef.current.emit('joinQuizRoom', { quizId });
-        socketRef.current.emit('getCurrentQuestion', { quizId });
       });
 
-      socketRef.current.on('nextQuestion', (data) => {
-        if (!isMountedRef.current) return;
-        console.log('Received nextQuestion event:', data);
- 
-        
-        const questionData = data?.question || data?.questions;
-        if (!questionData || answeredQuestions.has(questionData._id)) {
-          return; // Skip if question already answered or invalid
-        }
-
-        const processedQuestion = {
-          _id: questionData._id,
-          text: questionData.text || questionData.questionText,
-          options: questionData.options || []
-        };
-
-        setCurrentQuestion(processedQuestion);
-        setSelectedOption(null);
-        setTimeLeft(10);
-        startTimeRef.current = new Date();
-        setQuizStatus('active');
-        setLoading(false);
-      });
-
+      // Handle quiz status updates
       socketRef.current.on('quizStatus', (data) => {
         if (!isMountedRef.current) return;
+        console.log('Received quiz status:', data);
         setQuizStatus(data.status);
         
-        if (data.status === 'ended') {
-          navigation.replace('QuizResults', { quizId });
+        if (data.status === 'active' && data.currentQuestion) {
+          console.log('Setting current question from quiz status');
+          setCurrentQuestion(data.currentQuestion);
+          setTimeLeft(10);
+          startTimeRef.current = new Date();
+          setLoading(false);
         }
       });
 
-      socketRef.current.on('showLeaderboard', () => {
+      // Handle next question events
+      socketRef.current.on('nextQuestion', (data) => {
         if (!isMountedRef.current) return;
-        navigation.replace('QuizResults', { quizId });
+        console.log('Received next question:', data);
+        
+        if (data && data.question) {
+          const questionData = data.question;
+          console.log('Processing question data:', questionData);
+          
+          setCurrentQuestion({
+            _id: questionData._id,
+            text: questionData.text || questionData.questionText,
+            options: questionData.options || []
+          });
+          setSelectedOption(null);
+          setTimeLeft(10);
+          setCanProgress(false);
+          setIsWaitingForNextQuestion(false);
+          setShowFeedback(false);
+          startTimeRef.current = new Date();
+          setQuizStatus('active');
+          setLoading(false);
+          setQuestionNumber(prev => prev + 1);
+        } else {
+          console.warn('Received nextQuestion event without valid question data');
+        }
       });
 
-      socketRef.current.on('connect_error', (error) => {
+      // Handle quiz end
+      socketRef.current.on('quizEnded', () => {
         if (!isMountedRef.current) return;
-        console.error('Socket connection error:', error);
-        handleConnectionError();
+        console.log('Quiz ended event received');
+        handleQuizCompletion();
+      });
+
+      // Handle errors
+      socketRef.current.on('error', (error) => {
+        if (!isMountedRef.current) return;
+        console.error('Socket error:', error);
+        setError(error.message || 'An error occurred');
       });
 
     } catch (error) {
@@ -104,6 +127,111 @@ const QuizGame = ({ route, navigation }) => {
       handleConnectionError();
     }
   };
+
+  const initializeQuiz = async () => {
+    try {
+      console.log('Initializing quiz:', quizId);
+      const userData = await AsyncStorage.getItem('userData');
+      if (!userData) {
+        throw new Error('Please log in to participate');
+      }
+
+      const parsedUser = JSON.parse(userData);
+      if (!parsedUser?.token) {
+        throw new Error('Invalid session');
+      }
+
+      setToken(parsedUser.token);
+
+      // Initialize quiz participation
+      try {
+        const response = await fetch(`${API_URL}/quiz/initiate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${parsedUser.token}`
+          },
+          body: JSON.stringify({ quizId })
+        });
+
+        const data = await response.json();
+        console.log('Quiz initiation response:', data);
+
+        if (!response.ok && data.message !== "The quiz has already started") {
+          throw new Error(data.message || 'Failed to initialize quiz');
+        }
+
+      } catch (error) {
+        if (error.message === "The quiz has already started") {
+          console.log('Quiz already in progress, joining...');
+          setQuizStatus('active');
+        } else {
+          throw error;
+        }
+      }
+
+      await initializeSocket(parsedUser.token);
+    } catch (error) {
+      console.error('Quiz initialization error:', error);
+      setError(error.message || 'Failed to initialize quiz');
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    initializeQuiz();
+
+    return () => {
+      console.log('Cleaning up quiz component');
+      isMountedRef.current = false;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [quizId]);
+
+  useEffect(() => {
+    socketRef.current?.on('nextQuestion', (data) => {
+      if (!isMountedRef.current) return;
+      
+      if (data && (data.question || data.questions)) {
+        const questionData = data.question || data.questions;
+        setQuestionNumber(prev => prev + 1);
+        setCurrentQuestion({
+          _id: questionData._id,
+          text: questionData.questionText || questionData.text,
+          options: questionData.options || []
+        });
+        setSelectedOption(null);
+        setTimeLeft(10);
+        setShowFeedback(false);
+        setIsCorrect(null);
+        setCorrectAnswer(null);
+        startTimeRef.current = new Date();
+        setQuizStatus('active');
+        setLoading(false);
+      }
+    });
+
+    socketRef.current?.on('quizEnded', () => {
+      if (!isMountedRef.current) return;
+      handleQuizCompletion();
+    });
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const handleQuizCompletion = () => {
+    setQuizCompleted(true);
+    // Navigate to results screen
+    navigation.replace('QuizResults', { quizId });
+  };
+
 
   const handleConnectionError = () => {
     setConnectionAttempts(prev => {
@@ -136,6 +264,7 @@ const QuizGame = ({ route, navigation }) => {
         } catch (error) {
           if (error.response?.data?.message === "The quiz has already started") {
             console.log('Quiz in progress, joining...');
+            setQuizStatus('active');
           } else {
             throw error;
           }
@@ -162,10 +291,8 @@ const QuizGame = ({ route, navigation }) => {
     };
   }, [quizId]);
 
-  const handleSubmitAnswer = async (selectedOption) => {
-    if (!token || !currentQuestion?._id || answeredQuestions.has(currentQuestion._id)) {
-      return;
-    }
+  const handleSubmitAnswer = async (option) => {
+    if (!token || !currentQuestion?._id) return;
 
     try {
       const endTime = new Date();
@@ -173,33 +300,71 @@ const QuizGame = ({ route, navigation }) => {
         ? Math.min((endTime - startTimeRef.current) / 1000, 10)
         : 10;
 
-      await axios.post(
-        `${API_URL}/quiz/submit-answer`,
-        {
+      const response = await fetch(`${API_URL}/quiz/submit-answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
           quizId,
           questionId: currentQuestion._id,
-          selectedOption,
+          selectedOption: option,
           timeTaken
-        },
-        { headers: { Authorization: `Bearer ${token}` }}
-      );
+        })
+      });
 
-      setSelectedOption(selectedOption);
-      setAnsweredQuestions(prev => new Set([...prev, currentQuestion._id]));
-      setCanProgress(true); // Enable the Next button
+      const data = await response.json();
+      
+      setSelectedOption(option);
+      setShowFeedback(true);
+      setIsCorrect(data.isCorrect);
+      setCorrectAnswer(data.correctAnswer);
+      setScore(prev => prev + (data.pointsAwarded || 0));
+      setAnsweredQuestions(prev => prev + 1);
+      setCanProgress(true);
+
+      if (data.isCorrect) {
+        setFeedback(`Correct! +${data.pointsAwarded} points`);
+      } else {
+        setFeedback(`Incorrect. The correct answer was: ${data.correctAnswer}`);
+      }
+
+      // Check if this was the last question
+      if (answeredQuestions + 1 >= totalQuestions) {
+        setTimeout(handleQuizCompletion, 2000);
+      }
 
       clearInterval(timerRef.current);
     } catch (error) {
       console.error('Error submitting answer:', error);
+      setFeedback('Error submitting answer');
     }
   };
+
+  const handleNextQuestion = () => {
+    if (!canProgress || isWaitingForNextQuestion) return;
+    
+    setIsWaitingForNextQuestion(true);
+    setShowFeedback(false);
+    setSelectedOption(null);
+    
+    // Emit getCurrentQuestion event to get the next question
+    socketRef.current?.emit('getCurrentQuestion', { quizId });
+    console.log('Requesting next question for quiz:', quizId);
+  };
+
+
+
   useEffect(() => {
-    if (timeLeft > 0 && currentQuestion && quizStatus === 'active' && !selectedOption) {
+    if (timeLeft > 0 && currentQuestion && quizStatus === 'active' && !showFeedback) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
             clearInterval(timerRef.current);
-            handleSubmitAnswer(null);
+            if (!selectedOption) {
+              handleSubmitAnswer(null);
+            }
             return 0;
           }
           return prev - 1;
@@ -208,16 +373,7 @@ const QuizGame = ({ route, navigation }) => {
 
       return () => clearInterval(timerRef.current);
     }
-  }, [timeLeft, currentQuestion, quizStatus, selectedOption]);
-
-  const handleNextQuestion = () => {
-    if (!canProgress || isWaitingForNextQuestion) return;
-    
-    setIsWaitingForNextQuestion(true);
-    socketRef.current.emit('getCurrentQuestion', { quizId });
-  };
-
-
+  }, [timeLeft, currentQuestion, quizStatus, showFeedback]);
 
   if (loading) {
     return (
@@ -229,6 +385,9 @@ const QuizGame = ({ route, navigation }) => {
             : 'Preparing quiz...'}
         </Text>
         {isConnected && <Text style={styles.connectedText}>Connected to server</Text>}
+        <Text style={styles.debugText}>Quiz Status: {quizStatus}</Text>
+        <Text style={styles.debugText}>Socket Connected: {isConnected ? 'Yes' : 'No'}</Text>
+        <Text style={styles.debugText}>Has Question: {currentQuestion ? 'Yes' : 'No'}</Text>
       </View>
     );
   }
@@ -263,70 +422,131 @@ const QuizGame = ({ route, navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View 
-          style={[
-            styles.timerContainer, 
-            { width: `${(timeLeft/10) * 100}%` },
-            timeLeft <= 3 && styles.timerWarning
-          ]}
-        >
-          <Text style={styles.timerText}>{timeLeft}s</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      {/* Progress Section */}
+      <View style={styles.progressCard}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressText}>
+            Question {questionNumber}/{totalQuestions}
+          </Text>
+          <Text style={styles.scoreText}>Score: {score}</Text>
         </View>
-      </View>
-
-      <View style={styles.questionContainer}>
-        <Text style={styles.questionText}>{currentQuestion?.text}</Text>
-      </View>
-
-      <View style={styles.optionsContainer}>
-        {currentQuestion?.options?.map((option, index) => (
-          <TouchableOpacity
-            key={index}
+        
+        {/* Timer Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View 
             style={[
-              styles.optionButton,
-              selectedOption === option && styles.selectedOption
-            ]}
-            onPress={() => handleSubmitAnswer(option)}
-            disabled={selectedOption !== null}
-          >
-            <Text 
+              styles.progressBarFill,
+              { width: `${(timeLeft/10) * 100}%` },
+              timeLeft <= 3 && styles.timerWarning
+            ]} 
+          />
+        </View>
+        
+        {/* Overall Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View 
+            style={[
+              styles.progressBarFill,
+              styles.overallProgress,
+              { width: `${(answeredQuestions/totalQuestions) * 100}%` }
+            ]} 
+          />
+        </View>
+        
+        <Text style={styles.progressStats}>
+          {timeLeft}s | Progress: {answeredQuestions}/{totalQuestions}
+        </Text>
+      </View>
+
+      {/* Question Section */}
+      <View style={styles.questionCard}>
+        <Text style={styles.questionText}>{currentQuestion?.text}</Text>
+        
+        <View style={styles.optionsContainer}>
+          {currentQuestion?.options?.map((option, index) => (
+            <TouchableOpacity
+              key={index}
               style={[
-                styles.optionText,
-                selectedOption === option && styles.selectedOptionText
+                styles.optionButton,
+                selectedOption === option && styles.selectedOption,
+                showFeedback && selectedOption === option && (
+                  isCorrect ? styles.correctOption : styles.wrongOption
+                ),
+                showFeedback && correctAnswer === option && styles.correctOption
               ]}
+              onPress={() => !selectedOption && handleSubmitAnswer(option)}
+              disabled={selectedOption !== null}
             >
-              {option}
+              <Text style={[
+                styles.optionText,
+                selectedOption === option && styles.selectedOptionText,
+                (showFeedback && (selectedOption === option || correctAnswer === option)) && 
+                styles.feedbackOptionText
+              ]}>
+                {`${String.fromCharCode(65 + index)}. ${option}`}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Feedback Section */}
+        {showFeedback && (
+          <View style={[
+            styles.feedbackContainer,
+            isCorrect ? styles.correctFeedback : styles.wrongFeedback
+          ]}>
+            <Text style={styles.feedbackText}>{feedback}</Text>
+            {answeredQuestions >= totalQuestions ? (
+              <Text style={styles.completionText}>
+                Quiz completed! Redirecting to results...
+              </Text>
+            ) : (
+              // Next Question Button
+              <TouchableOpacity
+                style={[
+                  styles.nextButton,
+                  isWaitingForNextQuestion && styles.nextButtonDisabled
+                ]}
+                onPress={handleNextQuestion}
+                disabled={isWaitingForNextQuestion}
+              >
+                <Text style={styles.nextButtonText}>
+                  {isWaitingForNextQuestion ? 'Loading...' : 'Next Question'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* Show Next Question button even if no option selected and timer runs out */}
+        {timeLeft === 0 && !showFeedback && (
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              isWaitingForNextQuestion && styles.nextButtonDisabled
+            ]}
+            onPress={handleNextQuestion}
+            disabled={isWaitingForNextQuestion}
+          >
+            <Text style={styles.nextButtonText}>
+              {isWaitingForNextQuestion ? 'Loading...' : 'Next Question'}
             </Text>
           </TouchableOpacity>
-        ))}
+        )}
       </View>
-
-      {/* Next Button */}
-      {canProgress && !isWaitingForNextQuestion && (
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={handleNextQuestion}
-        >
-          <Text style={styles.nextButtonText}>Next Question</Text>
-        </TouchableOpacity>
-      )}
-
-      {isWaitingForNextQuestion && (
-        <View style={styles.waitingContainer}>
-          <ActivityIndicator size="small" color="#2196F3" />
-          <Text style={styles.waitingText}>Waiting for next question...</Text>
-        </View>
-      )}
-    </View>
+      </ScrollView>
   );
 };
 
+
 const styles = StyleSheet.create({
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20 // Adds padding at the bottom for better scrolling
+  },
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#F5F5F5',
   },
   header: {
@@ -426,6 +646,113 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 16,
   },
+  correctOption: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#45a049'
+  },
+  wrongOption: {
+    backgroundColor: '#f44336',
+    borderColor: '#da190b'
+  },
+  correctOptionText: {
+    color: '#ffffff'
+  },
+  wrongOptionText: {
+    color: '#ffffff'
+  },
+  feedbackText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#333',
+    fontWeight: 'bold'
+  },
+  questionCounter: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10
+  },
+  progressCard: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  progressText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  scoreText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 4,
+    marginVertical: 4,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#2196F3',
+    borderRadius: 4,
+  },
+  overallProgress: {
+    backgroundColor: '#4CAF50',
+  },
+  progressStats: {
+    textAlign: 'center',
+    fontSize: 14,
+    marginTop: 4,
+    color: '#666',
+  },
+  questionCard: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  feedbackContainer: {
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  correctFeedback: {
+    backgroundColor: '#E8F5E9',
+  },
+  wrongFeedback: {
+    backgroundColor: '#FFEBEE',
+  },
+  feedbackOptionText: {
+    color: 'white',
+  },
+  completionText: {
+    marginTop: 8,
+    textAlign: 'center',
+    color: '#666',
+  },
+  debugText: {
+    marginTop: 10,
+    color: '#666',
+    fontSize: 12
+  }
 });
 
 export default QuizGame;

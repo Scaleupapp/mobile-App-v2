@@ -48,7 +48,6 @@ const Home = ({navigation, route}) => {
     try {
       const res = await getProfile('');
       const newdata = {...userData, ...res?.data?.userProfileInfo};
-      console.log('hommmmmmmmmmm',newdata);
       dispatch(actions.setUserData(newdata));
     } catch (error) {
       console.log(error?.response?.data?.message, 'errormsg');
@@ -161,7 +160,7 @@ const Home = ({navigation, route}) => {
             onEndReachedThreshold={0.5}
           />
         </View>
-      </View>
+      </View> 
     </SafeAreaView>
   );
 };

@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   },
   registeredBadge: {
     position: 'absolute',
-    top: 8,
+    bottom: 8,
     right: 8,
     backgroundColor: '#4CAF50',
     paddingHorizontal: 8,

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.43.240:3000/api';
+const API_URL = 'http://192.168.185.240:3000/api';
 
 const QuizWaitingRoom = ({ route, navigation }) => {
   const { quizId } = route.params;
