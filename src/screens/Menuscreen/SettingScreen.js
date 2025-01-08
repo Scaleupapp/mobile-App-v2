@@ -72,11 +72,11 @@ const menuItems = [
       //   icon: 'visibility-icon',
       //   navKey: 'PostVisibility',
       // },
-      // {
-      //   title: 'Performance & Analytics',
-      //   icon: 'analytics-icon',
-      //   navKey: 'PerformanceAnalytics',
-      // },
+      {
+        title: 'Performance & Analytics',
+        icon: icons.perf,
+        navKey: Routes.UserAnalyticsPerf,
+      },
     ],
   },
   // {
@@ -144,6 +144,7 @@ const Settings = ({navigation, route}) => {
               <FlatList
                 scrollEnabled={false}
                 data={item?.data}
+                keyExtractor={(item, index) => index.toString()}
                 contentContainerStyle={{marginBottom: nh(15)}}
                 renderItem={({item, index}) => {
                   return (
@@ -162,7 +163,7 @@ const Settings = ({navigation, route}) => {
                         <View style={styles.image}>
                           <Image
                             source={item.icon}
-                            style={{width: nw(14), height: nh(17)}}
+                            style={{width: nw(21), height: nh(21)}}
                           />
                         </View>
                         <Text variant="medium14" color={COLORS.blue043142}>
