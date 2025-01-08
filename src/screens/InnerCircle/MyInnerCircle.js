@@ -77,9 +77,11 @@ const InnerCircle = ({navigation, route}) => {
         <Header
           title="Inner Circle"
           // backIcon={icons.backArrow} // Provide your back arrow icon
-          rightIcon={false} // Provide your right icon
+          rightIcon={true} // Provide your right icon
           // onBackPress={handleBackPress}
-          // onRightIconPress={handleRightIconPress}
+          onRightIconPress={() =>
+            navigation.navigate(Routes.InnerCircleRequest)
+          }
         />
       </ImageBackground>
 

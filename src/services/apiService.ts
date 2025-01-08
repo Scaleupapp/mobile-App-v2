@@ -136,6 +136,11 @@ export const myInnerCircleAPI = () => {
 export const acceptInnerCircleRequestAPI = (payload: any) => {
   return axiosInstance.post(`${API.ACCEPTREQ}`, payload);
 };
+export const widrawInnerCircleRequestAPI = (payload: any) => {
+  return axiosInstance.post(`${API.WIDRAW}`, payload);
+};
+
+
 
 export const declineInnerCircleRequestAPI = (payload: any) => {
   return axiosInstance.post(`${API.REMOVEREQ}`, payload);
