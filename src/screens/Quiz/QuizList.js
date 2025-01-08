@@ -15,7 +15,7 @@ import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const API_URL = 'http://192.168.135.240:3000/api';
+const API_URL = 'http://192.168.97.240:3000/api';
 
 const TABS = {
   UPCOMING: 'UPCOMING',

@@ -5,7 +5,7 @@ import axios from 'axios';
 import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.135.240:3000/api';
+const API_URL = 'http://192.168.97.240:3000/api';
 
 const QuizWaitingRoom = ({ route, navigation }) => {
   const { quizId } = route.params;
@@ -160,7 +160,7 @@ const initializeSocket = (authToken) => {
   return (
     <ScrollView style={styles.scrollContainer}>
       <View style={styles.container}>
-        <Text style={styles.title}>Waiting Room</Text>
+        {/* <Text style={styles.title}>Waiting Room</Text> */}
         
         {renderTimerOrWaiting()}
 

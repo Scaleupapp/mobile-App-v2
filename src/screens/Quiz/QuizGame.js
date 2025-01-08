@@ -4,8 +4,8 @@ import io from 'socket.io-client/dist/socket.io';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.135.240:3000/api';
-const SOCKET_URL = 'http://192.168.135.240:3000';
+const API_URL = 'http://192.168.97.240:3000/api';
+const SOCKET_URL = 'http://192.168.97.240:3000';
 
 const QuizGame = ({ route, navigation }) => {
   const { quizId } = route.params;
