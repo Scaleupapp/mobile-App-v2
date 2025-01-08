@@ -171,17 +171,18 @@ const MyProfile = ({navigation, route}) => {
       );
     }
   };
+  // console.log(profile?.presentInInnerCircle, 'profile?.presentInInnerCircle');
   const menuItems = [
     {
       name: 'Block User',
       image: icons.block,
       onPress: () => wantToBlock(),
     },
-    ...(follow
+    ...(!profile?.presentInInnerCircle
       ? [
           {
             name: 'Send Inner Circle Request',
-            image: icons.account1,
+            image: icons.innercircle,
             onPress: () => sendRequest(),
           },
         ]
@@ -213,6 +214,7 @@ const MyProfile = ({navigation, route}) => {
             <Image source={images.profilebaground} style={styles.headerImage} />
 
             {/* Profile Picture Section */}
+
             {profile?.profilePicture ? (
               <View>
                 <Image

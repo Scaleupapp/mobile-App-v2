@@ -21,4 +21,5 @@ export const icons = {
   saved: require('../icons/savesolid.png'),
   block: require('../icons/userlocksolid.png'),
   perf: require('../icons/perf-solid.png'),
+  innercircle: require('../icons/sendinner.png'),
 };

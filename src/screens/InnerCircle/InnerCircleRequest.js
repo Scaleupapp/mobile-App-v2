@@ -7,6 +7,8 @@ import {
   Image,
   ImageBackground,
   FlatList,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -19,22 +21,78 @@ import Button from '../../components/Button';
 import Icon from '../../helper/icon';
 import {
   acceptInnerCircleRequestAPI,
+  declineInnerCircleRequestAPI,
+  myInnerCircleAPI,
   myInnerCircleRequestAPI,
   widrawInnerCircleRequestAPI,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
+import {getTimeAgo, timeAgo} from '../../helper/commonFunctions';
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
+  const [myinnerCircle, setMyInnerCircle] = useState([]);
   const [sent, setSentRequest] = useState([]);
-
+  const [loader, setloader] = useState(true);
   useEffect(() => {
     getInnerCircleList();
+    getmyInnerCircleList();
   }, []);
 
+  let getmyInnerCircleList = async () => {
+    try {
+      let resp = await myInnerCircleAPI();
+      setMyInnerCircle(resp?.data);
+      setFilteredUsers(resp?.data);
+      console.log(resp?.data, 'myInnerCircleRequestAPI1');
+    } catch (error) {
+      console.log(error, 'rerrr');
+    } finally {
+      setloader(false);
+    }
+  };
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedTerm, setDebouncedTerm] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState([]);
+
+  // Debounce logic: Update `debouncedTerm` after a delay
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedTerm(searchTerm);
+    }, 300); // 300ms delay for debouncing
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Filter users whenever `debouncedTerm` changes
+  useEffect(() => {
+    const lowerSearchTerm = debouncedTerm.toLowerCase();
+    const results = myinnerCircle?.filter(
+      user =>
+        user.firstname.toLowerCase().includes(lowerSearchTerm) ||
+        user.lastname.toLowerCase().includes(lowerSearchTerm) ||
+        user.username.toLowerCase().includes(lowerSearchTerm),
+    );
+    setFilteredUsers(results);
+  }, [debouncedTerm]);
+
+  let declineRequest = async id => {
+    try {
+      let payload = {
+        targetUserId: id,
+      };
+      let resp = await declineInnerCircleRequestAPI(payload);
+      console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
+      let data = innerCircle.filter(user => user.userId !== id);
+      setInnerCircle(data);
+    } catch (error) {}
+  };
   let getInnerCircleList = async () => {
     try {
       let resp = await myInnerCircleRequestAPI();
+      setloader(false);
       setInnerCircle(resp?.data?.reqReceived);
       setSentRequest(resp?.data?.reqSent);
       console.log(resp?.data, 'myInnerCircleRequestAPI');
@@ -117,7 +175,11 @@ const InnerCircleRequest = ({navigation, route}) => {
     );
   };
 
-  return (
+  return loader ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size={30} />
+    </View>
+  ) : (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
       <StatusBar
@@ -130,7 +192,7 @@ const InnerCircleRequest = ({navigation, route}) => {
         style={styles.semicirlce}
         resizeMode="stretch">
         <Header
-          title="Inner Circle Requests"
+          title="My Inner Circle"
           // backIcon={icons.backArrow} // Provide your back arrow icon
           rightIcon={false} // Provide your right icon
           // onBackPress={handleBackPress}
@@ -138,25 +200,109 @@ const InnerCircleRequest = ({navigation, route}) => {
         />
       </ImageBackground>
 
-      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
-        <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View> */}
+      <View
+        style={{
+          position: 'absolute',
+          left: nw(16),
+          right: 0,
+          top: Platform.OS == 'ios' ? nh(140) : nh(80),
+        }}>
+        <CustomTextInput
+          width={DEVICE_WIDTH - 32}
+          height={nh(40)}
+          placeholder="Search Inner Circle"
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+        />
+      </View>
 
       <View>
         <View style={{marginHorizontal: nw(16), marginBottom: nh(8)}}>
           <ToggleWithUnderline
-            options={['RECEIVED', 'SENT']}
+            options={['MY CIRCLE', 'RECEIVED', 'SENT']}
             onToggle={number => onSelect(number)}
           />
         </View>
       </View>
-      {selected == 0 && innerCircle?.length > 0 ? (
+
+      {selected == 0 && myinnerCircle?.length > 0 ? (
+        <FlatList
+          data={filteredUsers}
+          renderItem={({item}) => {
+            return (
+              <View>
+                <View style={styles.card}>
+                  <Image
+                    source={{uri: item?.profilePicture}}
+                    style={styles.image}
+                  />
+
+                  <View style={{width: nw(195)}}>
+                    <Text variant="medium14" color={COLORS.blue043142}>
+                      {item?.username}
+                    </Text>
+
+                    {/* <Text
+                    variant="medium12"
+                    color={COLORS.grey999999}
+                    style={{width: nw(208)}}>
+                    Designation
+                  </Text> */}
+                  </View>
+
+                  <Button
+                    text="Remove"
+                    variant="outline"
+                    width={nw(90)}
+                    height={nh(35)}
+                    textStyle={{fontSize: 14}}
+                    onPress={() => declineRequest(item?.userId)}
+                  />
+                </View>
+              </View>
+            );
+          }}
+        />
+      ) : (
+        selected == 0 && (
+          <View>
+            <Image
+              source={images.norequest}
+              resizeMode="contain"
+              style={styles.notimage}
+            />
+
+            <Text
+              variant="semibold20"
+              color={COLORS.blue043142}
+              style={{textAlign: 'center', marginTop: nh(30)}}>
+              No one added in Inner Circle
+            </Text>
+            <Text
+              variant="medium14"
+              color={COLORS.grey999999}
+              style={{
+                textAlign: 'center',
+                marginTop: nh(5),
+                marginBottom: nh(20),
+              }}>
+              It’s quiet here. Why not create your first post and share your
+              thoughts with the community?
+            </Text>
+            <Button
+              text="View Requests"
+              onPress={() => navigation.navigate(Routes.InnerCircleRequest)}
+            />
+          </View>
+        )
+      )}
+      {selected == 1 && innerCircle?.length > 0 ? (
         <FlatList
           data={innerCircle}
           renderItem={({item}) => <RequestView item={item} />}
         />
       ) : (
-        selected == 0 && (
+        selected == 1 && (
           <View>
             <Image
               source={images.norequest}
@@ -188,7 +334,7 @@ const InnerCircleRequest = ({navigation, route}) => {
           </View>
         )
       )}
-      {selected == 1 && sent?.length > 0 ? (
+      {selected == 2 && sent?.length > 0 ? (
         <FlatList
           data={sent}
           renderItem={({item}) => {
@@ -215,7 +361,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                           {item?.username}
                         </Text>
                         <Text variant="medium12" color={COLORS.blue043142}>
-                          {item?.Timestamp}
+                          {timeAgo(item?.Timestamp)}
                         </Text>
                       </View>
                       <View
@@ -235,7 +381,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                           height={25}
                           width={90}
                           variant="outline"
-                          text="Widraw"
+                          text="Withdraw"
                           textStyle={{fontSize: nh(12)}}
                         />
                       </View>
@@ -247,7 +393,7 @@ const InnerCircleRequest = ({navigation, route}) => {
           }}
         />
       ) : (
-        selected == 1 && (
+        selected == 2 && (
           <View>
             <Image
               source={images.norequest}
@@ -286,6 +432,11 @@ const InnerCircleRequest = ({navigation, route}) => {
 export default InnerCircleRequest;
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.whiteFFFFFF,
