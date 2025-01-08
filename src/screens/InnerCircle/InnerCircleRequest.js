@@ -43,6 +43,7 @@ const InnerCircleRequest = ({navigation, route}) => {
     try {
       let resp = await myInnerCircleAPI();
       setMyInnerCircle(resp?.data);
+      setFilteredUsers(resp?.data);
       console.log(resp?.data, 'myInnerCircleRequestAPI1');
     } catch (error) {
       console.log(error, 'rerrr');
