@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import {
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  View,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
+import { COLORS } from '../../helper/colors';
+import { DEVICE_HEIGHT, nh, nw } from '../../helper/scales';
+import Text from '../../components/Text';
+import Header from '../../components/Header';
 import axios from 'axios';
 import { format } from 'date-fns';
 import { getProfile } from '../../services/apiService';
@@ -32,6 +44,7 @@ const QuizDetails = ({ route, navigation }) => {
             }
           );
           const foundQuiz = response.data.quizzes.find(q => q._id === quizId);
+          console.log('foundddddddddddd',foundQuiz)
           if (foundQuiz) {
             setQuiz(foundQuiz);
           } else {
@@ -79,149 +92,210 @@ const QuizDetails = ({ route, navigation }) => {
     navigation.navigate('QuizWaitingRoom', { quizId });
   };
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={[styles.container, styles.centerContent]}>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+        </View>
+      );
+    }
 
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
-    );
-  }
+    if (error) {
+      return (
+        <View style={[styles.container, styles.centerContent]}>
+          <Text variant="semibold16" color={COLORS.red}>
+            {error}
+          </Text>
+        </View>
+      );
+    }
 
-  if (!quiz) {
+    if (!quiz) {
+      return (
+        <View style={[styles.container, styles.centerContent]}>
+          <Text variant="semibold16" color={COLORS.blue043142}>
+            Quiz not found
+          </Text>
+        </View>
+      );
+    }
+
     return (
-      <View style={styles.container}>
-        <Text style={styles.noQuizText}>Quiz not found</Text>
+      <View style={styles.contentContainer}>
+        <Text variant="semibold24" color={COLORS.blue043142} style={styles.topic}>
+          {quiz.topic}
+        </Text>
+
+        <View style={styles.infoSection}>
+          <View style={styles.infoRow}>
+            <Text variant="regular16" color={COLORS.blue043142}>
+              Difficulty:
+            </Text>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              {quiz.difficulty}
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text variant="regular16" color={COLORS.blue043142}>
+              Start Time:
+            </Text>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              {format(new Date(quiz.startTime), 'PPp')}
+            </Text>
+          </View>
+
+          {quiz.isPaid && (
+            <View style={styles.infoRow}>
+              <Text variant="regular16" color={COLORS.blue043142}>
+                Entry Fee:
+              </Text>
+              <Text variant="semibold16" color={COLORS.blue043142}>
+                ₹{quiz.entryFee}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.prizeSection}>
+          <Text
+            variant="semibold20"
+            color={COLORS.blue043142}
+            style={styles.prizeTitle}>
+            Prize Distribution
+          </Text>
+          <View style={styles.prizeRow}>
+            <Text variant="regular16" color={COLORS.blue043142}>
+              1st Place:
+            </Text>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              {quiz.prizeDistribution.firstPlace}%
+            </Text>
+          </View>
+          <View style={styles.prizeRow}>
+            <Text variant="regular16" color={COLORS.blue043142}>
+              2nd Place:
+            </Text>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              {quiz.prizeDistribution.secondPlace}%
+            </Text>
+          </View>
+          <View style={styles.prizeRow}>
+            <Text variant="regular16" color={COLORS.blue043142}>
+              3rd Place:
+            </Text>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              {quiz.prizeDistribution.thirdPlace}%
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.joinButton,
+            quiz.isRegistered && { backgroundColor: COLORS.blue043142 },
+          ]}
+          onPress={quiz.isRegistered ? navigateToWaitingRoom : handleJoinQuiz}>
+          <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
+            {quiz.isRegistered ? 'Go to Waiting Room' : 'Join Quiz'}
+          </Text>
+        </TouchableOpacity>
       </View>
     );
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.topic}>{quiz.topic}</Text>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Difficulty:</Text>
-        <Text style={styles.value}>{quiz.difficulty}</Text>
-      </View>
-      <View style={styles.infoContainer}>
-        <Text style={styles.label}>Start Time:</Text>
-        <Text style={styles.value}>
-          {format(new Date(quiz.startTime), 'PPp')}
-        </Text>
-      </View>
-      {quiz.isPaid && (
-        <View style={styles.infoContainer}>
-          <Text style={styles.label}>Entry Fee:</Text>
-          <Text style={styles.value}>₹{quiz.entryFee}</Text>
-        </View>
-      )}
-      <View style={styles.prizeContainer}>
-        <Text style={styles.prizeTitle}>Prize Distribution</Text>
-        <Text style={styles.prizeText}>1st Place: {quiz.prizeDistribution.firstPlace}%</Text>
-        <Text style={styles.prizeText}>2nd Place: {quiz.prizeDistribution.secondPlace}%</Text>
-        <Text style={styles.prizeText}>3rd Place: {quiz.prizeDistribution.thirdPlace}%</Text>
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+      
+      <View style={styles.headerContainer}>
+        <Header
+          title="Quiz Details"
+          onBackPress={() => navigation.navigate('QuizList')}
+        />
       </View>
       
-      {!quiz.isRegistered ? (
-        <TouchableOpacity 
-          style={styles.joinButton}
-          onPress={handleJoinQuiz}
-        >
-          <Text style={styles.joinButtonText}>Join Quiz</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity 
-          style={[styles.joinButton, { backgroundColor: '#4CAF50' }]}
-          onPress={navigateToWaitingRoom}
-        >
-          <Text style={styles.joinButtonText}>Go to Waiting Room</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+      <View style={styles.layer1}>
+        <View style={styles.layer2}>
+          {renderContent()}
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: COLORS.yellowF5BE00,
+  },
+  headerContainer: {
+    paddingTop: nh(10),
+    paddingBottom: nh(10),
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  layer1: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginTop: nh(26),
+    marginHorizontal: nw(16),
+    borderTopLeftRadius: nh(25),
+    borderTopRightRadius: nh(25),
+  },
+  layer2: {
+    flex: 1,
+    backgroundColor: COLORS.whiteFFFFFF,
+    marginTop: nh(15),
+    marginHorizontal: nw(-16),
+    borderTopLeftRadius: nh(25),
+    borderTopRightRadius: nh(25),
+    paddingTop: nh(20),
+  },
+  contentContainer: {
+    padding: nw(16),
   },
   topic: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: nh(20),
   },
-  infoContainer: {
+  infoSection: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nh(8),
+    padding: nw(16),
+    marginBottom: nh(20),
+  },
+  infoRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: nh(12),
   },
-  label: {
-    width: 100,
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  value: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  prizeContainer: {
-    marginTop: 20,
-    padding: 16,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
+  prizeSection: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nh(8),
+    padding: nw(16),
+    marginBottom: nh(20),
   },
   prizeTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
+    marginBottom: nh(16),
   },
-  prizeText: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: '#666',
+  prizeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: nh(8),
   },
   joinButton: {
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.blue043142,
+    padding: nw(16),
+    borderRadius: nh(8),
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: nh(20),
   },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  loadingText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-  },
-  errorText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: 'red',
-  },
-  noQuizText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-  }
 });
 
 export default QuizDetails;

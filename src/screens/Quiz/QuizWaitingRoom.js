@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  SafeAreaView,
+  StatusBar,
+} from 'react-native';
 import io from 'socket.io-client/dist/socket.io';
 import axios from 'axios';
 import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS } from '../../helper/colors';
+import { DEVICE_HEIGHT, nh, nw } from '../../helper/scales';
+import Text from '../../components/Text';
+import Header from '../../components/Header';
 
 const API_URL = 'http://192.168.97.240:3000/api';
 
@@ -15,16 +26,13 @@ const QuizWaitingRoom = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [quizStartTime, setQuizStartTime] = useState(null);
 
-  // Initialize token and fetch initial quiz data
   useEffect(() => {
     const initializeData = async () => {
       try {
-        // Get token from storage
         const userData = await AsyncStorage.getItem('userData');
         const parsedUser = JSON.parse(userData);
         setToken(parsedUser?.token);
 
-        // Fetch initial quiz data
         if (parsedUser?.token) {
           const response = await axios.get(
             `${API_URL}/quiz/list`,
@@ -33,20 +41,15 @@ const QuizWaitingRoom = ({ route, navigation }) => {
             }
           );
           const quiz = response.data.quizzes.find(q => q._id === quizId);
-          console.log('dataaaaaaaaa',quiz)
           if (quiz) {
-            // Set quiz start time
             setQuizStartTime(new Date(quiz.startTime));
-            
-            // Filter to show only joined participants
             const joinedParticipants = quiz.participants.filter(p => p.hasJoined);
             setParticipants(joinedParticipants);
             
-            // Initialize countdown if we're close to start time
             const now = new Date();
             const startTime = new Date(quiz.startTime);
             const difference = startTime - now;
-            if (difference > 0 && difference <= 3600000) { // Within 1 hour of start
+            if (difference > 0 && difference <= 3600000) {
               setTimeLeft(Math.floor(difference / 1000));
               startCountdown(startTime);
             }
@@ -62,7 +65,6 @@ const QuizWaitingRoom = ({ route, navigation }) => {
     initializeData();
   }, [quizId]);
 
-  // Function to start countdown
   const startCountdown = (startTime) => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -82,37 +84,6 @@ const QuizWaitingRoom = ({ route, navigation }) => {
     return () => clearInterval(timer);
   };
 
-  // Socket connection and event handlers
-// In QuizGame.js, modify the initializeSocket function:
-const initializeSocket = (authToken) => {
-  try {
-    // Connect to the root namespace with the correct configuration
-    socketRef.current = io(SOCKET_URL, {
-      // Match the CORS configuration from your backend
-      withCredentials: true,
-      auth: {
-        token: authToken
-      },
-      transports: ['websocket', 'polling'],
-      // Extra options to match your backend configuration
-      extraHeaders: {
-        "Authorization": `Bearer ${authToken}`
-      }
-    });
-
-    socketRef.current.on('connect', () => {
-      console.log('Socket connected successfully');
-      // Join the quiz room after successful connection
-      socketRef.current.emit('joinQuizRoom', { quizId });
-    });
-
-    // Rest of your socket event handlers...
-  } catch (error) {
-    console.error('Socket initialization error:', error);
-    setError('Failed to initialize quiz connection');
-  }
-};
-
   const formatTimeLeft = (seconds) => {
     if (!seconds) return '';
     const minutes = Math.floor(seconds / 60);
@@ -124,10 +95,14 @@ const initializeSocket = (authToken) => {
     if (timeLeft !== null) {
       return (
         <View style={styles.countdownContainer}>
-          <Text style={styles.countdownText}>Quiz starting in:</Text>
-          <Text style={styles.timer}>{formatTimeLeft(timeLeft)}</Text>
+          <Text variant="regular16" color={COLORS.blue043142}>
+            Quiz starting in:
+          </Text>
+          <Text variant="semibold24" color={COLORS.blue043142} style={styles.timer}>
+            {formatTimeLeft(timeLeft)}
+          </Text>
           {quizStartTime && (
-            <Text style={styles.startTimeText}>
+            <Text variant="regular14" color={COLORS.blue043142}>
               Start time: {quizStartTime.toLocaleTimeString()}
             </Text>
           )}
@@ -137,10 +112,12 @@ const initializeSocket = (authToken) => {
 
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.waitingText}>Waiting for quiz to start...</Text>
+        <ActivityIndicator size="large" color={COLORS.blue043142} />
+        <Text variant="regular16" color={COLORS.blue043142} style={styles.waitingText}>
+          Waiting for quiz to start...
+        </Text>
         {quizStartTime && (
-          <Text style={styles.startTimeText}>
+          <Text variant="regular14" color={COLORS.blue043142}>
             Start time: {quizStartTime.toLocaleTimeString()}
           </Text>
         )}
@@ -148,152 +125,155 @@ const initializeSocket = (authToken) => {
     );
   };
 
-  if (isLoading) {
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <View style={[styles.container, styles.centerContent]}>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+          <Text variant="regular16" color={COLORS.blue043142}>
+            Loading waiting room...
+          </Text>
+        </View>
+      );
+    }
+
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Loading waiting room...</Text>
-      </View>
+      <ScrollView style={styles.scrollContainer}>
+        <View style={styles.contentContainer}>
+          {renderTimerOrWaiting()}
+
+          <View style={styles.participantsContainer}>
+            <Text variant="semibold20" color={COLORS.blue043142} style={styles.participantsTitle}>
+              Participants ({participants.length})
+            </Text>
+            
+            {participants.length === 0 ? (
+              <Text variant="regular16" color={COLORS.blue043142} style={styles.noParticipantsText}>
+                No participants have joined yet. Be the first one!
+              </Text>
+            ) : (
+              participants.map((participant, index) => (
+                <View key={participant.userId} style={styles.participantCard}>
+                  <Text variant="semibold16" color={COLORS.blue043142}>
+                    #{index + 1}
+                  </Text>
+                  <Text variant="regular16" color={COLORS.blue043142} style={styles.participantName}>
+                    {participant.username || `Participant ${index + 1}`}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      </ScrollView>
     );
-  }
+  };
 
   return (
-    <ScrollView style={styles.scrollContainer}>
-      <View style={styles.container}>
-        {/* <Text style={styles.title}>Waiting Room</Text> */}
-        
-        {renderTimerOrWaiting()}
-
-        <View style={styles.participantsContainer}>
-          <Text style={styles.participantsTitle}>
-            Participants ({participants.length})
-          </Text>
-          
-          {participants.length === 0 ? (
-            <Text style={styles.noParticipantsText}>
-              No participants have joined yet. Be the first one!
-            </Text>
-          ) : (
-            participants.map((participant, index) => (
-              <View key={participant.userId} style={styles.participantCard}>
-                <Text style={styles.participantNumber}>#{index + 1}</Text>
-                <Text style={styles.participantName}>
-                  {participant.username || `Participant ${index + 1}`}
-                </Text>
-              </View>
-            ))
-          )}
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+      
+      <View style={styles.headerContainer}>
+        <Header
+          title="Quiz Waiting Room"
+          onBackPress={() => navigation.navigate('QuizDetails', { quizId })}
+        />
+      </View>
+      
+      <View style={styles.layer1}>
+        <View style={styles.layer2}>
+          {renderContent()}
         </View>
       </View>
-    </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    minHeight: '100%',
+    backgroundColor: COLORS.yellowF5BE00,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 32,
-    color: '#333',
+  headerContainer: {
+    paddingTop: nh(10),
+    paddingBottom: nh(10),
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  layer1: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginTop: nh(26),
+    marginHorizontal: nw(16),
+    borderTopLeftRadius: nh(25),
+    borderTopRightRadius: nh(25),
+  },
+  layer2: {
+    flex: 1,
+    backgroundColor: COLORS.whiteFFFFFF,
+    marginTop: nh(15),
+    marginHorizontal: nw(-16),
+    borderTopLeftRadius: nh(25),
+    borderTopRightRadius: nh(25),
+    paddingTop: nh(20),
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: nw(16),
   },
   countdownContainer: {
     alignItems: 'center',
-    marginBottom: 32,
-    padding: 20,
-    backgroundColor: '#f0f8ff',
-    borderRadius: 12,
+    marginBottom: nh(32),
+    padding: nw(20),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nh(8),
     width: '100%',
   },
-  countdownText: {
-    fontSize: 18,
-    color: 'black',
-    marginBottom: 8,
-  },
   timer: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#2196F3',
-  },
-  startTimeText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
+    marginVertical: nh(8),
   },
   loadingContainer: {
     alignItems: 'center',
-    marginBottom: 32,
-    paddingVertical: 20,
-    backgroundColor: '#f0f8ff',
-    borderRadius: 12,
+    marginBottom: nh(32),
+    padding: nw(20),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nh(8),
     width: '100%',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
   },
   waitingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
+    marginTop: nh(16),
   },
   participantsContainer: {
-    width: '100%',
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 8,
-    minHeight: 200,
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(16),
+    borderRadius: nh(8),
+    marginBottom: nh(20),
   },
   participantsTitle: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 16,
-    color: '#333',
+    marginBottom: nh(16),
   },
   noParticipantsText: {
-    fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     fontStyle: 'italic',
-    marginTop: 20,
+    marginTop: nh(20),
   },
   participantCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  participantNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#2196F3',
-    marginRight: 12,
+    padding: nw(12),
+    borderRadius: nh(8),
+    marginBottom: nh(8),
+    backgroundColor: 'rgba(4, 49, 66, 0.05)',
   },
   participantName: {
-    fontSize: 16,
-    color: '#333',
+    marginLeft: nw(12),
   },
 });
 

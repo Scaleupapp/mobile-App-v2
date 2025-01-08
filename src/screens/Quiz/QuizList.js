@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   FlatList,
   StyleSheet,
   TouchableOpacity,
@@ -9,11 +8,20 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
+  ImageBackground,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import axios from 'axios';
+import Text from '../../components/Text';
+
 import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { COLORS } from '../../helper/colors';
+import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
+import Header from '../../components/Header';
+import CustomTextInput from '../../components/TextInput';
 
 const API_URL = 'http://192.168.97.240:3000/api';
 
@@ -181,23 +189,30 @@ const QuizList = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.searchContainer}>
-          <Ionicons 
-            name="search-outline" 
-            size={20} 
-            color="#000000" 
-            style={styles.searchIcon} 
-          />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search"
-            placeholderTextColor="#000000"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+
+      <ImageBackground
+        source={require('../../assets/images/Ellipse.png')}
+        style={styles.semicircle}
+        resizeMode="stretch">
+        <Header
+          title="Quizzes"
+          rightIcon={false}
+        />
+      </ImageBackground>
+
+      <View style={styles.searchWrapper}>
+        <CustomTextInput 
+          width={DEVICE_WIDTH - 32} 
+          height={nh(50)}
+          placeholder="Search"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
       </View>
 
       <View style={styles.tabContainer}>
@@ -230,20 +245,60 @@ const QuizList = ({ navigation }) => {
           />
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.whiteFFFFFF,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F8F8',
+    backgroundColor: COLORS.whiteFFFFFF,
+  },
+  semicircle: {
+    width: DEVICE_WIDTH,
+    height: nh(120),
+    marginBottom: nh(20),
+  },
+  searchWrapper: {
+    position: 'absolute',
+    left: nw(16),
+    right: 0,
+    top: 80,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    marginTop: nh(30),
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 16,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.yellowF5BE00,
+  },
+  tabText: {
+    fontSize: 14,
+    color: COLORS.grey999999,
+  },
+  activeTabText: {
+    color: COLORS.yellowF5BE00,
+    fontWeight: '600',
+  },
+  listContainer: {
+    padding: 16,
+    flexGrow: 1,
   },
   header: {
     backgroundColor: '#F5BE00',

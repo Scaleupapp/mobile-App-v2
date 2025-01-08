@@ -1,8 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,ScrollView, Animated, Easing } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator,ScrollView, Animated, Easing,SafeAreaView,
+  StatusBar, } from 'react-native';
 import io from 'socket.io-client/dist/socket.io';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS } from '../../helper/colors';
+import { DEVICE_HEIGHT, nh, nw } from '../../helper/scales';
+import Text from '../../components/Text';
+import Header from '../../components/Header';
 
 const API_URL = 'http://192.168.97.240:3000/api';
 const SOCKET_URL = 'http://192.168.97.240:3000';
@@ -446,378 +451,253 @@ const QuizGame = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>
-          {connectionAttempts > 0 
-            ? `Connecting to quiz server (Attempt ${connectionAttempts}/${maxReconnectAttempts})...`
-            : 'Preparing quiz...'}
-        </Text>
-        {isConnected && <Text style={styles.connectedText}>Connected to server</Text>}
-        <Text style={styles.debugText}>Quiz Status: {quizStatus}</Text>
-        <Text style={styles.debugText}>Socket Connected: {isConnected ? 'Yes' : 'No'}</Text>
-        <Text style={styles.debugText}>Has Question: {currentQuestion ? 'Yes' : 'No'}</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <View style={[styles.centerContent, { flex: 1 }]}>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+          <Text variant="regular16" color={COLORS.blue043142}>
+            {connectionAttempts > 0 
+              ? `Connecting to quiz server (Attempt ${connectionAttempts}/${maxReconnectAttempts})...`
+              : 'Preparing quiz...'}
+          </Text>
+          {isConnected && (
+            <Text variant="regular14" color={COLORS.green}>Connected to server</Text>
+          )}
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
-          style={styles.retryButton}
-          onPress={() => {
-            setError(null);
-            setLoading(true);
-            setConnectionAttempts(0);
-            initializeSocket(token);
-          }}
-        >
-          <Text style={styles.retryButtonText}>Retry Connection</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <View style={[styles.centerContent, { flex: 1 }]}>
+          <Text variant="regular16" color={COLORS.red}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+              setConnectionAttempts(0);
+              initializeSocket(token);
+            }}
+          >
+            <Text variant="regular16" color={COLORS.whiteFFFFFF}>Retry Connection</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (quizStatus === 'waiting' || !currentQuestion) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2196F3" />
-        <Text style={styles.loadingText}>Waiting for quiz to start...</Text>
-        {isConnected && <Text style={styles.connectedText}>Connected to server</Text>}
-      </View>
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <View style={[styles.centerContent, { flex: 1 }]}>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+          <Text variant="regular16" color={COLORS.blue043142}>
+            Waiting for quiz to start...
+          </Text>
+          {isConnected && (
+            <Text variant="regular14" color={COLORS.green}>Connected to server</Text>
+          )}
+        </View>
+      </SafeAreaView>
     );
   }
 
-return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      {/* Progress Section */}
-      <Animated.View style={[styles.progressCard, { opacity: fadeAnim }]}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressText}>
-            Question {questionNumber}/{totalQuestions}
-          </Text>
-          <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
-            <Animated.View style={[
-              styles.timerRing,
-              {
-                transform: [{
-                  rotate: timerAnimation.interpolate({
-                    inputRange: [0, 10],
-                    outputRange: ['360deg', '0deg'],
-                  }),
-                }],
-              },
-            ]} />
-          </View>
-          <Text style={styles.scoreText}>Score: {score}</Text>
-        </View>
-        
-        {/* Overall Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <Animated.View 
-            style={[
-              styles.progressBarFill,
-              styles.overallProgress,
-              { width: `${(answeredQuestions/totalQuestions) * 100}%` }
-            ]} 
-          />
-        </View>
-      </Animated.View>
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+      
+      <View style={styles.headerContainer}>
+        <Header
+          title="Quiz Game"
+          onBackPress={() => navigation.navigate('QuizDetails', { quizId })}
+        />
+      </View>
+      
+      <View style={styles.layer1}>
+        <View style={styles.layer2}>
+          <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+            {/* Progress Section */}
+            <Animated.View style={[styles.progressCard, { opacity: fadeAnim }]}>
+              <View style={styles.progressHeader}>
+                <Text variant="regular16" color={COLORS.blue043142}>
+                  Question {questionNumber}/{totalQuestions}
+                </Text>
+                <View style={styles.timerContainer}>
+                  <Text variant="semibold16" color={COLORS.blue043142}>
+                    {formatTime(timeLeft)}
+                  </Text>
+                  <Animated.View style={[
+                    styles.timerRing,
+                    {
+                      transform: [{
+                        rotate: timerAnimation.interpolate({
+                          inputRange: [0, 10],
+                          outputRange: ['360deg', '0deg'],
+                        }),
+                      }],
+                    },
+                  ]} />
+                </View>
+                <Text variant="regular16" color={COLORS.blue043142}>
+                  Score: {score}
+                </Text>
+              </View>
+              
+              <View style={styles.progressBarContainer}>
+                <Animated.View 
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${(answeredQuestions/totalQuestions) * 100}%` }
+                  ]} 
+                />
+              </View>
+            </Animated.View>
 
-      {/* Question Section */}
-      <Animated.View 
-        style={[
-          styles.questionCard,
-          {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }]
-          }
-        ]}
-      >
-        <Text style={styles.questionText}>{currentQuestion?.text}</Text>
-        
-        <View style={styles.optionsContainer}>
-          {currentQuestion?.options?.map((option, index) => (
-            <TouchableOpacity
-              key={index}
-              activeOpacity={0.7}
+            {/* Question Section */}
+            <Animated.View 
               style={[
-                styles.optionButton,
-                selectedOption === option && styles.selectedOption,
-                showFeedback && selectedOption === option && (
-                  isCorrect ? styles.correctOption : styles.wrongOption
-                ),
-                showFeedback && correctAnswer === option && styles.correctOption
+                styles.questionCard,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ scale: scaleAnim }]
+                }
               ]}
-              onPress={() => handleSubmitAnswer(option)}
-              disabled={selectedOption !== null}
             >
-              <Text style={[
-                styles.optionText,
-                selectedOption === option && styles.selectedOptionText,
-                (showFeedback && (selectedOption === option || correctAnswer === option)) && 
-                styles.feedbackOptionText
-              ]}>
-                {`${String.fromCharCode(65 + index)}. ${option}`}
+              <Text variant="semibold18" color={COLORS.blue043142} style={styles.questionText}>
+                {currentQuestion?.text}
               </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              
+              <View style={styles.optionsContainer}>
+                {currentQuestion?.options?.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.optionButton,
+                      selectedOption === option && styles.selectedOption,
+                      showFeedback && selectedOption === option && (
+                        isCorrect ? styles.correctOption : styles.wrongOption
+                      ),
+                      showFeedback && correctAnswer === option && styles.correctOption
+                    ]}
+                    onPress={() => handleSubmitAnswer(option)}
+                    disabled={selectedOption !== null}
+                  >
+                    <Text 
+                      variant="regular16" 
+                      color={
+                        selectedOption === option ? COLORS.whiteFFFFFF :
+                        showFeedback && (selectedOption === option || correctAnswer === option) ? 
+                        COLORS.whiteFFFFFF : COLORS.blue043142
+                      }
+                    >
+                      {`${String.fromCharCode(65 + index)}. ${option}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-        {/* Feedback Section */}
-        {showFeedback && (
-          <Animated.View 
-            style={[
-              styles.feedbackContainer,
-              isCorrect ? styles.correctFeedback : styles.wrongFeedback,
-              { opacity: fadeAnim }
-            ]}
-          >
-            <Text style={styles.feedbackText}>{feedback}</Text>
-            {answeredQuestions >= totalQuestions && (
-              <Text style={styles.completionText}>
-                Quiz completed! Redirecting to results...
-              </Text>
-            )}
-          </Animated.View>
-        )}
-      </Animated.View>
-    </ScrollView>
+              {/* Feedback Section */}
+              {showFeedback && (
+                <Animated.View 
+                  style={[
+                    styles.feedbackContainer,
+                    isCorrect ? styles.correctFeedback : styles.wrongFeedback,
+                    { opacity: fadeAnim }
+                  ]}
+                >
+                  <Text variant="semibold16" color={COLORS.blue043142}>
+                    {feedback}
+                  </Text>
+                  {answeredQuestions >= totalQuestions && (
+                    <Text variant="regular14" color={COLORS.blue043142}>
+                      Quiz completed! Redirecting to results...
+                    </Text>
+                  )}
+                </Animated.View>
+              )}
+            </Animated.View>
+          </ScrollView>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
-
 const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20 // Adds padding at the bottom for better scrolling
-  },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.yellowF5BE00,
   },
-  header: {
-    marginBottom: 20,
+  headerContainer: {
+    paddingTop: nh(10),
+    paddingBottom: nh(10),
   },
-  timerContainer: {
-    backgroundColor: '#2196F3',
-    padding: 10,
-    borderRadius: 5,
-  },
-  timerWarning: {
-    backgroundColor: '#FF5252',
-  },
-  timerText: {
-    color: 'black',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  questionContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-    elevation: 2,
-  },
-  questionText: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: 'black',
-  },
-  optionsContainer: {
-    gap: 10,
-    marginBottom: 20,
-  },
-  optionButton: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  selectedOption: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
-  },
-  optionText: {
-    fontSize: 16,
-    color: 'black',
-  },
-  selectedOptionText: {
-    color: 'black',
-  },
-  nextButton: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  nextButtonText: {
-    color: 'black',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  loadingText: {
-    marginTop: 10,
-    textAlign: 'center',
-    color: 'black',
-  },
-  connectedText: {
-    marginTop: 5,
-    color: 'green',
-    textAlign: 'center',
-  },
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: '#2196F3',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  retryButtonText: {
-    color: 'black',
-    textAlign: 'center',
-  },
-  waitingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  centerContent: {
     justifyContent: 'center',
-    marginTop: 20,
-    gap: 10,
+    alignItems: 'center',
   },
-  waitingText: {
-    color: '#666',
-    fontSize: 16,
+  layer1: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginTop: nh(26),
+    marginHorizontal: nw(16),
+    borderTopLeftRadius: nh(25),
+    borderTopRightRadius: nh(25),
   },
-  correctOption: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#45a049'
+  layer2: {
+    flex: 1,
+    backgroundColor: COLORS.whiteFFFFFF,
+    marginTop: nh(15),
+    marginHorizontal: nw(-16),
+    borderTopLeftRadius: nh(25),
+    borderTopRightRadius: nh(25),
+    paddingTop: nh(20),
   },
-  wrongOption: {
-    backgroundColor: '#f44336',
-    borderColor: '#da190b'
+  scrollContainer: {
+    flex: 1,
   },
-  correctOptionText: {
-    color: '#ffffff'
-  },
-  wrongOptionText: {
-    color: '#ffffff'
-  },
-  feedbackText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 20,
-    color: '#333',
-    fontWeight: 'bold'
-  },
-  questionCounter: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 10
+  scrollContent: {
+    padding: nw(16),
+    paddingBottom: nh(20),
   },
   progressCard: {
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(16),
+    borderRadius: nh(8),
+    marginBottom: nh(16),
+    borderWidth: 1,
+    borderColor: 'rgba(4, 49, 66, 0.1)',
   },
   progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  progressText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'black',
-
-  },
-  scoreText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: 'black',
-
-  },
-  progressBarContainer: {
-    height: 8,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 4,
-    marginVertical: 4,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: '#2196F3',
-    borderRadius: 4,
-  },
-  overallProgress: {
-    backgroundColor: '#4CAF50',
-  },
-  progressStats: {
-    textAlign: 'center',
-    fontSize: 14,
-    marginTop: 4,
-    color: '#666',
-  },
-  questionCard: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 8,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  feedbackContainer: {
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
-  },
-  correctFeedback: {
-    backgroundColor: '#E8F5E9',
-  },
-  wrongFeedback: {
-    backgroundColor: '#FFEBEE',
-  },
-  feedbackOptionText: {
-    color: 'white',
-  },
-  completionText: {
-    marginTop: 8,
-    textAlign: 'center',
-    color: '#666',
-  },
-  debugText: {
-    marginTop: 10,
-    color: '#666',
-    fontSize: 12
+    marginBottom: nh(8),
   },
   timerContainer: {
     position: 'relative',
-    width: 60,
-    height: 60,
+    width: nw(60),
+    height: nh(60),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  timerText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#2196F3',
   },
   timerRing: {
     position: 'absolute',
@@ -825,96 +705,73 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 30,
+    borderRadius: nh(30),
     borderWidth: 3,
-    borderColor: '#2196F3',
+    borderColor: COLORS.blue043142,
     borderRightColor: 'transparent',
   },
-  progressCard: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 16,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  questionCard: {
-    backgroundColor: 'white',
-    padding: 24,
-    borderRadius: 15,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    margin: 16,
-  },
-  optionButton: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 12,
-    marginVertical: 8,
-    borderWidth: 2,
-    borderColor: '#E0E0E0',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  selectedOption: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#2196F3',
-  },
-  correctOption: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
-  },
-  wrongOption: {
-    backgroundColor: '#FFEBEE',
-    borderColor: '#F44336',
-  },
-  optionText: {
-    fontSize: 18,
-    color: '#333',
-    fontWeight: '500',
-  },
-  selectedOptionText: {
-    color: '#2196F3',
-    fontWeight: 'bold',
-  },
-  feedbackOptionText: {
-    fontWeight: 'bold',
-  },
-  feedbackContainer: {
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  feedbackText: {
-    fontSize: 20,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
   progressBarContainer: {
-    height: 10,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 5,
-    marginVertical: 8,
+    height: nh(8),
+    backgroundColor: 'rgba(4, 49, 66, 0.1)',
+    borderRadius: nh(4),
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    backgroundColor: '#2196F3',
-    borderRadius: 5,
+    backgroundColor: COLORS.blue043142,
+    borderRadius: nh(4),
+  },
+  questionCard: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(16),
+    borderRadius: nh(8),
+    borderWidth: 1,
+    borderColor: 'rgba(4, 49, 66, 0.1)',
+  },
+  questionText: {
+    marginBottom: nh(16),
+  },
+  optionsContainer: {
+    gap: nh(10),
+  },
+  optionButton: {
+    padding: nw(16),
+    borderRadius: nh(8),
+    borderWidth: 1,
+    borderColor: 'rgba(4, 49, 66, 0.1)',
+    backgroundColor: COLORS.whiteFFFFFF,
+  },
+  selectedOption: {
+    backgroundColor: COLORS.blue043142,
+    borderColor: COLORS.blue043142,
+  },
+  correctOption: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  wrongOption: {
+    backgroundColor: '#f44336',
+    borderColor: '#f44336',
+  },
+  feedbackContainer: {
+    padding: nw(16),
+    borderRadius: nh(8),
+    marginTop: nh(16),
+    borderWidth: 1,
+  },
+  correctFeedback: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: '#4CAF50',
+  },
+  wrongFeedback: {
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    borderColor: '#f44336',
+  },
+  retryButton: {
+    backgroundColor: COLORS.blue043142,
+    padding: nw(16),
+    borderRadius: nh(8),
+    marginTop: nh(16),
   },
 });
 
