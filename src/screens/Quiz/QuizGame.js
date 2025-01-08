@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,ScrollView, Animated, Easing } from 'react-native';
 import io from 'socket.io-client/dist/socket.io';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = 'http://192.168.185.240:3000/api';
-const SOCKET_URL = 'http://192.168.185.240:3000';
+const API_URL = 'http://192.168.135.240:3000/api';
+const SOCKET_URL = 'http://192.168.135.240:3000';
 
 const QuizGame = ({ route, navigation }) => {
   const { quizId } = route.params;
@@ -28,13 +28,25 @@ const QuizGame = ({ route, navigation }) => {
   const [canProgress, setCanProgress] = useState(false);
   const [isWaitingForNextQuestion, setIsWaitingForNextQuestion] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [totalQuestions, setTotalQuestions] = useState(15);
+  const [totalQuestions, setTotalQuestions] = useState(16);
 
   const startTimeRef = useRef(null);
   const socketRef = useRef(null);
   const timerRef = useRef(null);
   const isMountedRef = useRef(true);
   const maxReconnectAttempts = 5;
+
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const timerAnimation = useRef(new Animated.Value(10)).current;
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
 
 
 
@@ -102,7 +114,7 @@ const QuizGame = ({ route, navigation }) => {
           startTimeRef.current = new Date();
           setQuizStatus('active');
           setLoading(false);
-          setQuestionNumber(prev => prev + 1);
+          //setQuestionNumber(prev => prev + 1);
         } else {
           console.warn('Received nextQuestion event without valid question data');
         }
@@ -199,7 +211,7 @@ const QuizGame = ({ route, navigation }) => {
       
       if (data && (data.question || data.questions)) {
         const questionData = data.question || data.questions;
-        setQuestionNumber(prev => prev + 1);
+        // setQuestionNumber(prev => prev + 1);
         setCurrentQuestion({
           _id: questionData._id,
           text: questionData.questionText || questionData.text,
@@ -292,13 +304,29 @@ const QuizGame = ({ route, navigation }) => {
   }, [quizId]);
 
   const handleSubmitAnswer = async (option) => {
-    if (!token || !currentQuestion?._id) return;
+    if (!token || !currentQuestion?._id || selectedOption !== null) return;
+
+    // Animate the option selection
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
     try {
       const endTime = new Date();
       const timeTaken = startTimeRef.current 
         ? Math.min((endTime - startTimeRef.current) / 1000, 10)
         : 10;
+
+      setSelectedOption(option);
 
       const response = await fetch(`${API_URL}/quiz/submit-answer`, {
         method: 'POST',
@@ -316,12 +344,13 @@ const QuizGame = ({ route, navigation }) => {
 
       const data = await response.json();
       
-      setSelectedOption(option);
       setShowFeedback(true);
       setIsCorrect(data.isCorrect);
       setCorrectAnswer(data.correctAnswer);
       setScore(prev => prev + (data.pointsAwarded || 0));
       setAnsweredQuestions(prev => prev + 1);
+      setQuestionNumber(prev => prev + 1); // Add this line to increment question number
+
       setCanProgress(true);
 
       if (data.isCorrect) {
@@ -330,12 +359,44 @@ const QuizGame = ({ route, navigation }) => {
         setFeedback(`Incorrect. The correct answer was: ${data.correctAnswer}`);
       }
 
-      // Check if this was the last question
+      // Animate feedback appearance
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
       if (answeredQuestions + 1 >= totalQuestions) {
         setTimeout(handleQuizCompletion, 2000);
-      }
+      } else {
+        setTimeout(() => {
+          // Transition to next question with animation
+          Animated.sequence([
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+          ]).start();
 
-      clearInterval(timerRef.current);
+          setIsWaitingForNextQuestion(true);
+          setShowFeedback(false);
+          setSelectedOption(null);
+          socketRef.current?.emit('getCurrentQuestion', { quizId });
+        }, 2000);
+      }
     } catch (error) {
       console.error('Error submitting answer:', error);
       setFeedback('Error submitting answer');
@@ -358,6 +419,14 @@ const QuizGame = ({ route, navigation }) => {
 
   useEffect(() => {
     if (timeLeft > 0 && currentQuestion && quizStatus === 'active' && !showFeedback) {
+
+      Animated.timing(timerAnimation, {
+        toValue: 0,
+        duration: timeLeft * 1000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start();
+
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -421,31 +490,34 @@ const QuizGame = ({ route, navigation }) => {
     );
   }
 
-  return (
+return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       {/* Progress Section */}
-      <View style={styles.progressCard}>
+      <Animated.View style={[styles.progressCard, { opacity: fadeAnim }]}>
         <View style={styles.progressHeader}>
           <Text style={styles.progressText}>
             Question {questionNumber}/{totalQuestions}
           </Text>
+          <View style={styles.timerContainer}>
+            <Text style={styles.timerText}>{formatTime(timeLeft)}</Text>
+            <Animated.View style={[
+              styles.timerRing,
+              {
+                transform: [{
+                  rotate: timerAnimation.interpolate({
+                    inputRange: [0, 10],
+                    outputRange: ['360deg', '0deg'],
+                  }),
+                }],
+              },
+            ]} />
+          </View>
           <Text style={styles.scoreText}>Score: {score}</Text>
-        </View>
-        
-        {/* Timer Progress Bar */}
-        <View style={styles.progressBarContainer}>
-          <View 
-            style={[
-              styles.progressBarFill,
-              { width: `${(timeLeft/10) * 100}%` },
-              timeLeft <= 3 && styles.timerWarning
-            ]} 
-          />
         </View>
         
         {/* Overall Progress Bar */}
         <View style={styles.progressBarContainer}>
-          <View 
+          <Animated.View 
             style={[
               styles.progressBarFill,
               styles.overallProgress,
@@ -453,20 +525,25 @@ const QuizGame = ({ route, navigation }) => {
             ]} 
           />
         </View>
-        
-        <Text style={styles.progressStats}>
-          {timeLeft}s | Progress: {answeredQuestions}/{totalQuestions}
-        </Text>
-      </View>
+      </Animated.View>
 
       {/* Question Section */}
-      <View style={styles.questionCard}>
+      <Animated.View 
+        style={[
+          styles.questionCard,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
         <Text style={styles.questionText}>{currentQuestion?.text}</Text>
         
         <View style={styles.optionsContainer}>
           {currentQuestion?.options?.map((option, index) => (
             <TouchableOpacity
               key={index}
+              activeOpacity={0.7}
               style={[
                 styles.optionButton,
                 selectedOption === option && styles.selectedOption,
@@ -475,7 +552,7 @@ const QuizGame = ({ route, navigation }) => {
                 ),
                 showFeedback && correctAnswer === option && styles.correctOption
               ]}
-              onPress={() => !selectedOption && handleSubmitAnswer(option)}
+              onPress={() => handleSubmitAnswer(option)}
               disabled={selectedOption !== null}
             >
               <Text style={[
@@ -492,50 +569,23 @@ const QuizGame = ({ route, navigation }) => {
 
         {/* Feedback Section */}
         {showFeedback && (
-          <View style={[
-            styles.feedbackContainer,
-            isCorrect ? styles.correctFeedback : styles.wrongFeedback
-          ]}>
+          <Animated.View 
+            style={[
+              styles.feedbackContainer,
+              isCorrect ? styles.correctFeedback : styles.wrongFeedback,
+              { opacity: fadeAnim }
+            ]}
+          >
             <Text style={styles.feedbackText}>{feedback}</Text>
-            {answeredQuestions >= totalQuestions ? (
+            {answeredQuestions >= totalQuestions && (
               <Text style={styles.completionText}>
                 Quiz completed! Redirecting to results...
               </Text>
-            ) : (
-              // Next Question Button
-              <TouchableOpacity
-                style={[
-                  styles.nextButton,
-                  isWaitingForNextQuestion && styles.nextButtonDisabled
-                ]}
-                onPress={handleNextQuestion}
-                disabled={isWaitingForNextQuestion}
-              >
-                <Text style={styles.nextButtonText}>
-                  {isWaitingForNextQuestion ? 'Loading...' : 'Next Question'}
-                </Text>
-              </TouchableOpacity>
             )}
-          </View>
+          </Animated.View>
         )}
-
-        {/* Show Next Question button even if no option selected and timer runs out */}
-        {timeLeft === 0 && !showFeedback && (
-          <TouchableOpacity
-            style={[
-              styles.nextButton,
-              isWaitingForNextQuestion && styles.nextButtonDisabled
-            ]}
-            onPress={handleNextQuestion}
-            disabled={isWaitingForNextQuestion}
-          >
-            <Text style={styles.nextButtonText}>
-              {isWaitingForNextQuestion ? 'Loading...' : 'Next Question'}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      </ScrollView>
+      </Animated.View>
+    </ScrollView>
   );
 };
 
@@ -607,7 +657,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   nextButtonText: {
-    color: 'white',
+    color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -632,7 +682,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   retryButtonText: {
-    color: 'white',
+    color: 'black',
     textAlign: 'center',
   },
   waitingContainer: {
@@ -693,10 +743,14 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 18,
     fontWeight: '600',
+    color: 'black',
+
   },
   scoreText: {
     fontSize: 18,
     fontWeight: '600',
+    color: 'black',
+
   },
   progressBarContainer: {
     height: 8,
@@ -752,7 +806,116 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#666',
     fontSize: 12
-  }
+  },
+  timerContainer: {
+    position: 'relative',
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2196F3',
+  },
+  timerRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: '#2196F3',
+    borderRightColor: 'transparent',
+  },
+  progressCard: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 16,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  questionCard: {
+    backgroundColor: 'white',
+    padding: 24,
+    borderRadius: 15,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    margin: 16,
+  },
+  optionButton: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    marginVertical: 8,
+    borderWidth: 2,
+    borderColor: '#E0E0E0',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  selectedOption: {
+    backgroundColor: '#E3F2FD',
+    borderColor: '#2196F3',
+  },
+  correctOption: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  wrongOption: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#F44336',
+  },
+  optionText: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '500',
+  },
+  selectedOptionText: {
+    color: '#2196F3',
+    fontWeight: 'bold',
+  },
+  feedbackOptionText: {
+    fontWeight: 'bold',
+  },
+  feedbackContainer: {
+    padding: 20,
+    borderRadius: 12,
+    marginTop: 20,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  feedbackText: {
+    fontSize: 20,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  progressBarContainer: {
+    height: 10,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 5,
+    marginVertical: 8,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#2196F3',
+    borderRadius: 5,
+  },
 });
 
 export default QuizGame;

@@ -14,7 +14,7 @@ import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const API_URL = 'http://192.168.185.240:3000/api';
+const API_URL = 'http://192.168.135.240:3000/api';
 
 const QuizResults = ({ route, navigation }) => {
   const { quizId } = route.params;
