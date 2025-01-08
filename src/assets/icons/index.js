@@ -20,4 +20,5 @@ export const icons = {
   delete: require('../icons/deletesolid.png'),
   saved: require('../icons/savesolid.png'),
   block: require('../icons/userlocksolid.png'),
+  innercircle: require('../icons/sendinner.png'),
 };

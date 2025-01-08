@@ -24,7 +24,7 @@ const MenuScreen = ({navigation, route}) => {
     // },
     {
       title: 'My Inner Circle',
-      nav: Routes.InnerCircle,
+      nav: Routes.InnerCircleRequest,
     },
     // {
     //   title: 'My Inner Request',
