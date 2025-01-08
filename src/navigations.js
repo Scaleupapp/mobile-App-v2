@@ -54,6 +54,7 @@ import Search from './screens/Search/Search';
 import HelpScreen from './screens/Menuscreen/HelpCentre';
 import Terms from './screens/Menuscreen/HelpCentre/Terms';
 import UserPost from './screens/Post/UserPost';
+import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -408,6 +409,11 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.UserPost}
         component={UserPost}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.UserAnalyticsPerf}
+        component={UserAnalyticsPerf}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

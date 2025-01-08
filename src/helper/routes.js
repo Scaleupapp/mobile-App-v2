@@ -58,6 +58,7 @@ const Routes = {
   HelpScreen: 'HelpScreen',
   Terms: 'Terms',
   UserPost: 'UserPost',
+  UserAnalyticsPerf: 'UserAnalyticsPerf',
 };
 
 export default Routes;

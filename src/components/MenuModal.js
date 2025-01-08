@@ -21,6 +21,7 @@ export const MenuModal = ({visible, setVisible, menuItems}) => {
       ) : null}
       {item?.image ? (
         <Image
+          // tintColor={'black'}
           source={item.image}
           style={{marginRight: 7, height: 19, width: 19}}
         />
