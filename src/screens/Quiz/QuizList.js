@@ -154,7 +154,7 @@ const QuizList = ({ navigation }) => {
       >
         <View style={styles.quizIconContainer}>
           <Image
-            source={require('../../assets/images/ciclelogo.png')}
+            source={require('../../assets/images/image.png')}
             style={styles.quizIcon}
           />
         </View>
