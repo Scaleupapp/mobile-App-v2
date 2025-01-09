@@ -12,6 +12,7 @@ const Button = ({
   leftimage = null,
   rightIcon = null,
   justIcon = null,
+  icontype = 'ionicon',
   onPress = () => {},
   variant = 'solid', // 'solid' or 'outline'
   backgroundColor = COLORS.blue043142, // Default color for solid button
@@ -48,7 +49,7 @@ const Button = ({
             name={justIcon}
             size={26}
             color={isSolid ? textColor : outlineColor}
-            type="ionicon"
+            type={icontype}
           />
         )}
         {leftIcon && (

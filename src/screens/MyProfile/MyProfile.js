@@ -171,7 +171,15 @@ const MyProfile = ({navigation, route}) => {
       );
     }
   };
-  // console.log(profile?.presentInInnerCircle, 'profile?.presentInInnerCircle');
+  console.log(profile?.presentInInnerCircle, 'profile?.presentInInnerCircle');
+  console.log(
+    profile?.receivedInnerCircleRequest,
+    'profile?.receivedInnerCircleRequest',
+  );
+  console.log(
+    profile?.sentInnerCircleRequest,
+    'profile?.sentInnerCircleRequest',
+  );
   const menuItems = [
     {
       name: 'Block User',
@@ -179,13 +187,17 @@ const MyProfile = ({navigation, route}) => {
       onPress: () => wantToBlock(),
     },
     ...(!profile?.presentInInnerCircle
-      ? [
-          {
-            name: 'Send Inner Circle Request',
-            image: icons.innercircle,
-            onPress: () => sendRequest(),
-          },
-        ]
+      ? !profile?.sentInnerCircleRequest
+        ? !profile?.receivedInnerCircleRequest
+          ? [
+              {
+                name: 'Send Inner Circle Request',
+                image: icons.innercircle,
+                onPress: () => sendRequest(),
+              },
+            ]
+          : []
+        : []
       : []),
   ];
   return loading ? (
@@ -375,6 +387,7 @@ const MyProfile = ({navigation, route}) => {
                   width={nw(283)}
                   onPress={() => navigation.navigate(Routes.EditProfile)}
                 />
+
                 <Button
                   justIcon={'settings-sharp'}
                   width={50}
@@ -382,11 +395,26 @@ const MyProfile = ({navigation, route}) => {
                 />
               </View>
             ) : (
-              <View style={{marginTop: nh(30)}}>
+              <View style={styles.userButtonRow}>
                 <Button
                   onPress={followApi}
+                  width={
+                    profile?.presentInInnerCircle
+                      ? nw(283)
+                      : DEVICE_WIDTH - nw(32)
+                  }
                   text={follow ? 'Following' : 'Follow'}
                 />
+                {profile?.presentInInnerCircle && (
+                  <Button
+                    justIcon={'user-friends'}
+                    icontype={'font-awesome-5'}
+                    width={50}
+                    onPress={() =>
+                      navigation.navigate(Routes.InnerCircleRequest)
+                    }
+                  />
+                )}
               </View>
             )}
 
