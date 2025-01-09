@@ -22,8 +22,8 @@ import { COLORS } from '../../helper/colors';
 import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
 import Header from '../../components/Header';
 import CustomTextInput from '../../components/TextInput';
-
-const API_URL = 'http://192.168.97.240:3000/api';
+import LeaderboardModal from './LeaderboardModal';
+const API_URL = 'https://api.scaleupapp.club/api';
 
 const TABS = {
   UPCOMING: 'UPCOMING',
@@ -51,6 +51,8 @@ const QuizList = ({ navigation }) => {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(false);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -104,43 +106,63 @@ const QuizList = ({ navigation }) => {
   };
 
   const filteredQuizzes = quizzes.filter(quiz => {
+    // Check if topic matches search query
     const matchesSearch = quiz.topic.toLowerCase().includes(searchQuery.toLowerCase());
+  
+    // Convert current time to IST
     const currentDate = new Date();
-    const startDate = new Date(quiz.startTime);
-    const endDate = new Date(quiz.endTime);
-
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds  
+    const currentDateIST = new Date(currentDate.getTime() + istOffset);
+  
+    // Convert quiz times to IST for comparison
+    const startDateIST = new Date(new Date(quiz.startTime).getTime() + istOffset);
+    const endDateIST = new Date(new Date(quiz.endTime).getTime() + istOffset);
+  
     switch (activeTab) {
       case TABS.UPCOMING:
-        return matchesSearch && startDate > currentDate;
+        // Quiz hasn't started yet
+        return matchesSearch && !quiz.hasStarted && startDateIST > currentDateIST;
+        
       case TABS.ACTIVE:
-        return matchesSearch && startDate <= currentDate && endDate >= currentDate;
+        // Quiz has started but hasn't ended
+        return matchesSearch && quiz.hasStarted && !quiz.hasEnded;
+        
       case TABS.COMPLETED:
-        return matchesSearch && endDate < currentDate;
+        // Use hasEnded flag instead of date comparison
+        return matchesSearch && quiz.hasEnded;
+        
       default:
         return false;
     }
   });
-
   const renderEmptyState = () => (
     <View style={styles.emptyStateContainer}>
       <Image
         source={EmptyStateImages[activeTab]}
         style={styles.emptyStateImage}
       />
-      <Text style={styles.emptyStateTitle}>
+      <Text variant="semibold20" color={COLORS.blue043142} style={styles.emptyStateTitle}>
         {`No ${activeTab.toLowerCase()} Quizzes`}
       </Text>
-      <Text style={styles.emptyStateMessage}>
+      <Text variant="regular16" color={COLORS.blue043142} style={styles.emptyStateMessage}>
         {EmptyStateMessages[activeTab]}
       </Text>
       <TouchableOpacity
         style={styles.exploreButton}
         onPress={() => navigation.navigate('ExploreContent')}
       >
-        <Text style={styles.exploreButtonText}>Explore Content</Text>
+        <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
+          Explore Content
+        </Text>
       </TouchableOpacity>
     </View>
   );
+
+
+  const handleViewLeaderboard = (quizId) => {
+    setSelectedQuizId(quizId);
+    setIsLeaderboardVisible(true);
+  };
 
   const renderQuizCard = ({ item }) => {
     const quizDate = new Date(item.startTime);
@@ -159,21 +181,44 @@ const QuizList = ({ navigation }) => {
           />
         </View>
         <View style={styles.quizInfo}>
-          <Text style={styles.quizTitle}>{item.topic}</Text>
-          <Text style={styles.quizSubtitle}>{item.difficulty}</Text>
+          <Text variant="semibold16" color={COLORS.blue043142} style={styles.quizTitle}>
+            {item.topic}
+          </Text>
+          <Text variant="regular16" color={COLORS.blue043142} style={styles.quizSubtitle}>
+            {item.difficulty}
+          </Text>
           <View style={styles.dateTimeContainer}>
-            <Text style={styles.dateTime}>{formattedDate}</Text>
-            <Text style={styles.dateTime2}>{formattedTime}</Text>
+            <Text variant="regular14" color={COLORS.blue043142}>
+              {formattedDate}
+            </Text>
+            <Text variant="regular14" color={COLORS.blue043142} style={styles.dateTime2}>
+              {formattedTime}
+            </Text>
           </View>
           {item.isPaid && (
             <View style={styles.rewardContainer}>
-              <Text style={styles.rewardText}>🎁 Surprise Reward for Top 3 Winners</Text>
+              <Text variant="regular14" color={COLORS.blue043142}>
+                🎁 Surprise Reward for Top 3 Winners
+              </Text>
             </View>
           )}
-          {item.isRegistered && (
-            <View style={styles.registeredBadge}>
-              <Text style={styles.registeredText}>Registered</Text>
-            </View>
+          {activeTab === TABS.COMPLETED ? (
+            <TouchableOpacity
+              style={styles.leaderboardButton}
+              onPress={() => handleViewLeaderboard(item._id)}
+            >
+              <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                View Leaderboard
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            item.isRegistered && (
+              <View style={styles.registeredBadge}>
+                <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                  Registered
+                </Text>
+              </View>
+            )
           )}
         </View>
       </TouchableOpacity>
@@ -183,7 +228,7 @@ const QuizList = ({ navigation }) => {
   if (isLoading && !isRefreshing) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F5BE00" />
+        <ActivityIndicator size="large" color={COLORS.yellowF5BE00} />
       </View>
     );
   }
@@ -222,7 +267,10 @@ const QuizList = ({ navigation }) => {
             style={[styles.tab, activeTab === tab && styles.activeTab]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+            <Text 
+              variant={activeTab === tab ? "semibold14" : "regular14"}
+              color={activeTab === tab ? COLORS.yellowF5BE00 : COLORS.grey999999}
+            >
               {tab}
             </Text>
           </TouchableOpacity>
@@ -240,10 +288,15 @@ const QuizList = ({ navigation }) => {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={['#F5BE00']}
-            tintColor="#F5BE00"
+            colors={[COLORS.yellowF5BE00]}
+            tintColor={COLORS.yellowF5BE00}
           />
         }
+      />
+      <LeaderboardModal
+        visible={isLeaderboardVisible}
+        onClose={() => setIsLeaderboardVisible(false)}
+        quizId={selectedQuizId}
       />
     </SafeAreaView>
   );
@@ -273,124 +326,52 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: nw(16),
     backgroundColor: COLORS.whiteFFFFFF,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
     marginTop: nh(30),
   },
   tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 16,
+    paddingVertical: nh(12),
+    paddingHorizontal: nw(16),
+    marginRight: nw(16),
   },
   activeTab: {
     borderBottomWidth: 2,
     borderBottomColor: COLORS.yellowF5BE00,
   },
-  tabText: {
-    fontSize: 14,
-    color: COLORS.grey999999,
-  },
-  activeTabText: {
-    color: COLORS.yellowF5BE00,
-    fontWeight: '600',
-  },
   listContainer: {
-    padding: 16,
-    flexGrow: 1,
-  },
-  header: {
-    backgroundColor: '#F5BE00',
-    paddingTop: 10,
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-  },
-  searchContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    height: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#000000',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginRight: 16,
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#FFD700',
-  },
-  tabText: {
-    fontSize: 14,
-    color: '#666666',
-  },
-  activeTabText: {
-    color: '#F5BE00',
-    fontWeight: '600',
-  },
-  listContainer: {
-    padding: 16,
+    padding: nw(16),
     flexGrow: 1,
   },
   emptyStateContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 10,
-    marginTop: 10,
+    paddingHorizontal: nw(16),
+    marginTop: nh(10),
   },
   emptyStateImage: {
-    width: 200,
-    height: 200,
-    marginBottom: 24,
-  },
-  emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333333',
-    marginBottom: 8,
+    width: nw(200),
+    height: nh(200),
+    marginBottom: nh(24),
   },
   emptyStateMessage: {
-    fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: nh(24),
   },
   exploreButton: {
-    backgroundColor: '#043142',
-    paddingVertical: 12,
-    paddingHorizontal: 48,
+    backgroundColor: COLORS.blue043142,
+    paddingVertical: nh(12),
+    paddingHorizontal: nw(48),
     borderRadius: 8,
   },
-  exploreButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  // ... rest of the existing styles remain the same
   quizCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.whiteFFFFFF,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    padding: nw(16),
+    marginBottom: nh(16),
     flexDirection: 'row',
     elevation: 2,
     shadowColor: '#000',
@@ -399,60 +380,51 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   quizIconContainer: {
-    marginRight: 12,
+    marginRight: nw(12),
   },
   quizIcon: {
-    width: 40,
-    height: 40,
+    width: nw(40),
+    height: nh(40),
   },
   quizInfo: {
     flex: 1,
   },
   quizTitle: {
-    fontSize: 16,
-    color: '#666666',
-    fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: nh(4),
   },
   quizSubtitle: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 8,
+    marginBottom: nh(8),
   },
   dateTimeContainer: {
     flexDirection: 'row',
-    marginBottom: 8,
-  },
-  dateTime: {
-    fontSize: 12,
-    color: '#666666',
+    marginBottom: nh(8),
   },
   dateTime2: {
-    fontSize: 12,
-    color: '#666666',
-    marginLeft: 12,
+    marginLeft: nw(12),
   },
   rewardContainer: {
-    marginTop: 4,
-  },
-  rewardText: {
-    fontSize: 12,
-    color: 'black',
+    marginTop: nh(4),
   },
   registeredBadge: {
     position: 'absolute',
-    bottom: 16,
-    right: 8,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    bottom: nh(2),
+    right: nw(8),
+    backgroundColor: COLORS.blue043142,
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(4),
     borderRadius: 4,
   },
-  registeredText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
+  leaderboardButton: {
+    backgroundColor: COLORS.blue043142,
+    paddingVertical: nh(6),
+    paddingHorizontal: nw(12),
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+    marginTop: nh(-20),
+    left: nw(8),
+    
   },
 });
+
 
 export default QuizList;

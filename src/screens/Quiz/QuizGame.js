@@ -9,8 +9,8 @@ import { DEVICE_HEIGHT, nh, nw } from '../../helper/scales';
 import Text from '../../components/Text';
 import Header from '../../components/Header';
 
-const API_URL = 'http://192.168.97.240:3000/api';
-const SOCKET_URL = 'http://192.168.97.240:3000';
+const API_URL = 'https://api.scaleupapp.club/api';
+const SOCKET_URL = 'https://api.scaleupapp.club';
 
 const QuizGame = ({ route, navigation }) => {
   const { quizId } = route.params;

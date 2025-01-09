@@ -16,6 +16,8 @@ import axios from 'axios';
 import { format } from 'date-fns';
 import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LeaderboardModal from './LeaderboardModal';
+
 
 const API_URL = 'https://api.scaleupapp.club/api';
 
@@ -25,6 +27,8 @@ const QuizDetails = ({ route, navigation }) => {
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [leaderboardVisible, setLeaderboardVisible] = useState(false);
+
 
   useEffect(() => {
     const initializeData = async () => {
@@ -123,7 +127,7 @@ const QuizDetails = ({ route, navigation }) => {
 
     return (
       <View style={styles.contentContainer}>
-        <Text variant="semibold24" color={COLORS.blue043142} style={styles.topic}>
+        <Text variant="semibold20" color={COLORS.blue043142} style={styles.topic}>
           {quiz.topic}
         </Text>
 
@@ -191,17 +195,34 @@ const QuizDetails = ({ route, navigation }) => {
           </View>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.joinButton,
-            quiz.isRegistered && { backgroundColor: COLORS.blue043142 },
-          ]}
-          onPress={quiz.isRegistered ? navigateToWaitingRoom : handleJoinQuiz}>
-          <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
-            {quiz.isRegistered ? 'Go to Waiting Room' : 'Join Quiz'}
-          </Text>
-        </TouchableOpacity>
+        {quiz.hasEnded ? (
+  <TouchableOpacity
+    style={[styles.joinButton, { backgroundColor: COLORS.blue043142 }]}
+    onPress={() => setLeaderboardVisible(true)}>
+    <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
+      View Leaderboard
+    </Text>
+  </TouchableOpacity>
+) : (
+  <TouchableOpacity
+    style={[
+      styles.joinButton,
+      quiz.isRegistered && { backgroundColor: COLORS.blue043142 },
+    ]}
+    onPress={quiz.isRegistered ? navigateToWaitingRoom : handleJoinQuiz}>
+    <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
+      {quiz.isRegistered ? 'Go to Waiting Room' : 'Join Quiz'}
+    </Text>
+  </TouchableOpacity>
+)}
+
+<LeaderboardModal
+  visible={leaderboardVisible}
+  onClose={() => setLeaderboardVisible(false)}
+  quizId={quizId}
+/>
       </View>
+      
     );
   };
 
@@ -260,6 +281,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: nw(16),
+    
   },
   topic: {
     marginBottom: nh(20),

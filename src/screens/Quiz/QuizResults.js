@@ -19,7 +19,7 @@ import { getProfile } from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const API_URL = 'http://192.168.97.240:3000/api';
+const API_URL = 'https://api.scaleupapp.club/api';
 
 const QuestionDetails = ({ question, index }) => {
   const [expanded, setExpanded] = useState(false);
@@ -110,7 +110,9 @@ const QuizResults = ({ route, navigation }) => {
   const [quizInfo, setQuizInfo] = useState(null);
 
   const formatNumber = (num) => {
-    return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") || "0";
+    if (!num) return "0";
+    const fixedNum = Number(num).toFixed(2);
+    return fixedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
   const getMedalColor = (rank) => {
