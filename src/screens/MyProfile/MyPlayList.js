@@ -33,6 +33,8 @@ import VideoPlayerModal from './VideoPlayerModal';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import PlaylistSearch from './PlaylistSearch';
 import PlaylistInfoModal from './PlaylistInfoModal';
+import PlaylistCreateModal from './PlaylistCreateModal';
+
 
 
 const MyPlaylists = ({navigation}) => {
@@ -58,7 +60,8 @@ const MyPlaylists = ({navigation}) => {
   const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
   const [filteredPublicPlaylists, setFilteredPublicPlaylists] = useState([]);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
+  const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
+  
   // User Authentication State
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
@@ -410,7 +413,25 @@ const handleVideoEnd = async () => {
   };
   
   
-
+  const handleCreatePlaylist = async (playlistData) => {
+    try {
+      const response = await axios.post(
+        'https://api.scaleupapp.club/api/playlists/create',
+        {
+          userId,
+          ...playlistData
+        }
+      );
+  
+      setPlaylists([...playlists, response.data]);
+    } catch (error) {
+      console.error('Failed to create playlist:', error);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to create playlist'
+      );
+    }
+  };
   // Create a new playlist
   const createPlaylist = async () => {
     if (!newPlaylistName.trim()) {
@@ -1297,8 +1318,14 @@ const renderPublicPlaylistItem = useCallback((playlist) => {
           postId={selectedVideo._id}
         />
       )}
-      <CreatePlaylistModal />
-      <EditPlaylistsModal />
+      
+<PlaylistCreateModal
+  visible={isCreatePlaylistModalVisible}
+  onClose={() => setIsCreatePlaylistModalVisible(false)}
+  onCreatePlaylist={handleCreatePlaylist}
+/>  
+
+    <EditPlaylistsModal />
       <RenamePlaylistModal />
       <PlaylistCommentsModal
         visible={isCommentsModalVisible}

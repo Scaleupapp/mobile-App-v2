@@ -10,7 +10,7 @@ import {VideoList} from './VideoList';
 import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import {nh} from '../../helper/scales';
 import {useToast} from '../../components/CustomToast';
-
+import UserPlaylists from './UserPlaylists';
 const AllPostoption = ({type, data}) => {
   // Navigation hook for screen transitions
   const navigation = useNavigation();
@@ -113,7 +113,7 @@ const AllPostoption = ({type, data}) => {
               onPublish={handlePublishDraft} // Pass the entire draft post object
             />
           )}
-          {selected === 3 && <VideoList />}
+          {selected === 3 && <UserPlaylists />}
         </>
       ) : (
         <View style={{marginTop: nh(30), flex: 1}}>
