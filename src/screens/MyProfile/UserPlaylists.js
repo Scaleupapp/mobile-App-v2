@@ -7,6 +7,8 @@ import Text from '../../components/Text';
 import Icon from '../../helper/icon';
 import { COLORS } from '../../helper/colors';
 import VideoPlayerModal from './VideoPlayerModal';
+import PlaylistCommentsModal from './PlaylistCommentsModal';
+import PlaylistInfoModal from './PlaylistInfoModal';
 import { StyleSheet } from 'react-native';
 import { nh, nw } from '../../helper/scales';
 
@@ -18,6 +20,11 @@ const UserPlaylists = () => {
   const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
+
+  const [isCommentsModalVisible, setIsCommentsModalVisible] = useState(false);
+  const [selectedPlaylistForComments, setSelectedPlaylistForComments] = useState(null);
+  const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
+  const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
 
   // Initialize authentication on component mount
   useEffect(() => {
@@ -140,6 +147,23 @@ const UserPlaylists = () => {
     setExpandedPlaylist(expandedPlaylist === playlistId ? null : playlistId);
   };
 
+  const openCommentsModal = (playlist, e) => {
+    e?.stopPropagation();
+    setSelectedPlaylistForComments(playlist);
+    setIsCommentsModalVisible(true);
+  };
+
+  const openInfoModal = (playlist, e) => {
+    e?.stopPropagation();
+    setSelectedPlaylistForInfo(playlist);
+    setIsInfoModalVisible(true);
+  };
+
+  const closeInfoModal = () => {
+    setIsInfoModalVisible(false);
+    setSelectedPlaylistForInfo(null);
+  };
+
   const renderPlaylistItem = ({ item: playlist }) => {
     const isExpanded = expandedPlaylist === playlist._id;
 
@@ -156,12 +180,34 @@ const UserPlaylists = () => {
               {playlist.items.length} posts
             </Text>
           </View>
-          <Icon
-            type="ionicon"
-            name={isExpanded ? 'chevron-up' : 'chevron-down'}
-            size={24}
-            color={COLORS.blue043142}
-          />
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={(e) => openCommentsModal(playlist, e)}
+              style={styles.headerIcon}>
+              <Icon
+                type="ionicon"
+                name="chatbubble-ellipses-outline"
+                size={24}
+                color={COLORS.blue043142}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={(e) => openInfoModal(playlist, e)}
+              style={styles.headerIcon}>
+              <Icon
+                type="ionicon"
+                name="information-circle-outline"
+                size={24}
+                color={COLORS.blue043142}
+              />
+            </TouchableOpacity>
+            <Icon
+              type="ionicon"
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={24}
+              color={COLORS.blue043142}
+            />
+          </View>
         </TouchableOpacity>
 
         {isExpanded && (
@@ -241,6 +287,24 @@ const UserPlaylists = () => {
           postId={selectedVideo._id}
         />
       )}
+
+      <PlaylistCommentsModal
+        visible={isCommentsModalVisible}
+        playlistId={selectedPlaylistForComments?._id}
+        userId={userId}
+        username="democommentuser"
+        isPlaylistOwner={true}
+        onClose={() => {
+          setIsCommentsModalVisible(false);
+          setSelectedPlaylistForComments(null);
+        }}
+      />
+
+      <PlaylistInfoModal 
+        visible={isInfoModalVisible}
+        onClose={closeInfoModal}
+        playlist={selectedPlaylistForInfo}
+      />
     </View>
   );
 };
@@ -306,6 +370,25 @@ const styles = StyleSheet.create({
       marginLeft: nw(12),
       justifyContent: 'center',
     },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+      },
+      headerIcon: {
+        marginRight: nw(12),
+        padding: nw(4),
+      },
+      playlistHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: nw(16),
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.greyEEEEEE,
+      },
+      playlistHeaderContent: {
+        flex: 1,
+      },
   });
 
 export default UserPlaylists;
