@@ -51,6 +51,8 @@ const QuizDetails = ({ route, navigation }) => {
           console.log('foundddddddddddd',foundQuiz)
           if (foundQuiz) {
             setQuiz(foundQuiz);
+            await AsyncStorage.setItem(`quiz_${quizId}_total_questions`, 
+              JSON.stringify(foundQuiz.questions.length));
           } else {
             setError('Quiz not found');
           }
@@ -81,11 +83,17 @@ const QuizDetails = ({ route, navigation }) => {
         { quizId },
         { headers: { Authorization: `Bearer ${parsedUser?.token}` }}
       );
-      
+
+      const totalQuestions = quiz?.questions?.length || 0;
+
+      console.log('handlequizjoin',totalQuestions)
       Alert.alert(
         'Success',
         'You have successfully joined the quiz!',
-        [{ text: 'OK', onPress: () => navigation.navigate('QuizWaitingRoom', { quizId }) }]
+        [{ text: 'OK', onPress: () => navigation.navigate('QuizWaitingRoom', { quizId, 
+          totalQuestions: totalQuestions 
+
+         }) }]
       );
     } catch (error) {
       Alert.alert('Error', error.response?.data?.message || 'Failed to join quiz');
@@ -93,7 +101,13 @@ const QuizDetails = ({ route, navigation }) => {
   };
 
   const navigateToWaitingRoom = () => {
-    navigation.navigate('QuizWaitingRoom', { quizId });
+    // Calculate total questions from foundQuiz data
+    const totalQuestions = quiz?.questions?.length || 0;
+    console.log('Total questions:', totalQuestions); // Add this for debugging
+    navigation.navigate('QuizWaitingRoom', { 
+      quizId,
+      totalQuestions: totalQuestions // This will be 16 based on your console log
+    });
   };
 
   const renderContent = () => {

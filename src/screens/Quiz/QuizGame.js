@@ -13,7 +13,9 @@ const API_URL = 'https://api.scaleupapp.club/api';
 const SOCKET_URL = 'https://api.scaleupapp.club';
 
 const QuizGame = ({ route, navigation }) => {
-  const { quizId } = route.params;
+  const { quizId } = route.params; // Get totalQuestions from navigation params
+  const [totalQuestions, setTotalQuestions] = useState(0); // Add this state
+
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [timeLeft, setTimeLeft] = useState(10);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -33,8 +35,8 @@ const QuizGame = ({ route, navigation }) => {
   const [canProgress, setCanProgress] = useState(false);
   const [isWaitingForNextQuestion, setIsWaitingForNextQuestion] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [totalQuestions, setTotalQuestions] = useState(16);
-
+  const [processedQuestions] = useState(new Set()); // Add this to track processed questions
+  
   const startTimeRef = useRef(null);
   const socketRef = useRef(null);
   const timerRef = useRef(null);
@@ -98,32 +100,32 @@ const QuizGame = ({ route, navigation }) => {
       });
 
       // Handle next question events
-      socketRef.current.on('nextQuestion', (data) => {
-        if (!isMountedRef.current) return;
-        console.log('Received next question:', data);
+      // socketRef.current.on('nextQuestion', (data) => {
+      //   if (!isMountedRef.current) return;
+      //   console.log('Received next question:', data);
         
-        if (data && data.question) {
-          const questionData = data.question;
-          console.log('Processing question data:', questionData);
+      //   if (data && data.question) {
+      //     const questionData = data.question;
+      //     console.log('Processing question data:', questionData);
           
-          setCurrentQuestion({
-            _id: questionData._id,
-            text: questionData.text || questionData.questionText,
-            options: questionData.options || []
-          });
-          setSelectedOption(null);
-          setTimeLeft(10);
-          setCanProgress(false);
-          setIsWaitingForNextQuestion(false);
-          setShowFeedback(false);
-          startTimeRef.current = new Date();
-          setQuizStatus('active');
-          setLoading(false);
-          //setQuestionNumber(prev => prev + 1);
-        } else {
-          console.warn('Received nextQuestion event without valid question data');
-        }
-      });
+      //     setCurrentQuestion({
+      //       _id: questionData._id,
+      //       text: questionData.text || questionData.questionText,
+      //       options: questionData.options || []
+      //     });
+      //     setSelectedOption(null);
+      //     setTimeLeft(10);
+      //     setCanProgress(false);
+      //     setIsWaitingForNextQuestion(false);
+      //     setShowFeedback(false);
+      //     startTimeRef.current = new Date();
+      //     setQuizStatus('active');
+      //     setLoading(false);
+      //     //setQuestionNumber(prev => prev + 1);
+      //   } else {
+      //     console.warn('Received nextQuestion event without valid question data');
+      //   }
+      // });
 
       // Handle quiz end
       socketRef.current.on('quizEnded', () => {
@@ -195,6 +197,77 @@ const QuizGame = ({ route, navigation }) => {
     }
   };
 
+
+  useEffect(() => {
+    const getTotalQuestions = async () => {
+      try {
+        const storedTotal = await AsyncStorage.getItem(`quiz_${quizId}_total_questions`);
+        if (storedTotal) {
+          setTotalQuestions(JSON.parse(storedTotal));
+        }
+      } catch (error) {
+        console.error('Error getting total questions:', error);
+      }
+    };
+    
+    getTotalQuestions();
+  }, [quizId]);
+
+  useEffect(() => {
+    if (!socketRef.current) return;
+  
+    const handleNextQuestion = (data) => {
+      if (!isMountedRef.current) return;
+      
+      if (data && data.question) {
+        const questionData = data.question;
+        
+        // Check if we've already processed this question
+        if (processedQuestions.has(questionData._id)) {
+          console.log('Skipping duplicate question:', questionData._id);
+          return;
+        }
+        
+        console.log('Processing new question:', questionData._id);
+        processedQuestions.add(questionData._id);
+        
+        setCurrentQuestion({
+          _id: questionData._id,
+          text: questionData.text || questionData.questionText,
+          options: questionData.options || []
+        });
+        setSelectedOption(null);
+        setTimeLeft(10);
+        setCanProgress(false);
+        setIsWaitingForNextQuestion(false);
+        setShowFeedback(false);
+        startTimeRef.current = new Date();
+        setQuizStatus('active');
+        setLoading(false);
+      } else {
+        console.warn('Received nextQuestion event without valid question data');
+      }
+    };
+  
+    const handleQuizEnded = () => {
+      if (!isMountedRef.current) return;
+      console.log('Quiz ended event received');
+      handleQuizCompletion();
+    };
+  
+    // Set up event listeners
+    socketRef.current.on('nextQuestion', handleNextQuestion);
+    socketRef.current.on('quizEnded', handleQuizEnded);
+  
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('nextQuestion', handleNextQuestion);
+        socketRef.current.off('quizEnded', handleQuizEnded);
+      }
+    };
+  }, [socketRef.current]);
+
   useEffect(() => {
     initializeQuiz();
 
@@ -210,38 +283,38 @@ const QuizGame = ({ route, navigation }) => {
     };
   }, [quizId]);
 
-  useEffect(() => {
-    socketRef.current?.on('nextQuestion', (data) => {
-      if (!isMountedRef.current) return;
+  // useEffect(() => {
+  //   socketRef.current?.on('nextQuestion', (data) => {
+  //     if (!isMountedRef.current) return;
       
-      if (data && (data.question || data.questions)) {
-        const questionData = data.question || data.questions;
-        // setQuestionNumber(prev => prev + 1);
-        setCurrentQuestion({
-          _id: questionData._id,
-          text: questionData.questionText || questionData.text,
-          options: questionData.options || []
-        });
-        setSelectedOption(null);
-        setTimeLeft(10);
-        setShowFeedback(false);
-        setIsCorrect(null);
-        setCorrectAnswer(null);
-        startTimeRef.current = new Date();
-        setQuizStatus('active');
-        setLoading(false);
-      }
-    });
+  //     if (data && (data.question || data.questions)) {
+  //       const questionData = data.question || data.questions;
+  //       // setQuestionNumber(prev => prev + 1);
+  //       setCurrentQuestion({
+  //         _id: questionData._id,
+  //         text: questionData.questionText || questionData.text,
+  //         options: questionData.options || []
+  //       });
+  //       setSelectedOption(null);
+  //       setTimeLeft(10);
+  //       setShowFeedback(false);
+  //       setIsCorrect(null);
+  //       setCorrectAnswer(null);
+  //       startTimeRef.current = new Date();
+  //       setQuizStatus('active');
+  //       setLoading(false);
+  //     }
+  //   });
 
-    socketRef.current?.on('quizEnded', () => {
-      if (!isMountedRef.current) return;
-      handleQuizCompletion();
-    });
+  //   socketRef.current?.on('quizEnded', () => {
+  //     if (!isMountedRef.current) return;
+  //     handleQuizCompletion();
+  //   });
 
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  //   return () => {
+  //     isMountedRef.current = false;
+  //   };
+  // }, []);
 
   const handleQuizCompletion = () => {
     setQuizCompleted(true);

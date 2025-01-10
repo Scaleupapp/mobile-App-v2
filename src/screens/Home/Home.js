@@ -33,7 +33,7 @@ const Home = ({navigation, route}) => {
   // Refetch whenever we focus on this screen
   useFocusEffect(
     useCallback(() => {
-      homePageData(1);
+      //homePageData(1);
       setHasMore(true);
       return () => {};
     }, []),
@@ -55,26 +55,26 @@ const Home = ({navigation, route}) => {
   };
 
   // Load home feed data (with pagination)
-  const homePageData = async (pageNum, refresh = false) => {
-    try {
-      const {data} = await getHomePageData(pageNum);
-      if (data?.content.length > 0) {
-        setPage(prevPage => prevPage + 1);
-        if (refresh) {
-          setHome(data.content);
-        } else {
-          setHome(prev => [...prev, ...data.content]);
-        }
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.log('homePageData error:', {refresh}, error);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
-  };
+  // const homePageData = async (pageNum, refresh = false) => {
+  //   try {
+  //     const {data} = await getHomePageData(pageNum);
+  //     if (data?.content.length > 0) {
+  //       setPage(prevPage => prevPage + 1);
+  //       if (refresh) {
+  //         setHome(data.content);
+  //       } else {
+  //         setHome(prev => [...prev, ...data.content]);
+  //       }
+  //     } else {
+  //       setHasMore(false);
+  //     }
+  //   } catch (error) {
+  //     console.log('homePageData error:', {refresh}, error);
+  //   } finally {
+  //     setRefreshing(false);
+  //     setLoading(false);
+  //   }
+  // };
 
   // Throttle the endReached to avoid multiple calls
   const handleOnReachEnd = useCallback(
@@ -101,7 +101,7 @@ const Home = ({navigation, route}) => {
       />
       <MainHeader />
 
-      <View style={styles.layer1}>
+      {/* <View style={styles.layer1}>
         <View style={styles.layer2}>
           <FlatList
             ref={flatListRef}
@@ -160,7 +160,7 @@ const Home = ({navigation, route}) => {
             onEndReachedThreshold={0.5}
           />
         </View>
-      </View>  
+      </View>   */}
     </SafeAreaView>
   );
 };
