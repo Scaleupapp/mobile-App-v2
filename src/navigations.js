@@ -4,6 +4,15 @@ import {useToast} from './components/CustomToast';
 import {useNavigation} from '@react-navigation/native';
 import {setupAxiosInterceptors} from './services/axiosinstance';
 import Routes from './helper/routes';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {icons} from './assets/icons';
+import {Image, PermissionsAndroid, View} from 'react-native';
+import {isAndroid, nh, nw} from './helper/scales';
+import {COLORS} from './helper/colors';
+import Text from './components/Text';
+import messaging from '@react-native-firebase/messaging';
+import notifee, {EventType} from '@notifee/react-native';
+
 // screens
 import SplashScreen from './screens/Onboarding/SplashScreen';
 import OnboardingScreen from './screens/Onboarding/Onboarding';
@@ -41,20 +50,17 @@ import BlockUsers from './screens/MyProfile/BlockUser';
 import MenuScreen from './screens/Menuscreen/MenuScreen';
 import Settings from './screens/Menuscreen/SettingScreen';
 import ChangePassword from './screens/Login/ChangePassword';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {images} from './assets/images';
-import icon from './helper/icon';
-import {icons} from './assets/icons';
-import {Image, View} from 'react-native';
-import {nh, nw} from './helper/scales';
-import {COLORS} from './helper/colors';
-import {APP_FONTS} from './assets/fonts';
-import Text from './components/Text';
 import Search from './screens/Search/Search';
 import HelpScreen from './screens/Menuscreen/HelpCentre';
 import Terms from './screens/Menuscreen/HelpCentre/Terms';
 import UserPost from './screens/Post/UserPost';
 import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
+import {
+  fetchFCMToken,
+  getNotification,
+  requestUserPermission,
+} from './notifications';
+import {useSelector} from 'react-redux';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -239,9 +245,76 @@ const TabNavigator = ({navigation, route}) => {
 export const RootNavigator = () => {
   const {showToast} = useToast(); // Access useToast hook here
   const navigation = useNavigation();
+  const userdata = useSelector(state => state?.userData);
 
   useEffect(() => {
     setupAxiosInterceptors(showToast, navigation);
+  }, []);
+
+  if (isAndroid) {
+    PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+    );
+  }
+  useEffect(() => {
+    if (userdata?.token) {
+      pushAPI();
+    }
+  }, [userdata]);
+
+  const pushAPI = async () => {
+    // const isPermissionEnabled = await requestUserPermission();
+    // console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
+    // if (isPermissionEnabled) {
+    //   if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
+    //   const fcmToken = await fetchFCMToken();
+    //   console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
+    //   if (fcmToken) {
+    //     try {
+    //       const response = await fetch(
+    //         'https://notificationservice-dev-dot-fair-myth-398920.uc.r.appspot.com/store_fcm_token',
+    //         {
+    //           method: 'POST',
+    //           headers: {
+    //             Authorization: userdata?.token,
+    //             'Content-Type': 'application/json',
+    //           },
+    //           body: JSON.stringify({fcm_token: fcmToken}),
+    //         },
+    //       );
+    //       const responsedata = await response.json();
+    //       console.log({responsedata});
+    //     } catch (error) {
+    //       console.log('fireeee ', error);
+    //     }
+    //   }
+    // }
+  };
+  useEffect(() => {
+    // const unsubscribe = messaging().onMessage(async remoteMessage => {
+    //   console.log(JSON.stringify(remoteMessage));
+    //   const val = await getNotification(remoteMessage);
+    //   return val;
+    // });
+
+    notifee.onForegroundEvent(async ({type, detail}) => {
+      if (detail?.notification?.data?.route != undefined) {
+        if (type === EventType.PRESS) {
+          if (!!navigation) {
+          }
+        }
+      }
+    });
+    notifee.onBackgroundEvent(async ({type, detail}) => {
+      if (detail?.notification?.data?.route != undefined) {
+        if (type === EventType.PRESS) {
+          if (!!navigation) {
+          }
+        }
+      }
+    });
+
+    // return unsubscribe;
   }, []);
 
   return (
