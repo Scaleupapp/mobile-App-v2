@@ -191,3 +191,7 @@ export const sendInnerCircle = (payload: any) => {
 export const UserAnalytics = () => {
   return axiosInstance.get(`${API.USERANALYTICS}`);
 };
+
+export const getconversation = () => {
+  return axiosInstance.get(`${API.CONVERSATION}`);
+};
