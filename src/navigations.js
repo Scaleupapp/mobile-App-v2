@@ -263,39 +263,40 @@ export const RootNavigator = () => {
   }, [userdata]);
 
   const pushAPI = async () => {
-    // const isPermissionEnabled = await requestUserPermission();
-    // console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
-    // if (isPermissionEnabled) {
-    //   if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
-    //   const fcmToken = await fetchFCMToken();
-    //   console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
-    //   if (fcmToken) {
-    //     try {
-    //       const response = await fetch(
-    //         'https://notificationservice-dev-dot-fair-myth-398920.uc.r.appspot.com/store_fcm_token',
-    //         {
-    //           method: 'POST',
-    //           headers: {
-    //             Authorization: userdata?.token,
-    //             'Content-Type': 'application/json',
-    //           },
-    //           body: JSON.stringify({fcm_token: fcmToken}),
-    //         },
-    //       );
-    //       const responsedata = await response.json();
-    //       console.log({responsedata});
-    //     } catch (error) {
-    //       console.log('fireeee ', error);
-    //     }
-    //   }
-    // }
+    const isPermissionEnabled = await requestUserPermission();
+    console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
+    if (isPermissionEnabled) {
+      // You only need to register if auto-registration is disabled
+      // if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
+      const fcmToken = await fetchFCMToken();
+      console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
+      // if (fcmToken) {
+      //   try {
+      //     const response = await fetch(
+      //       'https://notificationservice-dev-dot-fair-myth-398920.uc.r.appspot.com/store_fcm_token',
+      //       {
+      //         method: 'POST',
+      //         headers: {
+      //           Authorization: userdata?.token,
+      //           'Content-Type': 'application/json',
+      //         },
+      //         body: JSON.stringify({fcm_token: fcmToken}),
+      //       },
+      //     );
+      //     const responsedata = await response.json();
+      //     console.log({responsedata});
+      //   } catch (error) {
+      //     console.log('fireeee ', error);
+      //   }
+      // }
+    }
   };
   useEffect(() => {
-    // const unsubscribe = messaging().onMessage(async remoteMessage => {
-    //   console.log(JSON.stringify(remoteMessage));
-    //   const val = await getNotification(remoteMessage);
-    //   return val;
-    // });
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      console.log(JSON.stringify(remoteMessage));
+      const val = await getNotification(remoteMessage);
+      return val;
+    });
 
     notifee.onForegroundEvent(async ({type, detail}) => {
       if (detail?.notification?.data?.route != undefined) {
@@ -314,7 +315,7 @@ export const RootNavigator = () => {
       }
     });
 
-    // return unsubscribe;
+    return unsubscribe;
   }, []);
 
   return (

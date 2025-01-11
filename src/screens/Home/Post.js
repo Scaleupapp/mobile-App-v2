@@ -220,7 +220,7 @@ const PostView = ({
       ]);
     }
   };
-  console.log({profileData});
+  // console.log({profileData});
   const profilePicture = myProfile
     ? profileData?.profilePicture
     : item?.userId?.profilePicture;

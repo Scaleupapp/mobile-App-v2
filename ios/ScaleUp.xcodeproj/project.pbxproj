@@ -19,6 +19,7 @@
 		7E11D90830E346E740F8CAFF /* Pods_ScaleUp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4FB27EEBB72EF034AEFE616A /* Pods_ScaleUp.framework */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		F34FE2A8EC4B5E6D69EA28F2 /* Pods_ScaleUp_ScaleUpTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C6D988BAEF55D3CAB8C9BF8E /* Pods_ScaleUp_ScaleUpTests.framework */; };
+		F87BB1F62D32E033006C4218 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F87BB1F52D32E033006C4218 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,8 @@
 		ECE30439FB834864AE26A54A /* Entypo.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = Entypo.ttf; path = "../node_modules/react-native-vector-icons/Fonts/Entypo.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F2D57D4FA5EC4D948D6B1303 /* EvilIcons.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = EvilIcons.ttf; path = "../node_modules/react-native-vector-icons/Fonts/EvilIcons.ttf"; sourceTree = "<group>"; };
+		F87BB1F32D32D32A006C4218 /* ScaleUp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = ScaleUp.entitlements; path = ScaleUp/ScaleUp.entitlements; sourceTree = "<group>"; };
+		F87BB1F52D32E033006C4218 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		FC7D97DEC82E4BB199B7DB03 /* FontAwesome.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = FontAwesome.ttf; path = "../node_modules/react-native-vector-icons/Fonts/FontAwesome.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -115,6 +118,7 @@
 		13B07FAE1A68108700A75B9A /* ScaleUp */ = {
 			isa = PBXGroup;
 			children = (
+				F87BB1F32D32D32A006C4218 /* ScaleUp.entitlements */,
 				13B07FAF1A68108700A75B9A /* AppDelegate.h */,
 				13B07FB01A68108700A75B9A /* AppDelegate.mm */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
@@ -146,6 +150,7 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				F87BB1F52D32E033006C4218 /* GoogleService-Info.plist */,
 				13B07FAE1A68108700A75B9A /* ScaleUp */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				00E356EF1AD99517003FC87E /* ScaleUpTests */,
@@ -304,6 +309,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
+				F87BB1F62D32E033006C4218 /* GoogleService-Info.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				77E676512EDA5F135CAC78ED /* PrivacyInfo.xcprivacy in Resources */,
 				1BB02D0FF68641EAA547F8BA /* Poppins Bold 700.ttf in Resources */,
@@ -545,6 +551,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ScaleUp/ScaleUp.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = NK5P69WG2H;
 				ENABLE_BITCODE = NO;
@@ -574,6 +581,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ScaleUp/ScaleUp.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = NK5P69WG2H;
 				INFOPLIST_FILE = ScaleUp/Info.plist;
@@ -675,10 +683,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -758,10 +763,7 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;
