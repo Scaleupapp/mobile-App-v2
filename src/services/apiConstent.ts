@@ -58,4 +58,5 @@ export const API = {
   GETINNERCIRCLE: 'users/inner-circle',
   SENDINNERREQUEST: 'users/inner-circle/request',
   REPORTPOST: 'content/report',
+  SAVE_FCM: 'users/saveFcmToken',
 };

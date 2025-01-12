@@ -12,6 +12,13 @@ import {COLORS} from './helper/colors';
 import Text from './components/Text';
 import messaging from '@react-native-firebase/messaging';
 import notifee, {EventType} from '@notifee/react-native';
+import {
+  fetchFCMToken,
+  getNotification,
+  requestUserPermission,
+} from './notifications';
+import {useSelector} from 'react-redux';
+import {SaveFcm} from './services/apiService';
 
 // screens
 import SplashScreen from './screens/Onboarding/SplashScreen';
@@ -55,12 +62,6 @@ import HelpScreen from './screens/Menuscreen/HelpCentre';
 import Terms from './screens/Menuscreen/HelpCentre/Terms';
 import UserPost from './screens/Post/UserPost';
 import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
-import {
-  fetchFCMToken,
-  getNotification,
-  requestUserPermission,
-} from './notifications';
-import {useSelector} from 'react-redux';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -270,25 +271,15 @@ export const RootNavigator = () => {
       // if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
       const fcmToken = await fetchFCMToken();
       console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
-      // if (fcmToken) {
-      //   try {
-      //     const response = await fetch(
-      //       'https://notificationservice-dev-dot-fair-myth-398920.uc.r.appspot.com/store_fcm_token',
-      //       {
-      //         method: 'POST',
-      //         headers: {
-      //           Authorization: userdata?.token,
-      //           'Content-Type': 'application/json',
-      //         },
-      //         body: JSON.stringify({fcm_token: fcmToken}),
-      //       },
-      //     );
-      //     const responsedata = await response.json();
-      //     console.log({responsedata});
-      //   } catch (error) {
-      //     console.log('fireeee ', error);
-      //   }
-      // }
+
+      if (fcmToken) {
+        try {
+          const {data} = await SaveFcm({FcmToken: fcmToken});
+          console.log('🚀 ~ pushAPI ~ data:', data);
+        } catch (error) {
+          console.log('fireeee ', error);
+        }
+      }
     }
   };
   useEffect(() => {

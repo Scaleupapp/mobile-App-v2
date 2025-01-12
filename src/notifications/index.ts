@@ -87,7 +87,7 @@ export const getNotification = async (remoteMessage: any) => {
   //   : generateGifString(remoteMessage?.data?.sub_title);
   // const decodedMsg = decodeForNotifications(message)
 
-  const decodedMsg = remoteMessage?.notification?.body;
+  const decodedMsg = remoteMessage?.body || remoteMessage?.notification?.body;
 
   const channelId = await notifee.createChannel({
     id: 'important',
@@ -103,7 +103,7 @@ export const getNotification = async (remoteMessage: any) => {
   // const navigationRoute = route?.params?.navigationRoute;
 
   await notifee.displayNotification({
-    title: remoteMessage?.data?.title,
+    title: remoteMessage?.title || remoteMessage?.data?.title,
     body: decodedMsg,
     data: remoteMessage?.data,
     id: remoteMessage?.messageId,

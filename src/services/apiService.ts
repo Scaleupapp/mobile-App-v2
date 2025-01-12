@@ -189,7 +189,9 @@ export const sendInnerCircle = (payload: any) => {
 };
 
 export const ReportPost = (id: any, payload: any) => {
-  console.log('🚀 ~ ReportPost ~ payload:', payload);
-  console.log('🚀 ~ ReportPost ~ id:', id);
   return axiosInstance.post(`${API.REPORTPOST}/${id}`, payload);
+};
+
+export const SaveFcm = (payload: any) => {
+  return axiosInstance.post(`${API.SAVE_FCM}`, payload);
 };
