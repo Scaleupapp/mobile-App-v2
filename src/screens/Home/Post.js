@@ -21,6 +21,7 @@ import {
   unlikePostApi,
   unsavePostAPI,
   getProfile,
+  ReportPost,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
@@ -31,6 +32,8 @@ import PlaylistSelectionModal from './PlaylistSelectionModal';
 import {useToast} from '../../components/CustomToast';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import convertToProxyURL from 'react-native-video-cache';
+import {MenuModal} from '../../components/MenuModal';
+import ReportPostModal from '../Post/ReportPostModal';
 
 const PostView = ({
   item,
@@ -50,8 +53,20 @@ const PostView = ({
   const [isBookmarked, setIsBookmarked] = useState(item?.isSaved);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [visible, setVisible] = useState(false);
   const {showToast} = useToast();
   const postId = item?._id || item?.contentId;
+  const componentRef = useRef(null);
+  const [position, setPosition] = useState(0);
+  const [isModalVisible, setModalVisible] = useState(false);
+
+  const getmeasure = () => {
+    if (componentRef.current) {
+      componentRef.current.measure((x, y, width, height, pageX, pageY) => {
+        setPosition(pageY);
+      });
+    }
+  };
 
   useEffect(() => {
     getProfileData();
@@ -95,6 +110,40 @@ const PostView = ({
     const aspectRatio = nh(height) / nw(width);
     const calculatedHeight = guidelineBaseWidth * aspectRatio;
     setImageHeight(calculatedHeight || 300);
+  };
+
+  const menuItems = [
+    {
+      name: 'Report',
+      // image: icons.innercircle,
+      onPress: () => {
+        setVisible(false);
+        setTimeout(() => {
+          setModalVisible(true);
+        }, 500);
+      },
+    },
+  ];
+  const menuItems1 = [
+    {
+      name: 'Add to playlist',
+      // image: icons.block,
+      onPress: () => {
+        setVisible(false);
+        handleBookmarkPress();
+      },
+    },
+  ];
+
+  const ReportHanlder = async reportType => {
+    setModalVisible(false);
+    const paylaod = {
+      reportType: reportType,
+    };
+    try {
+      const {data} = await ReportPost(postId, paylaod);
+      showToast({type: 'success', title: data?.message});
+    } catch (error) {}
   };
 
   const saveHandler = async () => {
@@ -163,8 +212,9 @@ const PostView = ({
       });
       return;
     }
-
-    setIsPlaylistModalVisible(true);
+    setTimeout(() => {
+      setIsPlaylistModalVisible(true);
+    }, 500);
   };
 
   const handleBookmark = async (userId, postId) => {
@@ -239,7 +289,7 @@ const PostView = ({
         backgroundColor: COLORS.whiteFFFFFF,
         paddingBottom: nh(30),
       }}>
-      <View style={styles.view}>
+      <View style={styles.view} ref={componentRef} collapsable={false}>
         <Pressable
           style={{flexDirection: 'row', alignItems: 'center'}}
           onPress={() =>
@@ -269,7 +319,11 @@ const PostView = ({
             {username}
           </Text>
         </Pressable>
-        <Pressable onPress={handleBookmarkPress}>
+        <Pressable
+          onPress={() => {
+            getmeasure();
+            setVisible(!visible);
+          }}>
           <Icon
             type="entypo"
             name="dots-three-vertical"
@@ -502,6 +556,28 @@ const PostView = ({
           ref={imageModalRef}
           type={item?.contentType}
           URL={item?.contentURL}
+        />
+      ) : null}
+      {visible ? (
+        <MenuModal
+          visible={visible}
+          setVisible={setVisible}
+          menuItems={
+            item?.userId?._id !== profileData?.id ? menuItems : menuItems1
+          }
+          style={{
+            alignItems: 'flex-end',
+            marginTop: position + nh(35),
+            maxHeight: nh(50),
+          }}
+        />
+      ) : null}
+
+      {isModalVisible ? (
+        <ReportPostModal
+          isModalVisible={isModalVisible}
+          setModalVisible={setModalVisible}
+          handleReport={ReportHanlder}
         />
       ) : null}
 

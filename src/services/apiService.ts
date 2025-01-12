@@ -140,8 +140,6 @@ export const widrawInnerCircleRequestAPI = (payload: any) => {
   return axiosInstance.post(`${API.WIDRAW}`, payload);
 };
 
-
-
 export const declineInnerCircleRequestAPI = (payload: any) => {
   return axiosInstance.post(`${API.REMOVEREQ}`, payload);
 };
@@ -180,7 +178,6 @@ export const blockUSerList = () => {
   return axiosInstance.get(`${API.BLOCK_USER_LIST}`);
 };
 export const bockUser = (id: any) => {
-
   return axiosInstance.post(`${API.USER_BLOCK}/${id}`);
 };
 export const userUnBlock = (id: any) => {
@@ -188,6 +185,11 @@ export const userUnBlock = (id: any) => {
 };
 
 export const sendInnerCircle = (payload: any) => {
- 
-  return axiosInstance.post(`${API.SENDINNERREQUEST}`,payload);
+  return axiosInstance.post(`${API.SENDINNERREQUEST}`, payload);
+};
+
+export const ReportPost = (id: any, payload: any) => {
+  console.log('🚀 ~ ReportPost ~ payload:', payload);
+  console.log('🚀 ~ ReportPost ~ id:', id);
+  return axiosInstance.post(`${API.REPORTPOST}/${id}`, payload);
 };
