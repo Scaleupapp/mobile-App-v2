@@ -10,7 +10,6 @@ import {COLORS} from '../helper/colors';
 import {icons} from '../assets/icons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-
 import Entypo from 'react-native-vector-icons/Entypo';
 import Text from './Text';
 import {nh, nw} from '../helper/scales';
@@ -40,20 +39,29 @@ const MainHeader = () => {
 
         {/* Title */}
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-  <Ionicons 
-    name="list"
-    color={COLORS.whiteFFFFFF}
-    size={nh(24)}
-    style={{marginRight: -nh(8)}}
-    onPress={() => navigation.navigate(Routes.MyPlaylist)}
-  />
-  <Ionicons
-    name="musical-note-outline"
-    color={COLORS.whiteFFFFFF}
-    size={nh(26)}
-    onPress={() => navigation.navigate(Routes.MyPlaylist)}
-  />
-</View>
+          <Icon
+            // onPress={logoutUser}
+            onPress={() => navigation.navigate(Routes.Conversation)}
+            type="material-community"
+            name="android-messages"
+            color={COLORS.whiteFFFFFF}
+            size={nh(24)}
+            style={{marginRight: nw(10)}}
+          />
+          <Ionicons
+            name="list"
+            color={COLORS.whiteFFFFFF}
+            size={nh(24)}
+            style={{marginRight: -nh(8)}}
+            onPress={() => navigation.navigate(Routes.MyPlaylist)}
+          />
+          <Ionicons
+            name="musical-note-outline"
+            color={COLORS.whiteFFFFFF}
+            size={nh(26)}
+            onPress={() => navigation.navigate(Routes.MyPlaylist)}
+          />
+        </View>
       </View>
     </View>
   );

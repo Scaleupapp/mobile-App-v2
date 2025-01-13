@@ -195,3 +195,28 @@ export const ReportPost = (id: any, payload: any) => {
 export const SaveFcm = (payload: any) => {
   return axiosInstance.post(`${API.SAVE_FCM}`, payload);
 };
+export const UserAnalytics = () => {
+  return axiosInstance.get(`${API.USERANALYTICS}`);
+};
+
+export const getconversation = (id: any) => {
+  return axiosInstance.get(`${API.CONVERSATION}`);
+};
+
+export const createConversation = (payload: any) => {
+  return axiosInstance.post(`${API.CREATECONVERSATION}`, payload);
+};
+
+export const getconversationbyID = (id: any) => {
+  return axiosInstance.get(`${API.CHAT}/${id}`);
+};
+export const sendChat = (payload: any) => {
+  return axiosInstance.post(`${API.SENDMESSAGE}`, payload);
+};
+
+export const editChatMessage = (convid: any, messageid: any, payload: any) => {
+  return axiosInstance.put(
+    `${API.CHAT}/${convid}/messages/${messageid}/edit`,
+    payload,
+  );
+};

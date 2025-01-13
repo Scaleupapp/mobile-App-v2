@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -9,6 +9,7 @@ import {
   StatusBar,
   SafeAreaView,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import {COLORS} from '../../helper/colors';
@@ -17,98 +18,25 @@ import {nh, nw} from '../../helper/scales';
 import Text from '../../components/Text';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
-
-const data = {
-  activity: [
-    {
-      type: 'Profile View',
-      userId: '677d3073994c6a3480275794',
-      username: 'anku1234',
-      timestamp: '2025-01-07T15:12:01.797Z',
-      count: 1,
-    },
-    {
-      type: 'Profile View',
-      userId: '674ed1e392383a88cabf2bb2',
-      username: 'scaleup1234',
-      profilePicture:
-        'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/674ed1e392383a88cabf2bb2/profile-picture.jpg',
-      timestamp: '2025-01-07T14:40:45.660Z',
-      count: 12,
-    },
-    {
-      type: 'Profile View',
-      userId: '65e083dc55fd97c98892c48b',
-      username: 'neera30',
-      profilePicture:
-        'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/65e083dc55fd97c98892c48b/profile-picture.jpg',
-      timestamp: '2025-01-07T14:39:37.908Z',
-      count: 2,
-    },
-    {
-      type: 'Profile View',
-      userId: '6753654c6a2a23d228a400a2',
-      username: 'gulshan07',
-      timestamp: '2025-01-06T12:56:32.626Z',
-      count: 8,
-    },
-    {
-      type: 'Profile View',
-      userId: '677d3073994c6a3480275794',
-      username: 'anku1234',
-      timestamp: '2025-01-07T15:12:01.797Z',
-      count: 1,
-    },
-    {
-      type: 'Profile View',
-      userId: '674ed1e392383a88cabf2bb2',
-      username: 'scaleup1234',
-      profilePicture:
-        'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/674ed1e392383a88cabf2bb2/profile-picture.jpg',
-      timestamp: '2025-01-07T14:40:45.660Z',
-      count: 12,
-    },
-    {
-      type: 'Profile View',
-      userId: '65e083dc55fd97c98892c48b',
-      username: 'neera30',
-      profilePicture:
-        'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/65e083dc55fd97c98892c48b/profile-picture.jpg',
-      timestamp: '2025-01-07T14:39:37.908Z',
-      count: 2,
-    },
-    {
-      type: 'Profile View',
-      userId: '6753654c6a2a23d228a400a2',
-      username: 'gulshan07',
-      timestamp: '2025-01-06T12:56:32.626Z',
-      count: 8,
-    },
-  ],
-  interests: [
-    {interest: 'startup', count: 17},
-    {interest: 'chemistry', count: 17},
-    {interest: 'ai', count: 17},
-    {interest: 'gpt', count: 15},
-    {interest: 'java', count: 12},
-    {interest: 'aws', count: 12},
-    {interest: 'coding', count: 8},
-    {interest: 'marketing', count: 17},
-    // {interest: 'writing', count: 15},
-    // {interest: 'finance', count: 15},
-    // {interest: 'leadership', count: 15},
-    // {interest: 'science', count: 2},
-    // {interest: 'commerce', count: 2},
-  ],
-  areasOfImprovement: [],
-};
+import {UserAnalytics} from '../../services/apiService';
 
 export const UserAnalyticsPerf = () => {
+  const [data, setData] = useState({});
   const [expandedActivity, setExpandedActivity] = useState(true);
   const [expandedInterests, setExpandedInterests] = useState(true);
   const [expandedAreas, setExpandedAreas] = useState(true);
   const [moreActivity, setMoreActivity] = useState(false);
   const [moreInterests, seMoreInterests] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    UserAnalytics().then(res => {
+      setIsLoading(false);
+      console.log('🚀 ~ UserAnalyticsPerf ~ res:', res.data);
+      setData(res?.data);
+    });
+  }, []);
+
   const renderActivityItem = ({item}) => (
     <Pressable
       style={styles.activityCard}
@@ -144,7 +72,7 @@ export const UserAnalyticsPerf = () => {
   const renderInterestTag = (interest, index) => (
     <Text
       key={index}
-      style={[styles.interestTag, {fontSize: nh(12) + interest.count}]}>
+      style={[styles.interestTag, {fontSize: nh(12 + interest?.count / 2)}]}>
       {interest.interest}
     </Text>
   );
@@ -156,109 +84,151 @@ export const UserAnalyticsPerf = () => {
         backgroundColor={COLORS.yellowF5BE00}
       />
       <Header title="Analytics & Performance" />
-      <ScrollView style={styles.subContainer}>
-        {/* Profile Views Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            onPress={() => {
-              setExpandedActivity(!expandedActivity);
-              setMoreActivity(false);
-            }}>
-            <Text style={styles.heading}>
-              {expandedActivity ? '▼ Profile Views' : '▶ Profile Views'}
-            </Text>
-          </TouchableOpacity>
-          {expandedActivity && (
-            <>
-              <FlatList
-                data={moreActivity ? data.activity : data.activity.slice(0, 2)}
-                renderItem={renderActivityItem}
-                keyExtractor={(_, index) => index.toString()}
-                contentContainerStyle={styles.activityList}
-                scrollEnabled={false}
-              />
-              {data.activity.length > 2 && (
-                <TouchableOpacity
-                  onPress={() => setMoreActivity(!moreActivity)}
-                  style={styles.expandButton}>
-                  <Text style={styles.expandButtonText}>
-                    {moreActivity ? 'Show Less' : 'Show More'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
+      {isLoading ? (
+        <View style={styles.emptyList}>
+          <ActivityIndicator
+            size="large"
+            color={COLORS.blue043142}
+            style={styles.loadingIndicator}
+          />
         </View>
+      ) : Object.keys(data)?.length > 0 ? (
+        <ScrollView style={styles.subContainer}>
+          {/* Profile Views Section */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              onPress={() => {
+                setExpandedActivity(!expandedActivity);
+                setMoreActivity(false);
+              }}>
+              <Text style={styles.heading}>
+                {expandedActivity ? '▼ Profile Views' : '▶ Profile Views'}
+              </Text>
+            </TouchableOpacity>
+            {expandedActivity && (
+              <>
+                <FlatList
+                  data={
+                    moreActivity ? data.activity : data.activity.slice(0, 2)
+                  }
+                  renderItem={renderActivityItem}
+                  keyExtractor={(_, index) => index.toString()}
+                  contentContainerStyle={styles.activityList}
+                  scrollEnabled={false}
+                />
+                {data.activity.length > 2 && (
+                  <TouchableOpacity
+                    onPress={() => setMoreActivity(!moreActivity)}
+                    style={styles.expandButton}>
+                    <Text style={styles.expandButtonText}>
+                      {moreActivity ? 'Show Less' : 'Show More'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
 
-        {/* Interests Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            onPress={() => {
-              setExpandedInterests(!expandedInterests);
-              seMoreInterests(false);
-            }}>
-            <Text style={styles.heading}>
-              {expandedInterests ? '▼ Interests' : '▶ Interests'}
-            </Text>
-          </TouchableOpacity>
-          {expandedInterests && (
-            <>
-              <View style={styles.interestsContainer}>
-                {(moreInterests
-                  ? data.interests
-                  : data.interests.slice(0, 7)
-                ).map((interest, index) => renderInterestTag(interest, index))}
-              </View>
-              {data.interests.length > 7 && (
-                <TouchableOpacity
-                  onPress={() => seMoreInterests(!moreInterests)}
-                  style={styles.expandButton}>
-                  <Text style={styles.expandButtonText}>
-                    {moreInterests ? 'Show Less' : 'Show More'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-        </View>
+          {/* Interests Section */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              onPress={() => {
+                setExpandedInterests(!expandedInterests);
+                seMoreInterests(false);
+              }}>
+              <Text style={styles.heading}>
+                {expandedInterests ? '▼ Interests' : '▶ Interests'}
+              </Text>
+            </TouchableOpacity>
+            {expandedInterests && (
+              <>
+                <View style={styles.interestsContainer}>
+                  {(moreInterests
+                    ? data.interests
+                    : data.interests.slice(0, 7)
+                  ).map((interest, index) =>
+                    renderInterestTag(interest, index),
+                  )}
+                </View>
+                {data.interests.length > 7 && (
+                  <TouchableOpacity
+                    onPress={() => seMoreInterests(!moreInterests)}
+                    style={styles.expandButton}>
+                    <Text style={styles.expandButtonText}>
+                      {moreInterests ? 'Show Less' : 'Show More'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
 
-        {/* Areas of Improvement Section */}
-        <View style={styles.section}>
-          <TouchableOpacity onPress={() => setExpandedAreas(!expandedAreas)}>
-            <Text style={styles.heading}>
-              {expandedAreas
-                ? '▼ Areas of Improvement'
-                : '▶ Areas of Improvement'}
-            </Text>
-          </TouchableOpacity>
-          {expandedAreas &&
-            (data.areasOfImprovement.length === 0 ? (
-              <View style={styles.quizPrompt}>
-                <Text style={styles.quizMessage}>
-                  No areas of improvement found. Participate in a quiz to
-                  evaluate your performance and identify areas for improvement!
-                </Text>
-                <TouchableOpacity
-                  style={styles.quizButton}
-                  // onPress={() => navigationRef.navigate(Routes.QuizScreen)}
-                >
-                  <Text style={styles.quizButtonText}>Take Quiz</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              data.areasOfImprovement.map((area, index) => (
-                <Text key={index} style={styles.areaTag}>
-                  {area}
-                </Text>
-              ))
-            ))}
+          {/* Areas of Improvement Section */}
+          <View style={styles.section}>
+            <TouchableOpacity onPress={() => setExpandedAreas(!expandedAreas)}>
+              <Text style={styles.heading}>
+                {expandedAreas
+                  ? '▼ Areas of Improvement'
+                  : '▶ Areas of Improvement'}
+              </Text>
+            </TouchableOpacity>
+            {expandedAreas &&
+              (data.areasOfImprovement.length === 0 ? (
+                <View style={styles.quizPrompt}>
+                  <Text style={styles.quizMessage}>
+                    No areas of improvement found. Participate in a quiz to
+                    evaluate your performance and identify areas for
+                    improvement!
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.quizButton}
+                    // onPress={() => navigationRef.navigate(Routes.QuizScreen)}
+                  >
+                    <Text style={styles.quizButtonText}>Take Quiz</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                data.areasOfImprovement.map((area, index) => (
+                  <Text key={index} style={styles.areaTag}>
+                    {area}
+                  </Text>
+                ))
+              ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <View style={styles.emptyList}>
+          <Text
+            style={{
+              color: COLORS.gray_color,
+              width: '100%',
+              textAlign: 'center',
+              fontSize: 20,
+              fontWeight: '500',
+            }}>
+            {'No data available'}
+          </Text>
         </View>
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  loadingIndicator: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{translateX: -15}, {translateY: -15}],
+    zIndex: 1,
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    backgroundColor: COLORS.whiteFFFFFF,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.yellowF5BE00,

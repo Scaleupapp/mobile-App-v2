@@ -59,4 +59,9 @@ export const API = {
   SENDINNERREQUEST: 'users/inner-circle/request',
   REPORTPOST: 'content/report',
   SAVE_FCM: 'users/saveFcmToken',
+  USERANALYTICS: 'users/user-analytics',
+  CONVERSATION: 'conversation',
+  CREATECONVERSATION: 'conversation/create',
+  SENDMESSAGE: 'chat/send',
+  CHAT: 'chat',
 };

@@ -22,4 +22,6 @@ export const icons = {
   block: require('../icons/userlocksolid.png'),
   perf: require('../icons/perf-solid.png'),
   innercircle: require('../icons/sendinner.png'),
+  friend: require('../icons/friend.png'),
+  editsolid: require('../icons/editsolid.png'),
 };
