@@ -18,6 +18,7 @@ import {FlatList} from 'react-native';
 import {TextInput} from 'react-native';
 import Button from '../../components/Button';
 import {
+  deleteChatMessage,
   editChatMessage,
   getconversation,
   getconversationbyID,
@@ -35,6 +36,7 @@ import {
   formatAMPM,
   groupMessagesByDate,
 } from '../../helper/commonFunctions';
+import {useToast} from '../../components/CustomToast';
 
 const Chat = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -47,6 +49,7 @@ const Chat = ({navigation, route}) => {
   const [edit, setEdit] = useState(false);
   const textInputRef = useRef(null);
   const [isEditable, setIsEditable] = useState(false);
+  const {showToast} = useToast();
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
@@ -118,7 +121,7 @@ const Chat = ({navigation, route}) => {
       //   console.log('🚀 ~ sendMessage ~ payload:', payload);
       let conversationId = route?.params?.chatId;
       const {data} = await sendChat(payload);
-      console.log('🚀 ~ sendMessage ~ data:', data);
+
       //   setMessages(prevMessages => [...prevMessages, data]);
       if (socket) {
         socket.emit('sendMessage', {
@@ -167,6 +170,33 @@ const Chat = ({navigation, route}) => {
     }
   };
 
+  const deleteMessage = async () => {
+    try {
+      const {data} = await deleteChatMessage(
+        selected?.conversationId,
+        selected?._id,
+      );
+
+      const updatedData = {
+        _id: selected?._id,
+        deleted: true,
+      };
+
+      const updatedMessages = messages.map(
+        msg =>
+          msg._id === updatedData._id
+            ? {...msg, ...updatedData} // Update the matching object
+            : msg, // Keep others unchanged
+      );
+      setMessages(updatedMessages);
+      setVisible(false);
+      setSelected(null);
+      showToast({type: 'success', title: data?.message});
+    } catch (error) {
+      console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
+    }
+  };
+
   const onEditClick = () => {
     setEdit(true);
     setInput(selected?.message);
@@ -186,11 +216,15 @@ const Chat = ({navigation, route}) => {
           },
         ]
       : []),
-    {
-      name: 'Delete Message',
-      image: icons.delete,
-      onPress: () => onDeleteClick(), // Delete action (this should be onDeleteClick, not onEditClick)
-    },
+    ...(isEditable
+      ? [
+          {
+            name: 'Delete Message',
+            image: icons.delete,
+            onPress: () => deleteMessage(), // Delete action (this should be onDeleteClick, not onEditClick)
+          },
+        ]
+      : []),
   ];
   const formatGroupedMessages = () => {
     let groupedMessages = groupMessagesByDate(messages);
@@ -203,8 +237,6 @@ const Chat = ({navigation, route}) => {
       ...group.messages.map(msg => ({...msg, type: 'message'})),
     ]);
   };
-  let lastSenderId = null;
-  let lastMessageDate = null;
 
   const renderMessage = ({item}) => {
     if (item.type === 'header') {
@@ -223,7 +255,7 @@ const Chat = ({navigation, route}) => {
         </View>
       );
     }
-    if (item.type === 'message') {
+    if (item.type === 'message' && !item.deleted) {
       return (
         <View
           style={[
@@ -265,8 +297,8 @@ const Chat = ({navigation, route}) => {
                 if (!checkIfTenMinutesPassed(item?.createdAt)) {
                   setIsEditable(true);
                 }
-                console.log(item?.sender?._id, userData?.id);
-                if (item?.sender?._id == userData?.id) {
+
+                if (item?.sender?._id == userData?.id && isEditable) {
                   setSelected(item);
                 }
               }}

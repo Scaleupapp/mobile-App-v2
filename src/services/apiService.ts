@@ -212,3 +212,7 @@ export const sendChat = (payload: any) => {
 export const editChatMessage = (convid: any,messageid:any,payload:any) => {
   return axiosInstance.put(`${API.CHAT}/${convid}/messages/${messageid}/edit`,payload);
 };
+
+export const deleteChatMessage = (convid: any,messageid:any) => {
+  return axiosInstance.delete(`${API.CHAT}/${convid}/messages/${messageid}/delete`);
+};
