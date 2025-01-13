@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -6,6 +6,7 @@ import {
   View,
   Pressable,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -13,27 +14,66 @@ import Header from '../../components/Header';
 import {Image} from 'react-native';
 import Text from '../../components/Text';
 import Routes from '../../helper/routes';
+import {getconversation} from '../../services/apiService';
+import {useSelector} from 'react-redux';
+import Button from '../../components/Button';
+import {images} from '../../assets/images';
+import ChatModal from './ChatModal';
+import {formatDateforchat} from '../../helper/commonFunctions';
+import {useFocusEffect} from '@react-navigation/native';
 
 const Conversation = ({navigation, route}) => {
-  const Card = () => {
+  const userData = useSelector(state => state?.userData);
+  const [loader, setLoader] = useState(true);
+
+  const [conversation, setConversation] = useState([]);
+  const chatmodelRef = useRef(null);
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations(); // Function to fetch conversations
+    }, []), // Add dependencies if needed
+  );
+  const fetchConversations = async () => {
+    try {
+      const {data} = await getconversation();
+      setConversation(data);
+      console.log('🚀 ~ fetchConversations ~ data:', data);
+    } catch (error) {
+      console.log('🚀 ~ fetchConversations ~ error..:', error);
+    } finally {
+      setLoader(false);
+    }
+
+    // setConversations(data);
+  };
+  const truncateString = (str, maxLength = 130) => {
+    return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
+  };
+  const Card = ({item}) => {
+    console.log('🚀 ~ Card ~ item:', JSON.stringify(item));
     return (
       <Pressable
         style={styles.card}
-        onPress={() => navigation.navigate(Routes.Chat)}>
-        <Image source={{uri: ''}} style={styles.image} />
+        onPress={() =>
+          navigation.navigate(Routes.Chat, {chatId: item?.conversationId})
+        }>
+        <Image
+          source={{uri: item?.members[0]?.profilePicture}}
+          style={styles.image}
+        />
         <View style={{flex: 9}}>
           <Text variant="medium12" color={COLORS.blue043142}>
-            Ankita
+            {item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname}
           </Text>
           <Text variant="medium12" color={COLORS.grey999999}>
-            shhhdhdhhdhd dhhdh fff
+            {truncateString(item?.lastMessage?.message, 30)}
           </Text>
         </View>
         <View style={{flex: 3, alignItems: 'center'}}>
           <Text variant="medium12" color={COLORS.blue043142}>
-            09:10am
+            {formatDateforchat(item?.updatedAt)}
           </Text>
-          <View
+          {/* <View
             style={{
               height: nh(20),
               minWidth: nh(20),
@@ -46,12 +86,19 @@ const Conversation = ({navigation, route}) => {
             <Text variant="medium12" color={COLORS.whiteFFFFFF}>
               5
             </Text>
-          </View>
+          </View> */}
         </View>
       </Pressable>
     );
   };
-  return (
+  return loader ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size={30} />
+      <Text variant="medium12" style={{marginTop: 10}}>
+        Conversation Loading....
+      </Text>
+    </View>
+  ) : (
     <SafeAreaView style={styles.container}>
       {/* StatusBar */}
       <StatusBar
@@ -67,7 +114,44 @@ const Conversation = ({navigation, route}) => {
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          <FlatList data={['', '', '', '']} renderItem={() => <Card />} />
+          <ChatModal ref={chatmodelRef} />
+          <FlatList
+            data={conversation}
+            renderItem={({item}) => <Card item={item} />}
+            ListEmptyComponent={() => {
+              return (
+                <View>
+                  <Image
+                    source={images.nochat}
+                    resizeMode="contain"
+                    style={styles.notimage}
+                  />
+
+                  <Text
+                    variant="semibold20"
+                    color={COLORS.blue043142}
+                    style={{textAlign: 'center', marginTop: nh(30)}}>
+                    No Chats Yet
+                  </Text>
+                  <Text
+                    variant="medium14"
+                    color={COLORS.grey999999}
+                    style={{
+                      textAlign: 'center',
+                      marginTop: nh(5),
+                      marginBottom: nh(20),
+                    }}>
+                    Start a conversation and connect with fellow learners. It’s
+                    more fun learning together!
+                  </Text>
+                  <Button
+                    text="Start a new chat"
+                    onPress={() => chatmodelRef.current?.present()}
+                  />
+                </View>
+              );
+            }}
+          />
         </View>
       </View>
     </SafeAreaView>
@@ -112,5 +196,16 @@ const styles = StyleSheet.create({
     marginBottom: nh(15),
     alignItems: 'center',
     flex: 1,
+  },
+  notimage: {
+    height: nh(275),
+    width: nw(300),
+    alignSelf: 'center',
+    marginTop: nh(30),
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

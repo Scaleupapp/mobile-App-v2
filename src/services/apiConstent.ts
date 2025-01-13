@@ -58,5 +58,8 @@ export const API = {
   GETINNERCIRCLE: 'users/inner-circle',
   SENDINNERREQUEST: 'users/inner-circle/request',
   USERANALYTICS: 'users/user-analytics',
-  CONVERSATION:"conversations"
+  CONVERSATION:"conversation",
+  CREATECONVERSATION:'conversation/create',
+  SENDMESSAGE:"chat/send",
+  CHAT:"chat"
 };
