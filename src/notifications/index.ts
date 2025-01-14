@@ -7,6 +7,7 @@ import notifee, {
 } from '@notifee/react-native';
 import React from 'react';
 import {Platform} from 'react-native';
+import {images} from '../assets/images';
 // import {
 //   decodeForNotifications,
 //   generateGifString,
@@ -80,6 +81,7 @@ export const generateGifString = (message: string) => {
 };
 
 export const getNotification = async (remoteMessage: any) => {
+  console.log('getNotification ', JSON.stringify(remoteMessage));
   const isIOS = Platform.OS === 'ios' ? true : false;
 
   // const message = isIOS
@@ -104,47 +106,22 @@ export const getNotification = async (remoteMessage: any) => {
 
   await notifee.displayNotification({
     title: remoteMessage?.title || remoteMessage?.data?.title,
+    subtitle: remoteMessage?.subtitle || remoteMessage?.data?.subtitle,
     body: decodedMsg,
     data: remoteMessage?.data,
     id: remoteMessage?.messageId,
     android: {
       channelId,
       // color: '#9c27b0',
-      // smallIcon: 'ic_stat_magicpen',
+      // largeIcon: images.ciclelogo,
+      // smallIcon: images.ciclelogo,
+      smallIcon: 'ic_launcher', // Set the small icon
       // pressAction is needed if you want the notification to open the app when pressed
       pressAction: {
         id: 'default',
         launchActivity: 'default',
       },
       importance: AndroidImportance.HIGH,
-    },
-  });
-};
-
-export const requestPermissions = async () => {
-  const settings = await notifee.requestPermission();
-
-  if (settings.authorizationStatus >= 1) {
-    console.log('Permission granted');
-  } else {
-    console.log('Permission denied');
-  }
-};
-
-export const displayNotification = async () => {
-  // Create a channel (required for Android)
-  const channelId = await notifee.createChannel({
-    id: 'default',
-    name: 'Default Channel',
-  });
-
-  // Display the notification
-  await notifee.displayNotification({
-    title: 'Hello, World!',
-    body: 'This is a dummy notification.',
-    android: {
-      channelId,
-      smallIcon: 'ic_launcher', // Set the small icon
     },
   });
 };

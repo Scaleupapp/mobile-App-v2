@@ -286,23 +286,35 @@ export const RootNavigator = () => {
   };
   useEffect(() => {
     const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log(JSON.stringify(remoteMessage));
       const val = await getNotification(remoteMessage);
       return val;
     });
 
     notifee.onForegroundEvent(async ({type, detail}) => {
+      console.log(
+        'onForegroundEvent detail?.notification?.data?.route ',
+        type,
+        detail,
+      );
       if (detail?.notification?.data?.route != undefined) {
         if (type === EventType.PRESS) {
           if (!!navigation) {
+            navigation.navigate(detail?.notification?.data?.route);
           }
         }
       }
     });
     notifee.onBackgroundEvent(async ({type, detail}) => {
+      console.log(
+        'onBackgroundEvent detail?.notification?.data?.route ',
+        type,
+        detail,
+      );
+
       if (detail?.notification?.data?.route != undefined) {
         if (type === EventType.PRESS) {
           if (!!navigation) {
+            navigation.navigate(detail?.notification?.data?.route);
           }
         }
       }
