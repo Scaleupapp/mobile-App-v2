@@ -1496,6 +1496,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-tracking-transparency (0.1.2):
+    - React
   - react-native-video (6.8.2):
     - DoubleConversion
     - glog
@@ -2112,6 +2114,7 @@ DEPENDENCIES:
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-month-year-picker (from `../node_modules/react-native-month-year-picker`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-tracking-transparency (from `../node_modules/react-native-tracking-transparency`)
   - react-native-video (from `../node_modules/react-native-video`)
   - react-native-video-cache (from `../node_modules/react-native-video-cache`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
@@ -2263,6 +2266,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-month-year-picker"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-tracking-transparency:
+    :path: "../node_modules/react-native-tracking-transparency"
   react-native-video:
     :path: "../node_modules/react-native-video"
   react-native-video-cache:
@@ -2406,6 +2411,7 @@ SPEC CHECKSUMS:
   react-native-image-picker: 8d06080ecb33269e77e0728f1fd8a16f2f5aad07
   react-native-month-year-picker: 948797e981ca502427024a34b17f545eb321bbff
   react-native-safe-area-context: d71edcee579673b370c053804f34c40c1f250976
+  react-native-tracking-transparency: 25ff1ff866e338c137c818bdec20526bb05ffcc1
   react-native-video: 07ebee84a1b3a3ad9d2e6ba182eb5788eaf5a509
   react-native-video-cache: 8300762bd3fd1c3dd19b76ba5236ca35de1f4bf7
   React-nativeconfig: 7f8cd6cae21f8bb18c53b746c495e72795fc5cb0

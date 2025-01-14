@@ -56,6 +56,8 @@
 	<string>We need access to add photos to your library.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to upload images.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use tracking to provide improve user experience.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Poppins Bold 700.ttf</string>

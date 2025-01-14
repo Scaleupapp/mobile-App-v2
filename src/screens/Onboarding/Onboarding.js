@@ -1,10 +1,21 @@
-import React, {useState} from 'react';
-import {View, StyleSheet, Image, TouchableOpacity, Alert} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Alert,
+  Platform,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {DEVICE_HEIGHT, DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import {COLORS} from '../../helper/colors';
 import Text from '../../components/Text';
 import {images} from '../../assets/images';
+import {
+  getTrackingStatus,
+  requestTrackingPermission,
+} from 'react-native-tracking-transparency';
 
 const data = [
   {
@@ -43,6 +54,25 @@ const OnboardingScreen = ({navigation}) => {
       navigation.navigate('Login');
     }
   };
+
+  const attPopup = async () => {
+    const trackingStatus = await getTrackingStatus();
+    console.log('🚀 ~ attPopup ~ trackingStatus:', trackingStatus);
+    if (trackingStatus === 'not-determined') {
+      const trackingStatus1 = await requestTrackingPermission();
+      if (
+        trackingStatus1 === 'authorized' ||
+        trackingStatus1 === 'unavailable'
+      ) {
+        // enable tracking features
+      }
+    }
+  };
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      attPopup();
+    }
+  }, []);
 
   return (
     <View style={{flex: 1}}>
