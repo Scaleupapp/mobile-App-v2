@@ -107,8 +107,8 @@ const Chat = ({navigation, route}) => {
 
   const fetchMessages = async () => {
     const {data} = await getconversationbyID(route?.params?.chatId);
-    // console.log('🚀 ~ Chat ~ data:', data);
-    setMessages(data);
+    console.log('🚀 ~ Chat ~ data:', data);
+    setMessages(data?.messages);
   };
 
   const sendMessage = async () => {
