@@ -1,309 +1,594 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  View,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator,ScrollView, Animated, Easing,SafeAreaView,
+  StatusBar, } from 'react-native';
+import io from 'socket.io-client/dist/socket.io';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS } from '../../helper/colors';
 import { DEVICE_HEIGHT, nh, nw } from '../../helper/scales';
 import Text from '../../components/Text';
 import Header from '../../components/Header';
-import axios from 'axios';
-import { getProfile } from '../../services/apiService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const API_URL = 'https://api.scaleupapp.club/api';
+const SOCKET_URL = 'https://api.scaleupapp.club';
 
-const QuestionDetails = ({ question, index }) => {
-  const [expanded, setExpanded] = useState(false);
+const QuizGame = ({ route, navigation }) => {
+  const { quizId } = route.params; // Get totalQuestions from navigation params
+  const [totalQuestions, setTotalQuestions] = useState(0); // Add this state
 
-  return (
-    <View style={styles.questionCard}>
-      <TouchableOpacity 
-        onPress={() => setExpanded(!expanded)}
-        style={styles.questionHeader}
-      >
-        <Text variant="semibold16" color={COLORS.blue043142}>
-          Question {index + 1}
-        </Text>
-        <Icon 
-          name={expanded ? "chevron-up" : "chevron-down"} 
-          size={24} 
-          color={COLORS.blue043142}
-        />
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={styles.questionContent}>
-          <Text variant="regular16" color={COLORS.blue043142} style={styles.questionText}>
-            {question.text}
-          </Text>
-
-          {question.relatedTopics && question.relatedTopics.length > 0 && (
-            <View style={styles.topicsContainer}>
-              {question.relatedTopics.map((topic, i) => (
-                <View key={i} style={styles.topicBadge}>
-                  <Text variant="regular12" color={COLORS.blue043142}>
-                    {topic}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {question.hashtags && question.hashtags.length > 0 && (
-            <View style={styles.hashtagsContainer}>
-              {question.hashtags.map((hashtag, i) => (
-                <View key={i} style={styles.hashtagBadge}>
-                  <Text variant="regular12" color={COLORS.gray666666}>
-                    #{hashtag}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <View style={styles.optionsContainer}>
-            {question.options.map((option, optionIndex) => (
-              <View
-                key={optionIndex}
-                style={[
-                  styles.optionItem,
-                  option === question.correctAnswer && styles.correctOption
-                ]}
-              >
-                <Text
-                  variant="regular14"
-                  color={option === question.correctAnswer ? COLORS.whiteFFFFFF : COLORS.blue043142}
-                >
-                  {`${String.fromCharCode(65 + optionIndex)}. ${option}`}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.correctAnswerContainer}>
-            <Text variant="semibold14" color={COLORS.green}>
-              Correct Answer: {question.correctAnswer}
-            </Text>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
-
-const QuizResults = ({ route, navigation }) => {
-  const { quizId } = route.params;
-  const [results, setResults] = useState(null);
-  const [profileData, setProfileData] = useState(null);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(10);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [quizInfo, setQuizInfo] = useState(null);
+  const [quizStatus, setQuizStatus] = useState('waiting');
+  const [isConnected, setIsConnected] = useState(false);
+  const [questionNumber, setQuestionNumber] = useState(0);
+  const [score, setScore] = useState(0);
+  const [isCorrect, setIsCorrect] = useState(null);
+  const [correctAnswer, setCorrectAnswer] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState(0);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [canProgress, setCanProgress] = useState(false);
+  const [isWaitingForNextQuestion, setIsWaitingForNextQuestion] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [processedQuestions] = useState(new Set()); // Add this to track processed questions
+  
+  const startTimeRef = useRef(null);
+  const socketRef = useRef(null);
+  const timerRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const maxReconnectAttempts = 5;
 
-  const formatNumber = (num) => {
-    if (!num) return "0";
-    const fixedNum = Number(num).toFixed(2);
-    return fixedNum.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const timerAnimation = useRef(new Animated.Value(10)).current;
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  const getMedalColor = (rank) => {
-    switch(rank) {
-      case 1: return '#FFD700';
-      case 2: return '#C0C0C0';
-      case 3: return '#CD7F32';
-      default: return '#E0E0E0';
-    }
-  };
 
-  const fetchResults = async () => {
+
+
+  const initializeSocket = async (authToken) => {
     try {
-      const userData = await AsyncStorage.getItem('userData');
-      const parsedUser = JSON.parse(userData);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+
+      console.log('Initializing socket connection for quiz:', quizId);
       
-      if (!parsedUser?.token) {
-        throw new Error('Authentication token not found');
-      }
+      socketRef.current = io(SOCKET_URL, {
+        auth: { token: authToken },
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        timeout: 20000
+      });
 
-      const response = await axios.get(
-        `${API_URL}/quiz/quiz-results/${quizId}`,
-        {
-          headers: { Authorization: `Bearer ${parsedUser.token}` }
+      socketRef.current.on('connect', () => {
+        if (!isMountedRef.current) return;
+        console.log('Socket connected successfully. Socket ID:', socketRef.current.id);
+        setIsConnected(true);
+        setConnectionAttempts(0);
+        
+        // Join quiz room and request initial state
+        socketRef.current.emit('joinQuizRoom', { quizId });
+      });
+
+      // Handle quiz status updates
+      socketRef.current.on('quizStatus', (data) => {
+        if (!isMountedRef.current) return;
+        console.log('Received quiz status:', data);
+        setQuizStatus(data.status);
+        
+        if (data.status === 'active' && data.currentQuestion) {
+          console.log('Setting current question from quiz status');
+          setCurrentQuestion(data.currentQuestion);
+          setTimeLeft(10);
+          startTimeRef.current = new Date();
+          setLoading(false);
         }
-      );
+      });
 
-      if (!response.data?.results?.length) {
-        throw new Error('No results available');
-      }
+      // Handle next question events
+      // socketRef.current.on('nextQuestion', (data) => {
+      //   if (!isMountedRef.current) return;
+      //   console.log('Received next question:', data);
+        
+      //   if (data && data.question) {
+      //     const questionData = data.question;
+      //     console.log('Processing question data:', questionData);
+          
+      //     setCurrentQuestion({
+      //       _id: questionData._id,
+      //       text: questionData.text || questionData.questionText,
+      //       options: questionData.options || []
+      //     });
+      //     setSelectedOption(null);
+      //     setTimeLeft(10);
+      //     setCanProgress(false);
+      //     setIsWaitingForNextQuestion(false);
+      //     setShowFeedback(false);
+      //     startTimeRef.current = new Date();
+      //     setQuizStatus('active');
+      //     setLoading(false);
+      //     //setQuestionNumber(prev => prev + 1);
+      //   } else {
+      //     console.warn('Received nextQuestion event without valid question data');
+      //   }
+      // });
 
-      const sortedResults = response.data.results.sort((a, b) => a.rank - b.rank);
-      setResults(sortedResults);
-      setQuizInfo(response.data.quizInfo);
+      // Handle quiz end
+      socketRef.current.on('quizEnded', () => {
+        if (!isMountedRef.current) return;
+        console.log('Quiz ended event received');
+        handleQuizCompletion();
+      });
 
-      const profileRes = await getProfile('');
-      setProfileData(profileRes?.data?.userProfileInfo);
+      // Handle errors
+      socketRef.current.on('error', (error) => {
+        if (!isMountedRef.current) return;
+        console.error('Socket error:', error);
+        setError(error.message || 'An error occurred');
+      });
 
     } catch (error) {
-      console.error('Error fetching results:', error);
-      setError(error?.response?.data?.message || error.message || 'Failed to load results');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      console.error('Socket initialization error:', error);
+      handleConnectionError();
     }
+  };
+
+  const initializeQuiz = async () => {
+    try {
+      console.log('Initializing quiz:', quizId);
+      const userData = await AsyncStorage.getItem('userData');
+      if (!userData) {
+        throw new Error('Please log in to participate');
+      }
+
+      const parsedUser = JSON.parse(userData);
+      if (!parsedUser?.token) {
+        throw new Error('Invalid session');
+      }
+
+      setToken(parsedUser.token);
+
+      // Initialize quiz participation
+      try {
+        const response = await fetch(`${API_URL}/quiz/initiate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${parsedUser.token}`
+          },
+          body: JSON.stringify({ quizId })
+        });
+
+        const data = await response.json();
+        console.log('Quiz initiation response:', data);
+
+        if (!response.ok && data.message !== "The quiz has already started") {
+          throw new Error(data.message || 'Failed to initialize quiz');
+        }
+
+      } catch (error) {
+        if (error.message === "The quiz has already started") {
+          console.log('Quiz already in progress, joining...');
+          setQuizStatus('active');
+        } else {
+          throw error;
+        }
+      }
+
+      await initializeSocket(parsedUser.token);
+    } catch (error) {
+      console.error('Quiz initialization error:', error);
+      setError(error.message || 'Failed to initialize quiz');
+      setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    const getTotalQuestions = async () => {
+      try {
+        const storedTotal = await AsyncStorage.getItem(`quiz_${quizId}_total_questions`);
+        if (storedTotal) {
+          setTotalQuestions(JSON.parse(storedTotal));
+        }
+      } catch (error) {
+        console.error('Error getting total questions:', error);
+      }
+    };
+    
+    getTotalQuestions();
+  }, [quizId]);
+
+  useEffect(() => {
+    if (!socketRef.current) return;
+  
+    const handleNextQuestion = (data) => {
+      if (!isMountedRef.current) return;
+      
+      if (data && data.question) {
+        const questionData = data.question;
+        
+        // Check if we've already processed this question
+        if (processedQuestions.has(questionData._id)) {
+          console.log('Skipping duplicate question:', questionData._id);
+          return;
+        }
+        
+        console.log('Processing new question:', questionData._id);
+        processedQuestions.add(questionData._id);
+        
+        setCurrentQuestion({
+          _id: questionData._id,
+          text: questionData.text || questionData.questionText,
+          options: questionData.options || []
+        });
+        setQuestionNumber(data.questionIndex); // Update question number from backend
+        setSelectedOption(null);
+        setTimeLeft(10);
+        setCanProgress(false);
+        setIsWaitingForNextQuestion(false);
+        setShowFeedback(false);
+        startTimeRef.current = new Date();
+        setQuizStatus('active');
+        setLoading(false);
+      } else {
+        console.warn('Received nextQuestion event without valid question data');
+      }
+    };
+  
+    const handleQuizEnded = () => {
+      if (!isMountedRef.current) return;
+      console.log('Quiz ended event received');
+      handleQuizCompletion();
+    };
+  
+    // Set up event listeners
+    socketRef.current.on('nextQuestion', handleNextQuestion);
+    socketRef.current.on('quizEnded', handleQuizEnded);
+  
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('nextQuestion', handleNextQuestion);
+        socketRef.current.off('quizEnded', handleQuizEnded);
+      }
+    };
+  }, [socketRef.current]);
+
+  useEffect(() => {
+    initializeQuiz();
+
+    return () => {
+      console.log('Cleaning up quiz component');
+      isMountedRef.current = false;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [quizId]);
+
+  // useEffect(() => {
+  //   socketRef.current?.on('nextQuestion', (data) => {
+  //     if (!isMountedRef.current) return;
+      
+  //     if (data && (data.question || data.questions)) {
+  //       const questionData = data.question || data.questions;
+  //       // setQuestionNumber(prev => prev + 1);
+  //       setCurrentQuestion({
+  //         _id: questionData._id,
+  //         text: questionData.questionText || questionData.text,
+  //         options: questionData.options || []
+  //       });
+  //       setSelectedOption(null);
+  //       setTimeLeft(10);
+  //       setShowFeedback(false);
+  //       setIsCorrect(null);
+  //       setCorrectAnswer(null);
+  //       startTimeRef.current = new Date();
+  //       setQuizStatus('active');
+  //       setLoading(false);
+  //     }
+  //   });
+
+  //   socketRef.current?.on('quizEnded', () => {
+  //     if (!isMountedRef.current) return;
+  //     handleQuizCompletion();
+  //   });
+
+  //   return () => {
+  //     isMountedRef.current = false;
+  //   };
+  // }, []);
+
+  const handleQuizCompletion = () => {
+    setQuizCompleted(true);
+    // Navigate to results screen
+    navigation.replace('QuizResults', { quizId });
+  };
+
+
+  const handleConnectionError = () => {
+    setConnectionAttempts(prev => {
+      const newAttempts = prev + 1;
+      if (newAttempts >= maxReconnectAttempts) {
+        setError('Unable to connect to quiz server. Please try again.');
+        setLoading(false);
+      }
+      return newAttempts;
+    });
   };
 
   useEffect(() => {
-    fetchResults();
+    const initializeQuiz = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (!userData) throw new Error('Please log in to participate');
+
+        const parsedUser = JSON.parse(userData);
+        if (!parsedUser?.token) throw new Error('Invalid session');
+
+        setToken(parsedUser.token);
+
+        try {
+          await axios.post(
+            `${API_URL}/quiz/initiate`,
+            { quizId },
+            { headers: { Authorization: `Bearer ${parsedUser.token}` }}
+          );
+        } catch (error) {
+          if (error.response?.data?.message === "The quiz has already started") {
+            console.log('Quiz in progress, joining...');
+            setQuizStatus('active');
+          } else {
+            throw error;
+          }
+        }
+
+        await initializeSocket(parsedUser.token);
+      } catch (error) {
+        console.error('Quiz initialization error:', error);
+        setError(error.message || 'Failed to initialize quiz');
+        setLoading(false);
+      }
+    };
+
+    initializeQuiz();
+
+    return () => {
+      isMountedRef.current = false;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
   }, [quizId]);
 
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    fetchResults();
-  }, []);
+  const handleSubmitAnswer = async (option) => {
+    if (!token || !currentQuestion?._id || selectedOption !== null) return;
 
-  const renderQuizInfo = () => {
-    if (!quizInfo) return null;
+    // Animate the option selection
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    return (
-      <View style={styles.quizInfoContainer}>
-        <Text variant="semibold20" color={COLORS.blue043142}>
-          {quizInfo.topic}
-        </Text>
-        <View style={styles.quizMetaContainer}>
-          <View style={styles.difficultyBadge}>
-            <Text variant="regular12" color={COLORS.blue043142}>
-              {quizInfo.difficulty}
-            </Text>
-          </View>
-          {quizInfo.quizTopics?.map((topic, index) => (
-            <View key={index} style={styles.topicBadge}>
-              <Text variant="regular12" color={COLORS.blue043142}>
-                {topic}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    );
+    try {
+      const endTime = new Date();
+      const timeTaken = startTimeRef.current 
+        ? Math.min((endTime - startTimeRef.current) / 1000, 10)
+        : 10;
+
+      setSelectedOption(option);
+
+      const response = await fetch(`${API_URL}/quiz/submit-answer`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          quizId,
+          questionId: currentQuestion._id,
+          selectedOption: option,
+          timeTaken
+        })
+      });
+
+      const data = await response.json();
+      
+      setShowFeedback(true);
+      setIsCorrect(data.isCorrect);
+      setCorrectAnswer(data.correctAnswer);
+      setScore(prev => prev + (data.pointsAwarded || 0));
+      setAnsweredQuestions(prev => prev + 1);
+      // setQuestionNumber(prev => prev + 1); // Add this line to increment question number
+
+      setCanProgress(true);
+
+      if (data.isCorrect) {
+        setFeedback(`Correct! +${data.pointsAwarded} points`);
+      } else {
+        setFeedback(`Incorrect. The correct answer was: ${data.correctAnswer}`);
+      }
+
+      // Animate feedback appearance
+      Animated.sequence([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // if (answeredQuestions + 1 >= totalQuestions) {
+      //   setTimeout(handleQuizCompletion, 2000);
+      // } else {
+      //   setTimeout(() => {
+      //     // Transition to next question with animation
+      //     Animated.sequence([
+      //       Animated.timing(fadeAnim, {
+      //         toValue: 0,
+      //         duration: 200,
+      //         useNativeDriver: true,
+      //       }),
+      //       Animated.timing(fadeAnim, {
+      //         toValue: 1,
+      //         duration: 200,
+      //         useNativeDriver: true,
+      //       }),
+      //     ]).start();
+
+      //     setIsWaitingForNextQuestion(true);
+      //     setShowFeedback(false);
+      //     setSelectedOption(null);
+      //     socketRef.current?.emit('getCurrentQuestion', { quizId });
+      //   }, 2000);
+      // }
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      setFeedback('Error submitting answer');
+    }
   };
 
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color={COLORS.blue043142} />
-        </View>
-      );
-    }
+  const handleNextQuestion = () => {
+    if (!canProgress || isWaitingForNextQuestion) return;
+    
+    setIsWaitingForNextQuestion(true);
+    setShowFeedback(false);
+    setSelectedOption(null);
+    
+    // Emit getCurrentQuestion event to get the next question
+    socketRef.current?.emit('getCurrentQuestion', { quizId });
+    console.log('Requesting next question for quiz:', quizId);
+  };
 
-    if (error) {
-      return (
-        <View style={[styles.container, styles.centerContent]}>
-          <Icon name="alert-circle-outline" size={50} color={COLORS.red} />
-          <Text variant="semibold16" color={COLORS.red} style={styles.errorText}>
-            {error}
+
+
+  useEffect(() => {
+    if (timeLeft > 0 && currentQuestion && quizStatus === 'active' && !showFeedback) {
+
+      Animated.timing(timerAnimation, {
+        toValue: 0,
+        duration: timeLeft * 1000,
+        easing: Easing.linear,
+        useNativeDriver: false,
+      }).start();
+
+      timerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            if (!selectedOption) {
+              handleSubmitAnswer(null);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timerRef.current);
+    }
+  }, [timeLeft, currentQuestion, quizStatus, showFeedback]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <View style={[styles.centerContent, { flex: 1 }]}>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+          <Text variant="regular16" color={COLORS.blue043142}>
+            {connectionAttempts > 0 
+              ? `Connecting to quiz server (Attempt ${connectionAttempts}/${maxReconnectAttempts})...`
+              : 'Preparing quiz...'}
           </Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchResults}>
-            <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
-              Retry
-            </Text>
+          {isConnected && (
+            <Text variant="regular14" color={COLORS.green}>Connected to server</Text>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <View style={[styles.centerContent, { flex: 1 }]}>
+          <Text variant="regular16" color={COLORS.red}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+              setConnectionAttempts(0);
+              initializeSocket(token);
+            }}
+          >
+            <Text variant="regular16" color={COLORS.whiteFFFFFF}>Retry Connection</Text>
           </TouchableOpacity>
         </View>
-      );
-    }
-
-    return (
-      <ScrollView
-        style={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {renderQuizInfo()}
-
-        <View style={styles.podiumContainer}>
-          {results.slice(0, 3).map((winner, index) => (
-            <View
-              key={winner.userId}
-              style={[
-                styles.podiumBlock,
-                { height: [120, 150, 100][index] }
-              ]}
-            >
-              <Image
-                source={{ uri: winner.profilePicture || 'https://via.placeholder.com/50' }}
-                style={styles.podiumImage}
-              />
-              <View style={[styles.medalIcon, { backgroundColor: getMedalColor(index + 1) }]}>
-                <Text variant="semibold12" color={COLORS.whiteFFFFFF}>
-                  {index + 1}
-                </Text>
-              </View>
-              <Text variant="semibold12" color={COLORS.whiteFFFFFF} numberOfLines={1}>
-                {winner.username}
-              </Text>
-              <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
-                {formatNumber(winner.finalScore)}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.statsContainer}>
-          <Text variant="semibold20" color={COLORS.blue043142} style={styles.sectionTitle}>
-            Detailed Results
-          </Text>
-          {results.map((result) => (
-            <View key={result.userId} style={styles.statCard}>
-              <View style={styles.rankContainer}>
-                <Text variant="semibold16" color={COLORS.blue043142}>
-                  #{result.rank}
-                </Text>
-              </View>
-              <Image
-                source={{ uri: result.profilePicture || 'https://via.placeholder.com/40' }}
-                style={styles.playerImage}
-              />
-              <View style={styles.playerDetails}>
-                <Text variant="semibold16" color={COLORS.blue043142}>
-                  {result.username}
-                </Text>
-                <View style={styles.statsRow}>
-                  <Text variant="regular12" color={COLORS.gray666666}>Score: </Text>
-                  <Text variant="semibold12" color={COLORS.blue043142}>{formatNumber(result.finalScore)}</Text>
-                  <Text variant="regular12" color={COLORS.gray666666}>  •  Correct: </Text>
-                  <Text variant="semibold12" color={COLORS.blue043142}>{result.totalCorrectAnswers}</Text>
-                  <Text variant="regular12" color={COLORS.gray666666}>  •  Time: </Text>
-                  <Text variant="semibold12" color={COLORS.blue043142}>{result.totalTimeTaken.toFixed(1)}s</Text>
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.questionsContainer}>
-          <Text variant="semibold20" color={COLORS.blue043142} style={styles.sectionTitle}>
-            Quiz Questions
-          </Text>
-          {results[0]?.questions.map((question, index) => (
-            <QuestionDetails
-              key={question._id}
-              question={question}
-              index={index}
-            />
-          ))}
-        </View>
-      </ScrollView>
+      </SafeAreaView>
     );
-  };
+  }
+
+  if (quizStatus === 'waiting' || !currentQuestion) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <View style={[styles.centerContent, { flex: 1 }]}>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+          <Text variant="regular16" color={COLORS.blue043142}>
+            Waiting for quiz to start...
+          </Text>
+          {isConnected && (
+            <Text variant="regular14" color={COLORS.green}>Connected to server</Text>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -314,14 +599,116 @@ const QuizResults = ({ route, navigation }) => {
       
       <View style={styles.headerContainer}>
         <Header
-          title="Quiz Results"
-          onBackPress={() => navigation.navigate('QuizList')}
+          title="Quiz Game"
+          onBackPress={() => navigation.navigate('QuizDetails', { quizId })}
         />
       </View>
       
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          {renderContent()}
+          <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent}>
+            {/* Progress Section */}
+            <Animated.View style={[styles.progressCard, { opacity: fadeAnim }]}>
+              <View style={styles.progressHeader}>
+                <Text variant="regular16" color={COLORS.blue043142}>
+                  Question {questionNumber}/{totalQuestions}
+                </Text>
+                <View style={styles.timerContainer}>
+                  <Text variant="semibold16" color={COLORS.blue043142}>
+                    {formatTime(timeLeft)}
+                  </Text>
+                  <Animated.View style={[
+                    styles.timerRing,
+                    {
+                      transform: [{
+                        rotate: timerAnimation.interpolate({
+                          inputRange: [0, 10],
+                          outputRange: ['360deg', '0deg'],
+                        }),
+                      }],
+                    },
+                  ]} />
+                </View>
+                <Text variant="regular16" color={COLORS.blue043142}>
+                  Score: {score}
+                </Text>
+              </View>
+              
+              <View style={styles.progressBarContainer}>
+                <Animated.View 
+                  style={[
+                    styles.progressBarFill,
+                    { width: `${(answeredQuestions/totalQuestions) * 100}%` }
+                  ]} 
+                />
+              </View>
+            </Animated.View>
+
+            {/* Question Section */}
+            <Animated.View 
+              style={[
+                styles.questionCard,
+                {
+                  opacity: fadeAnim,
+                  transform: [{ scale: scaleAnim }]
+                }
+              ]}
+            >
+              <Text variant="semibold18" color={COLORS.blue043142} style={styles.questionText}>
+                {currentQuestion?.text}
+              </Text>
+              
+              <View style={styles.optionsContainer}>
+                {currentQuestion?.options?.map((option, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.optionButton,
+                      selectedOption === option && styles.selectedOption,
+                      showFeedback && selectedOption === option && (
+                        isCorrect ? styles.correctOption : styles.wrongOption
+                      ),
+                      showFeedback && correctAnswer === option && styles.correctOption
+                    ]}
+                    onPress={() => handleSubmitAnswer(option)}
+                    disabled={selectedOption !== null}
+                  >
+                    <Text 
+                      variant="regular16" 
+                      color={
+                        selectedOption === option ? COLORS.whiteFFFFFF :
+                        showFeedback && (selectedOption === option || correctAnswer === option) ? 
+                        COLORS.whiteFFFFFF : COLORS.blue043142
+                      }
+                    >
+                      {`${String.fromCharCode(65 + index)}. ${option}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Feedback Section */}
+              {showFeedback && (
+                <Animated.View 
+                  style={[
+                    styles.feedbackContainer,
+                    isCorrect ? styles.correctFeedback : styles.wrongFeedback,
+                    { opacity: fadeAnim }
+                  ]}
+                >
+                  <Text variant="semibold16" color={COLORS.blue043142}>
+                    {feedback}
+                  </Text>
+                  {answeredQuestions >= totalQuestions && (
+                    <Text variant="regular14" color={COLORS.blue043142}>
+                      Quiz completed! Redirecting to results...
+                    </Text>
+                  )}
+                </Animated.View>
+              )}
+            </Animated.View>
+          </ScrollView>
         </View>
       </View>
     </SafeAreaView>
@@ -358,205 +745,108 @@ const styles = StyleSheet.create({
     borderTopRightRadius: nh(25),
     paddingTop: nh(20),
   },
+  scrollContainer: {
+    flex: 1,
+  },
   scrollContent: {
-    flex: 1,
-  },
-  quizInfoContainer: {
     padding: nw(16),
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.grayEEEEEE,
+    paddingBottom: nh(20),
   },
-  quizMetaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: nh(8),
-  },
-  difficultyBadge: {
-    backgroundColor: COLORS.blueF5F8FF,
-    paddingHorizontal: nw(8),
-    paddingVertical: nh(4),
-    borderRadius: nh(4),
-    marginRight: nw(8),
-    marginBottom: nh(8),
-    borderWidth: 1,
-    borderColor: COLORS.blue043142,
-  },
-  podiumContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    padding: nw(20),
+  progressCard: {
     backgroundColor: COLORS.whiteFFFFFF,
-    marginBottom: nh(10),
-  },
-  podiumBlock: {
-    width: nw(100),
-    margin: nw(5),
-    backgroundColor: COLORS.blue043142,
-    borderRadius: nh(10),
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    padding: nw(10),
-  },
-  podiumImage: {
-    width: nw(60),
-    height: nh(60),
-    borderRadius: nh(30),
-    borderWidth: 2,
-    borderColor: COLORS.whiteFFFFFF,
-  },
-  medalIcon: {
-    position: 'absolute',
-    top: nh(10),
-    right: nw(10),
-    width: nw(24),
-    height: nh(24),
-    borderRadius: nh(12),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statsContainer: {
     padding: nw(16),
-  },
-  sectionTitle: {
-    marginBottom: nh(10),
-  },
-  statsContainer: {
-    padding: nw(16),
-  },
-  sectionTitle: {
-    marginBottom: nh(10),
-  },
-  statCard: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.whiteFFFFFF,
-    padding: nw(12),
-    borderRadius: nh(10),
-    marginBottom: nh(10),
-    alignItems: 'center',
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-  },
-  rankContainer: {
-    width: nw(32),
-    height: nh(32),
-    backgroundColor: 'rgba(4, 49, 66, 0.1)',
-    borderRadius: nh(16),
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: nw(8),
-    flexShrink: 0,
-  },
-  playerImage: {
-    width: nw(32),
-    height: nh(32),
-    borderRadius: nh(16),
-    marginRight: nw(8),
-    flexShrink: 0,
-  },
-  playerDetails: {
-    flex: 1,
-    minWidth: 0, // Important for text truncation
-  },
-  statsRowContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nh(4),
-    flexWrap: 'wrap',
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexShrink: 1,
-    marginRight: nw(4),
-  },
-  errorText: {
-    marginTop: nh(10),
-    textAlign: 'center',
-  },
-  retryButton: {
-    marginTop: nh(20),
-    padding: nw(10),
-    backgroundColor: COLORS.blue043142,
-    borderRadius: nh(5),
-  },
-  questionsContainer: {
-    padding: nw(16),
-    marginTop: nh(10),
-  },
-  questionCard: {
-    backgroundColor: COLORS.whiteFFFFFF,
     borderRadius: nh(8),
     marginBottom: nh(16),
-    padding: nw(16),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: 'rgba(4, 49, 66, 0.1)',
   },
-  questionHeader: {
+  progressHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: nh(8),
   },
-  questionContent: {
-    marginTop: nh(16),
+  timerContainer: {
+    position: 'relative',
+    width: nw(60),
+    height: nh(60),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timerRing: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: nh(30),
+    borderWidth: 3,
+    borderColor: COLORS.blue043142,
+    borderRightColor: 'transparent',
+  },
+  progressBarContainer: {
+    height: nh(8),
+    backgroundColor: 'rgba(4, 49, 66, 0.1)',
+    borderRadius: nh(4),
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: COLORS.blue043142,
+    borderRadius: nh(4),
+  },
+  questionCard: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(16),
+    borderRadius: nh(8),
+    borderWidth: 1,
+    borderColor: 'rgba(4, 49, 66, 0.1)',
   },
   questionText: {
     marginBottom: nh(16),
   },
-  topicsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: nh(12),
-  },
-  topicBadge: {
-    backgroundColor: COLORS.blueF5F8FF,
-    paddingHorizontal: nw(8),
-    paddingVertical: nh(4),
-    borderRadius: nh(4),
-    marginRight: nw(8),
-    marginBottom: nh(8),
-  },
-  hashtagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: nh(16),
-  },
-  hashtagBadge: {
-    paddingHorizontal: nw(8),
-    paddingVertical: nh(4),
-    marginRight: nw(8),
-    marginBottom: nh(8),
-  },
   optionsContainer: {
-    marginBottom: nh(16),
+    gap: nh(10),
   },
-  optionItem: {
-    padding: nw(12),
+  optionButton: {
+    padding: nw(16),
     borderRadius: nh(8),
-    marginBottom: nh(8),
-    backgroundColor: COLORS.grayF8F8F8,
     borderWidth: 1,
-    borderColor: COLORS.grayEEEEEE,
+    borderColor: 'rgba(4, 49, 66, 0.1)',
+    backgroundColor: COLORS.whiteFFFFFF,
+  },
+  selectedOption: {
+    backgroundColor: COLORS.blue043142,
+    borderColor: COLORS.blue043142,
   },
   correctOption: {
-    backgroundColor: COLORS.green,
-    borderColor: COLORS.green,
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
   },
-  correctAnswerContainer: {
-    padding: nw(12),
-    backgroundColor: COLORS.greenLight,
+  wrongOption: {
+    backgroundColor: '#f44336',
+    borderColor: '#f44336',
+  },
+  feedbackContainer: {
+    padding: nw(16),
     borderRadius: nh(8),
+    marginTop: nh(16),
+    borderWidth: 1,
+  },
+  correctFeedback: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderColor: '#4CAF50',
+  },
+  wrongFeedback: {
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    borderColor: '#f44336',
+  },
+  retryButton: {
+    backgroundColor: COLORS.blue043142,
+    padding: nw(16),
+    borderRadius: nh(8),
+    marginTop: nh(16),
   },
 });
 
-export default QuizResults;
+export default QuizGame;
