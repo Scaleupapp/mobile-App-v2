@@ -20,11 +20,11 @@ const MenuScreen = ({navigation, route}) => {
     // commented
     {
       title: 'Quiz',
-      nav: 'Routes.Quiz',
+      nav: 'Quiz',
     },
     {
       title: 'My Inner Circle',
-      nav: Routes.InnerCircle,
+      nav: Routes.InnerCircleRequest,
     },
     // {
     //   title: 'My Inner Request',

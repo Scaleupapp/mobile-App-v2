@@ -22,7 +22,7 @@ import {
 } from '../../services/apiService';
 import Text from '../../components/Text';
 import Icon from '../../helper/icon';
-import {timeAgo} from '../../helper/commonFunctions';
+import {getTimeAgo} from '../../helper/commonFunctions';
 import {useSelector} from 'react-redux';
 import {APP_FONTS} from '../../assets/fonts';
 import {navigationRef} from '../../../App';
@@ -99,7 +99,7 @@ const RenderComment = ({item, index, onReplyPress, onClose, myId}) => {
                 color: COLORS.black333333,
                 marginHorizontal: nw(30),
               }}>
-              {timeAgo(item?.commentDate)}
+              {getTimeAgo(item?.commentDate)}
             </Text>
           </View>
           {item?.taggedUserName ?? item?.parentUsername ? (

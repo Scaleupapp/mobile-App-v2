@@ -28,7 +28,7 @@ const Home = ({navigation, route}) => {
   const [refreshing, setRefreshing] = useState(true);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const flatListRef = useRef(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // Refetch whenever we focus on this screen
   useFocusEffect(
@@ -55,26 +55,26 @@ const Home = ({navigation, route}) => {
   };
 
   // Load home feed data (with pagination)
-  // const homePageData = async (pageNum, refresh = false) => {
-  //   try {
-  //     const {data} = await getHomePageData(pageNum);
-  //     if (data?.content.length > 0) {
-  //       setPage(prevPage => prevPage + 1);
-  //       if (refresh) {
-  //         setHome(data.content);
-  //       } else {
-  //         setHome(prev => [...prev, ...data.content]);
-  //       }
-  //     } else {
-  //       setHasMore(false);
-  //     }
-  //   } catch (error) {
-  //     console.log('homePageData error:', {refresh}, error);
-  //   } finally {
-  //     setRefreshing(false);
-  //     setLoading(false);
-  //   }
-  // };
+  const homePageData = async (pageNum, refresh = false) => {
+    try {
+      const {data} = await getHomePageData(pageNum, 10);
+      if (data?.content.length > 0) {
+        setPage(prevPage => prevPage + 1);
+        if (refresh) {
+          setHome(data.content);
+        } else {
+          setHome(prev => [...prev, ...data.content]);
+        }
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.log('homePageData error:', {refresh}, error);
+    } finally {
+      setRefreshing(false);
+      setLoading(false);
+    }
+  };
 
   // Throttle the endReached to avoid multiple calls
   const handleOnReachEnd = useCallback(
@@ -90,7 +90,14 @@ const Home = ({navigation, route}) => {
 
   // Render each post
   const renderItem = ({item, index}) => {
-    return <PostView item={item} index={index} />;
+    return (
+      <PostView
+        item={item}
+        index={index}
+        selectedIndex={selectedIndex}
+        setSelectedIndex={setSelectedIndex}
+      />
+    );
   };
 
   return (
@@ -101,10 +108,9 @@ const Home = ({navigation, route}) => {
       />
       <MainHeader />
 
-      {/* <View style={styles.layer1}>
+      <View style={styles.layer1}>
         <View style={styles.layer2}>
           <FlatList
-            ref={flatListRef}
             data={home}
             keyExtractor={(_, index) => index.toString()}
             showsVerticalScrollIndicator={false}
@@ -158,9 +164,12 @@ const Home = ({navigation, route}) => {
             }
             onEndReached={handleOnReachEnd}
             onEndReachedThreshold={0.5}
+            // removeClippedSubviews={true}
+            // maxToRenderPerBatch={5}
+            // windowSize={5}
           />
         </View>
-      </View>   */}
+      </View>
     </SafeAreaView>
   );
 };

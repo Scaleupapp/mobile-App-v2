@@ -262,13 +262,20 @@ export const AllPost = ({data, isDrafts = false}) => {
           item?.contentURL ? (
             <Pressable
               style={styles.imageContainer}
-              onPress={() =>
+              onPress={() => {
+                const content = data?.content;
+                const stories1 = content?.filter(f => f === item);
+                const stories2 = content?.filter(f => f !== item);
+                const newData = {
+                  ...data,
+                  content: [...stories1, ...stories2],
+                };
                 navigation.navigate(Routes.UserPost, {
-                  data: data,
+                  data: newData,
                   item: item,
                   index: index,
-                })
-              }>
+                });
+              }}>
               <Image
                 source={{uri: item?.contentURL}}
                 style={styles.mediaContent}
@@ -287,13 +294,20 @@ export const AllPost = ({data, isDrafts = false}) => {
           {item?.contentType === 'Video' && item?.contentURL ? (
             <Pressable
               style={styles.videoContainer}
-              onPress={() =>
+              onPress={() => {
+                const content = data?.content;
+                const stories1 = content?.filter(f => f === item);
+                const stories2 = content?.filter(f => f !== item);
+                const newData = {
+                  ...data,
+                  content: [...stories1, ...stories2],
+                };
                 navigation.navigate(Routes.UserPost, {
-                  data: data,
+                  data: newData,
                   item: item,
                   index: index,
-                })
-              }>
+                });
+              }}>
               <Video
                 paused={true}
                 controls

@@ -29,8 +29,8 @@ export const resetMyPassword = (payload: any) => {
   return axiosInstance.post(API.AUTH_RESET, payload);
 };
 
-export const getHomePageData = (payload: any) => {
-  return axiosInstance.get(`${API.HOMEPAGE}?page=${payload}&pageSize=10`);
+export const getHomePageData = (page: any, pageSize: any) => {
+  return axiosInstance.get(`${API.HOMEPAGE}?page=${page}&pageSize=${pageSize}`);
 };
 
 export const getvideoPageData = (payload: any) => {
@@ -136,6 +136,9 @@ export const myInnerCircleAPI = () => {
 export const acceptInnerCircleRequestAPI = (payload: any) => {
   return axiosInstance.post(`${API.ACCEPTREQ}`, payload);
 };
+export const widrawInnerCircleRequestAPI = (payload: any) => {
+  return axiosInstance.post(`${API.WIDRAW}`, payload);
+};
 
 export const declineInnerCircleRequestAPI = (payload: any) => {
   return axiosInstance.post(`${API.REMOVEREQ}`, payload);
@@ -175,9 +178,51 @@ export const blockUSerList = () => {
   return axiosInstance.get(`${API.BLOCK_USER_LIST}`);
 };
 export const bockUser = (id: any) => {
-  console.log('🚀 ~ bockUser ~ id:', id);
   return axiosInstance.post(`${API.USER_BLOCK}/${id}`);
 };
 export const userUnBlock = (id: any) => {
   return axiosInstance.post(`${API.USER_UNBLOCK}/${id}`);
+};
+
+export const sendInnerCircle = (payload: any) => {
+  return axiosInstance.post(`${API.SENDINNERREQUEST}`, payload);
+};
+
+export const ReportPost = (id: any, payload: any) => {
+  return axiosInstance.post(`${API.REPORTPOST}/${id}`, payload);
+};
+
+export const SaveFcm = (payload: any) => {
+  return axiosInstance.post(`${API.SAVE_FCM}`, payload);
+};
+export const UserAnalytics = () => {
+  return axiosInstance.get(`${API.USERANALYTICS}`);
+};
+
+export const getconversation = (id: any) => {
+  return axiosInstance.get(`${API.CONVERSATION}`);
+};
+
+export const createConversation = (payload: any) => {
+  return axiosInstance.post(`${API.CREATECONVERSATION}`, payload);
+};
+
+export const getconversationbyID = (id: any, page: any) => {
+  return axiosInstance.get(`${API.CHAT}/${id}?page=${page}`);
+};
+export const sendChat = (payload: any) => {
+  return axiosInstance.post(`${API.SENDMESSAGE}`, payload);
+};
+
+export const editChatMessage = (convid: any, messageid: any, payload: any) => {
+  return axiosInstance.put(
+    `${API.CHAT}/${convid}/messages/${messageid}/edit`,
+    payload,
+  );
+};
+
+export const deleteChatMessage = (convid: any, messageid: any) => {
+  return axiosInstance.delete(
+    `${API.CHAT}/${convid}/messages/${messageid}/delete`,
+  );
 };

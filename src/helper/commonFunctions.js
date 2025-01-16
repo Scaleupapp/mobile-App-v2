@@ -4,7 +4,7 @@ import {actions} from '../redux/reducers';
 import reduxStore from '../redux/store';
 import Routes from './routes';
 import Compressor from 'react-native-compressor';
-
+import moment from 'moment';
 export const logoutUser = async () => {
   try {
     await AsyncStorage.clear();
@@ -63,31 +63,6 @@ export const formatDate = (date, day = false) => {
   if (day) formattedDate.replace(/, /g, '-');
   formattedDate.replace(' ', '-');
   return formattedDate;
-};
-
-export const timeAgo = dateString => {
-  const givenDate = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now - givenDate) / 1000);
-
-  const intervals = {
-    year: 31536000,
-    month: 2592000,
-    week: 604800,
-    day: 86400,
-    hour: 3600,
-    min: 60,
-    sec: 1,
-  };
-
-  for (const [key, seconds] of Object.entries(intervals)) {
-    const interval = Math.floor(diffInSeconds / seconds);
-    if (interval >= 1) {
-      return `${interval} ${key}${interval > 1 ? 's' : ''} ago`;
-    }
-  }
-
-  return 'just now';
 };
 
 export const compressImage = async uri => {
@@ -153,4 +128,99 @@ export const getTimeAgo = date => {
   if (diffDays < 60) return '1 month ago';
   if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
   return `${Math.floor(diffDays / 365)} years ago`;
+};
+
+export const formatDateforchat = updatedAt => {
+  const date = moment(updatedAt);
+  const now = moment();
+
+  if (date.isSame(now, 'day')) {
+    // If the date is today, return time in 10:00 AM/PM format
+    return date.format('h:mm A');
+  } else if (date.isSame(now.clone().subtract(1, 'day'), 'day')) {
+    // If the date is yesterday
+    return 'Yesterday';
+  } else {
+    // Otherwise, return the full date
+    return date.format('DD/MM/YYYY');
+  }
+};
+
+export function formatAMPM(isoTimestamp) {
+  const date = new Date(isoTimestamp);
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  // Convert 24-hour time to 12-hour format
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+
+  // Add leading zero to minutes if necessary
+  const minutesFormatted = minutes < 10 ? '0' + minutes : minutes;
+
+  return `${hours}:${minutesFormatted} ${ampm}`;
+}
+
+export function groupMessagesByDate(messages) {
+  const groupedMessages = messages.reduce((acc, message) => {
+    // Extract the date part from the 'createdAt' field
+    const date = new Date(message.createdAt).toISOString().split('T')[0];
+
+    // Initialize a new group if it doesn't exist
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+
+    // Add the message to the corresponding date group
+    acc[date].push(message);
+
+    return acc;
+  }, {});
+
+  // Convert grouped messages into an array of objects for easier rendering
+  return Object.entries(groupedMessages).map(([date, messages]) => ({
+    date,
+    messages,
+  }));
+}
+
+export function checkDate(dateStr) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  // Convert the string input to a Date object
+  const date = new Date(dateStr);
+
+  // Remove the time part for comparison
+  today.setHours(0, 0, 0, 0);
+  yesterday.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+
+  if (date.getTime() === today.getTime()) {
+    return 'Today';
+  } else if (date.getTime() === yesterday.getTime()) {
+    return 'Yesterday';
+  } else {
+    return moment(dateStr).format('DD/MM/YYYY'); // Return the original YYYY-MM-DD string
+  }
+}
+
+export const checkIfTenMinutesPassed = timestamp => {
+  const currentTime = new Date(); // Get current time
+  const messageTime = new Date(timestamp); // Convert the given timestamp to Date
+
+  // Calculate the difference in milliseconds
+  const timeDifference = currentTime - messageTime;
+
+  // Convert 10 minutes to milliseconds (10 * 60 * 1000)
+  const tenMinutesInMs = 10 * 60 * 1000;
+
+  // Check if the difference is greater than or equal to 10 minutes
+  if (timeDifference >= tenMinutesInMs) {
+    return true; // 10 minutes have passed
+  } else {
+    return false; // Less than 10 minutes
+  }
 };

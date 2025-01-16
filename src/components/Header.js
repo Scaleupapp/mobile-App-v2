@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
     width: nw(30),
     height: nh(30),
     resizeMode: 'contain',
+    marginTop: 5,
   },
   title: {
     marginLeft: 7,
