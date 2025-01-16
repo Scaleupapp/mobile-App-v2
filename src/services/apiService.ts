@@ -201,8 +201,8 @@ export const createConversation = (payload: any) => {
   return axiosInstance.post(`${API.CREATECONVERSATION}`, payload);
 };
 
-export const getconversationbyID = (id:any) => {
-  return axiosInstance.get(`${API.CHAT}/${id}`);
+export const getconversationbyID = (id:any,page:any) => {
+  return axiosInstance.get(`${API.CHAT}/${id}?page=${page}`);
 };
 export const sendChat = (payload: any) => {
   return axiosInstance.post(`${API.SENDMESSAGE}`, payload);

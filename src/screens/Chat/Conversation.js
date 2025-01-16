@@ -37,7 +37,7 @@ const Conversation = ({navigation, route}) => {
     try {
       const {data} = await getconversation();
       setConversation(data);
-      console.log('🚀 ~ fetchConversations ~ data:', data);
+      //   console.log('🚀 ~ fetchConversations ~ data:', data);
     } catch (error) {
       console.log('🚀 ~ fetchConversations ~ error..:', error);
     } finally {
@@ -55,7 +55,10 @@ const Conversation = ({navigation, route}) => {
       <Pressable
         style={styles.card}
         onPress={() =>
-          navigation.navigate(Routes.Chat, {chatId: item?.conversationId})
+          navigation.navigate(Routes.Chat, {
+            chatId: item?.conversationId,
+            data: item,
+          })
         }>
         <Image
           source={{uri: item?.members[0]?.profilePicture}}
@@ -71,7 +74,7 @@ const Conversation = ({navigation, route}) => {
         </View>
         <View style={{flex: 3, alignItems: 'center'}}>
           <Text variant="medium12" color={COLORS.blue043142}>
-            {formatDateforchat(item?.updatedAt)}
+            {formatDateforchat(item?.lastMessage?.createdAt)}
           </Text>
           {/* <View
             style={{

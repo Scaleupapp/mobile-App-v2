@@ -45,12 +45,14 @@ const ChatModal = forwardRef(({type, URL}, ref) => {
       let paylaod = {
         recipientId: id,
       };
-      console.log('🚀 ~ ChatModal ~ paylaod:', paylaod);
+
       let resp = await createConversation(paylaod);
       ref?.current?.close();
-      console.log('🚀 ~ createConvo ~ resp:', resp);
-      console.log('🚀 ~ createConvo ~ resp:', resp?.data);
-      navigationRef.navigate(Routes.Chat, {chatId: resp?.data?._id});
+
+      navigationRef.navigate(Routes.Chat, {
+        chatId: resp?.data?._id,
+        data: resp?.data,
+      });
     } catch (error) {
       console.log(error, 'rerrr');
     } finally {
