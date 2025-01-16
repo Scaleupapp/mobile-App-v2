@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   FlatList,
@@ -11,15 +11,16 @@ import {
   ImageBackground,
   SafeAreaView,
   StatusBar,
+  Platform,
 } from 'react-native';
 import axios from 'axios';
 import Text from '../../components/Text';
 
-import { getProfile } from '../../services/apiService';
+import {getProfile} from '../../services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { COLORS } from '../../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
+import {COLORS} from '../../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
 import CustomTextInput from '../../components/TextInput';
 import LeaderboardModal from './LeaderboardModal';
@@ -38,12 +39,15 @@ const EmptyStateImages = {
 };
 
 const EmptyStateMessages = {
-  UPCOMING: "You're all set for now! No quizzes are scheduled. Keep exploring and stay sharp!",
-  ACTIVE: "You're not taking any quizzes at the moment. Ready to test your knowledge? Jump into a new challenge!",
-  COMPLETED: "It looks like you haven't completed any quizzes. Start one today and track your progress!",
+  UPCOMING:
+    "You're all set for now! No quizzes are scheduled. Keep exploring and stay sharp!",
+  ACTIVE:
+    "You're not taking any quizzes at the moment. Ready to test your knowledge? Jump into a new challenge!",
+  COMPLETED:
+    "It looks like you haven't completed any quizzes. Start one today and track your progress!",
 };
 
-const QuizList = ({ navigation }) => {
+const QuizList = ({navigation}) => {
   const [quizzes, setQuizzes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(TABS.UPCOMING);
@@ -62,7 +66,10 @@ const QuizList = ({ navigation }) => {
           setToken(res.data.userProfileInfo.id);
         }
       } catch (error) {
-        console.log('Profile data fetch error:', error?.response?.data?.message);
+        console.log(
+          'Profile data fetch error:',
+          error?.response?.data?.message,
+        );
         setError('Failed to fetch user profile');
       }
     };
@@ -85,9 +92,9 @@ const QuizList = ({ navigation }) => {
     try {
       const response = await axios.get(`${API_URL}/quiz/list`, {
         headers: {
-          'Authorization': `Bearer ${parsedUser?.token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${parsedUser?.token}`,
+          'Content-Type': 'application/json',
+        },
       });
 
       setQuizzes(response.data.quizzes);
@@ -107,30 +114,36 @@ const QuizList = ({ navigation }) => {
 
   const filteredQuizzes = quizzes.filter(quiz => {
     // Check if topic matches search query
-    const matchesSearch = quiz.topic.toLowerCase().includes(searchQuery.toLowerCase());
-  
+    const matchesSearch = quiz.topic
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+
     // Convert current time to IST
     const currentDate = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds  
+    const istOffset = 5.5 * 60 * 60 * 1000; // 5.5 hours in milliseconds
     const currentDateIST = new Date(currentDate.getTime() + istOffset);
-  
+
     // Convert quiz times to IST for comparison
-    const startDateIST = new Date(new Date(quiz.startTime).getTime() + istOffset);
+    const startDateIST = new Date(
+      new Date(quiz.startTime).getTime() + istOffset,
+    );
     const endDateIST = new Date(new Date(quiz.endTime).getTime() + istOffset);
-  
+
     switch (activeTab) {
       case TABS.UPCOMING:
         // Quiz hasn't started yet
-        return matchesSearch && !quiz.hasStarted && startDateIST > currentDateIST;
-        
+        return (
+          matchesSearch && !quiz.hasStarted && startDateIST > currentDateIST
+        );
+
       case TABS.ACTIVE:
         // Quiz has started but hasn't ended
         return matchesSearch && quiz.hasStarted && !quiz.hasEnded;
-        
+
       case TABS.COMPLETED:
         // Use hasEnded flag instead of date comparison
         return matchesSearch && quiz.hasEnded;
-        
+
       default:
         return false;
     }
@@ -141,16 +154,21 @@ const QuizList = ({ navigation }) => {
         source={EmptyStateImages[activeTab]}
         style={styles.emptyStateImage}
       />
-      <Text variant="semibold20" color={COLORS.blue043142} style={styles.emptyStateTitle}>
+      <Text
+        variant="semibold20"
+        color={COLORS.blue043142}
+        style={styles.emptyStateTitle}>
         {`No ${activeTab.toLowerCase()} Quizzes`}
       </Text>
-      <Text variant="regular16" color={COLORS.blue043142} style={styles.emptyStateMessage}>
+      <Text
+        variant="regular16"
+        color={COLORS.blue043142}
+        style={styles.emptyStateMessage}>
         {EmptyStateMessages[activeTab]}
       </Text>
       <TouchableOpacity
         style={styles.exploreButton}
-        onPress={() => navigation.navigate('ExploreContent')}
-      >
+        onPress={() => navigation.navigate('ExploreContent')}>
         <Text variant="semibold16" color={COLORS.whiteFFFFFF}>
           Explore Content
         </Text>
@@ -158,22 +176,27 @@ const QuizList = ({ navigation }) => {
     </View>
   );
 
-
-  const handleViewLeaderboard = (quizId) => {
+  const handleViewLeaderboard = quizId => {
     setSelectedQuizId(quizId);
     setIsLeaderboardVisible(true);
   };
 
-  const renderQuizCard = ({ item }) => {
+  const renderQuizCard = ({item}) => {
     const quizDate = new Date(item.startTime);
-    const formattedDate = `${quizDate.getDate()}/${quizDate.getMonth() + 1}/${quizDate.getFullYear()}`;
-    const formattedTime = quizDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formattedDate = `${quizDate.getDate()}/${
+      quizDate.getMonth() + 1
+    }/${quizDate.getFullYear()}`;
+    const formattedTime = quizDate.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
     return (
       <TouchableOpacity
         style={styles.quizCard}
-        onPress={() => navigation.navigate('QuizDetails', { quizId: item._id, token })}
-      >
+        onPress={() =>
+          navigation.navigate('QuizDetails', {quizId: item._id, token})
+        }>
         <View style={styles.quizIconContainer}>
           <Image
             source={require('../../assets/images/image.png')}
@@ -181,17 +204,26 @@ const QuizList = ({ navigation }) => {
           />
         </View>
         <View style={styles.quizInfo}>
-          <Text variant="semibold16" color={COLORS.blue043142} style={styles.quizTitle}>
+          <Text
+            variant="semibold16"
+            color={COLORS.blue043142}
+            style={styles.quizTitle}>
             {item.topic}
           </Text>
-          <Text variant="regular16" color={COLORS.blue043142} style={styles.quizSubtitle}>
+          <Text
+            variant="regular16"
+            color={COLORS.blue043142}
+            style={styles.quizSubtitle}>
             {item.difficulty}
           </Text>
           <View style={styles.dateTimeContainer}>
             <Text variant="regular14" color={COLORS.blue043142}>
               {formattedDate}
             </Text>
-            <Text variant="regular14" color={COLORS.blue043142} style={styles.dateTime2}>
+            <Text
+              variant="regular14"
+              color={COLORS.blue043142}
+              style={styles.dateTime2}>
               {formattedTime}
             </Text>
           </View>
@@ -205,8 +237,7 @@ const QuizList = ({ navigation }) => {
           {activeTab === TABS.COMPLETED ? (
             <TouchableOpacity
               style={styles.leaderboardButton}
-              onPress={() => handleViewLeaderboard(item._id)}
-            >
+              onPress={() => handleViewLeaderboard(item._id)}>
               <Text variant="regular14" color={COLORS.whiteFFFFFF}>
                 View Leaderboard
               </Text>
@@ -244,15 +275,12 @@ const QuizList = ({ navigation }) => {
         source={require('../../assets/images/Ellipse.png')}
         style={styles.semicircle}
         resizeMode="stretch">
-        <Header
-          title="Quizzes"
-          rightIcon={false}
-        />
+        <Header title="Quizzes" rightIcon={false} />
       </ImageBackground>
 
       <View style={styles.searchWrapper}>
-        <CustomTextInput 
-          width={DEVICE_WIDTH - 32} 
+        <CustomTextInput
+          width={DEVICE_WIDTH - 32}
           height={nh(50)}
           placeholder="Search"
           value={searchQuery}
@@ -261,16 +289,16 @@ const QuizList = ({ navigation }) => {
       </View>
 
       <View style={styles.tabContainer}>
-        {Object.values(TABS).map((tab) => (
+        {Object.values(TABS).map(tab => (
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.activeTab]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text 
-              variant={activeTab === tab ? "semibold14" : "regular14"}
-              color={activeTab === tab ? COLORS.yellowF5BE00 : COLORS.grey999999}
-            >
+            onPress={() => setActiveTab(tab)}>
+            <Text
+              variant={activeTab === tab ? 'semibold14' : 'regular14'}
+              color={
+                activeTab === tab ? COLORS.yellowF5BE00 : COLORS.grey999999
+              }>
               {tab}
             </Text>
           </TouchableOpacity>
@@ -322,7 +350,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: nw(16),
     right: 0,
-    top: 80,
+    top: Platform.OS == 'ios' ? nh(140) : nh(80),
   },
   tabContainer: {
     flexDirection: 'row',
@@ -375,7 +403,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -422,9 +450,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginTop: nh(-20),
     left: nw(8),
-    
   },
 });
-
 
 export default QuizList;

@@ -14,7 +14,6 @@ import Video from 'react-native-video';
 import {View} from 'react-native';
 import convertToProxyURL from 'react-native-video-cache';
 
-
 const ImageModal = forwardRef(({type, URL}, ref) => {
   const snapPoints = useMemo(() => ['100%'], []);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
@@ -22,11 +21,8 @@ const ImageModal = forwardRef(({type, URL}, ref) => {
 
   const onLoad = data => {
     const {width, height} = data.naturalSize;
-    setLoading(false);
     setVideoDimensions({width, height});
   };
-
-  if (!URL) return;
 
   return (
     <BottomSheetModal
@@ -48,14 +44,14 @@ const ImageModal = forwardRef(({type, URL}, ref) => {
         }}>
         <Icon
           type={'antdesign'}
-          color={COLORS.grey777777}
+          color={COLORS.black333333}
           name="close"
           size={nh(26)}
           style={{
             position: 'absolute',
             top: nh(isAndroid ? 10 : 50),
             right: nw(10),
-            zIndex: 1,
+            zIndex: 3,
           }}
           onPress={() => ref?.current?.close()}
         />
@@ -63,55 +59,52 @@ const ImageModal = forwardRef(({type, URL}, ref) => {
           <View
             style={{
               position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: 0,
-              right: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
+              zIndex: 2,
+              height: DEVICE_HEIGHT,
+              width: DEVICE_WIDTH,
               backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}>
             <ActivityIndicator size="large" color={COLORS.black333333} />
           </View>
-        ) : (
-          <>
-            {type == 'Video' ? (
-              <Video
-                controls
-                onLoad={onLoad}
-                // source={{uri: URL}}
-                source={{uri: convertToProxyURL(URL)}}
-                style={
-                  videoDimensions?.height
-                    ? {
-                        aspectRatio: Number(
-                          videoDimensions.width / videoDimensions.height,
-                        ),
-                        width: DEVICE_WIDTH,
-                        backgroundColor: COLORS.whiteFFFFFF,
-                      }
-                    : {
-                        height: DEVICE_HEIGHT,
-                        width: DEVICE_WIDTH,
-                        backgroundColor: COLORS.whiteFFFFFF,
-                      }
-                }
-                resizeMode="cover"
-                onBuffer={e => console.log('bufeer ', e)}
-                onError={e => console.log('sdsds ', e)}
-              />
-            ) : (
-              <Image
-                source={{uri: URL}}
-                style={{
-                  height: DEVICE_HEIGHT,
-                  width: DEVICE_WIDTH,
-                  resizeMode: 'contain',
-                }}
-              />
-            )}
-          </>
-        )}
+        ) : null}
+        <>
+          {type == 'Video' ? (
+            <Video
+              controls
+              onLoad={onLoad}
+              source={{uri: convertToProxyURL(URL)}}
+              style={
+                videoDimensions?.height
+                  ? {
+                      aspectRatio: Number(
+                        videoDimensions.width / videoDimensions.height,
+                      ),
+                      width: DEVICE_WIDTH,
+                      backgroundColor: COLORS.whiteFFFFFF,
+                    }
+                  : {
+                      height: DEVICE_HEIGHT,
+                      width: DEVICE_WIDTH,
+                      backgroundColor: COLORS.whiteFFFFFF,
+                    }
+              }
+              resizeMode="cover"
+              onBuffer={e => setLoading(e?.isBuffering)}
+              onError={e => console.log('sdsds ', e)}
+            />
+          ) : (
+            <Image
+              source={{uri: URL}}
+              style={{
+                height: DEVICE_HEIGHT,
+                width: DEVICE_WIDTH,
+                resizeMode: 'contain',
+              }}
+            />
+          )}
+        </>
       </BottomSheetView>
     </BottomSheetModal>
   );

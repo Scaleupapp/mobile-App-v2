@@ -21,20 +21,28 @@ import {
   unlikePostApi,
   unsavePostAPI,
   getProfile,
+  ReportPost,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
 import ImageModal from '../Post/ImageModal';
 import CommentBottomSheetModal from '../Post/CustomBottomSheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import PlaylistSelectionModal from './PlaylistSelectionModal';
-import SavedPostsModal from './SavedPostsModal';
 import {useToast} from '../../components/CustomToast';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import convertToProxyURL from 'react-native-video-cache';
+import {MenuModal} from '../../components/MenuModal';
+import ReportPostModal from '../Post/ReportPostModal';
 
-const PostView = ({item, index}) => {
+const PostView = ({
+  item,
+  index,
+  selectedIndex,
+  setSelectedIndex,
+  myProfile = false,
+}) => {
+  // console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
@@ -45,9 +53,20 @@ const PostView = ({item, index}) => {
   const [isBookmarked, setIsBookmarked] = useState(item?.isSaved);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [visible, setVisible] = useState(false);
   const {showToast} = useToast();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef(null);
+  const postId = item?._id || item?.contentId;
+  const componentRef = useRef(null);
+  const [position, setPosition] = useState(0);
+  const [isModalVisible, setModalVisible] = useState(false);
+
+  const getmeasure = () => {
+    if (componentRef.current) {
+      componentRef.current.measure((x, y, width, height, pageX, pageY) => {
+        setPosition(pageY);
+      });
+    }
+  };
 
   useEffect(() => {
     getProfileData();
@@ -74,8 +93,8 @@ const PostView = ({item, index}) => {
     try {
       setIsLiked(!isLiked);
       const res = isLiked
-        ? await unlikePostApi(item?._id)
-        : await likePostApi(item?._id);
+        ? await unlikePostApi(postId)
+        : await likePostApi(postId);
 
       setLikeCount(res?.data?.likeCount);
     } catch (error) {
@@ -91,6 +110,40 @@ const PostView = ({item, index}) => {
     const aspectRatio = nh(height) / nw(width);
     const calculatedHeight = guidelineBaseWidth * aspectRatio;
     setImageHeight(calculatedHeight || 300);
+  };
+
+  const menuItems = [
+    {
+      name: 'Report',
+      // image: icons.innercircle,
+      onPress: () => {
+        setVisible(false);
+        setTimeout(() => {
+          setModalVisible(true);
+        }, 500);
+      },
+    },
+  ];
+  const menuItems1 = [
+    {
+      name: 'Add to playlist',
+      // image: icons.block,
+      onPress: () => {
+        setVisible(false);
+        handleBookmarkPress();
+      },
+    },
+  ];
+
+  const ReportHanlder = async reportType => {
+    setModalVisible(false);
+    const paylaod = {
+      reportType: reportType,
+    };
+    try {
+      const {data} = await ReportPost(postId, paylaod);
+      showToast({type: 'success', title: data?.message});
+    } catch (error) {}
   };
 
   const saveHandler = async () => {
@@ -110,9 +163,9 @@ const PostView = ({item, index}) => {
 
       // Make API call based on current state
       if (isBookmarked) {
-        await unsavePostAPI(item?._id);
+        await unsavePostAPI(postId);
       } else {
-        const res = await savePostAPI(item?._id);
+        const res = await savePostAPI(postId);
 
         if (res.data.error) {
           // Revert state if API call fails
@@ -159,21 +212,9 @@ const PostView = ({item, index}) => {
       });
       return;
     }
-
-    setIsPlaylistModalVisible(true);
-  };
-
-  const handleVideoPress = () => {
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleVideoError = (error) => {
-    console.log('Video Error:', error);
-    // Optionally show an error message to the user
-    showToast({
-      title: 'Error playing video',
-      type: 'error',
-    });
+    setTimeout(() => {
+      setIsPlaylistModalVisible(true);
+    }, 500);
   };
 
   const handleBookmark = async (userId, postId) => {
@@ -229,6 +270,16 @@ const PostView = ({item, index}) => {
       ]);
     }
   };
+  // console.log({profileData});
+  const profilePicture = myProfile
+    ? profileData?.profilePicture
+    : item?.userId?.profilePicture;
+  const usernameIcon = myProfile
+    ? `${profileData?.firstname?.charAt(0).toUpperCase()}${profileData?.lastname
+        ?.charAt(0)
+        .toUpperCase()}`
+    : `${item?.userId?.username?.charAt(0).toUpperCase()}`;
+  const username = myProfile ? profileData?.username : item?.userId?.username;
 
   return (
     <View
@@ -238,7 +289,7 @@ const PostView = ({item, index}) => {
         backgroundColor: COLORS.whiteFFFFFF,
         paddingBottom: nh(30),
       }}>
-      <View style={styles.view}>
+      <View style={styles.view} ref={componentRef} collapsable={false}>
         <Pressable
           style={{flexDirection: 'row', alignItems: 'center'}}
           onPress={() =>
@@ -247,11 +298,8 @@ const PostView = ({item, index}) => {
               id: item?.userId?._id,
             })
           }>
-          {item?.userId?.profilePicture ? (
-            <Image
-              source={{uri: item?.userId?.profilePicture}}
-              style={styles.image}
-            />
+          {profilePicture ? (
+            <Image source={{uri: profilePicture}} style={styles.image} />
           ) : (
             <View
               style={[
@@ -263,15 +311,19 @@ const PostView = ({item, index}) => {
                 },
               ]}>
               <Text variant="semibold16" color={COLORS.black333333}>
-                {`${item?.userId?.username?.charAt(0).toUpperCase()}`}
+                {usernameIcon}
               </Text>
             </View>
           )}
           <Text variant="medium14" color={COLORS.blue043142}>
-            {item?.userId?.username}
+            {username}
           </Text>
         </Pressable>
-        <Pressable onPress={handleBookmarkPress}>
+        <Pressable
+          onPress={() => {
+            getmeasure();
+            setVisible(!visible);
+          }}>
           <Icon
             type="entypo"
             name="dots-three-vertical"
@@ -283,7 +335,10 @@ const PostView = ({item, index}) => {
 
       {item?.contentType == 'Image' && item?.contentURL ? (
         <Pressable
-          onPress={() => imageModalRef.current?.present()}
+          onPress={() => {
+            setSelectedIndex(index);
+            imageModalRef.current?.present();
+          }}
           style={{marginVertical: nh(10)}}>
           <Image
             source={{uri: item?.contentURL}}
@@ -296,8 +351,11 @@ const PostView = ({item, index}) => {
       ) : null}
       {item?.contentType == 'Video' && item?.contentURL ? (
         <Pressable
-        onPress={handleVideoPress}
-        style={{
+          onPress={() => {
+            setSelectedIndex(index);
+            imageModalRef.current?.present();
+          }}
+          style={{
             marginTop: nh(10),
             borderRadius: nh(12),
             marginBottom: nh(15),
@@ -327,12 +385,10 @@ const PostView = ({item, index}) => {
             </View>
           )}
           <Video
-            ref={videoRef}
-            paused={!isPlaying}
-            controls={isPlaying}
+            paused={true}
+            controls={false}
             onLoad={onLoad}
             source={{uri: convertToProxyURL(item?.contentURL)}}
-            // source={{uri: item?.contentURL}}
             style={
               videoDimensions?.height
                 ? {
@@ -352,21 +408,19 @@ const PostView = ({item, index}) => {
             onBuffer={e => console.log('bufeer ', e)}
             onError={e => console.log('sdsds ', e)}
           />
-          {!isPlaying && (
-        <View style={styles.playButtonContainer}>
-          <Icon
-            type="antdesign"
-            name="playcircleo"
-            size={nh(40)}
-            color={COLORS.blue043142}
-            style={{
-              opacity: 0.8,
-            }}
-          />
-        </View>
-      )}
-    </Pressable>
-  ) : null}
+          <View style={styles.playButtonContainer}>
+            <Icon
+              type="antdesign"
+              name="playcircleo"
+              size={nh(40)}
+              color={COLORS.blue043142}
+              style={{
+                opacity: 0.8,
+              }}
+            />
+          </View>
+        </Pressable>
+      ) : null}
 
       <View style={styles.view}>
         <View
@@ -493,15 +547,39 @@ const PostView = ({item, index}) => {
       </View>
       <CommentBottomSheetModal
         ref={commentRef}
-        postId={item?._id}
+        postId={postId}
         comments={comments}
         setComments={setComments}
       />
-      <ImageModal
-        ref={imageModalRef}
-        type={item?.contentType}
-        URL={item?.contentURL}
-      />
+      {index == selectedIndex && item?.contentURL ? (
+        <ImageModal
+          ref={imageModalRef}
+          type={item?.contentType}
+          URL={item?.contentURL}
+        />
+      ) : null}
+      {visible ? (
+        <MenuModal
+          visible={visible}
+          setVisible={setVisible}
+          menuItems={
+            item?.userId?._id !== profileData?.id ? menuItems : menuItems1
+          }
+          style={{
+            alignItems: 'flex-end',
+            marginTop: position + nh(35),
+            maxHeight: nh(50),
+          }}
+        />
+      ) : null}
+
+      {isModalVisible ? (
+        <ReportPostModal
+          isModalVisible={isModalVisible}
+          setModalVisible={setModalVisible}
+          handleReport={ReportHanlder}
+        />
+      ) : null}
 
       {/* <SavedPostsModal
         // visible={isSavedModalVisible}
@@ -558,7 +636,7 @@ const styles = StyleSheet.create({
   },
   verifiedBadge: {
     height: nh(30),
-    width: nw(30),
+    width: nh(30),
     borderRadius: nh(15),
     backgroundColor: COLORS.blue043142,
     alignItems: 'center',

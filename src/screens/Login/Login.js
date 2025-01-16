@@ -339,9 +339,7 @@ const Login = ({navigation}) => {
             }
             onPress={loginUser}
           />
-          {Platform.OS === 'android' ? (
-            <SocialLogin navigation={navigation} />
-          ) : null}
+          <SocialLogin navigation={navigation} />
           {/* {phoneNumberData?.loginOtp ? (
             // <View
             //   style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>

@@ -202,7 +202,7 @@ const BasicDetails = ({navigation, route}) => {
               errorMessage={errors.confirmPassword}
             />
             <Button text="Submit" onPress={registerUser} />
-            {Platform.OS === 'android' ? <SocialLogin signup={true} /> : null}
+            <SocialLogin signup={true} />
             <View style={{height: nh(50)}} />
           </ScrollView>
         </View>

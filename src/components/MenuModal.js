@@ -6,7 +6,13 @@ import Modal from 'react-native-modal';
 import {nh, nw} from '../helper/scales';
 import Icon from '../helper/icon';
 
-export const MenuModal = ({visible, setVisible, menuItems}) => {
+export const MenuModal = ({visible, setVisible, menuItems, style = false}) => {
+  const modalStyle = {
+    position: 'absolute',
+    top: nh(70),
+    right: nh(20),
+  };
+
   const renderMenuItem = ({item}) => (
     <TouchableOpacity
       onPress={() => item?.onPress()}
@@ -21,6 +27,7 @@ export const MenuModal = ({visible, setVisible, menuItems}) => {
       ) : null}
       {item?.image ? (
         <Image
+          // tintColor={'black'}
           source={item.image}
           style={{marginRight: 7, height: 19, width: 19}}
         />
@@ -37,11 +44,7 @@ export const MenuModal = ({visible, setVisible, menuItems}) => {
       animationIn="fadeIn"
       animationOut="fadeOut"
       transparent={true}
-      style={{
-        position: 'absolute',
-        top: nh(70),
-        right: nh(20),
-      }}
+      style={style ? style : modalStyle}
       onBackdropPress={() => setVisible(false)}
       onRequestClose={() => setVisible(false)} // To handle back press or close
     >

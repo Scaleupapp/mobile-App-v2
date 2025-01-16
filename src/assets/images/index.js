@@ -1,5 +1,6 @@
 export const images = {
-  logo: require('../images/ScaleUpLogo.png'),
+  // logo: require('../images/ScaleUpLogo.png'),
+  logo: require('../images/ScaleUpLogo1.png'),
   intro1: require('../images/intro1.png'),
   intro2: require('../images/intro2.png'),
   intro3: require('../images/intro3.png'),
@@ -26,4 +27,5 @@ export const images = {
 
   norequest: require('../images/norequest.png'),
   nocircle: require('../images/nocircle.png'),
+  nochat: require('../images/nochat.png'),
 };
