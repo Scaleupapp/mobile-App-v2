@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -40,10 +41,10 @@ import {useToast} from '../../components/CustomToast';
 
 const Chat = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
-
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const flatListRef = useRef(null);
+  const [apiData, setApiData] = useState();
   const [selected, setSelected] = useState();
   const [visible, setVisible] = useState(false);
   const [edit, setEdit] = useState(false);
@@ -53,7 +54,10 @@ const Chat = ({navigation, route}) => {
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
-
+  const [loading, setLoading] = useState(false); // Loading state
+  const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
+  const page = useRef(1); //
+  const [userHasScrolled, setUserHasScrolled] = useState(false);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club'); // Replace with your server URL
@@ -65,11 +69,43 @@ const Chat = ({navigation, route}) => {
     });
 
     socketInstance.on('receiveMessage', data => {
-      console.log('🚀 ~ useEffect receiveMessage ~ data:', data);
       if (data.conversationId === route?.params?.chatId) {
-        // console.log('INSIDE');
         setMessages(prevMessages => [...prevMessages, data]);
       }
+    });
+    socketInstance.on('messageEdited', data => {
+      const updatedData = {
+        _id: data?.messageId,
+        message: data?.content,
+        edited: true,
+      };
+
+      const updatedMessages = messages.map(
+        msg =>
+          msg._id === updatedData._id
+            ? {...msg, ...updatedData} // Update the matching object
+            : msg, // Keep others unchanged
+      );
+      setMessages(updatedMessages);
+      // will recieive messageId and content
+    });
+
+    socketInstance.on('messageDeleted', data => {
+      console.log('🚀 ~ useEffect ~ messageDeleted:', data);
+
+      const updatedData = {
+        _id: data?.messageId,
+        deleted: true,
+      };
+
+      const updatedMessages = messages.map(
+        msg =>
+          msg._id === updatedData._id
+            ? {...msg, ...updatedData} // Update the matching object
+            : msg, // Keep others unchanged
+      );
+      setMessages(updatedMessages);
+      // will recieive messageId and content
     });
 
     // Clean up the socket connection when the component unmounts
@@ -80,22 +116,27 @@ const Chat = ({navigation, route}) => {
         socketInstance.disconnect();
       }
     };
-  }, [route?.params?.chatId]); // Ensure that the effect runs when the conversationId changes
+  }, [route?.params?.chatId, messages]); // Ensure that the effect runs when the conversationId changes
 
   useEffect(() => {
-    fetchMessages();
+    loadMoreMessages();
   }, []);
 
   useEffect(() => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({animated: true});
+    if (messages?.length > 0 && !userHasScrolled) {
+      setTimeout(() => {
+        if (flatListRef.current) {
+          flatListRef.current.scrollToEnd({animated: true});
+        }
+      }, 200);
     }
-  }, [messages]);
+  }, [messages, flatListRef.current]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
       'keyboardDidShow',
       () => {
+        setUserHasScrolled(false);
         flatListRef.current?.scrollToEnd({animated: true});
       },
     );
@@ -105,12 +146,6 @@ const Chat = ({navigation, route}) => {
     };
   }, []);
 
-  const fetchMessages = async () => {
-    const {data} = await getconversationbyID(route?.params?.chatId);
-    // console.log('🚀 ~ Chat ~ data:', data);
-    setMessages(data);
-  };
-
   const sendMessage = async () => {
     // if (!newMessage.trim()) return;
     if (input.trim()) {
@@ -118,10 +153,10 @@ const Chat = ({navigation, route}) => {
         conversationId: route?.params?.chatId,
         message: input,
       };
-      //   console.log('🚀 ~ sendMessage ~ payload:', payload);
+      console.log('🚀 ~ sendMessage ~ payload:', payload);
       let conversationId = route?.params?.chatId;
       const {data} = await sendChat(payload);
-
+      setUserHasScrolled(false);
       //   setMessages(prevMessages => [...prevMessages, data]);
       if (socket) {
         socket.emit('sendMessage', {
@@ -236,6 +271,38 @@ const Chat = ({navigation, route}) => {
       {type: 'header', date: group.date},
       ...group.messages.map(msg => ({...msg, type: 'message'})),
     ]);
+  };
+  const fetchMessages = async page => {
+    const {data} = await getconversationbyID(route?.params?.chatId, page);
+
+    // setApiData(data);
+    return data?.messages;
+  };
+  const loadMoreMessages = async () => {
+    if (loading || allMessagesFetched) return;
+
+    setLoading(true);
+    const newMessages = await fetchMessages(page.current);
+    console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages.length);
+
+    if (newMessages.length === 0) {
+      setAllMessagesFetched(true);
+    } else {
+      setMessages(prevMessages => [...newMessages, ...prevMessages]);
+      page.current += 1;
+    }
+    setLoading(false);
+  };
+
+  // Handle when the user scrolls to the top
+  const handleScroll = event => {
+    if (!userHasScrolled) {
+      setUserHasScrolled(true); // Set the flag when user manually scrolls
+    }
+    const {contentOffset} = event.nativeEvent;
+    if (contentOffset.y <= 0) {
+      loadMoreMessages();
+    }
   };
 
   const renderMessage = ({item}) => {
@@ -379,7 +446,11 @@ const Chat = ({navigation, route}) => {
             backgroundColor={COLORS.yellowF5BE00}
           />
           <Header
-            title="My Screen"
+            title={
+              route?.params?.data?.members[0]?.firstname +
+              ' ' +
+              route?.params?.data?.members[0]?.lastname
+            }
             // backIcon={icons.backArrow} // Provide your back arrow icon
             rightIcon={selected ? true : false} // Provide your right icon
             // onBackPress={handleBackPress}
@@ -392,11 +463,19 @@ const Chat = ({navigation, route}) => {
                   ref={flatListRef}
                   data={formatGroupedMessages()}
                   renderItem={renderMessage}
+                  initialNumToRender={100}
                   keyExtractor={item => item.id || item?.date}
                   //   contentContainerStyle={styles.messagesList}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                   extraData={messages}
+                  onScroll={handleScroll} // Detect scroll position
+                  scrollEventThrottle={16} // Adjust frequency of `onScroll` calls
+                  ListFooterComponent={
+                    loading && !allMessagesFetched ? (
+                      <ActivityIndicator size="small" color="#0000ff" />
+                    ) : null
+                  } // Show loading spinner when fetching older messages
                 />
                 <View style={styles.inputContainer}>
                   <TextInput
