@@ -27,7 +27,8 @@ import {
   widrawInnerCircleRequestAPI,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
-import {getTimeAgo, timeAgo} from '../../helper/commonFunctions';
+import {getTimeAgo} from '../../helper/commonFunctions';
+import moment from 'moment';
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
@@ -361,7 +362,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                           {item?.username}
                         </Text>
                         <Text variant="medium12" color={COLORS.blue043142}>
-                          {timeAgo(item?.Timestamp)}
+                          {item?.Timestamp}
                         </Text>
                       </View>
                       <View

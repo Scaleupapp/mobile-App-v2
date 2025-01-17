@@ -57,5 +57,11 @@ export const API = {
   REMOVEREQ: 'users/inner-circle/remove',
   GETINNERCIRCLE: 'users/inner-circle',
   SENDINNERREQUEST: 'users/inner-circle/request',
+  REPORTPOST: 'content/report',
+  SAVE_FCM: 'users/saveFcmToken',
   USERANALYTICS: 'users/user-analytics',
+  CONVERSATION: 'conversation',
+  CREATECONVERSATION: 'conversation/create',
+  SENDMESSAGE: 'chat/send',
+  CHAT: 'chat',
 };

@@ -27,4 +27,5 @@ export const images = {
 
   norequest: require('../images/norequest.png'),
   nocircle: require('../images/nocircle.png'),
+  nochat: require('../images/nochat.png'),
 };

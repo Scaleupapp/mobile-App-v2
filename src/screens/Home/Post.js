@@ -21,6 +21,7 @@ import {
   unlikePostApi,
   unsavePostAPI,
   getProfile,
+  ReportPost,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
@@ -31,8 +32,8 @@ import PlaylistSelectionModal from './PlaylistSelectionModal';
 import {useToast} from '../../components/CustomToast';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import convertToProxyURL from 'react-native-video-cache';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import {MenuModal} from '../../components/MenuModal';
+import ReportPostModal from '../Post/ReportPostModal';
 
 const PostView = ({
   item,
@@ -52,15 +53,20 @@ const PostView = ({
   const [isBookmarked, setIsBookmarked] = useState(item?.isSaved);
   const [isPlaylistModalVisible, setIsPlaylistModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [visible, setVisible] = useState(false);
   const {showToast} = useToast();
   const postId = item?._id || item?.contentId;
+  const componentRef = useRef(null);
+  const [position, setPosition] = useState(0);
+  const [isModalVisible, setModalVisible] = useState(false);
 
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [watchStartTime, setWatchStartTime] = useState(null);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [hasViewBeenCounted, setHasViewBeenCounted] = useState(false);
-  
-  const videoRef = useRef(null);
+  const getmeasure = () => {
+    if (componentRef.current) {
+      componentRef.current.measure((x, y, width, height, pageX, pageY) => {
+        setPosition(pageY);
+      });
+    }
+  };
 
   useEffect(() => {
     getProfileData();
@@ -77,61 +83,9 @@ const PostView = ({
   };
 
   const onLoad = data => {
-    
-
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
-
-
-
-  const handlePlayPress = async () => {
-    setIsPlaying(true);
-    if (!watchStartTime) {
-      setWatchStartTime(Date.now());
-      // Increment view count as soon as the video is played
-      await incrementViewCount();
-    }
-  };
-
-  const handleVideoProgress = (data) => {
-    if (!hasViewBeenCounted && isPlaying) {
-      const currentTime = data.currentTime;
-      // Count view if user watches more than 50% of the video
-      if (currentTime >= videoDuration * 0.1) {
-        incrementViewCount();
-        setHasViewBeenCounted(true);
-      }
-    }
-  };
-
-  // Simplified view count function
-  const incrementViewCount = async () => {
-    try {
-      const userData = await AsyncStorage.getItem('userData');
-      const parsedUser = JSON.parse(userData);      
-      const token = parsedUser?.token;
-      
-      if (!token) {
-        console.log('No authorization token found');
-        return;
-      }
-
-      await axios.post(
-        `https://api.scaleupapp.club/api/content/view/${item?._id}`,
-        {},
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-    } catch (error) {
-      console.error('Failed to update view count:', error?.response?.data || error.message);
-    }
-  };
-
 
   const likeHandler = async () => {
     if (!profileData?.id) return;
@@ -156,6 +110,40 @@ const PostView = ({
     const aspectRatio = nh(height) / nw(width);
     const calculatedHeight = guidelineBaseWidth * aspectRatio;
     setImageHeight(calculatedHeight || 300);
+  };
+
+  const menuItems = [
+    {
+      name: 'Report',
+      // image: icons.innercircle,
+      onPress: () => {
+        setVisible(false);
+        setTimeout(() => {
+          setModalVisible(true);
+        }, 500);
+      },
+    },
+  ];
+  const menuItems1 = [
+    {
+      name: 'Add to playlist',
+      // image: icons.block,
+      onPress: () => {
+        setVisible(false);
+        handleBookmarkPress();
+      },
+    },
+  ];
+
+  const ReportHanlder = async reportType => {
+    setModalVisible(false);
+    const paylaod = {
+      reportType: reportType,
+    };
+    try {
+      const {data} = await ReportPost(postId, paylaod);
+      showToast({type: 'success', title: data?.message});
+    } catch (error) {}
   };
 
   const saveHandler = async () => {
@@ -224,11 +212,64 @@ const PostView = ({
       });
       return;
     }
-
-    setIsPlaylistModalVisible(true);
+    setTimeout(() => {
+      setIsPlaylistModalVisible(true);
+    }, 500);
   };
 
+  const handleBookmark = async (userId, postId) => {
+    try {
+      // First, check if the post is already in the playlist
+      const checkResponse = await axios.get(
+        `https://api.scaleupapp.club/api/playlists/check?userId=${userId}&postId=${postId}`,
+      );
 
+      if (checkResponse.data.exists) {
+        // If already bookmarked, show "Already in playlist" message
+        Alert.alert(
+          '',
+          'Already in your playlist',
+          [{title: 'OK', style: 'default'}],
+          {
+            cancelable: true,
+            onDismiss: () => {},
+          },
+        );
+        return;
+      }
+
+      // If not bookmarked, proceed with bookmarking
+      await axios.post('https://api.scaleupapp.club/api/playlists', {
+        userId, // Send userId in the body
+        playlistName: 'My Playlist', // Optional: Customize the playlist name
+        items: [{postId}], // Only send the postId, not the entire object
+      });
+
+      // Show added to playlist message
+      Alert.alert(
+        '',
+        'Added to your playlist',
+        [{title: 'OK', style: 'default'}],
+        {
+          cancelable: true,
+          onDismiss: () => {},
+        },
+      );
+
+      console.log('Post successfully bookmarked');
+      setIsBookmarked(true); // Update the UI state
+    } catch (error) {
+      console.error(
+        'Failed to bookmark post:',
+        error.response?.data || error.message,
+      );
+
+      // Show error message if something goes wrong
+      Alert.alert('Error', 'Failed to bookmark post', [
+        {title: 'OK', style: 'default'},
+      ]);
+    }
+  };
   // console.log({profileData});
   const profilePicture = myProfile
     ? profileData?.profilePicture
@@ -248,7 +289,7 @@ const PostView = ({
         backgroundColor: COLORS.whiteFFFFFF,
         paddingBottom: nh(30),
       }}>
-      <View style={styles.view}>
+      <View style={styles.view} ref={componentRef} collapsable={false}>
         <Pressable
           style={{flexDirection: 'row', alignItems: 'center'}}
           onPress={() =>
@@ -278,7 +319,11 @@ const PostView = ({
             {username}
           </Text>
         </Pressable>
-        <Pressable onPress={handleBookmarkPress}>
+        <Pressable
+          onPress={() => {
+            getmeasure();
+            setVisible(!visible);
+          }}>
           <Icon
             type="entypo"
             name="dots-three-vertical"
@@ -307,8 +352,6 @@ const PostView = ({
       {item?.contentType == 'Video' && item?.contentURL ? (
         <Pressable
           onPress={() => {
-            incrementViewCount(); // Count view when video is clicked
-          setSelectedIndex(index);
             setSelectedIndex(index);
             imageModalRef.current?.present();
           }}
@@ -345,7 +388,6 @@ const PostView = ({
             paused={true}
             controls={false}
             onLoad={onLoad}
-            
             source={{uri: convertToProxyURL(item?.contentURL)}}
             style={
               videoDimensions?.height
@@ -363,7 +405,7 @@ const PostView = ({
                   }
             }
             resizeMode="contain"
-            onBuffer={e => console.log('bufeer ', e)}
+            //onBuffer={e => console.log('bufeer ', e)}
             onError={e => console.log('sdsds ', e)}
           />
           <View style={styles.playButtonContainer}>
@@ -514,6 +556,28 @@ const PostView = ({
           ref={imageModalRef}
           type={item?.contentType}
           URL={item?.contentURL}
+        />
+      ) : null}
+      {visible ? (
+        <MenuModal
+          visible={visible}
+          setVisible={setVisible}
+          menuItems={
+            item?.userId?._id !== profileData?.id ? menuItems : menuItems1
+          }
+          style={{
+            alignItems: 'flex-end',
+            marginTop: position + nh(35),
+            maxHeight: nh(50),
+          }}
+        />
+      ) : null}
+
+      {isModalVisible ? (
+        <ReportPostModal
+          isModalVisible={isModalVisible}
+          setModalVisible={setModalVisible}
+          handleReport={ReportHanlder}
         />
       ) : null}
 
