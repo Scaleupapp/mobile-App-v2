@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
-import {nh, nw} from '../../helper/scales';
+import {isAndroid, nh, nw} from '../../helper/scales';
 import Text from '../../components/Text';
 import CustomTextInput from '../../components/TextInput';
 import {icons} from '../../assets/icons';
@@ -339,7 +339,7 @@ const Login = ({navigation}) => {
             }
             onPress={loginUser}
           />
-          <SocialLogin navigation={navigation} />
+          {isAndroid ? <SocialLogin /> : null}
           {/* {phoneNumberData?.loginOtp ? (
             // <View
             //   style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
