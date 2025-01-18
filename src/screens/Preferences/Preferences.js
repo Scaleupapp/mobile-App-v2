@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ScrollView,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -191,7 +192,7 @@ const Preferences = ({navigation, route}) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           width: DEVICE_WIDTH - 36,
-          marginTop: nh(30),
+          marginTop: nh(10),
         }}>
         <Button
           width={nw(63)}
@@ -252,100 +253,100 @@ const Preferences = ({navigation, route}) => {
       </Modal>
 
       <View style={styles.layer1}>
-        <View style={styles.layer2}>
-          <Image
-            source={currentQuestion.image}
-            style={[styles.image, {width: nw(currentQuestion.width)}]}
-          />
-
-          {/* Title */}
-          <Text variant="semibold14" color={COLORS.yellowF5BE00}>
-            {currentQuestion.title}
-          </Text>
-          <Text
-            variant="medium12"
-            color={COLORS.grey999999}
-            style={{marginBottom: nh(15)}}>
-            {currentQuestion.subtitle}
-          </Text>
-
-          {/* Checkboxes */}
-          {currentQuestion.type == 'checkbox' && (
-            <FlatList
-              data={currentQuestion.options}
-              renderItem={({item}) => (
-                <TouchableOpacity
-                  style={styles.optionContainer}
-                  onPress={() => handleCheckboxChange(item.title)}>
-                  {/* Checkbox */}
-                  <View
-                    style={[
-                      styles.checkbox,
-                      currentQuestion.answer.includes(item.title) &&
-                        styles.checkboxSelected,
-                    ]}>
-                    {currentQuestion.answer.includes(item.title) && (
-                      <Text style={styles.checkboxTick}>✔</Text>
-                    )}
-                  </View>
-
-                  {/* Option Title and Subtitle */}
-                  <View style={styles.optionTextContainer}>
-                    <Text variant="semibold12" color={COLORS.grey999999}>
-                      {item.maintitle}
-                    </Text>
-                    <Text variant="medium12" color={COLORS.grey999999}>
-                      {item.title}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              )}
-              keyExtractor={(item, index) => `${item.title}-${index}`}
-              ListFooterComponent={bottomComp}
+        <ScrollView style={styles.layer2} showsVerticalScrollIndicator={false}>
+          <View style={styles.contentContainer}>
+            <Image
+              source={currentQuestion.image}
+              style={[styles.image, {width: nw(currentQuestion.width)}]}
             />
-          )}
-          {currentQuestion.type == 'textinput' && (
-            <View>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap', // Enables wrapping to the next line
-                  marginBottom: 10,
-                }}>
-                {words.map((item, index) => (
-                  <View
-                    key={index.toString()}
-                    style={{
-                      padding: 10,
-                      margin: 4, // Adds spacing between items
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}>
-                    <Text variant="semibold12">{item}</Text>
-                    <TouchableOpacity
-                      style={styles.crossButton}
-                      onPress={() => handleRemoveWord(index)}>
-                      <Text style={styles.crossText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
 
-              <CustomTextInput
-                placeholder="Please specify"
-                errorMessage=""
-                value={input}
-                onChangeText={setInput}
-                onSubmitEditing={handleAddWord} // Triggered when Enter is pressed
+            <Text variant="semibold14" color={COLORS.yellowF5BE00}>
+              {currentQuestion.title}
+            </Text>
+            <Text
+              variant="medium12"
+              color={COLORS.grey999999}
+              style={{marginBottom: nh(15)}}>
+              {currentQuestion.subtitle}
+            </Text>
+
+            {currentQuestion.type == 'checkbox' && (
+              <FlatList
+                scrollEnabled={false}
+                data={currentQuestion.options}
+                renderItem={({item}) => (
+                  <TouchableOpacity
+                    style={styles.optionContainer}
+                    onPress={() => handleCheckboxChange(item.title)}>
+                    <View
+                      style={[
+                        styles.checkbox,
+                        currentQuestion.answer.includes(item.title) &&
+                          styles.checkboxSelected,
+                      ]}>
+                      {currentQuestion.answer.includes(item.title) && (
+                        <Text style={styles.checkboxTick}>✔</Text>
+                      )}
+                    </View>
+
+                    <View style={styles.optionTextContainer}>
+                      <Text variant="semibold12" color={COLORS.grey999999}>
+                        {item.maintitle}
+                      </Text>
+                      <Text variant="medium12" color={COLORS.grey999999}>
+                        {item.title}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                keyExtractor={(item, index) => `${item.title}-${index}`}
+                ListFooterComponent={bottomComp}
               />
+            )}
+            {currentQuestion.type == 'textinput' && (
+              <View>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    flexWrap: 'wrap',
+                    marginBottom: 10,
+                  }}>
+                  {words.map((item, index) => (
+                    <View
+                      key={index.toString()}
+                      style={{
+                        padding: 10,
+                        margin: 4,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}>
+                      <Text variant="semibold12" color={COLORS.black333333}>
+                        {item}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.crossButton}
+                        onPress={() => handleRemoveWord(index)}>
+                        <Text style={styles.crossText}>✕</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
 
-              {bottomComp()}
-            </View>
-          )}
-          {/* Next Button */}
-        </View>
+                <CustomTextInput
+                  placeholder="Please specify"
+                  errorMessage=""
+                  value={input}
+                  onChangeText={setInput}
+                  onSubmitEditing={handleAddWord}
+                />
+
+                {bottomComp()}
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -375,6 +376,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: nh(25),
     paddingHorizontal: nw(16),
     paddingTop: nh(30),
+  },
+  contentContainer: {
+    paddingTop: nh(30),
+    paddingBottom: nh(40), // Add padding at the bottom for better scrolling
   },
 
   checkboxSelected: {
@@ -434,4 +439,5 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
+  
 });
