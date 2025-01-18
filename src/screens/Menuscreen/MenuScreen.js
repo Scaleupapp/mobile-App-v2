@@ -5,6 +5,7 @@ import {
   StatusBar,
   View,
   Pressable,
+  Alert,  // <-- Import Alert
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -17,44 +18,43 @@ import {logoutUser} from '../../helper/commonFunctions';
 
 const MenuScreen = ({navigation, route}) => {
   const menu = [
-    // commented
-    // {
-    //   title: 'Quiz',
-    //   nav: '',
-    // },
     {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
     },
-    // {
-    //   title: 'My Inner Request',
-    //   nav: Routes.InnerCircleRequest,
-    // },
-
-    // {
-    //   title: 'Achievements',
-    //   nav: '',
-    // },
     {
       title: 'Help Centre',
       nav: Routes.HelpScreen,
     },
-    // {
-    //   title: 'Report an Issue',
-    //   nav: '',
-    // },
     {
       title: 'Settings',
       nav: Routes.Settings,
     },
   ];
+
   const Card = ({item}) => {
     return (
       <Pressable
         style={styles.card}
         onPress={() => {
-          if (item?.title == 'Logout') {
-            logoutUser();
+          if (item?.title === 'Logout') {
+            // Show confirmation alert before logging out
+            Alert.alert(
+              'Logout',
+              'Are you sure you want to log out?',
+              [
+                {
+                  text: 'Cancel',
+                  onPress: () => {},
+                  style: 'cancel',
+                },
+                {
+                  text: 'Yes',
+                  onPress: () => logoutUser(),
+                },
+              ],
+              { cancelable: true }
+            );
           } else {
             navigation.navigate(item.nav);
           }
@@ -74,29 +74,20 @@ const MenuScreen = ({navigation, route}) => {
       </Pressable>
     );
   };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
       <Header
         title=""
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        rightIcon={false} // Provide your right icon
-        // onBackPress={handleBackPress}
-        // onRightIconPress={handleRightIconPress}
+        rightIcon={false}
       />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          <View
-            style={
-              {
-                // commented
-                // marginBottom: nh(100)
-              }
-            }>
+          <View>
             <FlatList
               data={menu}
               renderItem={({item}) => <Card item={item} />}
