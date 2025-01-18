@@ -8,7 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
-import {nh, nw} from '../../helper/scales';
+import {isAndroid, nh, nw} from '../../helper/scales';
 import Text from '../../components/Text';
 import CustomTextInput from '../../components/TextInput';
 import {icons} from '../../assets/icons';
@@ -202,7 +202,7 @@ const BasicDetails = ({navigation, route}) => {
               errorMessage={errors.confirmPassword}
             />
             <Button text="Submit" onPress={registerUser} />
-            <SocialLogin signup={true} />
+            {isAndroid ? <SocialLogin signup={true} /> : null}
             <View style={{height: nh(50)}} />
           </ScrollView>
         </View>

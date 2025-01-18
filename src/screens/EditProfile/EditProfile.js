@@ -29,6 +29,7 @@ import {getProfile, updateProfile} from '../../services/apiService';
 import {actions} from '../../redux/reducers';
 import {useToast} from '../../components/CustomToast';
 import DatePicker from 'react-native-date-picker';
+import ImageCropPicker from 'react-native-image-crop-picker';
 
 const professionData = [
   {
@@ -130,17 +131,28 @@ const EditProfile = ({navigation}) => {
       isValid = false;
     }
 
-    // Mobile Number validation
-    if (!form.mobile) {
-      newErrors.mobile = 'Mobile number is required';
-      isValid = false;
-    } else if (form.mobile.length !== 10) {
-      newErrors.mobile = 'Mobile number must be 10 digits';
-      isValid = false;
-    } else if (!isvalidMobileNumber(form.mobile)) {
-      newErrors.mobile = 'Enter a valid mobile number';
-      isValid = false;
-    }
+        // Mobile Number validation
+      if (!form.mobile) {
+        newErrors.mobile = 'Mobile number is required';
+        isValid = false;
+      } else {
+        let phone = form.mobile;
+
+        // If phone starts with +91, remove it for validation
+        if (phone.startsWith('+91')) {
+          phone = phone.replace('+91', '');
+        }
+
+        // Check if the remaining number has exactly 10 digits
+        if (phone.length !== 10) {
+          newErrors.mobile = 'Mobile number must be 10 digits';
+          isValid = false;
+        } else if (!isvalidMobileNumber(phone)) {
+          newErrors.mobile = 'Enter a valid mobile number';
+          isValid = false;
+        }
+      }
+
 
     // Location
     if (!form.location) {
@@ -239,7 +251,6 @@ const EditProfile = ({navigation}) => {
     }
   };
 
-  // Open Gallery to select a photo
   const openGallery = async () => {
     const result = await launchImageLibrary({
       mediaType: 'photo',

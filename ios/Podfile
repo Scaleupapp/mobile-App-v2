@@ -28,6 +28,10 @@ target 'ScaleUp' do
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'FirebaseCrashlytics', :modular_headers => true
   pod 'FirebaseSessions', :modular_headers => true
+
+  pod 'RNImageCropPicker', :path => '../node_modules/react-native-image-crop-picker'
+  
+
   target 'ScaleUpTests' do
     inherit! :complete
     # Pods for testing
