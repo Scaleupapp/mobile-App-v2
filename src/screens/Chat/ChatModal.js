@@ -40,7 +40,7 @@ const ChatModal = forwardRef(({type, URL}, ref) => {
       setLoading(false);
     }
   };
-  let createConvo = async id => {
+  let createConvo = async (id, item) => {
     try {
       let paylaod = {
         recipientId: id,
@@ -51,7 +51,7 @@ const ChatModal = forwardRef(({type, URL}, ref) => {
 
       navigationRef.navigate(Routes.Chat, {
         chatId: resp?.data?._id,
-        data: resp?.data,
+        data: item?.firstname + ' ' + item?.lastname,
       });
     } catch (error) {
       console.log(error, 'rerrr');
@@ -135,7 +135,7 @@ const ChatModal = forwardRef(({type, URL}, ref) => {
                     </View>
 
                     <Button
-                      onPress={() => createConvo(item.userId)}
+                      onPress={() => createConvo(item.userId, item)}
                       text="Message"
                       variant="outline"
                       width={nw(90)}

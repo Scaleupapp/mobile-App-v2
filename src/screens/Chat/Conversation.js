@@ -57,7 +57,8 @@ const Conversation = ({navigation, route}) => {
         onPress={() =>
           navigation.navigate(Routes.Chat, {
             chatId: item?.conversationId,
-            data: item,
+            data:
+              item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
           })
         }>
         <Image

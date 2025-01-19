@@ -21,6 +21,7 @@ import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
 import {
   bockUser,
+  createConversation,
   followUser,
   getProfile,
   getProfiledetails,
@@ -30,6 +31,7 @@ import {
 import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
 import {useToast} from '../../components/CustomToast';
+import {navigationRef} from '../../../App';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -171,15 +173,8 @@ const MyProfile = ({navigation, route}) => {
       );
     }
   };
-  console.log(profile?.presentInInnerCircle, 'profile?.presentInInnerCircle');
-  console.log(
-    profile?.receivedInnerCircleRequest,
-    'profile?.receivedInnerCircleRequest',
-  );
-  console.log(
-    profile?.sentInnerCircleRequest,
-    'profile?.sentInnerCircleRequest',
-  );
+
+  // console.log(profile);
   const menuItems = [
     {
       name: 'Block User',
@@ -200,6 +195,25 @@ const MyProfile = ({navigation, route}) => {
         : []
       : []),
   ];
+
+  let createConvo = async (id, item) => {
+    console.log('🚀 ~ createConvo ~ id:', id);
+    try {
+      let paylaod = {
+        recipientId: id,
+      };
+
+      let resp = await createConversation(paylaod);
+
+      navigationRef.navigate(Routes.Chat, {
+        chatId: resp?.data?._id,
+        data: item?.firstname + ' ' + item?.lastname,
+      });
+    } catch (error) {
+      console.log(error, 'rerrr');
+    } finally {
+    }
+  };
   return loading ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size={30} />
@@ -423,7 +437,7 @@ const MyProfile = ({navigation, route}) => {
                   onPress={followApi}
                   width={
                     profile?.presentInInnerCircle
-                      ? nw(283)
+                      ? nw(230)
                       : DEVICE_WIDTH - nw(32)
                   }
                   text={follow ? 'Following' : 'Follow'}
@@ -436,6 +450,14 @@ const MyProfile = ({navigation, route}) => {
                     onPress={() =>
                       navigation.navigate(Routes.InnerCircleRequest)
                     }
+                  />
+                )}
+                {profile?.presentInInnerCircle && (
+                  <Button
+                    icontype="material-community"
+                    justIcon={'chat-processing'}
+                    width={50}
+                    onPress={() => createConvo(profile?.userId, profile)}
                   />
                 )}
               </View>
