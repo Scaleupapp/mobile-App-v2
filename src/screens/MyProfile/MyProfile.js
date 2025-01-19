@@ -70,7 +70,7 @@ const MyProfile = ({navigation, route}) => {
       // console.log('API Response:', resp);
 
       // Optionally, log specific parts of the response for clarity
-      // console.log('Response Data:', resp?.data);
+      console.log('Response Data:', JSON.stringify(resp?.data));
       // console.log('Content Array:', resp?.data?.content);
       // console.log('Followers:', resp?.data?.followers);
       // console.log('Pagination Info:', resp?.data?.pagination);
@@ -230,7 +230,11 @@ const MyProfile = ({navigation, route}) => {
             {profile?.profilePicture ? (
               <View>
                 <Image
-                  source={{uri: profile.profilePicture}}
+                  source={{
+                    uri: `${
+                      userData.profilePicture
+                    }?timestamp=${new Date().getTime()}`,
+                  }}
                   style={styles.profilePic}
                   resizeMode="cover"
                 />
@@ -283,7 +287,26 @@ const MyProfile = ({navigation, route}) => {
 
             {/* Show all badges with distinct colors */}
             <View style={styles.badgesContainer}>
-              {profile?.badges?.length > 0 ? (
+              {profile?.role === 'SME' ? (
+                <View
+                  style={[
+                    styles.badgeWrapper,
+                    {
+                      backgroundColor:
+                        badgeColorMap['Subject Matter Expert'] + '20',
+                    }, // lighten or adjust alpha
+                  ]}>
+                  <Text
+                    variant="medium12"
+                    style={{
+                      color: badgeColorMap['Subject Matter Expert'],
+                      // color: COLORS.blue043142,
+                      fontWeight: 'bold',
+                    }}>
+                    {'Subject Matter Expert'}
+                  </Text>
+                </View>
+              ) : profile?.badges?.length > 0 ? (
                 profile.badges.map((badge, idx) => {
                   const color = badgeColorMap[badge] || '#A9A9A9'; // fallback color
                   return (

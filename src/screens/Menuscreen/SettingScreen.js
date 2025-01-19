@@ -72,11 +72,11 @@ const menuItems = [
       //   icon: 'visibility-icon',
       //   navKey: 'PostVisibility',
       // },
-      {
-        title: 'Performance & Analytics',
-        icon: icons.perf,
-        navKey: Routes.UserAnalyticsPerf,
-      },
+      // {
+      //   title: 'Performance & Analytics',
+      //   icon: icons.perf,
+      //   navKey: Routes.UserAnalyticsPerf,
+      // },
     ],
   },
   // {

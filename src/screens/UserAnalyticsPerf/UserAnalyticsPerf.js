@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import {COLORS} from '../../helper/colors';
@@ -30,11 +31,16 @@ export const UserAnalyticsPerf = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    UserAnalytics().then(res => {
-      setIsLoading(false);
-      console.log('🚀 ~ UserAnalyticsPerf ~ res:', res.data);
-      setData(res?.data);
-    });
+    UserAnalytics()
+      .then(res => {
+        setIsLoading(false);
+        console.log('🚀 ~ UserAnalyticsPerf ~ res:', res.data);
+        setData(res?.data);
+      })
+      .catch(e => {
+        console.log('🚀 ~ UserAnalyticsPerf ~ err:', e?.response?.data);
+        setIsLoading(false);
+      });
   }, []);
 
   const renderActivityItem = ({item}) => (
@@ -69,13 +75,22 @@ export const UserAnalyticsPerf = () => {
     </Pressable>
   );
 
-  const renderInterestTag = (interest, index) => (
-    <Text
-      key={index}
-      style={[styles.interestTag, {fontSize: nh(12 + interest?.count / 2)}]}>
-      {interest.interest}
-    </Text>
-  );
+  const renderInterestTag = (interest, index) => {
+    const calculateFontSize = count => {
+      const minFontSize = 18;
+      const maxFontSize = 40;
+      if (!count || typeof count !== 'number') {
+        return minFontSize; // Default to the smallest size if count is invalid
+      }
+      return Math.min(Math.max(count, minFontSize), maxFontSize);
+    };
+    const fontSize = calculateFontSize(interest?.count);
+    return (
+      <Text key={index} style={[styles.interestTag, {fontSize: nh(fontSize)}]}>
+        {interest.interest}
+      </Text>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -182,6 +197,7 @@ export const UserAnalyticsPerf = () => {
                   </Text>
                   <TouchableOpacity
                     style={styles.quizButton}
+                    onPress={() => Alert.alert('launching soon...')}
                     // onPress={() => navigationRef.navigate(Routes.QuizScreen)}
                   >
                     <Text style={styles.quizButtonText}>Take Quiz</Text>

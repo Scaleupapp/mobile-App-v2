@@ -61,6 +61,7 @@ const Routes = {
   UserAnalyticsPerf: 'UserAnalyticsPerf',
   Conversation: 'Conversation',
   Chat: 'Chat',
+  MyBadge: 'MyBadge',
 };
 
 export default Routes;

@@ -12,7 +12,7 @@ import {COLORS} from '../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../helper/scales';
 import {Image} from 'react-native';
 import Video from 'react-native-video';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icons from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import PlaylistSelectionModal from '../screens/Home/PlaylistSelectionModal';
 import {useToast} from './CustomToast';
@@ -20,7 +20,8 @@ import {getProfile} from '../services/apiService';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Routes from '../helper/routes';
-const CARD_WIDTH = nw(163);
+import convertToProxyURL from 'react-native-video-cache';
+import Icon from '../helper/icon';
 
 export const AllPost = ({data, isDrafts = false}) => {
   // console.log('AllPost Component Rendered with data:', data);
@@ -239,6 +240,8 @@ export const AllPost = ({data, isDrafts = false}) => {
   };
 
   const Postcard = ({item, index}) => {
+    console.log(item?.rating);
+    console.log('basbjabsj ', JSON.stringify(item));
     return (
       <View style={styles.postContainer}>
         <View>
@@ -249,14 +252,36 @@ export const AllPost = ({data, isDrafts = false}) => {
                 // console.log('Dots button pressed for item:', item?.contentId);
                 handleBookmarkPress(item);
               }}>
-              <Icon
+              <Icons
                 name="ellipsis-vertical"
                 size={20}
                 color={COLORS.blue043142}
               />
             </TouchableOpacity>
           </View>
-
+          {item?.smeVerify && (
+            <View
+              style={{
+                height: nh(25),
+                width: nw(25),
+                borderRadius: nh(15),
+                backgroundColor: COLORS.blue043142,
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'absolute',
+                right: nw(12),
+                top: nh(35),
+                zIndex: 1,
+                // Centers vertically
+              }}>
+              <Icon
+                type="material-community"
+                name="check-decagram"
+                color={COLORS.yellowF5BE00}
+                size={20} // Ensure the icon size is appropriate
+              />
+            </View>
+          )}
           {(item?.contentType === 'Image' ||
             item?.contentType === 'Document') &&
           item?.contentURL ? (
@@ -283,9 +308,15 @@ export const AllPost = ({data, isDrafts = false}) => {
               />
               <View style={styles.metricsContainer}>
                 <View style={styles.metricItem}>
-                  <Icon name="heart" size={16} color={COLORS.whiteFFFFFF} />
+                  <Icons name="heart" size={16} color={COLORS.whiteFFFFFF} />
                   <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
                 </View>
+                {item?.rating && item?.rating > 0 ? (
+                  <View style={styles.metricItem}>
+                    <Icons name="star" size={16} color={COLORS.whiteFFFFFF} />
+                    <Text style={styles.metricText}>{item?.rating}</Text>
+                  </View>
+                ) : null}
                 <View style={styles.metricItem}></View>
               </View>
             </Pressable>
@@ -310,8 +341,8 @@ export const AllPost = ({data, isDrafts = false}) => {
               }}>
               <Video
                 paused={true}
-                controls
-                source={{uri: item?.contentURL}}
+                controls={false}
+                source={{uri: convertToProxyURL(item?.contentURL)}}
                 style={styles.mediaContent}
                 resizeMode="cover"
                 onBuffer={e => console.log('buffer ', e)}
@@ -319,13 +350,19 @@ export const AllPost = ({data, isDrafts = false}) => {
               />
               <View style={styles.metricsContainer}>
                 <View style={styles.metricItem}>
-                  <Icon name="heart" size={16} color={COLORS.whiteFFFFFF} />
+                  <Icons name="heart" size={16} color={COLORS.whiteFFFFFF} />
                   <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
                 </View>
                 <View style={styles.metricItem}>
-                  <Icon name="eye" size={16} color={COLORS.whiteFFFFFF} />
+                  <Icons name="eye" size={16} color={COLORS.whiteFFFFFF} />
                   <Text style={styles.metricText}>{item?.viewCount || 0}</Text>
                 </View>
+                {item?.rating && item?.rating > 0 ? (
+                  <View style={styles.metricItem}>
+                    <Icons name="star" size={16} color={COLORS.whiteFFFFFF} />
+                    <Text style={styles.metricText}>{item?.rating}</Text>
+                  </View>
+                ) : null}
               </View>
             </Pressable>
           ) : null}
