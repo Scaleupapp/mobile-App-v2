@@ -252,20 +252,7 @@ const MyProfile = ({navigation, route}) => {
                   style={styles.profilePic}
                   resizeMode="cover"
                 />
-                {/* If user is SME, show medal icon on top */}
-                {profile?.role === 'SME' && (
-                  <Image
-                    resizeMode="cover"
-                    tintColor={'#F6BE00'}
-                    source={require('../../assets/icons/medal-star.png')}
-                    style={[
-                      styles.smeMedal,
-                      {
-                        tintColor: '#F6BE00', // gold
-                      },
-                    ]}
-                  />
-                )}
+                
               </View>
             ) : (
               <View
@@ -289,15 +276,25 @@ const MyProfile = ({navigation, route}) => {
               </View>
             )}
 
-            {/* Username + SME Icon (superscript) */}
+                      {/* Username + SME Icon (superscript next to name) */}
             <View style={styles.usernameContainer}>
-              <Text
-                variant="semibold20"
-                color={COLORS.blue043142}
-                style={styles.usernameText}>
-                {profile?.username || ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  variant="semibold20"
+                  color={COLORS.blue043142}
+                  style={styles.usernameText}>
+                  {profile?.username || ''}
+                </Text>
+                {profile?.role === 'SME' && (
+                  <Image
+                    resizeMode="contain"
+                    source={require('../../assets/icons/medal-star.png')}
+                    style={styles.smeSuperscript}
+                  />
+                )}
+              </View>
             </View>
+
 
             {/* Show all badges with distinct colors */}
             <View style={styles.badgesContainer}>
@@ -541,10 +538,11 @@ const styles = StyleSheet.create({
   },
   smeSuperscript: {
     position: 'absolute',
-    top: -5,
+    tintColor: '#F6BE00',
+    top: -8,
     right: -25,
-    width: 20,
-    height: 20,
+    width: 33,
+    height: 33,
   },
   badgesContainer: {
     flexDirection: 'row',
