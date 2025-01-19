@@ -240,8 +240,6 @@ export const AllPost = ({data, isDrafts = false}) => {
   };
 
   const Postcard = ({item, index}) => {
-    console.log(item?.rating);
-    console.log('basbjabsj ', JSON.stringify(item));
     return (
       <View style={styles.postContainer}>
         <View>

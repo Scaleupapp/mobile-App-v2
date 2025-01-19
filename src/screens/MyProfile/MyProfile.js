@@ -72,7 +72,7 @@ const MyProfile = ({navigation, route}) => {
       // console.log('API Response:', resp);
 
       // Optionally, log specific parts of the response for clarity
-      console.log('Response Data:', JSON.stringify(resp?.data));
+      // console.log('Response Data:', JSON.stringify(resp?.data));
       // console.log('Content Array:', resp?.data?.content);
       // console.log('Followers:', resp?.data?.followers);
       // console.log('Pagination Info:', resp?.data?.pagination);

@@ -268,12 +268,12 @@ export const RootNavigator = () => {
 
   const pushAPI = async () => {
     const isPermissionEnabled = await requestUserPermission();
-    console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
+    // console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
     if (isPermissionEnabled) {
       // You only need to register if auto-registration is disabled
       // if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
       const fcmToken = await fetchFCMToken();
-      console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
+      // console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
 
       if (fcmToken) {
         try {
