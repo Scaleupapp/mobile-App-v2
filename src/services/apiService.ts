@@ -188,31 +188,41 @@ export const sendInnerCircle = (payload: any) => {
   return axiosInstance.post(`${API.SENDINNERREQUEST}`, payload);
 };
 
+export const ReportPost = (id: any, payload: any) => {
+  return axiosInstance.post(`${API.REPORTPOST}/${id}`, payload);
+};
+
+export const SaveFcm = (payload: any) => {
+  return axiosInstance.post(`${API.SAVE_FCM}`, payload);
+};
 export const UserAnalytics = () => {
   return axiosInstance.get(`${API.USERANALYTICS}`);
 };
 
-export const getconversation = (id:any) => {
+export const getconversation = (id: any) => {
   return axiosInstance.get(`${API.CONVERSATION}`);
 };
-
 
 export const createConversation = (payload: any) => {
   return axiosInstance.post(`${API.CREATECONVERSATION}`, payload);
 };
 
-export const getconversationbyID = (id:any,page:any) => {
+export const getconversationbyID = (id: any, page: any) => {
   return axiosInstance.get(`${API.CHAT}/${id}?page=${page}`);
 };
 export const sendChat = (payload: any) => {
   return axiosInstance.post(`${API.SENDMESSAGE}`, payload);
 };
 
-
-export const editChatMessage = (convid: any,messageid:any,payload:any) => {
-  return axiosInstance.put(`${API.CHAT}/${convid}/messages/${messageid}/edit`,payload);
+export const editChatMessage = (convid: any, messageid: any, payload: any) => {
+  return axiosInstance.put(
+    `${API.CHAT}/${convid}/messages/${messageid}/edit`,
+    payload,
+  );
 };
 
-export const deleteChatMessage = (convid: any,messageid:any) => {
-  return axiosInstance.delete(`${API.CHAT}/${convid}/messages/${messageid}/delete`);
+export const deleteChatMessage = (convid: any, messageid: any) => {
+  return axiosInstance.delete(
+    `${API.CHAT}/${convid}/messages/${messageid}/delete`,
+  );
 };

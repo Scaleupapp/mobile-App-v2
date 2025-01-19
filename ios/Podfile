@@ -16,12 +16,21 @@ end
 
 target 'ScaleUp' do
   config = use_native_modules!
-
+ #firebase
+ use_frameworks! :linkage => :static
+ $RNFirebaseAsStaticFramework = true
+ 
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseCrashlytics', :modular_headers => true
+  pod 'FirebaseSessions', :modular_headers => true
+
+  pod 'RNImageCropPicker', :path => '../node_modules/react-native-image-crop-picker'
+  
 
   target 'ScaleUpTests' do
     inherit! :complete

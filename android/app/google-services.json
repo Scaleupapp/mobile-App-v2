@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "147876449546",
+    "project_id": "scaleup-7564e",
+    "storage_bucket": "scaleup-7564e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147876449546:android:c9524bf349b19d4e90bef3",
+        "android_client_info": {
+          "package_name": "com.scaleup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "904486363410-s58snm1cq4nahervn6fvkoifsj5qn5k9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqLqhUrwkRjDLA4J6v2ALc6Gbj0eyz990"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "904486363410-s58snm1cq4nahervn6fvkoifsj5qn5k9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
