@@ -17,6 +17,10 @@ export const registerApi = (payload: any) => {
   return axiosInstance.post(API.REGISTER, payload);
 };
 
+export const applyReferralCodeApi = (payload: { referralCode: string }) => {
+  return axiosInstance.post(API.APPLY_REFERRAL_CODE, payload);
+};
+
 // export const changePassword = (payload: any) => {
 //   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
 // };
