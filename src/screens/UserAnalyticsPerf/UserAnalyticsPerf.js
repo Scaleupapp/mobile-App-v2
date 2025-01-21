@@ -23,12 +23,12 @@ import {UserAnalytics} from '../../services/apiService';
 
 export const UserAnalyticsPerf = () => {
 
-  // const [data, setData] = useState({
-  //   activity: [],
-  //   interests: [],
-  //   areasOfImprovement: []
-  // });
-  const [data, setData] = useState({});
+  const [data, setData] = useState({
+    activity: [],
+    interests: [],
+    areasOfImprovement: []
+  });
+  // const [data, setData] = useState({});
   const [expandedActivity, setExpandedActivity] = useState(true);
   const [expandedInterests, setExpandedInterests] = useState(true);
   const [expandedAreas, setExpandedAreas] = useState(true);
