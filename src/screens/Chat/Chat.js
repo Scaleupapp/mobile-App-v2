@@ -24,6 +24,7 @@ import {
   editChatMessage,
   getconversation,
   getconversationbyID,
+  reactChatMessage,
   sendChat,
 } from '../../services/apiService';
 import {useSelector} from 'react-redux';
@@ -46,6 +47,7 @@ import {launchImageLibrary} from 'react-native-image-picker';
 import Video from 'react-native-video';
 import ImageModal from '../Post/ImageModal';
 import MediaModal from './ImageSendModal';
+import MessageModal from './MessageactionsModal';
 
 const Chat = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -141,7 +143,7 @@ const Chat = ({navigation, route}) => {
         }
       }, 200);
     }
-  }, [messages, flatListRef.current]);
+  }, [messages, flatListRef.current, userHasScrolled]);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -183,7 +185,7 @@ const Chat = ({navigation, route}) => {
       const {data} = await sendChat(formData);
       console.log('🚀 ~ sendMessage ~ data:', data);
       setUserHasScrolled(false);
-      //   setMessages(prevMessages => [...prevMessages, data]);
+      // setMessages(prevMessages => [...prevMessages, data]);
       if (socket) {
         socket.emit('sendMessage', {
           conversationId,
@@ -233,13 +235,49 @@ const Chat = ({navigation, route}) => {
     }
   };
 
+  const reactMessage = async emojis => {
+    console.log('🚀 ~ Chat ~ emoji:', emojis);
+    const payload = {
+      emoji: emojis,
+    };
+    console.log('🚀 ~ Chat ~ payload:', payload);
+    try {
+      const {data} = await reactChatMessage(
+        selected?.conversationId,
+        selected?._id,
+        payload,
+      );
+
+      const updatedData = {
+        _id: selected?._id,
+        reactions: data?.reactions,
+      };
+      // console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
+
+      const updatedMessages = messages.map(
+        msg =>
+          msg._id === updatedData._id
+            ? {...msg, ...updatedData} // Update the matching object
+            : msg, // Keep others unchanged
+      );
+      // console.log('🚀 ~ editMessage ~ updatedMessages:', updatedMessages);
+
+      setMessages(updatedMessages);
+      setVisible(false);
+      setSelected(null);
+      console.log('🚀 ~ editMessage ~ data:', JSON.stringify(data));
+    } catch (error) {
+      console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
+    }
+  };
+
   const deleteMessage = async () => {
     try {
       const {data} = await deleteChatMessage(
         selected?.conversationId,
         selected?._id,
       );
-
+      setVisible(false);
       const updatedData = {
         _id: selected?._id,
         deleted: true,
@@ -447,13 +485,18 @@ const Chat = ({navigation, route}) => {
             </Text>
             <TouchableOpacity
               onLongPress={() => {
-                if (!checkIfTenMinutesPassed(item?.createdAt)) {
+                if (
+                  !checkIfTenMinutesPassed(item?.createdAt) &&
+                  item?.message &&
+                  item?.sender?._id == userData?.id
+                ) {
                   setIsEditable(true);
                 }
 
-                if (item?.sender?._id == userData?.id && isEditable) {
-                  setSelected(item);
-                }
+                // if (item?.sender?._id == userData?.id && isEditable) {
+                setSelected(item);
+                setVisible(true);
+                // }
               }}
               style={[
                 styles.messageContainer,
@@ -461,9 +504,9 @@ const Chat = ({navigation, route}) => {
                 item?.sender == userData?.id
                   ? styles.sent
                   : styles.received,
-                item?._id == selected?._id && {
-                  backgroundColor: COLORS.blue043142 + 60,
-                },
+                // item?._id == selected?._id && {
+                //   backgroundColor: COLORS.blue043142 + 60,
+                // },
                 item?.edited && {
                   paddingBottom: 18,
                 },
@@ -558,6 +601,23 @@ const Chat = ({navigation, route}) => {
                   </Text>
                 )}
               </View>
+              {/* {item?.reactions?.length > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    right: -5,
+                    bottom: -7,
+                    backgroundColor: COLORS.black333333,
+                    borderRadius: 10,
+                    paddingHorizontal: 5,
+                    paddingVertical: 3,
+                    flexDirection: 'row',
+                  }}>
+                  {item?.reactions?.map(u => (
+                    <Text style={{fontSize: nh(7)}}>{u?.emoji}</Text>
+                  ))}
+                </View>
+              )} */}
             </TouchableOpacity>
           </View>
           {item?.sender?._id === userData?.id ? (
@@ -596,9 +656,9 @@ const Chat = ({navigation, route}) => {
           <Header
             title={route?.params?.data}
             // backIcon={icons.backArrow} // Provide your back arrow icon
-            rightIcon={selected ? true : false} // Provide your right icon
+            // rightIcon={selected ? true : false} // Provide your right icon
             // onBackPress={handleBackPress}
-            onRightIconPress={() => setVisible(true)}
+            // onRightIconPress={() => setVisible(true)}
           />
           <View style={styles.layer1}>
             <View style={styles.layer2}>
@@ -657,6 +717,7 @@ const Chat = ({navigation, route}) => {
                     onClose={() => {
                       setFile({});
                       setInput('');
+
                       setModalVisible(false);
                     }}
                     file={file}
@@ -676,10 +737,22 @@ const Chat = ({navigation, route}) => {
               </View>
             </View>
           </View>
-          <MenuModal
+          {/* <MenuModal
             visible={visible}
             setVisible={setVisible}
             menuItems={menuItems}
+          /> */}
+          <MessageModal
+            isVisible={visible}
+            onClose={() => {
+              setSelected('');
+              setVisible(false);
+            }}
+            item={selected}
+            onEdit={onEditClick}
+            onDelete={deleteMessage}
+            isEditable={isEditable}
+            onReact={reactMessage}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>
