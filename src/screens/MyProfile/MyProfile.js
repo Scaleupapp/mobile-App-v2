@@ -21,6 +21,7 @@ import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
 import {
   bockUser,
+  createConversation,
   followUser,
   getProfile,
   getProfiledetails,
@@ -30,6 +31,7 @@ import {
 import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
 import {useToast} from '../../components/CustomToast';
+import {navigationRef} from '../../../App';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -70,7 +72,7 @@ const MyProfile = ({navigation, route}) => {
       // console.log('API Response:', resp);
 
       // Optionally, log specific parts of the response for clarity
-      // console.log('Response Data:', resp?.data);
+      // console.log('Response Data:', JSON.stringify(resp?.data));
       // console.log('Content Array:', resp?.data?.content);
       // console.log('Followers:', resp?.data?.followers);
       // console.log('Pagination Info:', resp?.data?.pagination);
@@ -171,15 +173,8 @@ const MyProfile = ({navigation, route}) => {
       );
     }
   };
-  console.log(profile?.presentInInnerCircle, 'profile?.presentInInnerCircle');
-  console.log(
-    profile?.receivedInnerCircleRequest,
-    'profile?.receivedInnerCircleRequest',
-  );
-  console.log(
-    profile?.sentInnerCircleRequest,
-    'profile?.sentInnerCircleRequest',
-  );
+
+  // console.log(profile);
   const menuItems = [
     {
       name: 'Block User',
@@ -200,6 +195,25 @@ const MyProfile = ({navigation, route}) => {
         : []
       : []),
   ];
+
+  let createConvo = async (id, item) => {
+    console.log('🚀 ~ createConvo ~ id:', id);
+    try {
+      let paylaod = {
+        recipientId: id,
+      };
+
+      let resp = await createConversation(paylaod);
+
+      navigationRef.navigate(Routes.Chat, {
+        chatId: resp?.data?._id,
+        data: item?.firstname + ' ' + item?.lastname,
+      });
+    } catch (error) {
+      console.log(error, 'rerrr');
+    } finally {
+    }
+  };
   return loading ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size={30} />
@@ -230,24 +244,15 @@ const MyProfile = ({navigation, route}) => {
             {profile?.profilePicture ? (
               <View>
                 <Image
-                  source={{uri: profile.profilePicture}}
+                  source={{
+                    uri: `${
+                      userData.profilePicture
+                    }?timestamp=${new Date().getTime()}`,
+                  }}
                   style={styles.profilePic}
                   resizeMode="cover"
                 />
-                {/* If user is SME, show medal icon on top */}
-                {profile?.role === 'SME' && (
-                  <Image
-                    resizeMode="cover"
-                    tintColor={'#F6BE00'}
-                    source={require('../../assets/icons/medal-star.png')}
-                    style={[
-                      styles.smeMedal,
-                      {
-                        tintColor: '#F6BE00', // gold
-                      },
-                    ]}
-                  />
-                )}
+                
               </View>
             ) : (
               <View
@@ -271,19 +276,48 @@ const MyProfile = ({navigation, route}) => {
               </View>
             )}
 
-            {/* Username + SME Icon (superscript) */}
+                      {/* Username + SME Icon (superscript next to name) */}
             <View style={styles.usernameContainer}>
-              <Text
-                variant="semibold20"
-                color={COLORS.blue043142}
-                style={styles.usernameText}>
-                {profile?.username || ''}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text
+                  variant="semibold20"
+                  color={COLORS.blue043142}
+                  style={styles.usernameText}>
+                  {profile?.username || ''}
+                </Text>
+                {profile?.role === 'SME' && (
+                  <Image
+                    resizeMode="contain"
+                    source={require('../../assets/icons/medal-star.png')}
+                    style={styles.smeSuperscript}
+                  />
+                )}
+              </View>
             </View>
+
 
             {/* Show all badges with distinct colors */}
             <View style={styles.badgesContainer}>
-              {profile?.badges?.length > 0 ? (
+              {profile?.role === 'SME' ? (
+                <View
+                  style={[
+                    styles.badgeWrapper,
+                    {
+                      backgroundColor:
+                        badgeColorMap['Subject Matter Expert'] + '20',
+                    }, // lighten or adjust alpha
+                  ]}>
+                  <Text
+                    variant="medium12"
+                    style={{
+                      color: badgeColorMap['Subject Matter Expert'],
+                      // color: COLORS.blue043142,
+                      fontWeight: 'bold',
+                    }}>
+                    {'Subject Matter Expert'}
+                  </Text>
+                </View>
+              ) : profile?.badges?.length > 0 ? (
                 profile.badges.map((badge, idx) => {
                   const color = badgeColorMap[badge] || '#A9A9A9'; // fallback color
                   return (
@@ -400,7 +434,7 @@ const MyProfile = ({navigation, route}) => {
                   onPress={followApi}
                   width={
                     profile?.presentInInnerCircle
-                      ? nw(283)
+                      ? nw(230)
                       : DEVICE_WIDTH - nw(32)
                   }
                   text={follow ? 'Following' : 'Follow'}
@@ -413,6 +447,14 @@ const MyProfile = ({navigation, route}) => {
                     onPress={() =>
                       navigation.navigate(Routes.InnerCircleRequest)
                     }
+                  />
+                )}
+                {profile?.presentInInnerCircle && (
+                  <Button
+                    icontype="material-community"
+                    justIcon={'chat-processing'}
+                    width={50}
+                    onPress={() => createConvo(profile?.userId, profile)}
                   />
                 )}
               </View>
@@ -496,10 +538,11 @@ const styles = StyleSheet.create({
   },
   smeSuperscript: {
     position: 'absolute',
-    top: -5,
+    tintColor: '#F6BE00',
+    top: -8,
     right: -25,
-    width: 20,
-    height: 20,
+    width: 33,
+    height: 33,
   },
   badgesContainer: {
     flexDirection: 'row',

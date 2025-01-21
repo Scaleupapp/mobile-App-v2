@@ -5,7 +5,7 @@ import {
   StatusBar,
   View,
   Pressable,
-  Alert,  // <-- Import Alert
+  Alert, // <-- Import Alert
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -19,8 +19,16 @@ import {logoutUser} from '../../helper/commonFunctions';
 const MenuScreen = ({navigation, route}) => {
   const menu = [
     {
+      title: 'My Badge',
+      nav: Routes.MyBadge,
+    },
+    {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
+    },
+    {
+      title: 'Performance & Analytics',
+      nav: Routes.UserAnalyticsPerf,
     },
     {
       title: 'Help Centre',
@@ -53,7 +61,7 @@ const MenuScreen = ({navigation, route}) => {
                   onPress: () => logoutUser(),
                 },
               ],
-              { cancelable: true }
+              {cancelable: true},
             );
           } else {
             navigation.navigate(item.nav);
@@ -81,10 +89,7 @@ const MenuScreen = ({navigation, route}) => {
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header
-        title=""
-        rightIcon={false}
-      />
+      <Header title="" rightIcon={false} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <View>

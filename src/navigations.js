@@ -64,6 +64,7 @@ import UserPost from './screens/Post/UserPost';
 import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
 import Conversation from './screens/Chat/Conversation';
 import Chat from './screens/Chat/Chat';
+import MyBadge from './screens/MyBadge/MyBadge';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -267,12 +268,12 @@ export const RootNavigator = () => {
 
   const pushAPI = async () => {
     const isPermissionEnabled = await requestUserPermission();
-    console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
+    // console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
     if (isPermissionEnabled) {
       // You only need to register if auto-registration is disabled
       // if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
       const fcmToken = await fetchFCMToken();
-      console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
+      // console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
 
       if (fcmToken) {
         try {
@@ -495,6 +496,12 @@ export const RootNavigator = () => {
         component={UserAnalyticsPerf}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={Routes.MyBadge}
+        component={MyBadge}
+        options={{headerShown: false}}
+      />
+
       <Stack.Screen
         name={Routes.Conversation}
         component={Conversation}

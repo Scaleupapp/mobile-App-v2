@@ -29,7 +29,7 @@ import {getProfile, updateProfile} from '../../services/apiService';
 import {actions} from '../../redux/reducers';
 import {useToast} from '../../components/CustomToast';
 import DatePicker from 'react-native-date-picker';
-import ImageCropPicker from 'react-native-image-crop-picker';
+import ImagePicker from 'react-native-image-crop-picker';
 
 const professionData = [
   {
@@ -131,28 +131,27 @@ const EditProfile = ({navigation}) => {
       isValid = false;
     }
 
-        // Mobile Number validation
-      if (!form.mobile) {
-        newErrors.mobile = 'Mobile number is required';
-        isValid = false;
-      } else {
-        let phone = form.mobile;
+    // Mobile Number validation
+    if (!form.mobile) {
+      newErrors.mobile = 'Mobile number is required';
+      isValid = false;
+    } else {
+      let phone = form.mobile;
 
-        // If phone starts with +91, remove it for validation
-        if (phone.startsWith('+91')) {
-          phone = phone.replace('+91', '');
-        }
-
-        // Check if the remaining number has exactly 10 digits
-        if (phone.length !== 10) {
-          newErrors.mobile = 'Mobile number must be 10 digits';
-          isValid = false;
-        } else if (!isvalidMobileNumber(phone)) {
-          newErrors.mobile = 'Enter a valid mobile number';
-          isValid = false;
-        }
+      // If phone starts with +91, remove it for validation
+      if (phone.startsWith('+91')) {
+        phone = phone.replace('+91', '');
       }
 
+      // Check if the remaining number has exactly 10 digits
+      if (phone.length !== 10) {
+        newErrors.mobile = 'Mobile number must be 10 digits';
+        isValid = false;
+      } else if (!isvalidMobileNumber(phone)) {
+        newErrors.mobile = 'Enter a valid mobile number';
+        isValid = false;
+      }
+    }
 
     // Location
     if (!form.location) {
@@ -252,13 +251,32 @@ const EditProfile = ({navigation}) => {
   };
 
   const openGallery = async () => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.3,
+    // const result = await launchImageLibrary({
+    //   mediaType: 'photo',
+    //   quality: 0.3,
+    // });
+    // if (!result.didCancel && !result.errorCode) {
+    //   handleMedia(result);
+    // }
+    ImagePicker.openPicker({
+      width: 300,
+      height: 300,
+      cropping: true,
+    }).then(image => {
+      console.log('🚀 ~ openGallery ~ image:', image);
+      // Update the form's displayed profile picture
+      setForm(prevForm => ({
+        ...prevForm,
+        profilePicture: image?.sourceURL,
+      }));
+
+      // Prepare the media data for upload
+      setImage({
+        uri: image?.sourceURL,
+        name: image?.filename || 'media', // fallback
+        type: image?.mime || 'image/jpeg',
+      });
     });
-    if (!result.didCancel && !result.errorCode) {
-      handleMedia(result);
-    }
   };
 
   // Generic input change handler
@@ -404,7 +422,7 @@ const EditProfile = ({navigation}) => {
                 <View
                   style={{
                     marginTop: 30,
-                    marginLeft: DEVICE_WIDTH - 105,
+                    alignSelf: 'flex-end',
                     marginBottom: nh(100),
                   }}>
                   <Button

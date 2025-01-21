@@ -9,6 +9,7 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -34,10 +35,17 @@ import {icons} from '../../assets/icons';
 import {
   checkDate,
   checkIfTenMinutesPassed,
+  compressImage,
+  compressVideo,
   formatAMPM,
   groupMessagesByDate,
 } from '../../helper/commonFunctions';
 import {useToast} from '../../components/CustomToast';
+import Icon from '../../helper/icon';
+import {launchImageLibrary} from 'react-native-image-picker';
+import Video from 'react-native-video';
+import ImageModal from '../Post/ImageModal';
+import MediaModal from './ImageSendModal';
 
 const Chat = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -51,6 +59,10 @@ const Chat = ({navigation, route}) => {
   const textInputRef = useRef(null);
   const [isEditable, setIsEditable] = useState(false);
   const {showToast} = useToast();
+  const imageModalRef = useRef(null);
+  const [modalvisible, setModalVisible] = useState(false);
+  const [itemclicked, setItemcliked] = useState({});
+  const [file, setFile] = useState({});
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
@@ -117,7 +129,6 @@ const Chat = ({navigation, route}) => {
       }
     };
   }, [route?.params?.chatId, messages]); // Ensure that the effect runs when the conversationId changes
-
   useEffect(() => {
     loadMoreMessages();
   }, []);
@@ -148,14 +159,29 @@ const Chat = ({navigation, route}) => {
 
   const sendMessage = async () => {
     // if (!newMessage.trim()) return;
-    if (input.trim()) {
-      const payload = {
-        conversationId: route?.params?.chatId,
-        message: input,
-      };
-      console.log('🚀 ~ sendMessage ~ payload:', payload);
+    if (input.trim() || file?.fileName) {
+      const formData = new FormData();
+
+      formData.append('conversationId', route?.params?.chatId);
+      // Format topics and hashtags as arrays
+
+      formData.append('message', input);
+
+      // Format topics and hashtags as arrays
+
+      // formData.append('message', 'heheh');
+
+      if (file?.fileName) {
+        formData.append('media', {
+          uri: file.uri,
+          name: file.fileName,
+          type: file.type,
+        });
+      }
+
       let conversationId = route?.params?.chatId;
-      const {data} = await sendChat(payload);
+      const {data} = await sendChat(formData);
+      console.log('🚀 ~ sendMessage ~ data:', data);
       setUserHasScrolled(false);
       //   setMessages(prevMessages => [...prevMessages, data]);
       if (socket) {
@@ -164,7 +190,9 @@ const Chat = ({navigation, route}) => {
           data,
         });
       }
+      setModalVisible(false);
       setInput('');
+      setFile({});
     }
   };
 
@@ -240,6 +268,63 @@ const Chat = ({navigation, route}) => {
       textInputRef.current.focus();
     }
   };
+  const openGallery = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'mixed', // allows both image & video
+      });
+
+      // Always close modal so we can re-open it next time
+
+      if (result.assets && result.assets.length > 0) {
+        await handleFileSelection(result.assets[0]);
+      }
+    } catch (err) {
+      console.error('Error selecting file:', err);
+      showToast({
+        title: 'Failed to select file',
+        type: 'error',
+      });
+      // Close modal in case of error
+    }
+  };
+  const handleFileSelection = async asset => {
+    console.log('🚀 ~ Chat ~ asset:', asset);
+
+    try {
+      if (asset.type && asset.type.toLowerCase().includes('gif')) {
+        setFile({...asset});
+      } else if (asset.type && asset.type.toLowerCase().includes('video')) {
+        let compress_video = await compressVideo(asset?.uri);
+        setFile({...asset, uri: compress_video});
+      } else {
+        let compress_image = await compressImage(asset?.uri);
+        setFile({...asset, uri: compress_image});
+      }
+      setTimeout(() => {
+        setModalVisible(true);
+      }, 500);
+      // let conversationId = route?.params?.chatId;
+      // const {data} = await sendChat(formData);
+      // setInput('');
+      // console.log('🚀 ~ sendMessage ~ data:.....', data);
+      // setUserHasScrolled(false);
+      // //   setMessages(prevMessages => [...prevMessages, data]);
+      // if (socket) {
+      //   socket.emit('sendMessage', {
+      //     conversationId,
+      //     data,
+      //   });
+      // }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      showToast({
+        title: 'Failed to process file',
+        type: 'error',
+      });
+    } finally {
+    }
+  };
 
   const menuItems = [
     ...(isEditable
@@ -306,6 +391,7 @@ const Chat = ({navigation, route}) => {
   };
 
   const renderMessage = ({item}) => {
+    // console.log('🚀 ~ renderMessage ~ item:', item);
     if (item.type === 'header') {
       return (
         <View style={styles.headerContainer}>
@@ -383,9 +469,71 @@ const Chat = ({navigation, route}) => {
                 },
               ]}>
               <View>
-                <Text style={styles.messageText} variant="medium14">
-                  {item.message}
-                </Text>
+                {item?.message && !item?.mediaType && (
+                  <Text
+                    style={styles.messageText}
+                    variant="medium14"
+                    color={COLORS.black333333}>
+                    {item.message}
+                  </Text>
+                )}
+                {item?.media &&
+                  (item?.mediaType == 'Image' ||
+                    item?.mediaType?.includes('image')) && (
+                    <Pressable
+                      onPress={() => {
+                        setItemcliked(item);
+                        imageModalRef.current?.present();
+                      }}>
+                      <Image
+                        source={{uri: item.media}}
+                        style={{
+                          width: 200,
+                          height: 200,
+                          borderRadius: 10,
+                        }}
+                        resizeMode="cover"
+                      />
+                    </Pressable>
+                  )}
+
+                {item?.media && item?.mediaType?.includes('video') && (
+                  <Pressable
+                    onPress={() => {
+                      setItemcliked(item);
+                      imageModalRef.current?.present();
+                    }}>
+                    <Video
+                      source={{uri: item.media}}
+                      style={{
+                        width: 200,
+                        height: 200,
+                        borderRadius: 10,
+                      }}
+                      resizeMode="cover"
+                      controls
+                    />
+                  </Pressable>
+                )}
+                {item?.message && item?.mediaType && (
+                  <Text
+                    style={[styles.messageText, {marginTop: 10}]}
+                    variant="medium14"
+                    color={COLORS.black333333}>
+                    {item.message}
+                  </Text>
+                )}
+                {/* {item.contentType === 'gif' && (
+                <Image
+                  source={{uri: item.message}}
+                  style={{
+                    width: 200,
+                    height: 200,
+                    borderRadius: 10,
+                  }}
+                  resizeMode="cover"
+                />
+              )} */}
                 <Text
                   style={{
                     fontSize: 10,
@@ -446,11 +594,7 @@ const Chat = ({navigation, route}) => {
             backgroundColor={COLORS.yellowF5BE00}
           />
           <Header
-            title={
-              route?.params?.data?.members[0]?.firstname +
-              ' ' +
-              route?.params?.data?.members[0]?.lastname
-            }
+            title={route?.params?.data}
             // backIcon={icons.backArrow} // Provide your back arrow icon
             rightIcon={selected ? true : false} // Provide your right icon
             // onBackPress={handleBackPress}
@@ -478,6 +622,17 @@ const Chat = ({navigation, route}) => {
                   } // Show loading spinner when fetching older messages
                 />
                 <View style={styles.inputContainer}>
+                  <Icon
+                    type="material-community"
+                    name="image-plus"
+                    size={20}
+                    style={{
+                      alignSelf: 'center',
+                      marginRight: 10,
+                      marginLeft: -10,
+                    }}
+                    onPress={openGallery}
+                  />
                   <TextInput
                     style={styles.textInput}
                     placeholder="Type a message..."
@@ -487,6 +642,29 @@ const Chat = ({navigation, route}) => {
                     //   returnKeyType="send"
                     ref={textInputRef}
                   />
+                  <ImageModal
+                    ref={imageModalRef}
+                    type={
+                      itemclicked?.mediaType?.includes('video')
+                        ? 'Video'
+                        : 'Image'
+                    }
+                    URL={itemclicked?.media}
+                  />
+
+                  <MediaModal
+                    isVisible={modalvisible}
+                    onClose={() => {
+                      setFile({});
+                      setInput('');
+                      setModalVisible(false);
+                    }}
+                    file={file}
+                    onSend={sendMessage}
+                    input={input}
+                    setInput={setInput}
+                  />
+
                   <TouchableOpacity
                     style={styles.sendButton}
                     onPress={selected?._id ? editMessage : sendMessage}>
@@ -578,6 +756,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 10,
     marginRight: 10,
+    color: 'black',
   },
   sendButton: {
     backgroundColor: COLORS.blue043142,

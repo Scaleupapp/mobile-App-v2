@@ -78,6 +78,20 @@ const useTextVariants = () => {
             letterSpacing: nw(0.15),
             fontWeight: '600',
         },
+        bold32: {
+            fontSize: nh(32),
+            fontFamily: APP_FONTS.PoppinsBold,
+            // lineHeight: nh(30),
+            // letterSpacing: nw(0.15),
+            fontWeight: '800',
+        },
+        bold22: {
+            fontSize: nh(22),
+            fontFamily: APP_FONTS.PoppinsBold,
+            // lineHeight: nh(30),
+            // letterSpacing: nw(0.15),
+            fontWeight: '700',
+        },
         bold20: {
             fontSize: nh(20),
             fontFamily: APP_FONTS.PoppinsBold,

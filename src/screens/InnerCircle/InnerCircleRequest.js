@@ -9,6 +9,7 @@ import {
   FlatList,
   ActivityIndicator,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -21,6 +22,7 @@ import Button from '../../components/Button';
 import Icon from '../../helper/icon';
 import {
   acceptInnerCircleRequestAPI,
+  createConversation,
   declineInnerCircleRequestAPI,
   myInnerCircleAPI,
   myInnerCircleRequestAPI,
@@ -29,6 +31,7 @@ import {
 import Routes from '../../helper/routes';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import moment from 'moment';
+import {navigationRef} from '../../../App';
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
@@ -133,6 +136,25 @@ const InnerCircleRequest = ({navigation, route}) => {
     } catch (error) {}
   };
 
+  let createConvo = async (id, item) => {
+    console.log('🚀 ~ createConvo ~ id:', id);
+    try {
+      let paylaod = {
+        recipientId: id,
+      };
+
+      let resp = await createConversation(paylaod);
+      console.log(resp?.data);
+      navigationRef.navigate(Routes.Chat, {
+        chatId: resp?.data?._id,
+        data: item?.firstname + ' ' + item?.lastname,
+      });
+    } catch (error) {
+      console.log(error, 'rerrr');
+    } finally {
+    }
+  };
+
   const RequestView = ({item}) => {
     return (
       <View>
@@ -230,27 +252,52 @@ const InnerCircleRequest = ({navigation, route}) => {
         <FlatList
           data={filteredUsers}
           renderItem={({item}) => {
+            console.log('🚀 ~ InnerCircleRequest ~ item:', item);
             return (
               <View>
                 <View style={styles.card}>
-                  <Image
-                    source={{uri: item?.profilePicture}}
-                    style={styles.image}
-                  />
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigationRef.navigate(Routes.OtherProfile, {
+                        type: 'other',
+                        id: item?.userId,
+                      })
+                    }>
+                    <Image
+                      source={{uri: item?.profilePicture}}
+                      style={styles.image}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigationRef.navigate(Routes.OtherProfile, {
+                        type: 'other',
+                        id: item?.userId,
+                      })
+                    }>
+                    <View style={{width: nw(150)}}>
+                      <Text variant="medium14" color={COLORS.blue043142}>
+                        {item?.username}
+                      </Text>
 
-                  <View style={{width: nw(195)}}>
-                    <Text variant="medium14" color={COLORS.blue043142}>
-                      {item?.username}
-                    </Text>
-
-                    {/* <Text
+                      {/* <Text
                     variant="medium12"
                     color={COLORS.grey999999}
                     style={{width: nw(208)}}>
                     Designation
                   </Text> */}
+                    </View>
+                  </TouchableOpacity>
+                  <View style={{marginRight: 10}}>
+                    <Button
+                      icontype="material-community"
+                      justIcon={'chat-processing'}
+                      width={nw(35)}
+                      height={nh(35)}
+                      variant="outline"
+                      onPress={() => createConvo(item?.userId, item)}
+                    />
                   </View>
-
                   <Button
                     text="Remove"
                     variant="outline"
