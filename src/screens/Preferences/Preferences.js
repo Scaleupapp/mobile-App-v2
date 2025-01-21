@@ -195,7 +195,7 @@ const Preferences = ({navigation, route}) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           width: DEVICE_WIDTH - 36,
-          marginTop: nh(30),
+          marginTop: nh(10),
         }}>
         <Button
           width={nw(63)}
@@ -353,6 +353,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: nh(25),
     paddingHorizontal: nw(16),
     paddingTop: nh(30),
+  },
+  contentContainer: {
+    paddingTop: nh(30),
+    paddingBottom: nh(40), // Add padding at the bottom for better scrolling
   },
 
   checkboxSelected: {

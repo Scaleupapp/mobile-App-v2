@@ -2,6 +2,7 @@ export const API = {
   BASE_URL: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
+  APPLY_REFERRAL_CODE: 'auth/applyReferralCode',
   PROFILE: 'users/profile',
   ALL_CONTENT: 'content/all-content',
   ALL_VIDEOS: 'content/allcontent',
