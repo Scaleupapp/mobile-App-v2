@@ -220,7 +220,13 @@ export const editChatMessage = (convid: any, messageid: any, payload: any) => {
     payload,
   );
 };
-
+export const reactChatMessage = (convid: any, messageid: any, payload: any) => {
+  
+  return axiosInstance.post(
+    `${API.CHAT}/${convid}/${messageid}/reactions`,
+    payload,
+  );
+};
 export const deleteChatMessage = (convid: any, messageid: any) => {
   return axiosInstance.delete(
     `${API.CHAT}/${convid}/messages/${messageid}/delete`,
