@@ -264,17 +264,18 @@ const EditProfile = ({navigation}) => {
 
       cropping: true,
       cropperCircleOverlay: true,
+      compressImageQuality: 0.8,
     }).then(image => {
       console.log('🚀 ~ openGallery ~ image:', image);
       // Update the form's displayed profile picture
       setForm(prevForm => ({
         ...prevForm,
-        profilePicture: image?.sourceURL,
+        profilePicture: image?.path,
       }));
 
       // Prepare the media data for upload
       setImage({
-        uri: image?.sourceURL,
+        uri: image?.path,
         name: image?.filename || 'media', // fallback
         type: image?.mime || 'image/jpeg',
       });
