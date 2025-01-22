@@ -276,26 +276,26 @@ const EditProfile = ({navigation}) => {
     ImagePicker.openPicker({
       width: 300,
       height: 300,
-
       cropping: true,
       cropperCircleOverlay: true,
       compressImageQuality: 0.8,
-      cropperCircleOverlay: true,
-    }).then(image => {
-      console.log('🚀 ~ openGallery ~ image:', image);
-      // Update the form's displayed profile picture
-      setForm(prevForm => ({
-        ...prevForm,
-        profilePicture: 'file://' + image?.path,
-      }));
+    })
+      .then(image => {
+        console.log('🚀 ~ openGallery ~ image:', image);
+        // Update the form's displayed profile picture
+        setForm(prevForm => ({
+          ...prevForm,
+          profilePicture: 'file://' + image?.path,
+        }));
 
-      // Prepare the media data for upload
-      setImage({
-        uri: 'file://' + image?.path,
-        name: image?.filename || 'media', // fallback
-        type: image?.mime || 'image/jpeg',
-      });
-    });
+        // Prepare the media data for upload
+        setImage({
+          uri: 'file://' + image?.path,
+          name: image?.filename || 'media', // fallback
+          type: image?.mime || 'image/jpeg',
+        });
+      })
+      .catch(e => console.log('errrrrrr ', e));
   };
 
   // Generic input change handler
@@ -330,15 +330,18 @@ const EditProfile = ({navigation}) => {
                 <>
                   {/* Profile Picture Section */}
                   <View>
-                    {form.profilePicture ? (
+                    {form?.profilePicture ? (
                       <Image
                         source={{
-                          uri: `${
-                            form.profilePicture
-                          }?timestamp=${new Date().getTime()}`,
+                          uri: form?.profilePicture?.startsWith('file://')
+                            ? form?.profilePicture
+                            : `${
+                                form?.profilePicture
+                              }?timestamp=${new Date().getTime()}`,
                         }}
                         style={styles.image}
                         resizeMode="cover"
+                        onError={e => console.log('snkdnskdnk errrrv', e)}
                       />
                     ) : (
                       <View
@@ -559,6 +562,7 @@ const styles = StyleSheet.create({
   card: {
     height: nh(65),
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
+    elevation: 1,
     borderWidth: 1,
     borderColor: 'rgba(214, 214, 214, 0.2)',
     borderRadius: 8,

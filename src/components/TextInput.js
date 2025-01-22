@@ -117,6 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.whiteFFFFFF,
     borderColor: 'rgba(214, 214, 214, 0.2)',
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
+    elevation: 1,
   },
   input: {
     flex: 1,

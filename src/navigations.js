@@ -68,7 +68,6 @@ import MyBadge from './screens/MyBadge/MyBadge';
 import QuizScreen from './screens/Quiz/QuizScreen';
 import QuizListScreen from './screens/Quiz/QuizListScreen';
 
-
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -143,6 +142,7 @@ const TabNavigator = ({navigation, route}) => {
               borderWidth: nw(1),
               borderColor: COLORS.whiteFFFFFF,
               boxShadow: '0 0 10 0  rgba(4, 49, 66, 0.35)',
+              elevation: 1,
             }}>
             <Image
               source={img}
@@ -156,7 +156,7 @@ const TabNavigator = ({navigation, route}) => {
         </View>
       );
     return (
-      <View style={{marginVertical: nh(15)}}>
+      <View style={{marginTop: nh(isAndroid ? 10 : 15)}}>
         <Image source={img} style={{height: nw(30), width: nw(30)}} />
       </View>
     );
@@ -169,6 +169,7 @@ const TabNavigator = ({navigation, route}) => {
         variant="bold12"
         style={{
           color: COLORS.whiteFFFFFF,
+          lineHeight: nh(14),
         }}>
         {iconText}
       </Text>
@@ -187,7 +188,7 @@ const TabNavigator = ({navigation, route}) => {
           showIcon: true,
           tabBarStyle: {
             backgroundColor: COLORS.blue043142,
-            // paddingBottom: 10,
+            // paddingTop: 5,
           },
           tabBarItemStyle: {
             // paddingBottom: nh(15),
@@ -245,7 +246,7 @@ const TabNavigator = ({navigation, route}) => {
             setBottomIcon(focused ? icons.account1 : icons.account2, focused),
         }}
       />
-       <Tab.Screen
+      {/* <Tab.Screen
   name={Routes.QuizList}
   component={QuizListScreen}
   options={{
@@ -253,9 +254,7 @@ const TabNavigator = ({navigation, route}) => {
     tabBarIcon: ({focused}) =>
       setBottomIcon(focused ? icons.quizActive : icons.quizInactive, focused),
   }}
-/>
-
-
+/> */}
     </Tab.Navigator>
   );
 };
@@ -529,9 +528,8 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.QuizScreen}
         component={QuizScreen}
-        options={{ headerShown: false }}
+        options={{headerShown: false}}
       />
-      
     </Stack.Navigator>
   );
 };
