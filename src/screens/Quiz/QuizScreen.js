@@ -108,6 +108,13 @@ const QuizScreen = ({ navigation, route }) => {
     }, 1000);
   };
 
+  const getOptionLetter = (options, selectedOption) => {
+    const index = options.indexOf(selectedOption);
+    if (index === -1) return null;
+    return String.fromCharCode(65 + index); // converts 0 to 'A', 1 to 'B', etc.
+  };
+  
+  // Update the handleSubmitAnswer function
   const handleSubmitAnswer = async () => {
     if (selectedOption == null) {
       showToast('Please select an option');
@@ -115,12 +122,23 @@ const QuizScreen = ({ navigation, route }) => {
     }
     clearInterval(intervalRef.current);
     setIsSubmitting(true);
+    
     try {
-      await submitAnswerApi(quizId, attemptId, {
+      // Convert the selected option text to A/B/C/D format
+      const optionLetter = getOptionLetter(currentQuestion.options, selectedOption);
+      
+      if (!optionLetter) {
+        showToast('Invalid option selected');
+        setIsSubmitting(false);
+        return;
+      }
+  
+      const response = await submitAnswerApi(quizId, attemptId, {
         questionId: currentQuestion.questionId,
-        selectedOption,
-        timeTaken: 10 - timer,
+        selectedOption: optionLetter,  // Now sending A, B, C, or D
+        timeTaken: 10 - timer
       });
+      
       setIsSubmitting(false);
       loadNextQuestion();
     } catch (error) {

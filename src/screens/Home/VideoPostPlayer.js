@@ -6,6 +6,7 @@ import {
   Animated,
   Text,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import Video from 'react-native-video';
 import { COLORS } from '../../helper/colors';
@@ -30,6 +31,7 @@ const VideoPostPlayer = ({
   const [scrubbing, setScrubbing] = useState(false);
   const [muted, setMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [resizeMode, setResizeMode] = useState('cover');
 
   useEffect(() => {
     if (!isVisible) {
@@ -43,6 +45,17 @@ const VideoPostPlayer = ({
       setPaused(false);
     }
   }, [isVisible]);
+
+  // Handle orientation changes in fullscreen
+  useEffect(() => {
+    if (isFullscreen) {
+      // Set resizeMode to 'contain' in fullscreen
+      setResizeMode('contain');
+    } else {
+      // Reset to 'cover' when exiting fullscreen
+      setResizeMode('cover');
+    }
+  }, [isFullscreen]);
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -92,8 +105,12 @@ const VideoPostPlayer = ({
 
   const toggleFullscreen = () => {
     if (videoRef.current) {
-      videoRef.current.presentFullscreenPlayer();
-      setIsFullscreen(true);
+      if (!isFullscreen) {
+        videoRef.current.presentFullscreenPlayer();
+      } else {
+        videoRef.current.dismissFullscreenPlayer();
+      }
+      setIsFullscreen(!isFullscreen);
     }
   };
 
@@ -120,13 +137,22 @@ const VideoPostPlayer = ({
           onProgress={handleProgress}
           onLoad={handleLoad}
           onEnd={handleEnd}
-          resizeMode="cover"
+          resizeMode={resizeMode}
           repeat={false}
           poster={thumbnail}
           posterResizeMode="cover"
           playInBackground={false}
           playWhenInactive={false}
-          onFullscreenPlayerWillDismiss={() => setIsFullscreen(false)}
+          onFullscreenPlayerWillDismiss={() => {
+            setIsFullscreen(false);
+            setResizeMode('cover');
+          }}
+          onFullscreenPlayerDidPresent={() => {
+            setIsFullscreen(true);
+            setResizeMode('contain');
+          }}
+          fullscreenAutorotate={true}  // Enable auto-rotation in fullscreen
+          fullscreenOrientation="all"   // Allow all orientations in fullscreen
         />
 
         {/* Control overlay */}
