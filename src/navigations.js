@@ -65,6 +65,9 @@ import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
 import Conversation from './screens/Chat/Conversation';
 import Chat from './screens/Chat/Chat';
 import MyBadge from './screens/MyBadge/MyBadge';
+import QuizScreen from './screens/Quiz/QuizScreen';
+import QuizListScreen from './screens/Quiz/QuizListScreen';
+
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -242,6 +245,17 @@ const TabNavigator = ({navigation, route}) => {
             setBottomIcon(focused ? icons.account1 : icons.account2, focused),
         }}
       />
+       <Tab.Screen
+  name={Routes.QuizList}
+  component={QuizListScreen}
+  options={{
+    tabBarLabel: ({focused}) => setBottomIconText('Quiz', focused),
+    tabBarIcon: ({focused}) =>
+      setBottomIcon(focused ? icons.quizActive : icons.quizInactive, focused),
+  }}
+/>
+
+
     </Tab.Navigator>
   );
 };
@@ -512,6 +526,12 @@ export const RootNavigator = () => {
         component={Chat}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={Routes.QuizScreen}
+        component={QuizScreen}
+        options={{ headerShown: false }}
+      />
+      
     </Stack.Navigator>
   );
 };

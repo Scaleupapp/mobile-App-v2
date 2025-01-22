@@ -65,6 +65,7 @@ const Chat = ({navigation, route}) => {
   const [modalvisible, setModalVisible] = useState(false);
   const [itemclicked, setItemcliked] = useState({});
   const [file, setFile] = useState({});
+  const [loadingsmall, setLoadingsmal] = useState(false);
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
@@ -72,6 +73,7 @@ const Chat = ({navigation, route}) => {
   const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
   const page = useRef(1); //
   const [userHasScrolled, setUserHasScrolled] = useState(false);
+
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club'); // Replace with your server URL
@@ -122,6 +124,22 @@ const Chat = ({navigation, route}) => {
       // will recieive messageId and content
     });
 
+    socketInstance.on('reactionAdded', data => {
+      console.log('🚀 ~ useEffect ~ reactionAdded:', data);
+
+      const updatedMessages = messages.map(
+        msg =>
+          msg._id === data?.messageId
+            ? {
+                ...msg,
+                ...{reactions: [...msg.reactions, ...[{emoji: data?.emoji}]]},
+              } // Update the matching object
+            : msg, // Keep others unchanged
+      );
+      setMessages(updatedMessages);
+      // will recieive messageId and content
+    });
+
     // Clean up the socket connection when the component unmounts
     return () => {
       if (socketInstance) {
@@ -160,6 +178,7 @@ const Chat = ({navigation, route}) => {
   }, []);
 
   const sendMessage = async () => {
+    setLoadingsmal(true);
     // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
       const formData = new FormData();
@@ -192,6 +211,7 @@ const Chat = ({navigation, route}) => {
           data,
         });
       }
+      setLoadingsmal(false);
       setModalVisible(false);
       setInput('');
       setFile({});
@@ -199,6 +219,7 @@ const Chat = ({navigation, route}) => {
   };
 
   const editMessage = async () => {
+    setLoadingsmal(true);
     if (input.trim()) {
       const payload = {
         content: input,
@@ -226,7 +247,9 @@ const Chat = ({navigation, route}) => {
 
         setInput('');
         setMessages(updatedMessages);
+        setLoadingsmal(false);
         setEdit(false);
+
         setSelected(null);
         console.log('🚀 ~ editMessage ~ data:', data);
       } catch (error) {
@@ -601,7 +624,7 @@ const Chat = ({navigation, route}) => {
                   </Text>
                 )}
               </View>
-              {/* {item?.reactions?.length > 0 && (
+              {item?.reactions?.length > 0 && (
                 <View
                   style={{
                     position: 'absolute',
@@ -617,7 +640,7 @@ const Chat = ({navigation, route}) => {
                     <Text style={{fontSize: nh(7)}}>{u?.emoji}</Text>
                   ))}
                 </View>
-              )} */}
+              )}
             </TouchableOpacity>
           </View>
           {item?.sender?._id === userData?.id ? (
@@ -680,7 +703,9 @@ const Chat = ({navigation, route}) => {
                       <ActivityIndicator size="small" color="#0000ff" />
                     ) : null
                   } // Show loading spinner when fetching older messages
+                  contentContainerStyle={{paddingBottom: 50}}
                 />
+
                 <View style={styles.inputContainer}>
                   <Icon
                     type="material-community"
@@ -724,14 +749,19 @@ const Chat = ({navigation, route}) => {
                     onSend={sendMessage}
                     input={input}
                     setInput={setInput}
+                    loadingsmall={loadingsmall}
                   />
 
                   <TouchableOpacity
                     style={styles.sendButton}
                     onPress={selected?._id ? editMessage : sendMessage}>
-                    <Text style={styles.sendButtonText}>
-                      {selected?._id && edit ? 'Edit' : 'Send'}
-                    </Text>
+                    {loadingsmall ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text style={styles.sendButtonText}>
+                        {selected?._id && edit ? 'Edit' : 'Send'}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>

@@ -276,7 +276,9 @@ const EditProfile = ({navigation}) => {
     ImagePicker.openPicker({
       width: 300,
       height: 300,
+
       cropping: true,
+      cropperCircleOverlay: true,
       compressImageQuality: 0.8,
       cropperCircleOverlay: true,
     }).then(image => {

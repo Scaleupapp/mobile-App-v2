@@ -8,6 +8,7 @@ import Text from '../../components/Text';
 import Video from 'react-native-video';
 import {Image} from 'react-native';
 import Icon from '../../helper/icon';
+import EmojiSelector, {Categories} from 'react-native-emoji-selector';
 
 const MessageModal = ({
   isVisible,
@@ -50,7 +51,6 @@ const MessageModal = ({
           ))}
         </View>
 
-        {/* Message Display */}
         <TouchableOpacity
           style={[
             styles.messageContainer,
@@ -138,7 +138,6 @@ const MessageModal = ({
             )}
           </View>
         </TouchableOpacity>
-
         {/* Actions */}
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionButton}>

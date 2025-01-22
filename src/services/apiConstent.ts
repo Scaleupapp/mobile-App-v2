@@ -13,6 +13,7 @@ export const API = {
   FOLLOW_UNFOLLOW: 'content/followUnfollowList',
   SEARCH_USER: 'content/search-users',
   ADD_COMMENT: 'content/add-comment',
+  GET_COMMENT:'content/comment',
   CONTENT_CREATE: 'content/create',
   LIKE_REQUEST: 'content/like',
   UNLIKE_REQUEST: 'content/unlike',
@@ -65,4 +66,9 @@ export const API = {
   CREATECONVERSATION: 'conversation/create',
   SENDMESSAGE: 'chat/send',
   CHAT: 'chat',
+  RAPIDFIRE_CREATE: 'rapidfire-quiz/create',
+  RAPIDFIRE_EDIT: 'rapidfire-quiz/edit',
+  RAPIDFIRE_LIST: 'rapidfire-quiz/list',
+  RAPIDFIRE_SEARCH: 'rapidfire-quiz/search',
+  RAPIDFIRE_RECOMMEND: 'rapidfire-quiz/recommend',
 };

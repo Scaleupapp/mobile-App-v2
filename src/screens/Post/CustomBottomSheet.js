@@ -7,8 +7,16 @@ import {
   TouchableOpacity,
   Text as RNText,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
-import React, {forwardRef, useEffect, useMemo, useRef, useState} from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
 import {COLORS} from '../../helper/colors';
 import {isAndroid, nh, nw} from '../../helper/scales';
@@ -16,6 +24,7 @@ import CustomTextInput from '../../components/TextInput';
 import {icons} from '../../assets/icons';
 import {
   addComment,
+  getComment,
   likeComment,
   replyComment,
   unlikeComment,
@@ -205,205 +214,251 @@ const RenderComment = ({item, index, onReplyPress, onClose, myId}) => {
   );
 };
 
-const CommentBottomSheetModal = forwardRef(
-  ({postId, comments = [], setComments}, ref) => {
-    const snapPoints = useMemo(() => [isAndroid ? '68%' : '100%'], []);
-    const userData = useSelector(state => state?.userData);
-    // console.log('🚀 ~ userData:', userData?.id);
-    const [text, setText] = useState('');
-    const [selectedComment, setSelectedComment] = useState({
-      parentCommentId: null,
-      username: null,
-      userId: null,
-    });
-    // console.log({selectedComment});
-    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-    const TextInputRef = useRef();
-    const FlatRef = useRef();
+const CommentBottomSheetModal = forwardRef(({postId}, ref) => {
+  const snapPoints = useMemo(() => [isAndroid ? '68%' : '100%'], []);
+  const userData = useSelector(state => state?.userData);
+  const [comments, setComments] = useState([]);
+  // console.log('🚀 ~ userData:', userData?.id);
+  const [loading, setLoading] = useState(false); // Loading state
+  const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
+  const page = useRef(1);
+  const getpostComment = async () => {
+    // console.log(postId, 'postId');
+    if (loading || allMessagesFetched) return;
 
-    const sendComment = async () => {
-      try {
-        let paylaod = {
-          contentId: postId,
-          commentText: text,
-        };
-        const {data} = await addComment(paylaod);
-        Keyboard.dismiss();
-        FlatRef.current?.scrollToEnd();
-        let newPayload = [
-          {
-            ...paylaod,
-            userId: {
-              profilePicture: userData?.profilePicture,
-              username: userData?.username,
-              commentDate: new Date(),
-            },
-          },
-        ];
-        setText('');
-        setComments([...comments, ...newPayload]);
-      } catch (error) {}
-    };
-
-    const sendReply = async () => {
-      try {
-        let paylaod = {
-          contentId: postId,
-          commentText: text,
-          parentCommentId: selectedComment.parentCommentId,
-          taggedUserId: selectedComment.userId,
-          taggedUserName: selectedComment.username,
-        };
-        const {data} = await replyComment(paylaod);
-        Keyboard.dismiss();
-        FlatRef.current?.scrollToEnd();
-        let newComments = [];
-        comments?.map(u => {
-          let obj = u;
-          if (u?._id == selectedComment?.parentCommentId) {
-            obj.replies = [...u?.replies, data?.comment];
-          }
-          newComments.push(obj);
-        });
-        setText('');
-        setComments(newComments);
-      } catch (error) {}
-    };
-
-    useEffect(() => {
-      const keyboardDidShowListener = Keyboard.addListener(
-        'keyboardDidShow',
-        event => {
-          ref.current?.snapToIndex(1);
-          setKeyboardVisible(true);
-        },
-      );
-
-      const keyboardDidHideListener = Keyboard.addListener(
-        'keyboardDidHide',
-        () => {
-          ref.current?.snapToIndex(0);
-          setKeyboardVisible(false);
-        },
-      );
-
-      // Clean up listeners when component unmounts
-      return () => {
-        keyboardDidShowListener.remove();
-        keyboardDidHideListener.remove();
+    setLoading(true);
+    try {
+      let paylaod = {
+        contentID: postId,
       };
-    }, []);
+      let {data} = await getComment(paylaod, page?.current);
+      console.log('🚀 ~ getpostComment ~ data:', data);
 
-    return (
-      <BottomSheetModal
-        ref={ref}
-        index={0}
-        snapPoints={snapPoints}
-        // handleComponent={null}
-        containerStyle={{
-          borderTopLeftRadius: 24,
-        }}
-        enableContentPanningGesture={false}
-        // onDismiss={() => setSelectedComment(null)}
-        style={{
-          borderRadius: 24,
-          boxShadow: '2 4 4 8 rgba(0, 0, 0, 0.15)',
-          overflow: 'hidden',
-        }}>
-        <BottomSheetView style={styles.contentContainer}>
-          <Text variant="semibold18" style={styles.containerHeadline}>
-            Comments
-          </Text>
+      setComments(data?.comments);
 
-          {comments.length == 0 ? (
-            <>
-              <Text variant="semibold20" style={styles.emptyContainer}>
-                {'No Comments Yet'}
-              </Text>
-              <Text variant="medium14" style={styles.emptyContainer1}>
-                {
-                  'It’s a bit quiet here. Start the conversation by leaving a comment on a post you find interesting.'
-                }
-              </Text>
-            </>
-          ) : (
+      if (data?.nextPage == null) {
+        setAllMessagesFetched(true);
+      } else {
+        setComments(prevMessages => [...prevMessages, ...data?.comments]);
+        page.current += 1;
+      }
+      setLoading(false);
+    } catch (error) {
+      console.log('🚀 ~ getpostComment ~ error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const sheetRef = useRef(null);
+  useImperativeHandle(ref, () => ({
+    present: () => {
+      // Open the bottom sheet
+
+      getpostComment(); // Fetch comments when opening
+      sheetRef?.current?.present();
+    },
+  }));
+
+  const [text, setText] = useState('');
+  const [selectedComment, setSelectedComment] = useState({
+    parentCommentId: null,
+    username: null,
+    userId: null,
+  });
+  // console.log({selectedComment});
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+  const TextInputRef = useRef();
+  const FlatRef = useRef();
+
+  const sendComment = async () => {
+    try {
+      let paylaod = {
+        contentId: postId,
+        commentText: text,
+      };
+      const {data} = await addComment(paylaod);
+      console.log('🚀 ~ sendComment ~ data:', data);
+      Keyboard.dismiss();
+      FlatRef.current?.scrollToEnd();
+      let newPayload = [
+        {
+          ...paylaod,
+          userId: {
+            profilePicture: userData?.profilePicture,
+            username: userData?.username,
+            commentDate: new Date(),
+          },
+        },
+      ];
+      setText('');
+      setComments([...comments, ...newPayload]);
+    } catch (error) {}
+  };
+
+  const sendReply = async () => {
+    try {
+      let paylaod = {
+        contentId: postId,
+        commentText: text,
+        parentCommentId: selectedComment.parentCommentId,
+        taggedUserId: selectedComment.userId,
+        taggedUserName: selectedComment.username,
+      };
+      const {data} = await replyComment(paylaod);
+      Keyboard.dismiss();
+      FlatRef.current?.scrollToEnd();
+      let newComments = [];
+      comments?.map(u => {
+        let obj = u;
+        if (u?._id == selectedComment?.parentCommentId) {
+          obj.replies = [...u?.replies, data?.comment];
+        }
+        newComments.push(obj);
+      });
+      setText('');
+      setComments(newComments);
+    } catch (error) {}
+  };
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      event => {
+        sheetRef.current?.snapToIndex(1);
+        setKeyboardVisible(true);
+      },
+    );
+
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        sheetRef.current?.snapToIndex(0);
+        setKeyboardVisible(false);
+      },
+    );
+
+    // Clean up listeners when component unmounts
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  return (
+    <BottomSheetModal
+      ref={sheetRef}
+      index={0}
+      snapPoints={snapPoints}
+      // handleComponent={null}
+      containerStyle={{
+        borderTopLeftRadius: 24,
+      }}
+      enableContentPanningGesture={false}
+      // onDismiss={() => setSelectedComment(null)}
+      style={{
+        borderRadius: 24,
+        boxShadow: '2 4 4 8 rgba(0, 0, 0, 0.15)',
+        overflow: 'hidden',
+      }}>
+      <BottomSheetView style={styles.contentContainer}>
+        <Text variant="semibold18" style={styles.containerHeadline}>
+          Comments
+        </Text>
+
+        {comments.length == 0 ? (
+          <>
+            <Text variant="semibold20" style={styles.emptyContainer}>
+              {'No Comments Yet'}
+            </Text>
+            <Text variant="medium14" style={styles.emptyContainer1}>
+              {
+                'It’s a bit quiet here. Start the conversation by leaving a comment on a post you find interesting.'
+              }
+            </Text>
+          </>
+        ) : (
+          <View
+            style={{
+              height: nh(
+                isKeyboardVisible
+                  ? selectedComment?.username
+                    ? 325
+                    : 350
+                  : 400,
+              ),
+            }}>
+            <FlatList
+              keyboardShouldPersistTaps={'always'}
+              ref={FlatRef}
+              data={comments}
+              contentContainerStyle={{marginTop: 30}}
+              onEndReached={getpostComment}
+              ListFooterComponent={
+                loading && !allMessagesFetched ? (
+                  <ActivityIndicator size="small" color="#0000ff" />
+                ) : null
+              }
+              renderItem={({item, index}) => (
+                <RenderComment
+                  item={item}
+                  index={index}
+                  onReplyPress={detail => {
+                    TextInputRef.current?.focus();
+                    setSelectedComment(detail);
+                  }}
+                  onClose={() => sheetRef.current?.dismiss()}
+                  myId={userData?.id}
+                />
+              )}
+            />
+          </View>
+        )}
+        <View
+          style={{
+            marginHorizontal: nw(16),
+            paddingVertical: nh(10),
+          }}>
+          {selectedComment?.username && (
             <View
               style={{
-                height: nh(
-                  isKeyboardVisible
-                    ? selectedComment?.username
-                      ? 325
-                      : 350
-                    : 400,
-                ),
+                marginBottom: nh(3),
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}>
-              <FlatList
-                keyboardShouldPersistTaps={'always'}
-                ref={FlatRef}
-                data={comments}
-                contentContainerStyle={{marginTop: 30}}
-                renderItem={({item, index}) => (
-                  <RenderComment
-                    item={item}
-                    index={index}
-                    onReplyPress={detail => {
-                      TextInputRef.current?.focus();
-                      setSelectedComment(detail);
-                    }}
-                    onClose={() => ref.current?.dismiss()}
-                    myId={userData?.id}
-                  />
-                )}
+              <Text
+                variant="medium12"
+                color={COLORS.grey333333}
+                style={{marginBottom: nh(3)}}>
+                reply to @{selectedComment?.username}
+              </Text>
+              <Icon
+                type={'antdesign'}
+                color={COLORS.grey333333}
+                name="close"
+                size={nh(16)}
+                onPress={() => setSelectedComment(null)}
+                style={{transform: [{scaleX: -1}]}}
               />
             </View>
           )}
-          <View
-            style={{
-              marginHorizontal: nw(16),
-              paddingVertical: nh(10),
-            }}>
-            {selectedComment?.username && (
-              <View
-                style={{
-                  marginBottom: nh(3),
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                }}>
-                <Text
-                  variant="medium12"
-                  color={COLORS.grey333333}
-                  style={{marginBottom: nh(3)}}>
-                  reply to @{selectedComment?.username}
-                </Text>
-                <Icon
-                  type={'antdesign'}
-                  color={COLORS.grey333333}
-                  name="close"
-                  size={nh(16)}
-                  onPress={() => setSelectedComment(null)}
-                  style={{transform: [{scaleX: -1}]}}
-                />
-              </View>
-            )}
-            <CustomTextInput
-              ref={TextInputRef}
-              value={text}
-              onChangeText={setText}
-              placeholder={'Write here'}
-              placeholderTextColor={COLORS.grey777777}
-              rightIcon={icons.send}
-              onRightIconPress={() => {
-                if (selectedComment?.username) sendReply();
-                else sendComment();
-              }}
-            />
-          </View>
-        </BottomSheetView>
-      </BottomSheetModal>
-    );
-  },
-);
+          <CustomTextInput
+            ref={TextInputRef}
+            value={text}
+            onChangeText={setText}
+            placeholder={'Write here'}
+            placeholderTextColor={COLORS.grey777777}
+            rightIcon={icons.send}
+            onRightIconPress={() => {
+              if (selectedComment?.username) sendReply();
+              else sendComment();
+            }}
+          />
+        </View>
+      </BottomSheetView>
+    </BottomSheetModal>
+  );
+});
 
 const styles = StyleSheet.create({
   emptyContainer: {
