@@ -62,6 +62,9 @@ const Routes = {
   Conversation: 'Conversation',
   Chat: 'Chat',
   MyBadge: 'MyBadge',
+  Quiz: 'Quiz',
+  QuizList: 'QuizList',
+  QuizScreen: 'QuizScreen',
 };
 
 export default Routes;
