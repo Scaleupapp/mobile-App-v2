@@ -65,4 +65,9 @@ export const API = {
   CREATECONVERSATION: 'conversation/create',
   SENDMESSAGE: 'chat/send',
   CHAT: 'chat',
+  RAPIDFIRE_CREATE: 'rapidfire-quiz/create',
+  RAPIDFIRE_EDIT: 'rapidfire-quiz/edit',
+  RAPIDFIRE_LIST: 'rapidfire-quiz/list',
+  RAPIDFIRE_SEARCH: 'rapidfire-quiz/search',
+  RAPIDFIRE_RECOMMEND: 'rapidfire-quiz/recommend',
 };

@@ -23,6 +23,10 @@ const MenuScreen = ({navigation, route}) => {
       nav: Routes.MyBadge,
     },
     {
+      title: 'Quiz',            // New item for Quiz
+      nav: Routes.QuizList,
+    },
+    {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
     },
@@ -42,44 +46,48 @@ const MenuScreen = ({navigation, route}) => {
 
   const Card = ({item}) => {
     return (
-      <Pressable
-        style={styles.card}
-        onPress={() => {
-          if (item?.title === 'Logout') {
-            // Show confirmation alert before logging out
-            Alert.alert(
-              'Logout',
-              'Are you sure you want to log out?',
-              [
-                {
-                  text: 'Cancel',
-                  onPress: () => {},
-                  style: 'cancel',
-                },
-                {
-                  text: 'Yes',
-                  onPress: () => logoutUser(),
-                },
-              ],
-              {cancelable: true},
-            );
-          } else {
-            navigation.navigate(item.nav);
-          }
-        }}>
-        <Text
-          variant="medium14"
-          color={COLORS.grey777777}
-          style={{marginLeft: nw(46)}}>
-          {item.title}
-        </Text>
-        <Icon
-          type="material"
-          name="keyboard-arrow-right"
-          color={COLORS.grey777777}
-          style={{marginRight: nw(10)}}
-        />
-      </Pressable>
+<Pressable
+  style={styles.card}
+  onPress={() => {
+    if (item?.title === 'Logout') {
+      // Show confirmation alert before logging out
+      Alert.alert(
+        'Logout',
+        'Are you sure you want to log out?',
+        [
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+          {
+            text: 'Yes',
+            onPress: () => logoutUser(),
+          },
+        ],
+        {cancelable: true},
+      );
+    } else if (item.nav === Routes.QuizList) {
+      // Navigate to the Home screen and switch to QuizList tab
+      navigation.navigate(Routes.Home, { screen: Routes.QuizList });
+    } else {
+      navigation.navigate(item.nav);
+    }
+  }}>
+  <Text
+    variant="medium14"
+    color={COLORS.grey777777}
+    style={{marginLeft: nw(46)}}>
+    {item.title}
+  </Text>
+  <Icon
+    type="material"
+    name="keyboard-arrow-right"
+    color={COLORS.grey777777}
+    style={{marginRight: nw(10)}}
+  />
+</Pressable>
+
     );
   };
 
