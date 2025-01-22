@@ -6,12 +6,21 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import Video from 'react-native-video';
 import {COLORS} from '../../helper/colors';
 
-const MediaModal = ({isVisible, onClose, file, onSend, input, setInput}) => {
+const MediaModal = ({
+  isVisible,
+  onClose,
+  file,
+  onSend,
+  input,
+  setInput,
+  loadingsmall,
+}) => {
   console.log('🚀 ~ MediaModal ~ isVisible:', isVisible);
   const [selectedMedia, setSelectedMedia] = useState(null); // { type: 'image' | 'video', uri: string }
 
@@ -63,7 +72,11 @@ const MediaModal = ({isVisible, onClose, file, onSend, input, setInput}) => {
           <TouchableOpacity
             style={[styles.button, styles.sendButton]}
             onPress={handleSend}>
-            <Text style={styles.buttonText}>Send</Text>
+            {loadingsmall ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Send</Text>
+            )}
           </TouchableOpacity>
         </View>
       </View>

@@ -12,7 +12,6 @@ export const setupAxiosInterceptors = showToast => {
     async config => {
       const user = await AsyncStorage.getItem('userData');
       const parsedUser = JSON.parse(user);
-
       if (parsedUser?.token) {
         config.headers.Authorization = `Bearer ${parsedUser?.token}`;
       }

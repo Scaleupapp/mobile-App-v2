@@ -151,6 +151,11 @@ export const declineInnerCircleRequestAPI = (payload: any) => {
 export const addComment = (payload: any) => {
   return axiosInstance.post(`${API.ADD_COMMENT}`, payload);
 };
+
+export const getComment = (payload: any,page:any) => {
+  console.log("🚀 ~ getComment ~ payload:", payload,page)
+  return axiosInstance.post(`content/comment?page=${page}`, payload);
+}
 export const replyComment = (payload: any) => {
   return axiosInstance.post(`${API.COMMENT}/reply`, payload);
 };

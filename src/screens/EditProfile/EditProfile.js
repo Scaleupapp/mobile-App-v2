@@ -261,7 +261,9 @@ const EditProfile = ({navigation}) => {
     ImagePicker.openPicker({
       width: 300,
       height: 300,
+
       cropping: true,
+      cropperCircleOverlay: true,
     }).then(image => {
       console.log('🚀 ~ openGallery ~ image:', image);
       // Update the form's displayed profile picture
