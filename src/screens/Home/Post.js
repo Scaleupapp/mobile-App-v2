@@ -34,12 +34,15 @@ import {getTimeAgo} from '../../helper/commonFunctions';
 import convertToProxyURL from 'react-native-video-cache';
 import {MenuModal} from '../../components/MenuModal';
 import ReportPostModal from '../Post/ReportPostModal';
+import VideoPostPlayer from './VideoPostPlayer';
 
 const PostView = ({
   item,
   index,
   selectedIndex,
   setSelectedIndex,
+  isVideoVisible,
+
   myProfile = false,
 }) => {
   // console.log('🚀 ~ PostView ~ item:', item);
@@ -59,6 +62,9 @@ const PostView = ({
   const componentRef = useRef(null);
   const [position, setPosition] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
+
+
+  
 
   const getmeasure = () => {
     if (componentRef.current) {
@@ -349,77 +355,33 @@ const PostView = ({
           />
         </Pressable>
       ) : null}
-      {item?.contentType == 'Video' && item?.contentURL ? (
-        <Pressable
-          onPress={() => {
-            setSelectedIndex(index);
-            imageModalRef.current?.present();
-          }}
-          style={{
-            marginTop: nh(10),
-            borderRadius: nh(12),
-            marginBottom: nh(15),
-            overflow: 'hidden',
-          }}>
+{item?.contentType === 'Video' && item?.contentURL ? (
+        <View style={styles.videoContainer}>
           {item?.isVerified && (
-            <View
-              style={{
-                height: nh(30),
-                width: nw(30),
-                borderRadius: nh(15),
-                backgroundColor: COLORS.blue043142,
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'absolute',
-                right: 10,
-                top: 10,
-                zIndex: 1,
-                // Centers vertically
-              }}>
+            <View style={styles.verifiedBadge}>
               <Icon
                 type="material-community"
                 name="check-decagram"
                 color={COLORS.yellowF5BE00}
-                size={20} // Ensure the icon size is appropriate
+                size={20}
               />
             </View>
           )}
-          <Video
-            paused={true}
-            controls={false}
-            onLoad={onLoad}
-            source={{uri: convertToProxyURL(item?.contentURL)}}
-            style={
-              videoDimensions?.height
-                ? {
-                    aspectRatio: Number(
-                      videoDimensions.width / videoDimensions.height,
-                    ),
-                    width: DEVICE_WIDTH - nw(32),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                  }
-                : {
-                    height: nh(250),
-                    width: DEVICE_WIDTH - nw(32),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                  }
-            }
-            resizeMode="contain"
-            //onBuffer={e => console.log('bufeer ', e)}
-            onError={e => console.log('sdsds ', e)}
+          <VideoPostPlayer
+            videoUrl={item?.contentURL}
+            thumbnail={item?.thumbnail}
+            isVisible={isVideoVisible}
+            videoDimensions={videoDimensions}
+            onProgress={(progress) => {
+              // Optional: Track video progress
+              console.log('Video progress:', progress);
+            }}
+            onEnd={() => {
+              // Optional: Handle video completion
+              console.log('Video completed');
+            }}
           />
-          <View style={styles.playButtonContainer}>
-            <Icon
-              type="antdesign"
-              name="playcircleo"
-              size={nh(40)}
-              color={COLORS.blue043142}
-              style={{
-                opacity: 0.8,
-              }}
-            />
-          </View>
-        </Pressable>
+        </View>
       ) : null}
 
       <View style={styles.view}>
@@ -627,13 +589,6 @@ const styles = StyleSheet.create({
     marginTop: nh(10),
     color: COLORS.grey333333,
   },
-  playButtonContainer: {
-    position: 'absolute',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
-  },
   verifiedBadge: {
     height: nh(30),
     width: nh(30),
@@ -642,8 +597,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'absolute',
-    right: 10,
-    top: 10,
+    left: 10,
+    top: 20,
     zIndex: 1,
   },
 });

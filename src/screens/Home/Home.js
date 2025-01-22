@@ -30,6 +30,21 @@ const Home = ({navigation, route}) => {
   const [page, setPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const [visibleItems, setVisibleItems] = useState([]);
+
+  // Configure viewability
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50, // Item is considered visible when 50% in view
+    minimumViewTime: 300, // Must be visible for at least 300ms
+  }).current;
+
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    // Update the list of visible items
+    setVisibleItems(viewableItems.map(item => item.key));
+  }).current;
+
+
+
   // Refetch whenever we focus on this screen
   useFocusEffect(
     useCallback(() => {
@@ -89,13 +104,16 @@ const Home = ({navigation, route}) => {
   );
 
   // Render each post
-  const renderItem = ({item, index}) => {
+const renderItem = ({ item, index }) => {
+    const isVisible = visibleItems.includes(index.toString());
+    
     return (
       <PostView
         item={item}
         index={index}
         selectedIndex={selectedIndex}
         setSelectedIndex={setSelectedIndex}
+        isVideoVisible={isVisible}
       />
     );
   };
@@ -114,6 +132,15 @@ const Home = ({navigation, route}) => {
             data={home}
             keyExtractor={(_, index) => index.toString()}
             showsVerticalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        initialNumToRender={2}
+        updateCellsBatchingPeriod={100}
+
+            //removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}

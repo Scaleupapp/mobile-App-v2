@@ -29,7 +29,7 @@ import {getProfile, updateProfile} from '../../services/apiService';
 import {actions} from '../../redux/reducers';
 import {useToast} from '../../components/CustomToast';
 import DatePicker from 'react-native-date-picker';
-import ImagePicker from 'react-native-image-crop-picker';
+import {ImagePicker} from 'react-native-image-crop-picker';
 
 const professionData = [
   {
