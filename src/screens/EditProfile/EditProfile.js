@@ -8,9 +8,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
-import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
+import {DEVICE_WIDTH, isAndroid, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
 import SquareToggle from '../../components/ToggleButton';
 import Text from '../../components/Text';
@@ -30,6 +31,8 @@ import {actions} from '../../redux/reducers';
 import {useToast} from '../../components/CustomToast';
 import DatePicker from 'react-native-date-picker';
 import ImagePicker from 'react-native-image-crop-picker';
+import axios from 'axios';
+import {API} from '../../services/apiConstent';
 
 const professionData = [
   {
@@ -69,7 +72,7 @@ const EditProfile = ({navigation}) => {
   const [selected, setSelected] = useState(0);
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
-
+  const [loading, setLoading] = useState(false);
   // We store the "raw" image file data here
   const [image, setImage] = useState(null);
 
@@ -190,6 +193,7 @@ const EditProfile = ({navigation}) => {
   // Perform API call to update user
   const handleSave = async () => {
     if (validateFields()) {
+      setLoading(true);
       // Prepare the formData
       const formData = new FormData();
 
@@ -220,12 +224,23 @@ const EditProfile = ({navigation}) => {
       }
 
       try {
-        const {data} = await updateProfile(formData);
-        showToast({type: 'success', title: data?.message});
+        const response = await axios.put(
+          `${API.BASE_URL}${API.PROFILE_DETAIL}`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${userData?.token}`,
+            },
+          },
+        );
+        // const {data} = await updateProfile(formData);
+        showToast({type: 'success', title: response.data?.message});
         getProfileData();
-        console.log('Profile Update Response:', data);
       } catch (error) {
-        console.log('Profile Update Error:', error?.response?.data);
+        console.log('Profile Update Error:', error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -263,17 +278,18 @@ const EditProfile = ({navigation}) => {
       height: 300,
       cropping: true,
       compressImageQuality: 0.8,
+      cropperCircleOverlay: true,
     }).then(image => {
       console.log('🚀 ~ openGallery ~ image:', image);
       // Update the form's displayed profile picture
       setForm(prevForm => ({
         ...prevForm,
-        profilePicture: image?.path,
+        profilePicture: 'file://' + image?.path,
       }));
 
       // Prepare the media data for upload
       setImage({
-        uri: image?.path,
+        uri: 'file://' + image?.path,
         name: image?.filename || 'media', // fallback
         type: image?.mime || 'image/jpeg',
       });
@@ -304,180 +320,188 @@ const EditProfile = ({navigation}) => {
             selected={selected}
             onToggle={onSelect}
           />
-          <ScrollView showsVerticalScrollIndicator={false}>
-            {selected === 0 && (
-              <>
-                {/* Profile Picture Section */}
-                <View>
-                  {form.profilePicture ? (
-                    <Image
-                      source={{
-                        uri: `${
-                          form.profilePicture
-                        }?timestamp=${new Date().getTime()}`,
-                      }}
-                      style={styles.image}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.image,
-                        {
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: COLORS.greyD6D6D6,
-                        },
-                      ]}>
-                      <Text variant="semibold20" color={COLORS.black333333}>
-                        {`${
-                          userData?.firstname?.charAt(0)?.toUpperCase() || ''
-                        }${userData?.lastname?.charAt(0)?.toUpperCase() || ''}`}
-                      </Text>
+          {loading ? (
+            <ActivityIndicator size="large" color={COLORS.black333333} />
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {selected === 0 && (
+                <>
+                  {/* Profile Picture Section */}
+                  <View>
+                    {form.profilePicture ? (
+                      <Image
+                        source={{
+                          uri: `${
+                            form.profilePicture
+                          }?timestamp=${new Date().getTime()}`,
+                        }}
+                        style={styles.image}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.image,
+                          {
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: COLORS.greyD6D6D6,
+                          },
+                        ]}>
+                        <Text variant="semibold20" color={COLORS.black333333}>
+                          {`${
+                            userData?.firstname?.charAt(0)?.toUpperCase() || ''
+                          }${
+                            userData?.lastname?.charAt(0)?.toUpperCase() || ''
+                          }`}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.circle}>
+                      <Icon
+                        type="antdesign"
+                        name="edit"
+                        style={{marginLeft: 0.5}}
+                        size={16}
+                        onPress={openGallery}
+                      />
                     </View>
-                  )}
-                  <View style={styles.circle}>
-                    <Icon
-                      type="antdesign"
-                      name="edit"
-                      style={{marginLeft: 0.5}}
-                      size={16}
-                      onPress={openGallery}
-                    />
                   </View>
-                </View>
 
-                {/* Form Fields */}
-                <CustomTextInput
-                  label="First Name"
-                  placeholder="Enter First Name"
-                  value={form.firstname}
-                  onChangeText={value => handleInputChange('firstname', value)}
-                  errorMessage={errors.firstname}
-                />
-                <CustomTextInput
-                  label="Last Name"
-                  placeholder="Enter Last Name"
-                  value={form.lastname}
-                  onChangeText={value => handleInputChange('lastname', value)}
-                  errorMessage={errors.lastname}
-                />
-                <CustomTextInput
-                  label="Email"
-                  placeholder="Enter Email"
-                  value={form.email}
-                  onChangeText={value => handleInputChange('email', value)}
-                  errorMessage={errors.email}
-                />
-                <CustomTextInput
-                  label="Mobile No"
-                  placeholder="Enter Mobile No"
-                  value={form.mobile}
-                  onChangeText={value => handleInputChange('mobile', value)}
-                  errorMessage={errors.mobile}
-                />
-                <CustomTextInput
-                  label="Location"
-                  placeholder="Enter Location"
-                  value={form.location}
-                  onChangeText={value => handleInputChange('location', value)}
-                  errorMessage={errors.location}
-                />
-
-                {/* Date of Birth */}
-                <View>
-                  <Pressable
-                    style={{
-                      position: 'absolute',
-                      height: '100%',
-                      width: '100%',
-                      zIndex: 1,
-                    }}
-                    onPress={() => setShowDOBPicker(true)}
+                  {/* Form Fields */}
+                  <CustomTextInput
+                    label="First Name"
+                    placeholder="Enter First Name"
+                    value={form.firstname}
+                    onChangeText={value =>
+                      handleInputChange('firstname', value)
+                    }
+                    errorMessage={errors.firstname}
                   />
                   <CustomTextInput
-                    label="Date of Birth"
-                    placeholder="Enter Date of Birth"
-                    // Show the date in a readable format if it exists
-                    value={
-                      form.dob
-                        ? formatDate(form.dob, true) // e.g. "MM/DD/YYYY"
-                        : ''
-                    }
-                    editable={false}
-                    errorMessage={errors.dob}
+                    label="Last Name"
+                    placeholder="Enter Last Name"
+                    value={form.lastname}
+                    onChangeText={value => handleInputChange('lastname', value)}
+                    errorMessage={errors.lastname}
                   />
-                </View>
-
-                <CustomTextInput
-                  label="About"
-                  placeholder="Enter About Yourself"
-                  textinputType="L"
-                  value={form.about}
-                  onChangeText={value => handleInputChange('about', value)}
-                  errorMessage={errors.about}
-                  multiline
-                />
-
-                {/* Save Button */}
-                <View
-                  style={{
-                    marginTop: 30,
-                    alignSelf: 'flex-end',
-                    marginBottom: nh(100),
-                  }}>
-                  <Button
-                    text="Save"
-                    onPress={handleSave}
-                    width={nw(63)}
-                    height={nh(35)}
-                    textStyle={{fontSize: 14}}
+                  <CustomTextInput
+                    label="Email"
+                    placeholder="Enter Email"
+                    value={form.email}
+                    onChangeText={value => handleInputChange('email', value)}
+                    errorMessage={errors.email}
                   />
-                </View>
+                  <CustomTextInput
+                    label="Mobile No"
+                    placeholder="Enter Mobile No"
+                    value={form.mobile}
+                    onChangeText={value => handleInputChange('mobile', value)}
+                    errorMessage={errors.mobile}
+                  />
+                  <CustomTextInput
+                    label="Location"
+                    placeholder="Enter Location"
+                    value={form.location}
+                    onChangeText={value => handleInputChange('location', value)}
+                    errorMessage={errors.location}
+                  />
 
-                {/* Date Picker Modal */}
-                <DatePicker
-                  modal
-                  open={showDOBPicker}
-                  date={form.dob || new Date()} // fallback if null
-                  mode="date"
-                  minimumDate={new Date('1970-01-01')}
-                  maximumDate={new Date()}
-                  onConfirm={selectedDate => {
-                    // Save the new date in form
-                    handleInputChange('dob', selectedDate);
-                    setShowDOBPicker(false);
-                  }}
-                  onCancel={() => setShowDOBPicker(false)}
-                />
-              </>
-            )}
-
-            {/* Professional Section */}
-            {selected === 1 &&
-              professionData.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.card}
-                  onPress={() => navigation.navigate(item.nav)}>
-                  <View style={styles.cardimage}>
-                    <Image
-                      source={item.image}
-                      style={{height: nh(29), width: nw(29)}}
-                      resizeMode="contain"
+                  {/* Date of Birth */}
+                  <View>
+                    <Pressable
+                      style={{
+                        position: 'absolute',
+                        height: '100%',
+                        width: '100%',
+                        zIndex: 1,
+                      }}
+                      onPress={() => setShowDOBPicker(true)}
+                    />
+                    <CustomTextInput
+                      label="Date of Birth"
+                      placeholder="Enter Date of Birth"
+                      // Show the date in a readable format if it exists
+                      value={
+                        form.dob
+                          ? formatDate(form.dob, true) // e.g. "MM/DD/YYYY"
+                          : ''
+                      }
+                      editable={false}
+                      errorMessage={errors.dob}
                     />
                   </View>
-                  <View>
-                    <Text variant="semibold14" color={COLORS.blue043142}>
-                      {item.title}
-                    </Text>
-                    <Text variant="medium12" color={COLORS.grey999999}>
-                      {item.subtitle}
-                    </Text>
+
+                  <CustomTextInput
+                    label="About"
+                    placeholder="Enter About Yourself"
+                    textinputType="L"
+                    value={form.about}
+                    onChangeText={value => handleInputChange('about', value)}
+                    errorMessage={errors.about}
+                    multiline
+                  />
+
+                  {/* Save Button */}
+                  <View
+                    style={{
+                      marginTop: 30,
+                      alignSelf: 'flex-end',
+                      marginBottom: nh(100),
+                    }}>
+                    <Button
+                      text="Save"
+                      onPress={handleSave}
+                      width={nw(63)}
+                      height={nh(35)}
+                      textStyle={{fontSize: 14}}
+                    />
                   </View>
-                </TouchableOpacity>
-              ))}
-          </ScrollView>
+
+                  {/* Date Picker Modal */}
+                  <DatePicker
+                    modal
+                    open={showDOBPicker}
+                    date={form.dob || new Date()} // fallback if null
+                    mode="date"
+                    minimumDate={new Date('1970-01-01')}
+                    maximumDate={new Date()}
+                    onConfirm={selectedDate => {
+                      // Save the new date in form
+                      handleInputChange('dob', selectedDate);
+                      setShowDOBPicker(false);
+                    }}
+                    onCancel={() => setShowDOBPicker(false)}
+                  />
+                </>
+              )}
+
+              {/* Professional Section */}
+              {selected === 1 &&
+                professionData.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.card}
+                    onPress={() => navigation.navigate(item.nav)}>
+                    <View style={styles.cardimage}>
+                      <Image
+                        source={item.image}
+                        style={{height: nh(29), width: nw(29)}}
+                        resizeMode="contain"
+                      />
+                    </View>
+                    <View>
+                      <Text variant="semibold14" color={COLORS.blue043142}>
+                        {item.title}
+                      </Text>
+                      <Text variant="medium12" color={COLORS.grey999999}>
+                        {item.subtitle}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+          )}
         </View>
       </View>
     </SafeAreaView>
