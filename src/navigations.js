@@ -142,7 +142,7 @@ const TabNavigator = ({navigation, route}) => {
               borderWidth: nw(1),
               borderColor: COLORS.whiteFFFFFF,
               boxShadow: '0 0 10 0  rgba(4, 49, 66, 0.35)',
-              elevation: 1,
+              elevation: 3,
             }}>
             <Image
               source={img}

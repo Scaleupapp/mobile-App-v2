@@ -562,13 +562,14 @@ const styles = StyleSheet.create({
   card: {
     height: nh(65),
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
-    elevation: 1,
     borderWidth: 1,
     borderColor: 'rgba(214, 214, 214, 0.2)',
     borderRadius: 8,
     marginBottom: nh(15),
     padding: nh(10),
     flexDirection: 'row',
+    backgroundColor: COLORS.whiteFFFFFF,
+    elevation: 3,
   },
   cardimage: {
     height: nh(45),

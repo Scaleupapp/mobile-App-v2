@@ -277,6 +277,7 @@ const styles = StyleSheet.create({
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: nh(1),
     borderColor: 'rgba(214, 214, 214, 0.2)',
+    elevation: 3,
   },
   profilePicture: {
     width: nw(50),
@@ -345,6 +346,7 @@ const styles = StyleSheet.create({
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: nh(1),
     borderColor: 'rgba(214, 214, 214, 0.2)',
+    elevation: 3,
   },
   quizMessage: {
     fontSize: nh(14),
