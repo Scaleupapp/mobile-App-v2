@@ -2,12 +2,17 @@ import React, {useEffect, useState} from 'react';
 import {View, TouchableOpacity, StyleSheet} from 'react-native';
 import Modal from 'react-native-modal';
 import {DEVICE_HEIGHT, DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import {formatAMPM} from '../../helper/commonFunctions';
+import {
+  checkIfTenMinutesPassed,
+  formatAMPM,
+} from '../../helper/commonFunctions';
 import {COLORS} from '../../helper/colors';
 import Text from '../../components/Text';
 import Video from 'react-native-video';
 import {Image} from 'react-native';
 import Icon from '../../helper/icon';
+import {useFocusEffect} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 
 const MessageModal = ({
   isVisible,
@@ -15,10 +20,24 @@ const MessageModal = ({
   item,
   onEdit,
   onDelete,
-  isEditable,
+
   onReact,
 }) => {
   const emojiReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+  const userData = useSelector(state => state?.userData);
+  const [isEditable, setIsEditable] = useState(false);
+
+  useEffect(() => {
+    if (
+      !checkIfTenMinutesPassed(item?.createdAt) &&
+      item?.message &&
+      item?.sender?._id == userData?.id
+    ) {
+      setIsEditable(true);
+    } else {
+      setIsEditable(false);
+    }
+  }, [item]);
 
   return (
     <Modal
@@ -138,31 +157,23 @@ const MessageModal = ({
           </View>
         </TouchableOpacity>
         {/* Actions */}
-        <View style={styles.actionRow}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Icon type="octicons" name="reply" size={20} color="black" />
-            <Text variant="semibold14" style={styles.actionText}>
-              Reply
-            </Text>
-          </TouchableOpacity>
-
-          {isEditable && (
+        {isEditable && (
+          <View style={styles.actionRow}>
             <TouchableOpacity style={styles.actionButton} onPress={onEdit}>
               <Icon type="feather" name="edit" size={20} color="black" />
               <Text variant="semibold14" style={styles.actionText}>
                 Edit
               </Text>
             </TouchableOpacity>
-          )}
-          {isEditable && (
+
             <TouchableOpacity style={styles.actionButton} onPress={onDelete}>
               <Icon type="antdesign" name="delete" size={20} color="black" />
               <Text variant="semibold14" style={styles.actionText}>
                 Delete
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        )}
       </View>
     </Modal>
   );
