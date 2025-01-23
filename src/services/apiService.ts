@@ -17,13 +17,13 @@ export const registerApi = (payload: any) => {
   return axiosInstance.post(API.REGISTER, payload);
 };
 
-export const applyReferralCodeApi = (payload: { referralCode: string }) => {
+export const applyReferralCodeApi = (payload: {referralCode: string}) => {
   return axiosInstance.post(API.APPLY_REFERRAL_CODE, payload);
 };
 
-// export const changePassword = (payload: any) => {
-//   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
-// };
+export const changePassword = (payload: any) => {
+  return axiosInstance.post(API.CHANGE_PASSWORD, payload);
+};
 
 export const otpPassword = (payload: any) => {
   return axiosInstance.post(API.OTP_PASSWORD, payload);
@@ -152,10 +152,10 @@ export const addComment = (payload: any) => {
   return axiosInstance.post(`${API.ADD_COMMENT}`, payload);
 };
 
-export const getComment = (payload: any,page:any) => {
-  console.log("🚀 ~ getComment ~ payload:", payload,page)
+export const getComment = (payload: any, page: any) => {
+  console.log('🚀 ~ getComment ~ payload:', payload, page);
   return axiosInstance.post(`content/comment?page=${page}`, payload);
-}
+};
 export const replyComment = (payload: any) => {
   return axiosInstance.post(`${API.COMMENT}/reply`, payload);
 };
@@ -230,7 +230,6 @@ export const editChatMessage = (convid: any, messageid: any, payload: any) => {
   );
 };
 export const reactChatMessage = (convid: any, messageid: any, payload: any) => {
-  
   return axiosInstance.post(
     `${API.CHAT}/${convid}/${messageid}/reactions`,
     payload,
@@ -241,7 +240,6 @@ export const deleteChatMessage = (convid: any, messageid: any) => {
     `${API.CHAT}/${convid}/messages/${messageid}/delete`,
   );
 };
-
 
 // Create a new quiz event (Admin)
 export const createQuizEventApi = (payload: any) => {
@@ -254,13 +252,20 @@ export const editQuizEventApi = (payload: any) => {
 };
 
 // List all upcoming quiz events
-export const listAllQuizEventsApi = (page: number = 1, pageSize: number = 10) => {
-  return axiosInstance.get(`${API.RAPIDFIRE_LIST}?page=${page}&pageSize=${pageSize}`);
+export const listAllQuizEventsApi = (
+  page: number = 1,
+  pageSize: number = 10,
+) => {
+  return axiosInstance.get(
+    `${API.RAPIDFIRE_LIST}?page=${page}&pageSize=${pageSize}`,
+  );
 };
 
 // Search quiz events
 export const searchQuizEventsApi = (query: string) => {
-  return axiosInstance.get(`${API.RAPIDFIRE_SEARCH}?query=${encodeURIComponent(query)}`);
+  return axiosInstance.get(
+    `${API.RAPIDFIRE_SEARCH}?query=${encodeURIComponent(query)}`,
+  );
 };
 
 // Recommend quiz events
@@ -284,8 +289,15 @@ export const getNextQuestionApi = (attemptId: string) => {
 };
 
 // Submit an answer for a specific quiz attempt
-export const submitAnswerApi = (quizId: string, attemptId: string, payload: any) => {
-  return axiosInstance.post(`rapidfire-quiz/${quizId}/attempt/${attemptId}/answer`, payload);
+export const submitAnswerApi = (
+  quizId: string,
+  attemptId: string,
+  payload: any,
+) => {
+  return axiosInstance.post(
+    `rapidfire-quiz/${quizId}/attempt/${attemptId}/answer`,
+    payload,
+  );
 };
 
 // Get current leaderboard and user's ranking for a quiz
@@ -295,5 +307,7 @@ export const getUserRankingApi = (quizId: string, limit: number = 10) => {
 
 // Get detailed results for a user's quiz attempt
 export const getDetailedResultsApi = (quizId: string, attemptId: string) => {
-  return axiosInstance.get(`rapidfire-quiz/${quizId}/attempt/${attemptId}/results`);
+  return axiosInstance.get(
+    `rapidfire-quiz/${quizId}/attempt/${attemptId}/results`,
+  );
 };
