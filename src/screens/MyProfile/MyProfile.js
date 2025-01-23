@@ -63,13 +63,11 @@ const MyProfile = ({navigation, route}) => {
 
   useEffect(() => {
     if (isFocused) {
-      if (userData?.profilePicture) {
-        setImageUri(
-          `${userData?.profilePicture}?timestamp=${new Date().getTime()}`,
-        );
+      if (type == 'other') {
+        setImageUri(profile?.profilePicture);
       } else {
         setImageUri(
-          `${profile?.profilePicture}?timestamp=${new Date().getTime()}`,
+          `${userData?.profilePicture}?timestamp=${new Date().getTime()}`,
         );
       }
     }
@@ -259,7 +257,7 @@ const MyProfile = ({navigation, route}) => {
 
             {/* Profile Picture Section */}
 
-            {userData?.profilePicture || profile?.profilePicture ? (
+            {imageUri ? (
               <View>
                 <Image
                   source={{
