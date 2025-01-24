@@ -65,7 +65,7 @@ const MyProfile = ({navigation, route}) => {
     if (isFocused) {
       if (type == 'other') {
         setImageUri(profile?.profilePicture);
-      } else {
+      } else if (userData?.profilePicture) {
         setImageUri(
           `${userData?.profilePicture}?timestamp=${new Date().getTime()}`,
         );
