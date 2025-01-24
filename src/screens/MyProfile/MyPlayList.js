@@ -33,6 +33,8 @@ import VideoPlayerModal from './VideoPlayerModal';
 import DraggableFlatList from 'react-native-draggable-flatlist';
 import PlaylistSearch from './PlaylistSearch';
 import PlaylistInfoModal from './PlaylistInfoModal';
+import PlaylistCreateModal from './PlaylistCreateModal';
+
 
 
 const MyPlaylists = ({navigation}) => {
@@ -43,30 +45,23 @@ const MyPlaylists = ({navigation}) => {
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [isVideoModalVisible, setIsVideoModalVisible] = useState(false);
-  const [isCreatePlaylistModalVisible, setIsCreatePlaylistModalVisible] =
-    useState(false);
-  const [isEditPlaylistModalVisible, setIsEditPlaylistModalVisible] =
-    useState(false);
+  const [isCreatePlaylistModalVisible, setIsCreatePlaylistModalVisible] = useState(false);
+  const [isEditPlaylistModalVisible, setIsEditPlaylistModalVisible] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [playlistToEdit, setPlaylistToEdit] = useState(null);
   const [publicPlaylists, setPublicPlaylists] = useState([]);
   const [expandedPublicPlaylist, setExpandedPublicPlaylist] = useState(null);
   const [publicPlaylistPosts, setPublicPlaylistPosts] = useState([]);
-  const [isPublicPlaylistsExpanded, setIsPublicPlaylistsExpanded] =
-    useState(false);
+  const [isPublicPlaylistsExpanded, setIsPublicPlaylistsExpanded] = useState(false);
   const [usernameCache, setUsernameCache] = useState({});
   const [isCommentsModalVisible, setIsCommentsModalVisible] = useState(false);
-  const [selectedPlaylistForComments, setSelectedPlaylistForComments] =
-    useState(null);
-  const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] =
-    useState(false);
-  const [
-    selectedPublicPlaylistForComments,
-    setSelectedPublicPlaylistForComments,
-  ] = useState(null);
+  const [selectedPlaylistForComments, setSelectedPlaylistForComments] = useState(null);
+  const [isPublicCommentsModalVisible, setIsPublicCommentsModalVisible] = useState(false);
+  const [selectedPublicPlaylistForComments, setSelectedPublicPlaylistForComments] = useState(null);
   const [filteredPublicPlaylists, setFilteredPublicPlaylists] = useState([]);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
-const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
+  const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
+  
   // User Authentication State
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
@@ -96,7 +91,7 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
     setSelectedPlaylistForInfo(playlist);
     setIsInfoModalVisible(true);
   };
-
+  
   const closeInfoModal = () => {
     setIsInfoModalVisible(false);
     setSelectedPlaylistForInfo(null);
@@ -116,7 +111,7 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
       }
 
       const userData = await response.json();
-      // console.log(userData);
+      console.log(userData);
 
       return userData?.username || userId;
     } catch (error) {
@@ -156,148 +151,149 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
     setIsPublicCommentsModalVisible(true);
   };
 
-  // Modify the fetchPostDetails function
-  const fetchPostDetails = async postId => {
+// Modify the fetchPostDetails function
+const fetchPostDetails = async (postId) => {
+  try {
+    // Get the latest token from AsyncStorage
+    const userData = await AsyncStorage.getItem('userData');
+    const currentToken = userData ? JSON.parse(userData).token : null;
+    
+    // For public playlists, we'll try to fetch without token first
+    let response;
     try {
-      // Get the latest token from AsyncStorage
-      const userData = await AsyncStorage.getItem('userData');
-      const currentToken = userData ? JSON.parse(userData).token : null;
-
-      // For public playlists, we'll try to fetch without token first
-      let response;
-      try {
+      response = await axios.get(
+        `https://api.scaleupapp.club/api/content/post/${postId}`
+      );
+    } catch (err) {
+      // If that fails and we have a token, try with authentication
+      if (currentToken) {
         response = await axios.get(
           `https://api.scaleupapp.club/api/content/post/${postId}`,
-        );
-      } catch (err) {
-        // If that fails and we have a token, try with authentication
-        if (currentToken) {
-          response = await axios.get(
-            `https://api.scaleupapp.club/api/content/post/${postId}`,
-            {
-              headers: {
-                Authorization: `Bearer ${currentToken}`,
-              },
-            },
-          );
-        } else {
-          throw err;
-        }
-      }
-      return response.data.contentDetails;
-    } catch (err) {
-      // Don't log 403 errors as they're expected for private posts
-      if (err?.response?.status !== 403) {
-        console.error(`Failed to fetch details for post ${postId}:`, err);
-      }
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    const fetchUserPlaylists = async () => {
-      try {
-        // Get the latest token from AsyncStorage
-        const userData = await AsyncStorage.getItem('userData');
-        const currentToken = userData ? JSON.parse(userData).token : null;
-
-        if (!currentToken || !userId) {
-          console.error('No authentication data available');
-          setLoading(false);
-          return;
-        }
-
-        // Fetch playlists for the specific user
-        const response = await axios.get(
-          `https://api.scaleupapp.club/api/playlists?userId=${userId}`,
           {
             headers: {
               Authorization: `Bearer ${currentToken}`,
             },
-          },
+          }
         );
-
-        // Fetch details for posts in each playlist
-        const playlistsWithDetails = await Promise.all(
-          response.data.map(async playlist => {
-            const postDetailsPromises = playlist.items.map(async item => {
-              const details = await fetchPostDetails(item.postId);
-              return {postId: item.postId, details};
-            });
-
-            const resolvedPostDetails = await Promise.all(postDetailsPromises);
-
-            const postDetailsMap = resolvedPostDetails.reduce((acc, item) => {
-              if (item.details) {
-                acc[item.postId] = item.details;
-              }
-              return acc;
-            }, {});
-
-            return {
-              ...playlist,
-              postDetailsMap,
-            };
-          }),
-        );
-
-        setPlaylists(playlistsWithDetails);
-        setLoading(false);
-      } catch (err) {
-        console.error('Failed to fetch playlists:', err);
-        setLoading(false);
-        Alert.alert('Error', 'Failed to load playlists');
+      } else {
+        throw err;
       }
-    };
-
-    if (userId) {
-      fetchUserPlaylists();
     }
-  }, [userId]);
-
-  const handleVideoPress = (postDetail, playlistId, isPublic = false) => {
-    if (postDetail.contentType === 'Video') {
-      setSelectedVideo({
-        ...postDetail,
-        playlistId,
-        isPublic, // Add this flag
-      });
-      setIsVideoModalVisible(true);
+    return response.data.contentDetails;
+  } catch (err) {
+    // Don't log 403 errors as they're expected for private posts
+    if (err?.response?.status !== 403) {
+      console.error(`Failed to fetch details for post ${postId}:`, err);
     }
-  };
+    return null;
+  }
+};
 
-  // Then update the handleVideoEnd function to handle both private and public playlists
-  const handleVideoEnd = async () => {
-    if (!selectedVideo || !selectedVideo.playlistId) return;
-
+useEffect(() => {
+  const fetchUserPlaylists = async () => {
     try {
-      // Mark the video as viewed
-      await markPostAsViewed(selectedVideo.playlistId, selectedVideo._id);
-
-      // If it's a public playlist, refresh the progress
-      if (selectedVideo.isPublic && expandedPublicPlaylist) {
-        // Update progress for public playlist
-        const response = await axios.get(
-          `https://api.scaleupapp.club/api/playlists/public/${selectedVideo.playlistId}/progress`,
-          {
-            params: {userId},
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        );
-
-        // Update the progress in the UI
-        const updatedPublicPlaylist = {
-          ...expandedPublicPlaylist,
-          progress: response.data.progress || 0,
-        };
-        setExpandedPublicPlaylist(updatedPublicPlaylist);
+      // Get the latest token from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const currentToken = userData ? JSON.parse(userData).token : null;
+      
+      if (!currentToken || !userId) {
+        console.error('No authentication data available');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Failed to update video progress:', error);
+
+      // Fetch playlists for the specific user
+      const response = await axios.get(
+        `https://api.scaleupapp.club/api/playlists?userId=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+          },
+        }
+      );
+
+      // Fetch details for posts in each playlist
+      const playlistsWithDetails = await Promise.all(
+        response.data.map(async playlist => {
+          const postDetailsPromises = playlist.items.map(async item => {
+            const details = await fetchPostDetails(item.postId);
+            return {postId: item.postId, details};
+          });
+
+          const resolvedPostDetails = await Promise.all(postDetailsPromises);
+
+          const postDetailsMap = resolvedPostDetails.reduce((acc, item) => {
+            if (item.details) {
+              acc[item.postId] = item.details;
+            }
+            return acc;
+          }, {});
+
+          return {
+            ...playlist,
+            postDetailsMap,
+          };
+        }),
+      );
+
+      setPlaylists(playlistsWithDetails);
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to fetch playlists:', err);
+      setLoading(false);
+      Alert.alert('Error', 'Failed to load playlists');
     }
   };
+
+  if (userId) {
+    fetchUserPlaylists();
+  }
+}, [userId]);
+
+const handleVideoPress = (postDetail, playlistId, isPublic = false) => {
+  if (postDetail.contentType === 'Video') {
+    setSelectedVideo({
+      ...postDetail,
+      playlistId,
+      isPublic // Add this flag
+    });
+    setIsVideoModalVisible(true);
+  }
+};
+
+  
+// Then update the handleVideoEnd function to handle both private and public playlists
+const handleVideoEnd = async () => {
+  if (!selectedVideo || !selectedVideo.playlistId) return;
+
+  try {
+    // Mark the video as viewed
+    await markPostAsViewed(selectedVideo.playlistId, selectedVideo._id);
+
+    // If it's a public playlist, refresh the progress
+    if (selectedVideo.isPublic && expandedPublicPlaylist) {
+      // Update progress for public playlist
+      const response = await axios.get(
+        `https://api.scaleupapp.club/api/playlists/public/${selectedVideo.playlistId}/progress`,
+        {
+          params: { userId },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      // Update the progress in the UI
+      const updatedPublicPlaylist = {
+        ...expandedPublicPlaylist,
+        progress: response.data.progress || 0
+      };
+      setExpandedPublicPlaylist(updatedPublicPlaylist);
+    }
+  } catch (error) {
+    console.error('Failed to update video progress:', error);
+  }
+};
 
   const togglePlaylistStatus = async playlistId => {
     try {
@@ -330,12 +326,10 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
       const response = await axios.get(
         'https://api.scaleupapp.club/api/playlists/public',
       );
-      const fetchedPlaylists = Array.isArray(response?.data)
-        ? response?.data
-        : [response?.data];
-      console.log('aaaaaaaaaaa', fetchedPlaylists);
+      const fetchedPlaylists = Array.isArray(response?.data) ? response?.data : [response?.data];
+      console.log("aaaaaaaaaaa",fetchedPlaylists);
       setPublicPlaylists(fetchedPlaylists);
-      console.log('aaaaaaaaaaa', publicPlaylists);
+      console.log("aaaaaaaaaaa",publicPlaylists);
 
       setFilteredPublicPlaylists(fetchedPlaylists); // Initialize filtered playlists
       setIsPublicPlaylistsExpanded(true);
@@ -349,31 +343,28 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
   };
   useEffect(() => {
     if (publicPlaylists) {
-      console.log('Updated publicPlaylists:', publicPlaylists);
+      console.log("Updated publicPlaylists:", publicPlaylists);
     }
   }, [publicPlaylists]);
   useEffect(() => {
     if (filteredPublicPlaylists) {
-      console.log('Updated filteredPublicPlaylists:', filteredPublicPlaylists);
+      console.log("Updated filteredPublicPlaylists:", filteredPublicPlaylists);
     }
   }, [filteredPublicPlaylists]);
-
-  const fetchPublicPlaylistDetails = async playlistId => {
+  
+  const fetchPublicPlaylistDetails = async (playlistId) => {
     try {
       // Get the latest token from AsyncStorage
       let userData = await AsyncStorage.getItem('userData');
       let currentToken = userData ? JSON.parse(userData).token : null;
       console.log(currentToken);
-
+  
       if (!currentToken) {
         console.error('No authentication token available');
-        Alert.alert(
-          'Error',
-          'Authentication required to fetch playlist details',
-        );
+        Alert.alert('Error', 'Authentication required to fetch playlist details');
         return;
       }
-
+  
       // Include token in the playlist request
       const response = await axios.get(
         `https://api.scaleupapp.club/api/playlists/public/${playlistId}`,
@@ -381,14 +372,14 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
           headers: {
             Authorization: `Bearer ${currentToken}`,
           },
-        },
+        }
       );
-
-      const postDetailsPromises = response.data.items.map(async item => {
+  
+      const postDetailsPromises = response.data.items.map(async (item) => {
         const details = await fetchPostDetails(item.postId);
-        return {postId: item.postId, details};
+        return { postId: item.postId, details };
       });
-
+  
       const resolvedPostDetails = await Promise.all(postDetailsPromises);
       const postDetailsMap = resolvedPostDetails.reduce((acc, item) => {
         if (item.details) {
@@ -396,35 +387,51 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
         }
         return acc;
       }, {});
-
+  
       const playlistWithDetails = {
         ...response.data,
         postDetailsMap,
         accessiblePosts: Object.keys(postDetailsMap).length,
         totalPosts: response.data.items.length,
       };
-
+  
       setExpandedPublicPlaylist(playlistWithDetails);
       setPublicPlaylistPosts(Object.values(postDetailsMap));
-
-      if (
-        playlistWithDetails.accessiblePosts < playlistWithDetails.totalPosts
-      ) {
+  
+      if (playlistWithDetails.accessiblePosts < playlistWithDetails.totalPosts) {
         console.log(
-          `Some posts in this playlist are private or require authentication (${playlistWithDetails.accessiblePosts}/${playlistWithDetails.totalPosts} posts accessible)`,
+          `Some posts in this playlist are private or require authentication (${playlistWithDetails.accessiblePosts}/${playlistWithDetails.totalPosts} posts accessible)`
         );
       }
     } catch (error) {
       console.error('Failed to fetch public playlist details:', error);
       Alert.alert(
         'Error',
-        error.response?.data?.message || 'Failed to fetch playlist details',
+        error.response?.data?.message || 'Failed to fetch playlist details'
       );
     }
   };
   
   
-
+  const handleCreatePlaylist = async (playlistData) => {
+    try {
+      const response = await axios.post(
+        'https://api.scaleupapp.club/api/playlists/create',
+        {
+          userId,
+          ...playlistData
+        }
+      );
+  
+      setPlaylists([...playlists, response.data]);
+    } catch (error) {
+      console.error('Failed to create playlist:', error);
+      Alert.alert(
+        'Error',
+        error.response?.data?.message || 'Failed to create playlist'
+      );
+    }
+  };
   // Create a new playlist
   const createPlaylist = async () => {
     if (!newPlaylistName.trim()) {
@@ -497,9 +504,12 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
   // Delete a playlist
   const deletePlaylist = async playlistId => {
     try {
-      await axios.delete('https://api.scaleupapp.club/api/playlists/delete', {
-        data: {userId, playlistId},
-      });
+      await axios.delete(
+        'https://api.scaleupapp.club/api/playlists/delete',
+        {
+          data: {userId, playlistId},
+        },
+      );
 
       // Update local state to remove deleted playlist
       const updatedPlaylists = playlists.filter(
@@ -845,33 +855,33 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
             </Text>
           </View>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <TouchableOpacity
-              onPress={() => openCommentsModal(playlist)}
-              style={{marginRight: 8}}>
-              <Icon
-                type="ionicon"
-                name="chatbubble-ellipses-outline"
-                size={28}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={e => openInfoModal(playlist, e)}
-              style={{marginRight: 8}}>
-              <Icon
-                type="ionicon"
-                name="information-circle-outline"
-                size={28}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <Icon
-              type="ionicon"
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color={COLORS.blue043142}
-            />
-          </View>
+  <TouchableOpacity
+    onPress={() => openCommentsModal(playlist)}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="chatbubble-ellipses-outline"
+      size={28}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <TouchableOpacity
+    onPress={(e) => openInfoModal(playlist, e)}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="information-circle-outline"
+      size={28}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <Icon
+    type="ionicon"
+    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+    size={24}
+    color={COLORS.blue043142}
+  />
+</View>
         </TouchableOpacity>
 
         {isExpanded && (
@@ -931,12 +941,12 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
                     </TouchableOpacity>
 
                     <View style={styles.actionButtons}>
-                      {isViewed && (
+                    {isViewed && (
                         <Icon
                           type="ionicon"
                           name="checkmark-circle"
                           size={24}
-                          color="green"
+                          color='green'
                         />
                       )}
                       <TouchableOpacity
@@ -951,6 +961,7 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
                           color={COLORS.red}
                         />
                       </TouchableOpacity>
+                      
                     </View>
                   </View>
                 </Swipeable>
@@ -1011,40 +1022,33 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
     }
   };
 
-  const PublicPlaylistItem = ({
-    playlist,
-    userId,
-    usernamesCache,
-    onExpand,
-    isExpanded,
-    publicPlaylistPosts,
-    openPublicPlaylistCommentsModal,
-  }) => {
+
+  const PublicPlaylistItem = ({ playlist, userId, usernamesCache, onExpand, isExpanded, publicPlaylistPosts, openPublicPlaylistCommentsModal }) => {
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState(null);
     const [hasLoadedProgress, setHasLoadedProgress] = useState(false);
-
+  
     const username = usernamesCache[playlist.userId] || 'Loading...';
     if (!usernamesCache[playlist.userId]) {
       fetchAndCacheUsername(playlist.userId);
     }
-
+  
     const fetchPublicPlaylistProgress = async () => {
       // Don't fetch if we already have progress and aren't expanded
       if (hasLoadedProgress && !isExpanded) return;
-
+  
       try {
         setError(null);
         const response = await axios.get(
           `https://api.scaleupapp.club/api/playlists/public/${playlist._id}/progress`,
           {
-            params: {userId},
+            params: { userId },
             headers: {
               'Content-Type': 'application/json',
-            },
-          },
+            }
+          }
         );
-
+  
         setProgress(response.data.progress || 0);
         setHasLoadedProgress(true);
       } catch (err) {
@@ -1053,21 +1057,21 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
         setProgress(0);
       }
     };
-
+  
     // Fetch progress when component mounts or userId/playlist._id changes
     useEffect(() => {
       if (userId && playlist._id) {
         fetchPublicPlaylistProgress();
       }
     }, [userId, playlist._id]);
-
+  
     // Refresh progress when expanded
     useEffect(() => {
       if (isExpanded && userId && playlist._id) {
         fetchPublicPlaylistProgress();
       }
     }, [isExpanded]);
-
+  
     if (error) {
       return (
         <View style={styles.errorContainer}>
@@ -1077,7 +1081,7 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
         </View>
       );
     }
-
+  
     return (
       <View style={styles.playlistContainer}>
         <TouchableOpacity
@@ -1095,51 +1099,49 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
             </Text>
           </View>
           <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <ProgressCircle progress={progress} style={{marginRight: 8}} />
-            <TouchableOpacity
-              onPress={e => {
-                e.stopPropagation();
-                openPublicPlaylistCommentsModal(playlist);
-              }}
-              style={{marginRight: 8}}>
-              <Icon
-                type="ionicon"
-                name="chatbubble-ellipses-outline"
-                size={24}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={e => {
-                e.stopPropagation();
-                openInfoModal(playlist, e);
-              }}
-              style={{marginRight: 8}}>
-              <Icon
-                type="ionicon"
-                name="information-circle-outline"
-                size={24}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-            <Icon
-              type="ionicon"
-              name={isExpanded ? 'chevron-up' : 'chevron-down'}
-              size={24}
-              color={COLORS.blue043142}
-            />
-          </View>
+  <ProgressCircle progress={progress} style={{marginRight: 8}} />
+  <TouchableOpacity
+    onPress={(e) => {
+      e.stopPropagation();
+      openPublicPlaylistCommentsModal(playlist);
+    }}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="chatbubble-ellipses-outline"
+      size={24}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <TouchableOpacity
+    onPress={(e) => {
+      e.stopPropagation();
+      openInfoModal(playlist, e);
+    }}
+    style={{marginRight: 8}}>
+    <Icon
+      type="ionicon"
+      name="information-circle-outline"
+      size={24}
+      color={COLORS.blue043142}
+    />
+  </TouchableOpacity>
+  <Icon
+    type="ionicon"
+    name={isExpanded ? 'chevron-up' : 'chevron-down'}
+    size={24}
+    color={COLORS.blue043142}
+  />
+</View>
         </TouchableOpacity>
-
+  
         {isExpanded && publicPlaylistPosts && (
           <View style={styles.expandedPlaylistContent}>
             {publicPlaylistPosts.map(postDetail => (
               <TouchableOpacity
                 key={postDetail._id}
                 style={styles.publicPlaylistPostItem}
-                onPress={() =>
-                  handleVideoPress(postDetail, playlist._id, true)
-                }>
+                onPress={() => handleVideoPress(postDetail, playlist._id, true)}>
                 <View style={styles.videoThumbnail}>
                   <Image
                     source={{uri: postDetail.contentURL}}
@@ -1172,29 +1174,27 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
       </View>
     );
   };
+  
+ 
 
-  const renderPublicPlaylistItem = useCallback(
-    playlist => {
-      const isExpanded =
-        expandedPublicPlaylist && expandedPublicPlaylist._id === playlist._id;
+const renderPublicPlaylistItem = useCallback((playlist) => {
+  const isExpanded = expandedPublicPlaylist && expandedPublicPlaylist._id === playlist._id;
 
-      return (
-        <PublicPlaylistItem
-          key={playlist._id}
-          playlist={playlist}
-          userId={userId}
-          usernamesCache={usernamesCache}
-          onExpand={togglePublicPlaylistExpansion}
-          isExpanded={isExpanded}
-          publicPlaylistPosts={publicPlaylistPosts}
-          openPublicPlaylistCommentsModal={openPublicPlaylistCommentsModal}
-        />
-      );
-    },
-    [expandedPublicPlaylist, userId, usernamesCache, publicPlaylistPosts],
+  return (
+    <PublicPlaylistItem
+      key={playlist._id}
+      playlist={playlist}
+      userId={userId}
+      usernamesCache={usernamesCache}
+      onExpand={togglePublicPlaylistExpansion}
+      isExpanded={isExpanded}
+      publicPlaylistPosts={publicPlaylistPosts}
+      openPublicPlaylistCommentsModal={openPublicPlaylistCommentsModal}
+    />
   );
+}, [expandedPublicPlaylist, userId, usernamesCache, publicPlaylistPosts]);
 
-  // ... rest of your component code ...
+// ... rest of your component code ...
 
   if (loading) {
     return <Text style={styles.loadingText}>Loading...</Text>;
@@ -1256,37 +1256,32 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
               />
             </View>
             <Button
-              text={
-                isPublicPlaylistsExpanded
-                  ? 'Hide Public Playlists'
-                  : 'Public Playlists'
-              }
-              width={nw(163)}
-              textStyle={{fontSize: 14}}
-              onPress={togglePublicPlaylists}
-            />
+  text={isPublicPlaylistsExpanded ? 'Hide Public Playlists' : 'Public Playlists'}
+  width={nw(163)}
+  textStyle={{fontSize: 14}}
+  onPress={togglePublicPlaylists}
+/>
 
-            {isPublicPlaylistsExpanded && (
-              <>
-                <PlaylistSearch
-                  playlists={publicPlaylists}
-                  onSearchResults={setFilteredPublicPlaylists}
-                />
-
-                {filteredPublicPlaylists &&
-                filteredPublicPlaylists.length > 0 ? (
-                  <View>
-                    {filteredPublicPlaylists.map(renderPublicPlaylistItem)}
-                  </View>
-                ) : (
-                  <View style={styles.emptyState}>
-                    <Text variant="medium16" color={COLORS.grey999999}>
-                      No playlists found
-                    </Text>
-                  </View>
-                )}
-              </>
-            )}
+{isPublicPlaylistsExpanded && (
+  <>
+    <PlaylistSearch 
+      playlists={publicPlaylists}
+      onSearchResults={setFilteredPublicPlaylists}
+    />
+    
+    {filteredPublicPlaylists && filteredPublicPlaylists.length > 0 ? (
+      <View>
+        {filteredPublicPlaylists.map(renderPublicPlaylistItem)}
+      </View>
+    ) : (
+      <View style={styles.emptyState}>
+        <Text variant="medium16" color={COLORS.grey999999}>
+          No playlists found
+        </Text>
+      </View>
+    )}
+  </>
+)}
 
             <View
               style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -1348,11 +1343,11 @@ const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
         isPublicPlaylist={true} // Add a flag to differentiate
         onClose={() => setIsPublicCommentsModalVisible(false)}
       />
-      <PlaylistInfoModal
-        visible={isInfoModalVisible}
-        onClose={closeInfoModal}
-        playlist={selectedPlaylistForInfo}
-      />
+      <PlaylistInfoModal 
+  visible={isInfoModalVisible}
+  onClose={closeInfoModal}
+  playlist={selectedPlaylistForInfo}
+/>
       {/* New Components */}
       {/* <PublicPlaylistsModal />
     <PublicPlaylistPostsModal /> */}
