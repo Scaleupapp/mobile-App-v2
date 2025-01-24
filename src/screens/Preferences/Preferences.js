@@ -163,29 +163,7 @@ const Preferences = ({navigation, route}) => {
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const menuItems = [
-    {id: 1, name: 'Settings', icon: 'settings-sharp'},
-    {id: 5, name: 'Restore Defaults', icon: 'Restore Defaults'},
-    {id: 3, name: 'Notifications', icon: 'notifications'},
-    {id: 4, name: 'Profile', icon: 'person'},
 
-    {id: 5, name: 'Help Centre', icon: 'help-circle'},
-  ];
-
-  // Render item for FlatList
-  const renderMenuItem = ({item}) => (
-    <TouchableOpacity
-      onPress={() => alert(`${item.name} clicked`)}
-      style={{flexDirection: 'row', marginBottom: nh(15)}}>
-      <Icon
-        name={item.icon}
-        size={19}
-        color={COLORS.grey999999}
-        style={{marginRight: 7}}
-      />
-      <Text variant="medium12">{item.name}</Text>
-    </TouchableOpacity>
-  );
   const bottomComp = param => {
     return (
       <View
@@ -260,7 +238,11 @@ const Preferences = ({navigation, route}) => {
                               styles.checkboxSelected,
                           ]}>
                           {currentQuestion.answer.includes(item.title) && (
-                            <Text style={styles.checkboxTick}>✔</Text>
+                            <Text
+                              color={COLORS.blue043142}
+                              style={styles.checkboxTick}>
+                              ✔
+                            </Text>
                           )}
                         </View>
                         <View style={styles.optionTextContainer}>
@@ -299,11 +281,13 @@ const Preferences = ({navigation, route}) => {
                             flexDirection: 'row',
                             alignItems: 'center',
                           }}>
-                          <Text variant="semibold12">{item}</Text>
+                          <Text color={COLORS.grey999999} variant="semibold12">
+                            {item}
+                          </Text>
                           <TouchableOpacity
                             style={styles.crossButton}
                             onPress={() => handleRemoveWord(index)}>
-                            <Text style={styles.crossText}>✕</Text>
+                            <Text color={COLORS.grey999999}>✕</Text>
                           </TouchableOpacity>
                         </View>
                       ))}

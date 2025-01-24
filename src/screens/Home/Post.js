@@ -42,7 +42,6 @@ const PostView = ({
   setSelectedIndex,
   myProfile = false,
 }) => {
-  // console.log('🚀 ~ PostView ~ item:', item);
   const [imageHeight, setImageHeight] = useState(0);
   const [videoDimensions, setVideoDimensions] = useState({width: 0, height: 0});
   const imageModalRef = useRef(null);
@@ -278,6 +277,10 @@ const PostView = ({
     ? `${profileData?.firstname?.charAt(0).toUpperCase()}${profileData?.lastname
         ?.charAt(0)
         .toUpperCase()}`
+    : item?.userId?.firstname
+    ? `${item?.userId?.firstname
+        ?.charAt(0)
+        .toUpperCase()}${item?.userId?.lastname?.charAt(0).toUpperCase()}`
     : `${item?.userId?.username?.charAt(0).toUpperCase()}`;
   const username = myProfile ? profileData?.username : item?.userId?.username;
 

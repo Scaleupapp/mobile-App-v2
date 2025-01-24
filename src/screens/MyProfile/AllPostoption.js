@@ -119,11 +119,12 @@ const AllPostoption = ({type, data}) => {
         <View style={{marginTop: nh(30), flex: 1}}>
           <View style={{marginBottom: nh(30)}}>
             <ToggleWithUnderline
-              options={['ALL POSTS', 'PLAYLISTS']}
+              // options={['ALL POSTS', 'PLAYLISTS']}
+              options={['ALL POSTS']}
               onToggle={setSelected}
             />
           </View>
-          {selected === 0 && <AllPost data={data} />}
+          {selected === 0 && <AllPost data={data} myProfile={false} />}
         </View>
       )}
     </View>
