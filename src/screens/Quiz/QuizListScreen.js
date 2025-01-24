@@ -58,6 +58,8 @@ const QuizList = ({ navigation }) => {
   const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(false);
   const [countdowns, setCountdowns] = useState({});
   const [userQuizAttempts, setUserQuizAttempts] = useState([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
 
 
   useEffect(() => {
@@ -76,6 +78,7 @@ const QuizList = ({ navigation }) => {
       } catch (error) {
         console.error('Error fetching user data:', error);
       } finally {
+        setIsInitialLoading(false);
         setIsLoading(false);
         setIsRefreshing(false);
       }
@@ -380,13 +383,13 @@ const QuizList = ({ navigation }) => {
     </View>
   );
 
-  // if (isLoading && !isRefreshing) {
-  //   return (
-  //     <View style={styles.loadingContainer}>
-  //       <ActivityIndicator size="large" color={COLORS.yellowF5BE00} />
-  //     </View>
-  //   );
-  // }
+  if (isInitialLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.yellowF5BE00} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>

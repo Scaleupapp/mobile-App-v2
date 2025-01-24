@@ -5,7 +5,8 @@ import {
   ScrollView, 
   StyleSheet, 
   TouchableOpacity, 
-  Dimensions 
+  Dimensions,
+  Image
 } from 'react-native';
 import Text from '../../components/Text';
 import { COLORS } from '../../helper/colors';
@@ -76,85 +77,117 @@ const LeaderboardModal = ({
       
       {detailedResults && (
         <View style={styles.summaryContainer}>
-          <Text variant="regular14">Total Score: {detailedResults.totalScore} pts</Text>
-          <Text variant="regular14">Final Rank: {detailedResults.finalRank}</Text>
-          <Text variant="regular14">Badge: {detailedResults.badge}</Text>
+          <Text variant="regular14" style={{ color: 'black' }}>
+          Total Score: {detailedResults.totalScore} pts</Text>
+          <Text variant="regular14" style={{ color: 'black' }}>
+Final Rank: {detailedResults.finalRank}</Text>
+          <Text variant="regular14" style={{ color: 'black' }}>
+Badge: {detailedResults.badge}</Text>
         </View>
       )}
       
-      {leaders.map((leader, index) => (
-        <View 
-          key={leader.userId} 
-          style={[
-            styles.leaderRow, 
-            userRanking === leader.rank && styles.userRankHighlight
-          ]}
-        >
-          <Text variant="regular14">
+      {leaders.slice(0, 10).map((leader, index) => (
+      <View 
+        key={leader.userId} 
+        style={[
+          styles.leaderRow, 
+          userRanking === leader.rank && styles.userRankHighlight
+        ]}
+      >
+        <View style={styles.leaderProfile}>
+          <Image 
+            source={{ uri: leader.profilePicture }} 
+            style={styles.profilePicture} 
+          />
+          <Text variant="regular14" style={{ color: 'black' }}>
+
             {leader.rank}. {leader.username}
           </Text>
-          <Text variant="semibold14">{leader.score} pts</Text>
         </View>
-      ))}
-      {userRanking && (
-        <Text variant="regular14" style={styles.userRankText}>
-          Your Rank: {userRanking}
-        </Text>
-      )}
-    </View>
-  );
+        <Text variant="semibold14" style={{ color: 'black' }}>{leader.score} pts</Text>
+      </View>
+    ))}
 
-  const renderDetailedQuizResults = () => {
-    if (!detailedResults) return null;
-  
-    return (
-      <View style={styles.detailsContainer}>
-        <Text variant="semibold16" style={styles.sectionTitle}>
-          Quiz Details
+    {/* Last Place User */}
+    {leaders.length > 10 && (
+      <View style={styles.lastPlaceContainer}>
+        <Text variant="regular14" style={{ color: 'black' }}>
+Last Place (500th)</Text>
+        <View style={styles.leaderProfile}>
+          <Image 
+            source={{ uri: leaders[leaders.length - 1].profilePicture }} 
+            style={styles.profilePicture} 
+          />
+          <Text variant="regular14" style={{ color: 'black' }}>
+
+            {leaders[leaders.length - 1].username}
+          </Text>
+        </View>
+        <Text variant="semibold14" style={{ color: 'black' }}>
+          {leaders[leaders.length - 1].score} pts
         </Text>
-        {detailedResults.detailedAnswers.map((answer, index) => (
-          <View key={`${answer.questionId}-${index}`} style={styles.questionCard}>
-            <Text variant="semibold14" style={styles.questionText}>
-              {index + 1}. {answer.questionText}
+      </View>
+    )}
+
+    {userRanking && (
+      <Text variant="regular14" style={styles.userRankText}>
+        Your Rank: {userRanking}
+      </Text>
+    )}
+  </View>
+);
+
+const renderDetailedQuizResults = () => {
+  if (!detailedResults) return null;
+
+  return (
+    <View style={styles.detailsContainer}>
+      <Text variant="semibold16" style={styles.sectionTitle}>
+        Quiz Details
+      </Text>
+      {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => (
+        <View key={`${answer.questionId}-${index}`} style={styles.questionCard}>
+          <Text variant="semibold14" style={styles.questionText}>
+            {index + 1}. {answer.questionText}
+          </Text>
+          <View style={styles.optionsContainer}>
+            {answer.options.map((option) => (
+              <Text 
+                key={`${answer.questionId}-${option}`} 
+                variant="regular14"
+                style={[
+                  styles.optionText,
+                  option === answer.selectedOption && styles.selectedOptionStyle,
+                  option === answer.correctAnswer && styles.correctAnswerStyle
+                ]}
+              >
+                {option}
+              </Text>
+            ))}
+          </View>
+          <View style={styles.metadataContainer}>
+            <Text variant="regular12" style={{ color: 'black' }}>
+              Time Taken: {answer.timeTaken} seconds
             </Text>
-            <View style={styles.optionsContainer}>
-              {answer.options.map((option) => (
-                <Text 
-                  key={`${answer.questionId}-${option}`} 
-                  variant="regular14"
-                  style={[
-                    styles.optionText,
-                    option === answer.selectedOption && styles.selectedOptionStyle,
-                    option === answer.correctAnswer && styles.correctAnswerStyle
-                  ]}
-                >
-                  {option}
+            <Text variant="regular12" style={answer.isCorrect ? styles.correctText : styles.incorrectText}>
+              {answer.isCorrect ? 'Correct' : 'Incorrect'}
+            </Text>
+          </View>
+          {answer.relatedTopics && (
+            <View style={styles.tagsContainer}>
+              <Text variant="regular12" style={styles.tagTitle}>Related Topics:</Text>
+              {answer.relatedTopics.map(topic => (
+                <Text key={`${answer.questionId}-${topic}`} variant="regular12" style={styles.tagText}>
+                  {topic}
                 </Text>
               ))}
             </View>
-            <View style={styles.metadataContainer}>
-              <Text variant="regular12">
-                Time Taken: {answer.timeTaken} seconds
-              </Text>
-              <Text variant="regular12" style={answer.isCorrect ? styles.correctText : styles.incorrectText}>
-                {answer.isCorrect ? 'Correct' : 'Incorrect'}
-              </Text>
-            </View>
-            {answer.relatedTopics && (
-              <View style={styles.tagsContainer}>
-                <Text variant="regular12" style={styles.tagTitle}>Related Topics:</Text>
-                {answer.relatedTopics.map(topic => (
-                  <Text key={`${answer.questionId}-${topic}`} variant="regular12" style={styles.tagText}>
-                    {topic}
-                  </Text>
-                ))}
-              </View>
-            )}
-          </View>
-        ))}
-      </View>
-    );
-  };
+          )}
+        </View>
+      ))}
+    </View>
+  );
+};
 
   return (
     <Modal
@@ -208,7 +241,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: height * 0.9,
-    padding: 20,
+    padding: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.15,
@@ -225,16 +258,18 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    paddingHorizontal: 2,
     backgroundColor: COLORS.whiteFFFFFF,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
-    marginBottom: 16
+    marginBottom: 16,
+    width: width, // Use full device width
   },
   tab: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    marginRight: 16,
+    width: width / 2, // Divide width equally between two tabs
+    alignItems: 'center', // Center tab text
   },
   activeTab: {
     borderBottomWidth: 2,
@@ -244,7 +279,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.greyF5F5F5,
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16
+    marginBottom: 16,
+    color: COLORS.blue043142
+
   },
   summaryContainer: {
     backgroundColor: COLORS.whiteFFFFFF,
@@ -252,7 +289,9 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    color: COLORS.blue043142
+
   },
   sectionTitle: {
     marginBottom: 16,
@@ -266,23 +305,29 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
-    alignItems: 'center'
+    alignItems: 'center',
+    color: COLORS.blue043142
+
   },
   userRankHighlight: {
     backgroundColor: COLORS.greyEEEEEE,
-    borderRadius: 8
+    borderRadius: 8,
+    color: COLORS.blue043142
+
   },
   userRankText: {
     textAlign: 'center',
     marginTop: 12,
     fontWeight: '600',
-    color: COLORS.blue043142
+    color: 'black'
   },
   leaderboardContainer: {
     backgroundColor: COLORS.greyF5F5F5, // Light background
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16
+    marginBottom: 16,
+    color: 'black'
+
   },
   sectionTitle: {
     marginBottom: 16,
@@ -296,17 +341,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
-    alignItems: 'center'
+    alignItems: 'center',
+    color: 'black'
+
   },
   userRankHighlight: {
     backgroundColor: COLORS.greyEEEEEE, // Soft highlight
-    borderRadius: 8
+    borderRadius: 8,
+    color: 'black'
+
   },
   userRankText: {
     textAlign: 'center',
     marginTop: 12,
     fontWeight: '600',
-    color: COLORS.blue043142
+    color: 'black'
   },
   questionCard: {
     backgroundColor: COLORS.whiteFFFFFF, // White background
@@ -332,7 +381,9 @@ const styles = StyleSheet.create({
   optionText: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 6
+    borderRadius: 6,
+    color: 'black'
+
   },
   selectedOptionStyle: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)', // Soft blue
@@ -340,29 +391,54 @@ const styles = StyleSheet.create({
   },
   correctAnswerStyle: {
     color: COLORS.greenSuccess,
-    fontWeight: '600'
+    fontWeight: '600',
+    color: 'black'
+
   },
   metadataContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    
   },
   correctText: {
-    color: COLORS.greenSuccess
+    color: 'green'
+    
   },
   incorrectText: {
-    color: COLORS.redError
+    color: 'red'
   },
   tagsContainer: {
     marginTop: 8
   },
   tagTitle: {
     fontWeight: 'bold',
-    marginBottom: 4
+    marginBottom: 4,
+    color: 'black'
+
   },
   tagText: {
     marginRight: 8,
     color: COLORS.blue043142
-  }
+  },
+  leaderProfile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profilePicture: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  lastPlaceContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.greyEEEEEE,
+    alignItems: 'center',
+    color: 'black'
+
+  },
 });
 
 export default LeaderboardModal;
