@@ -117,7 +117,8 @@ const LoginNavigator = ({route}) => {
   );
 };
 
-const TabNavigator = ({navigation, route}) => {
+const TabNavigator = props => {
+  const initialRouteName = props?.route?.params?.route || 'MainHome';
   const setBottomIcon = (img, focused) => {
     if (focused)
       return (
@@ -178,7 +179,7 @@ const TabNavigator = ({navigation, route}) => {
 
   return (
     <Tab.Navigator
-      initialRouteName={'MainHome'}
+      initialRouteName={initialRouteName}
       screenOptions={props => {
         return {
           tabBarLabelPosition: 'below-icon',
@@ -247,14 +248,17 @@ const TabNavigator = ({navigation, route}) => {
         }}
       />
       {/* <Tab.Screen
-  name={Routes.QuizList}
-  component={QuizListScreen}
-  options={{
-    tabBarLabel: ({focused}) => setBottomIconText('Quiz', focused),
-    tabBarIcon: ({focused}) =>
-      setBottomIcon(focused ? icons.quizActive : icons.quizInactive, focused),
-  }}
-/> */}
+        name={Routes.QuizList}
+        component={QuizListScreen}
+        options={{
+          tabBarLabel: ({focused}) => setBottomIconText('Quiz', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIcon(
+              focused ? icons.quizActive : icons.quizInactive,
+              focused,
+            ),
+        }}
+      /> */}
     </Tab.Navigator>
   );
 };
@@ -528,6 +532,11 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.QuizScreen}
         component={QuizScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizList}
+        component={QuizListScreen}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

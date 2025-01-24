@@ -21,6 +21,7 @@ const Button = ({
   height = 50, // Default height
   width = DEVICE_WIDTH - 32, // Default width
   textStyle = {},
+  buttonStyle = {},
   disabled = false,
 }) => {
   const isSolid = variant === 'solid';
@@ -41,6 +42,7 @@ const Button = ({
               borderColor: outlineColor,
               borderWidth: 1,
             },
+        {...buttonStyle},
       ]}
       onPress={onPress}>
       <View style={styles.content}>

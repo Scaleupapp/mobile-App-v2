@@ -447,22 +447,6 @@ const EditProfile = ({navigation}) => {
                     multiline
                   />
 
-                  {/* Save Button */}
-                  <View
-                    style={{
-                      marginTop: 30,
-                      alignSelf: 'flex-end',
-                      marginBottom: nh(100),
-                    }}>
-                    <Button
-                      text="Save"
-                      onPress={handleSave}
-                      width={nw(63)}
-                      height={nh(35)}
-                      textStyle={{fontSize: 14}}
-                    />
-                  </View>
-
                   {/* Date Picker Modal */}
                   <DatePicker
                     modal
@@ -505,10 +489,33 @@ const EditProfile = ({navigation}) => {
                     </View>
                   </TouchableOpacity>
                 ))}
+              <View style={{height: 50}} />
             </ScrollView>
           )}
         </View>
       </View>
+      {/* Save Button */}
+      {loading ? null : (
+        <View
+          style={{
+            // marginTop: 30,
+            // alignSelf: 'flex-end',
+            // marginBottom: nh(100),
+            position: 'absolute',
+            bottom: 0,
+          }}>
+          <Button
+            text="Save"
+            onPress={handleSave}
+            width={DEVICE_WIDTH}
+            buttonStyle={{
+              borderRadius: 0,
+            }}
+            // height={nh(35)}
+            textStyle={{fontSize: 20}}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 };
