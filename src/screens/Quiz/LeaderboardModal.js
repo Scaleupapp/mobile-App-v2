@@ -1,0 +1,368 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Modal, 
+  View, 
+  ScrollView, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Dimensions 
+} from 'react-native';
+import Text from '../../components/Text';
+import { COLORS } from '../../helper/colors';
+import { getUserRankingApi, getDetailedResultsApi, getLatestQuizAttemptIdApi } from '../../services/apiService';
+
+const { width, height } = Dimensions.get('window');
+
+const TABS = {
+  VIEW_RANK: 'View Rank',
+  QUIZ_DETAILS: 'Quiz Details'
+};
+
+const LeaderboardModal = ({ 
+  visible, 
+  onClose, 
+  quizId,  
+}) => {
+  const [leaders, setLeaders] = useState([]);
+  const [userRanking, setUserRanking] = useState(null);
+  const [detailedResults, setDetailedResults] = useState(null);
+  const [attemptId, setAttemptId] = useState(null);
+  const [activeTab, setActiveTab] = useState(TABS.VIEW_RANK);
+
+  useEffect(() => {
+    const fetchAttemptId = async () => {
+      if (visible && quizId) {
+        try {
+          const response = await getLatestQuizAttemptIdApi(quizId);
+          setAttemptId(response.data.attemptId);
+        } catch (error) {
+          console.error('Error fetching latest attempt ID:', error);
+        }
+      }
+    };
+
+    fetchAttemptId();
+  }, [visible, quizId]);
+
+  useEffect(() => {
+    if (visible && quizId && attemptId) {
+      fetchLeaderboardData();
+      fetchDetailedResults();
+    }
+  }, [visible, quizId, attemptId]);
+
+  const fetchLeaderboardData = async () => {
+    try {
+      const response = await getUserRankingApi(quizId);
+      setLeaders(response.data.leaders);
+      setUserRanking(response.data.userRanking);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
+
+  const fetchDetailedResults = async () => {
+    try {
+      const response = await getDetailedResultsApi(quizId, attemptId);
+      setDetailedResults(response.data);
+    } catch (error) {
+      console.error('Error fetching detailed results:', error);
+    }
+  };
+
+  const renderLeaderboard = () => (
+    <View style={styles.leaderboardContainer}>
+      <Text variant="semibold16" style={styles.sectionTitle}>Leaderboard</Text>
+      
+      {detailedResults && (
+        <View style={styles.summaryContainer}>
+          <Text variant="regular14">Total Score: {detailedResults.totalScore} pts</Text>
+          <Text variant="regular14">Final Rank: {detailedResults.finalRank}</Text>
+          <Text variant="regular14">Badge: {detailedResults.badge}</Text>
+        </View>
+      )}
+      
+      {leaders.map((leader, index) => (
+        <View 
+          key={leader.userId} 
+          style={[
+            styles.leaderRow, 
+            userRanking === leader.rank && styles.userRankHighlight
+          ]}
+        >
+          <Text variant="regular14">
+            {leader.rank}. {leader.username}
+          </Text>
+          <Text variant="semibold14">{leader.score} pts</Text>
+        </View>
+      ))}
+      {userRanking && (
+        <Text variant="regular14" style={styles.userRankText}>
+          Your Rank: {userRanking}
+        </Text>
+      )}
+    </View>
+  );
+
+  const renderDetailedQuizResults = () => {
+    if (!detailedResults) return null;
+  
+    return (
+      <View style={styles.detailsContainer}>
+        <Text variant="semibold16" style={styles.sectionTitle}>
+          Quiz Details
+        </Text>
+        {detailedResults.detailedAnswers.map((answer, index) => (
+          <View key={`${answer.questionId}-${index}`} style={styles.questionCard}>
+            <Text variant="semibold14" style={styles.questionText}>
+              {index + 1}. {answer.questionText}
+            </Text>
+            <View style={styles.optionsContainer}>
+              {answer.options.map((option) => (
+                <Text 
+                  key={`${answer.questionId}-${option}`} 
+                  variant="regular14"
+                  style={[
+                    styles.optionText,
+                    option === answer.selectedOption && styles.selectedOptionStyle,
+                    option === answer.correctAnswer && styles.correctAnswerStyle
+                  ]}
+                >
+                  {option}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.metadataContainer}>
+              <Text variant="regular12">
+                Time Taken: {answer.timeTaken} seconds
+              </Text>
+              <Text variant="regular12" style={answer.isCorrect ? styles.correctText : styles.incorrectText}>
+                {answer.isCorrect ? 'Correct' : 'Incorrect'}
+              </Text>
+            </View>
+            {answer.relatedTopics && (
+              <View style={styles.tagsContainer}>
+                <Text variant="regular12" style={styles.tagTitle}>Related Topics:</Text>
+                {answer.relatedTopics.map(topic => (
+                  <Text key={`${answer.questionId}-${topic}`} variant="regular12" style={styles.tagText}>
+                    {topic}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Text variant="semibold16" color={COLORS.grey999999}>
+              Close
+            </Text>
+          </TouchableOpacity>
+          
+          <View style={styles.tabContainer}>
+            {Object.values(TABS).map(tab => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, activeTab === tab && styles.activeTab]}
+                onPress={() => setActiveTab(tab)}>
+                <Text
+                  variant={activeTab === tab ? 'semibold14' : 'regular14'}
+                  color={
+                    activeTab === tab ? COLORS.yellowF5BE00 : COLORS.grey999999
+                  }>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          <ScrollView>
+            {activeTab === TABS.VIEW_RANK ? renderLeaderboard() : renderDetailedQuizResults()}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.6)'
+  },
+  modalContent: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: height * 0.9,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 20
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.greyF5F5F5
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    marginBottom: 16
+  },
+  tab: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginRight: 16,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: COLORS.yellowF5BE00,
+  },
+  leaderboardContainer: {
+    backgroundColor: COLORS.greyF5F5F5,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16
+  },
+  summaryContainer: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  sectionTitle: {
+    marginBottom: 16,
+    textAlign: 'center',
+    fontSize: 18,
+    color: COLORS.blue043142
+  },
+  leaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyEEEEEE,
+    alignItems: 'center'
+  },
+  userRankHighlight: {
+    backgroundColor: COLORS.greyEEEEEE,
+    borderRadius: 8
+  },
+  userRankText: {
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '600',
+    color: COLORS.blue043142
+  },
+  leaderboardContainer: {
+    backgroundColor: COLORS.greyF5F5F5, // Light background
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16
+  },
+  sectionTitle: {
+    marginBottom: 16,
+    textAlign: 'center',
+    fontSize: 18,
+    color: COLORS.blue043142
+  },
+  leaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyEEEEEE,
+    alignItems: 'center'
+  },
+  userRankHighlight: {
+    backgroundColor: COLORS.greyEEEEEE, // Soft highlight
+    borderRadius: 8
+  },
+  userRankText: {
+    textAlign: 'center',
+    marginTop: 12,
+    fontWeight: '600',
+    color: COLORS.blue043142
+  },
+  questionCard: {
+    backgroundColor: COLORS.whiteFFFFFF, // White background
+    borderRadius: 16,
+    padding: 16,
+    marginVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3
+  },
+  questionText: {
+    marginBottom: 12,
+    color: COLORS.blue043142
+  },
+  optionsContainer: {
+    marginBottom: 12,
+    backgroundColor: COLORS.greyF5F5F5,
+    borderRadius: 8,
+    padding: 8
+  },
+  optionText: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6
+  },
+  selectedOptionStyle: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)', // Soft blue
+    color: COLORS.blue043142
+  },
+  correctAnswerStyle: {
+    color: COLORS.greenSuccess,
+    fontWeight: '600'
+  },
+  metadataContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  correctText: {
+    color: COLORS.greenSuccess
+  },
+  incorrectText: {
+    color: COLORS.redError
+  },
+  tagsContainer: {
+    marginTop: 8
+  },
+  tagTitle: {
+    fontWeight: 'bold',
+    marginBottom: 4
+  },
+  tagText: {
+    marginRight: 8,
+    color: COLORS.blue043142
+  }
+});
+
+export default LeaderboardModal;

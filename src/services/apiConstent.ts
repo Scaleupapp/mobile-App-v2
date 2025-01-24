@@ -1,5 +1,5 @@
 export const API = {
-  BASE_URL: 'https://api.scaleupapp.club/api/',
+  BASE_URL: 'http://192.168.0.240:3000/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
   APPLY_REFERRAL_CODE: 'auth/applyReferralCode',
@@ -71,4 +71,5 @@ export const API = {
   RAPIDFIRE_LIST: 'rapidfire-quiz/list',
   RAPIDFIRE_SEARCH: 'rapidfire-quiz/search',
   RAPIDFIRE_RECOMMEND: 'rapidfire-quiz/recommend',
+  USER_QUIZ_ATTEMPTS: 'rapidfire-quiz/user-attempts', // New endpoint for fetching user quiz attempts
 };
