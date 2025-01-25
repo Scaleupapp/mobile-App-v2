@@ -35,8 +35,6 @@ import PlaylistSearch from './PlaylistSearch';
 import PlaylistInfoModal from './PlaylistInfoModal';
 import PlaylistCreateModal from './PlaylistCreateModal';
 
-
-
 const MyPlaylists = ({navigation}) => {
   // State Management
   const [playlists, setPlaylists] = useState([]);

@@ -244,7 +244,8 @@ const QuizList = ({ navigation }) => {
         return matchesSearch && 
                startTime <= currentTime && 
                endTime >= currentTime && 
-               !hasAttempted;
+               !hasAttempted &&
+               isRegistered;
       
       case TABS.COMPLETED:
         return matchesSearch && 
@@ -254,6 +255,8 @@ const QuizList = ({ navigation }) => {
         return false;
     }
   });
+
+  
 
   const handleViewLeaderboard = quizId => {
     setSelectedQuizId(quizId);
@@ -569,7 +572,7 @@ registeredBadge: {
   bottom: nh(1),
   right: nw(0),
   backgroundColor: COLORS.blue043142,
-  paddingHorizontal: nw(12),
+  paddingHorizontal: nw(8),
   paddingVertical: nh(6),
   borderRadius: 8,
 },
@@ -582,7 +585,7 @@ registerButton: {
   marginTop: nh(-30),
 },
 startQuizButton: {
-  backgroundColor: COLORS.blue043142,
+  backgroundColor: COLORS.yellowF5BE00,
   paddingVertical: nh(6),
   paddingHorizontal: nw(12),
   borderRadius: 8,

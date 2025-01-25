@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import Text from '../../components/Text';
 import { COLORS } from '../../helper/colors';
+import { navigationRef } from '../../../App';
+import Routes from '../../helper/routes';
 import { getUserRankingApi, getDetailedResultsApi, getLatestQuizAttemptIdApi } from '../../services/apiService';
 
 const { width, height } = Dimensions.get('window');
@@ -71,71 +73,87 @@ const LeaderboardModal = ({
     }
   };
 
+  const setUserData = (userId) => {
+    onClose(); // Close the modal first
+    navigationRef.navigate(Routes.OtherProfile, {
+      id: userId,
+    });
+  };
+
   const renderLeaderboard = () => (
     <View style={styles.leaderboardContainer}>
       <Text variant="semibold16" style={styles.sectionTitle}>Leaderboard</Text>
       
       {detailedResults && (
-        <View style={styles.summaryContainer}>
-          <Text variant="regular14" style={{ color: 'black' }}>
-          Total Score: {detailedResults.totalScore} pts</Text>
-          <Text variant="regular14" style={{ color: 'black' }}>
-Final Rank: {detailedResults.finalRank}</Text>
-          <Text variant="regular14" style={{ color: 'black' }}>
-Badge: {detailedResults.badge}</Text>
+        <View style={styles.scoreContainer}>
+          <View style={styles.scoreBox}>
+            <Text variant="semibold16" style={styles.scoreLabel}>Total Score</Text>
+            <Text variant="bold18" style={styles.scoreValue}>
+              {detailedResults.totalScore.toFixed(2)} pts
+            </Text>
+          </View>
+          <View style={styles.rankBox}>
+            <Text variant="semibold16" style={styles.rankLabel}>Final Rank</Text>
+            <Text variant="bold18" style={styles.rankValue}>
+              {detailedResults.finalRank}
+            </Text>
+          </View>
         </View>
       )}
       
       {leaders.slice(0, 10).map((leader, index) => (
-      <View 
-        key={leader.userId} 
-        style={[
-          styles.leaderRow, 
-          userRanking === leader.rank && styles.userRankHighlight
-        ]}
-      >
-        <View style={styles.leaderProfile}>
-          <Image 
-            source={{ uri: leader.profilePicture }} 
-            style={styles.profilePicture} 
-          />
+        <TouchableOpacity 
+          key={leader.userId} 
+          style={[
+            styles.leaderRow, 
+            userRanking === leader.rank && styles.userRankHighlight
+          ]}
+          onPress={() => setUserData(leader.userId)}
+        >
+          <View style={styles.leaderProfile}>
+            <Image 
+              source={{ uri: leader.profilePicture }} 
+              style={styles.profilePicture} 
+            />
+            <Text variant="regular14" style={{ color: 'black' }}>
+              {leader.rank}. {leader.username}
+            </Text>
+          </View>
+          <Text variant="semibold14" style={{ color: 'black' }}>{leader.score.toFixed(2)} pts</Text>
+        </TouchableOpacity>
+      ))}
+
+      {/* Last Place User */}
+      {leaders.length > 10 && (
+        <TouchableOpacity 
+          style={styles.lastPlaceContainer}
+          onPress={() => setUserData(leaders[leaders.length - 1].userId)}
+        >
           <Text variant="regular14" style={{ color: 'black' }}>
-
-            {leader.rank}. {leader.username}
+            Last Place (500th)
           </Text>
-        </View>
-        <Text variant="semibold14" style={{ color: 'black' }}>{leader.score} pts</Text>
-      </View>
-    ))}
-
-    {/* Last Place User */}
-    {leaders.length > 10 && (
-      <View style={styles.lastPlaceContainer}>
-        <Text variant="regular14" style={{ color: 'black' }}>
-Last Place (500th)</Text>
-        <View style={styles.leaderProfile}>
-          <Image 
-            source={{ uri: leaders[leaders.length - 1].profilePicture }} 
-            style={styles.profilePicture} 
-          />
-          <Text variant="regular14" style={{ color: 'black' }}>
-
-            {leaders[leaders.length - 1].username}
+          <View style={styles.leaderProfile}>
+            <Image 
+              source={{ uri: leaders[leaders.length - 1].profilePicture }} 
+              style={styles.profilePicture} 
+            />
+            <Text variant="regular14" style={{ color: 'black' }}>
+              {leaders[leaders.length - 1].username}
+            </Text>
+          </View>
+          <Text variant="semibold14" style={{ color: 'black' }}>
+            {leaders[leaders.length - 1].score.toFixed(2)} pts
           </Text>
-        </View>
-        <Text variant="semibold14" style={{ color: 'black' }}>
-          {leaders[leaders.length - 1].score} pts
+        </TouchableOpacity>
+      )}
+
+      {userRanking && (
+        <Text variant="regular14" style={styles.userRankText}>
+          Your Rank: {userRanking}
         </Text>
-      </View>
-    )}
-
-    {userRanking && (
-      <Text variant="regular14" style={styles.userRankText}>
-        Your Rank: {userRanking}
-      </Text>
-    )}
-  </View>
-);
+      )}
+    </View>
+  );
 
 const renderDetailedQuizResults = () => {
   if (!detailedResults) return null;
@@ -439,6 +457,40 @@ const styles = StyleSheet.create({
     color: 'black'
 
   },
+  scoreContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  scoreBox: {
+    backgroundColor: COLORS.blue043142,
+    borderRadius: 12,
+    padding: 12,
+    width: '48%',
+    alignItems: 'center',
+  },
+  rankBox: {
+    backgroundColor: COLORS.yellowF5BE00,
+    borderRadius: 12,
+    padding: 12,
+    width: '48%',
+    alignItems: 'center',
+  },
+  scoreLabel: {
+    color: COLORS.whiteFFFFFF,
+    marginBottom: 6,
+  },
+  scoreValue: {
+    color: COLORS.whiteFFFFFF,
+  },
+  rankLabel: {
+    color: COLORS.blue043142,
+    marginBottom: 6,
+  },
+  rankValue: {
+    color: COLORS.blue043142,
+  }
 });
 
 export default LeaderboardModal;

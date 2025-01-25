@@ -154,16 +154,19 @@ const QuizScreen = ({ navigation, route }) => {
 
   const startQuestionTimer = () => {
     clearInterval(intervalRef.current);
+    const startTime = Date.now();
     setTimer(10);
     intervalRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current);
-          setTimer(0);
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      const elapsedTime = (Date.now() - startTime) / 1000;
+      const remainingTime = Math.max(10 - elapsedTime, 0);
+      
+      setTimer(parseFloat(remainingTime.toFixed(2)));
+      
+      if (remainingTime <= 0) {
+        clearInterval(intervalRef.current);
+        setTimer(0);
+      }
+    }, 10);
   };
 
   const getOptionLetter = (options, selectedOption) => {
@@ -181,10 +184,12 @@ const QuizScreen = ({ navigation, route }) => {
         ? getOptionLetter(currentQuestion.options, selectedOption) 
         : 'skip';
       
+      const timeTaken = parseFloat((10 - timer).toFixed(2));
+      
       const response = await submitAnswerApi(quizId, attemptId, {
         questionId: currentQuestion.questionId,
         selectedOption: optionToSubmit,
-        timeTaken: 10 - timer
+        timeTaken: timeTaken
       });
       
       setIsSubmitting(false);
@@ -247,8 +252,8 @@ const QuizScreen = ({ navigation, route }) => {
           ))}
         </View>
         <View style={styles.actionContainer}>
-          <RNText style={styles.timerText}>Time left: {timer}s</RNText>
-          {timer === 0 ? (
+        <RNText style={styles.timerText}>Time left: {Math.floor(timer)}s</RNText>
+        {timer === 0 ? (
             <TouchableOpacity 
               style={styles.nextButton} 
               onPress={handleNextQuestion}
