@@ -1344,6 +1344,27 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-blur (4.4.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-compressor (1.10.3):
     - DoubleConversion
     - glog
@@ -2118,6 +2139,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - "react-native-blur (from `../node_modules/@react-native-community/blur`)"
   - react-native-compressor (from `../node_modules/react-native-compressor`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - react-native-document-picker (from `../node_modules/react-native-document-picker`)
@@ -2266,6 +2288,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-blur:
+    :path: "../node_modules/@react-native-community/blur"
   react-native-compressor:
     :path: "../node_modules/react-native-compressor"
   react-native-date-picker:
@@ -2419,6 +2443,7 @@ SPEC CHECKSUMS:
   React-logger: addd140841248966c2547eb94836399cc1061f4d
   React-Mapbuffer: 1bc8e611871f4965dac0bc47a4561421a6e20f69
   React-microtasksnativemodule: cff02bc87f8a1d5b9985c1c92ea8e84e854229d9
+  react-native-blur: 173953e28d5c90e8632f7bc23fc888fdc1bef8ee
   react-native-compressor: bcfddf34b82b060c2b0ea5e9f359740812a82207
   react-native-date-picker: 0df233236b40b6f561372af793d4eb3fb5af790f
   react-native-document-picker: 489aaeb15e9bc11cc31e577997867e93886eb565

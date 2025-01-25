@@ -21,20 +21,13 @@ export const applyReferralCodeApi = (payload: {referralCode: string}) => {
   return axiosInstance.post(API.APPLY_REFERRAL_CODE, payload);
 };
 
-
 export const fetchUserQuizAttemptsApi = () => {
   return axiosInstance.get(API.USER_QUIZ_ATTEMPTS);
 };
 
-
-// export const changePassword = (payload: any) => {
-//   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
-// };
 export const changePassword = (payload: any) => {
   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
 };
-
-
 
 export const otpPassword = (payload: any) => {
   return axiosInstance.post(API.OTP_PASSWORD, payload);
@@ -322,7 +315,9 @@ export const getUserRankingApi = (quizId: string, limit: number = 10) => {
 
 // Get detailed results for a user's quiz attempt
 export const getDetailedResultsApi = (quizId: string, attemptId: string) => {
-  return axiosInstance.get(`rapidfire-quiz/${quizId}/attempt/${attemptId}/results`);
+  return axiosInstance.get(
+    `rapidfire-quiz/${quizId}/attempt/${attemptId}/results`,
+  );
 };
 
 // Get the latest attempt ID for a specific quiz

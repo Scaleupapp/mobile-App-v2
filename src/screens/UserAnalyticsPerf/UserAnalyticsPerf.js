@@ -21,14 +21,8 @@ import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {UserAnalytics} from '../../services/apiService';
 
-export const UserAnalyticsPerf = () => {
-
-  const [data, setData] = useState({
-    activity: [],
-    interests: [],
-    areasOfImprovement: []
-  });
-  // const [data, setData] = useState({});
+export const UserAnalyticsPerf = ({navigation}) => {
+  const [data, setData] = useState({});
   const [expandedActivity, setExpandedActivity] = useState(true);
   const [expandedInterests, setExpandedInterests] = useState(true);
   const [expandedAreas, setExpandedAreas] = useState(true);
@@ -252,8 +246,6 @@ export const UserAnalyticsPerf = () => {
     </SafeAreaView>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   loadingIndicator: {

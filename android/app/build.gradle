@@ -87,14 +87,15 @@ android {
         applicationId "com.scaleup"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-<<<<<<< HEAD
+
         versionCode 2
         versionName '1.1'
-=======
         versionCode 1
         versionName "1.0"
         vectorDrawables.useSupportLibrary = true
->>>>>>> 5dae3d5241d90c9e1195331935bb378e1608b6ac
+        versionCode 2
+        versionName '1.1'
+        vectorDrawables.useSupportLibrary = true
     }
     signingConfigs {
         debug {

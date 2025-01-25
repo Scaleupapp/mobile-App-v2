@@ -22,10 +22,10 @@ const MenuScreen = ({navigation, route}) => {
       title: 'My Badge',
       nav: Routes.MyBadge,
     },
-    // {
-    //   title: 'Quiz',
-    //   nav: Routes.QuizList,
-    // },
+    {
+      title: 'Quiz',
+      nav: Routes.QuizList,
+    },
     {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
