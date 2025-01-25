@@ -12,17 +12,28 @@ import PostView from '../Home/Post';
 import Header from '../../components/Header';
 
 const UserPost = ({route}) => {
-  const {data} = route?.params;
+  const {data, myProfile = false} = route?.params;
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const userData = {
+    userId: {
+      _id: data?.userId,
+      profilePicture: data?.profilePicture,
+      username: data?.username,
+      firstname: data?.firstname,
+      lastname: data?.lastname,
+    },
+  };
+
   const renderItem = ({item, index}) => {
+    const newItem = {...item, ...userData};
     return (
       <PostView
-        item={item}
+        item={newItem}
         index={index}
         selectedIndex={selectedIndex}
         setSelectedIndex={setSelectedIndex}
-        myProfile={true}
+        myProfile={myProfile}
       />
     );
   };
