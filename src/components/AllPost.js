@@ -23,7 +23,8 @@ import Routes from '../helper/routes';
 import convertToProxyURL from 'react-native-video-cache';
 import Icon from '../helper/icon';
 
-export const AllPost = ({data, isDrafts = false}) => {
+export const AllPost = ({data, isDrafts = false, myProfile = true}) => {
+  console.log({myProfile});
   // console.log('AllPost Component Rendered with data:', data);
 
   const navigation = useNavigation();
@@ -243,20 +244,22 @@ export const AllPost = ({data, isDrafts = false}) => {
     return (
       <View style={styles.postContainer}>
         <View>
-          <View style={styles.headerContainer}>
-            <TouchableOpacity
-              style={styles.dotsButton}
-              onPress={() => {
-                // console.log('Dots button pressed for item:', item?.contentId);
-                handleBookmarkPress(item);
-              }}>
-              <Icons
-                name="ellipsis-vertical"
-                size={20}
-                color={COLORS.blue043142}
-              />
-            </TouchableOpacity>
-          </View>
+          {myProfile ? (
+            <View style={styles.headerContainer}>
+              <TouchableOpacity
+                style={styles.dotsButton}
+                onPress={() => {
+                  // console.log('Dots button pressed for item:', item?.contentId);
+                  handleBookmarkPress(item);
+                }}>
+                <Icons
+                  name="ellipsis-vertical"
+                  size={20}
+                  color={COLORS.blue043142}
+                />
+              </TouchableOpacity>
+            </View>
+          ) : null}
           {item?.smeVerify && (
             <View
               style={{
@@ -295,8 +298,7 @@ export const AllPost = ({data, isDrafts = false}) => {
                 };
                 navigation.navigate(Routes.UserPost, {
                   data: newData,
-                  item: item,
-                  index: index,
+                  myProfile: myProfile,
                 });
               }}>
               <Image

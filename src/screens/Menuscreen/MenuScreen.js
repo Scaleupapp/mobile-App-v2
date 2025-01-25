@@ -23,7 +23,7 @@ const MenuScreen = ({navigation, route}) => {
       nav: Routes.MyBadge,
     },
     {
-      title: 'Quiz',            // New item for Quiz
+      title: 'Quiz',
       nav: Routes.QuizList,
     },
     {
@@ -46,48 +46,49 @@ const MenuScreen = ({navigation, route}) => {
 
   const Card = ({item}) => {
     return (
-<Pressable
-  style={styles.card}
-  onPress={() => {
-    if (item?.title === 'Logout') {
-      // Show confirmation alert before logging out
-      Alert.alert(
-        'Logout',
-        'Are you sure you want to log out?',
-        [
-          {
-            text: 'Cancel',
-            onPress: () => {},
-            style: 'cancel',
-          },
-          {
-            text: 'Yes',
-            onPress: () => logoutUser(),
-          },
-        ],
-        {cancelable: true},
-      );
-    } else if (item.nav === Routes.QuizList) {
-      // Navigate to the Home screen and switch to QuizList tab
-      navigation.navigate(Routes.Home, { screen: Routes.QuizList });
-    } else {
-      navigation.navigate(item.nav);
-    }
-  }}>
-  <Text
-    variant="medium14"
-    color={COLORS.grey777777}
-    style={{marginLeft: nw(46)}}>
-    {item.title}
-  </Text>
-  <Icon
-    type="material"
-    name="keyboard-arrow-right"
-    color={COLORS.grey777777}
-    style={{marginRight: nw(10)}}
-  />
-</Pressable>
-
+      <Pressable
+        style={styles.card}
+        onPress={() => {
+          if (item?.title === 'Logout') {
+            // Show confirmation alert before logging out
+            Alert.alert(
+              'Logout',
+              'Are you sure you want to log out?',
+              [
+                {
+                  text: 'Cancel',
+                  onPress: () => {},
+                  style: 'cancel',
+                },
+                {
+                  text: 'Yes',
+                  onPress: () => logoutUser(),
+                },
+              ],
+              {cancelable: true},
+            );
+          }
+          // else if (item.nav === Routes.QuizList) {
+          //   // Navigate to the Home screen and switch to QuizList tab
+          //   navigation.navigate(Routes.Home, {screen: Routes.QuizList});
+          // }
+          else {
+            navigation.navigate(item.nav);
+          }
+        }}>
+        <Text
+          variant="medium14"
+          color={COLORS.grey777777}
+          style={{marginLeft: nw(46)}}>
+          {item.title}
+        </Text>
+        <Icon
+          type="material"
+          name="keyboard-arrow-right"
+          color={COLORS.grey777777}
+          style={{marginRight: nw(10)}}
+        />
+      </Pressable>
     );
   };
 
@@ -144,15 +145,15 @@ const styles = StyleSheet.create({
     paddingTop: nh(30),
   },
   card: {
-    height: nh(40),
-    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
-    borderRadius: nh(10),
-    width: DEVICE_WIDTH - nw(32),
-    borderWidth: 1,
-    borderColor: 'rgba(214, 214, 214, 0.2)',
+    marginBottom: nh(15),
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: nh(15),
+    borderWidth: 1,
+    borderRadius: nh(10),
+    height: nh(40),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderColor: 'rgba(214, 214, 214, 0.2)',
+    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
+    elevation: 3,
   },
 });

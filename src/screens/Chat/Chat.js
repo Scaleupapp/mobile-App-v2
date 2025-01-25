@@ -508,14 +508,6 @@ const Chat = ({navigation, route}) => {
             </Text>
             <TouchableOpacity
               onLongPress={() => {
-                if (
-                  !checkIfTenMinutesPassed(item?.createdAt) &&
-                  item?.message &&
-                  item?.sender?._id == userData?.id
-                ) {
-                  setIsEditable(true);
-                }
-
                 // if (item?.sender?._id == userData?.id && isEditable) {
                 setSelected(item);
                 setVisible(true);

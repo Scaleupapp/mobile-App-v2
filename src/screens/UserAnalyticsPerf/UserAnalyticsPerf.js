@@ -21,26 +21,20 @@ import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {UserAnalytics} from '../../services/apiService';
 
-export const UserAnalyticsPerf = () => {
-
-  const [data, setData] = useState({
-    activity: [],
-    interests: [],
-    areasOfImprovement: []
-  });
-  // const [data, setData] = useState({});
+export const UserAnalyticsPerf = ({navigation}) => {
+  const [data, setData] = useState({});
   const [expandedActivity, setExpandedActivity] = useState(true);
   const [expandedInterests, setExpandedInterests] = useState(true);
   const [expandedAreas, setExpandedAreas] = useState(true);
   const [moreActivity, setMoreActivity] = useState(false);
   const [moreInterests, seMoreInterests] = useState(false);
+  const [moreImp, seMoreImp] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     UserAnalytics()
       .then(res => {
         setIsLoading(false);
-        console.log('🚀 ~ UserAnalyticsPerf ~ res:', res.data);
         setData(res?.data);
       })
       .catch(e => {
@@ -82,6 +76,7 @@ export const UserAnalyticsPerf = () => {
   );
 
   const renderInterestTag = (interest, index) => {
+    const topic = interest?.interest || interest?.topic;
     const calculateFontSize = count => {
       const minFontSize = 18;
       const maxFontSize = 40;
@@ -93,7 +88,7 @@ export const UserAnalyticsPerf = () => {
     const fontSize = calculateFontSize(interest?.count);
     return (
       <Text key={index} style={[styles.interestTag, {fontSize: nh(fontSize)}]}>
-        {interest.interest}
+        {topic}
       </Text>
     );
   };
@@ -186,7 +181,11 @@ export const UserAnalyticsPerf = () => {
 
           {/* Areas of Improvement Section */}
           <View style={styles.section}>
-            <TouchableOpacity onPress={() => setExpandedAreas(!expandedAreas)}>
+            <TouchableOpacity
+              onPress={() => {
+                setExpandedAreas(!expandedAreas);
+                seMoreImp(false);
+              }}>
               <Text style={styles.heading}>
                 {expandedAreas
                   ? '▼ Areas of Improvement'
@@ -203,18 +202,30 @@ export const UserAnalyticsPerf = () => {
                   </Text>
                   <TouchableOpacity
                     style={styles.quizButton}
-                    onPress={() => Alert.alert('launching soon...')}
-                    // onPress={() => navigationRef.navigate(Routes.QuizScreen)}
-                  >
+                    onPress={() => navigation.navigate(Routes.QuizList)}>
                     <Text style={styles.quizButtonText}>Take Quiz</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                data.areasOfImprovement.map((area, index) => (
-                  <Text key={index} style={styles.areaTag}>
-                    {area}
-                  </Text>
-                ))
+                <>
+                  <View style={styles.interestsContainer}>
+                    {(moreImp
+                      ? data.areasOfImprovement
+                      : data.areasOfImprovement.slice(0, 7)
+                    ).map((interest, index) =>
+                      renderInterestTag(interest, index),
+                    )}
+                  </View>
+                  {data.areasOfImprovement.length > 7 && (
+                    <TouchableOpacity
+                      onPress={() => seMoreImp(!moreImp)}
+                      style={styles.expandButton}>
+                      <Text style={styles.expandButtonText}>
+                        {moreImp ? 'Show Less' : 'Show More'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               ))}
           </View>
         </ScrollView>
@@ -235,8 +246,6 @@ export const UserAnalyticsPerf = () => {
     </SafeAreaView>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   loadingIndicator: {
@@ -285,6 +294,7 @@ const styles = StyleSheet.create({
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: nh(1),
     borderColor: 'rgba(214, 214, 214, 0.2)',
+    elevation: 3,
   },
   profilePicture: {
     width: nw(50),
@@ -353,6 +363,7 @@ const styles = StyleSheet.create({
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: nh(1),
     borderColor: 'rgba(214, 214, 214, 0.2)',
+    elevation: 3,
   },
   quizMessage: {
     fontSize: nh(14),

@@ -32,6 +32,7 @@ import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
 import {useToast} from '../../components/CustomToast';
 import {navigationRef} from '../../../App';
+import {useIsFocused} from '@react-navigation/native';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -56,6 +57,21 @@ const MyProfile = ({navigation, route}) => {
   useEffect(() => {
     getprofiledetail(1);
   }, [route?.params?.id]);
+
+  const isFocused = useIsFocused();
+  const [imageUri, setImageUri] = useState('');
+
+  useEffect(() => {
+    if (isFocused) {
+      if (type == 'other') {
+        setImageUri(profile?.profilePicture);
+      } else if (userData?.profilePicture) {
+        setImageUri(
+          `${userData?.profilePicture}?timestamp=${new Date().getTime()}`,
+        );
+      }
+    }
+  }, [isFocused, userData?.profilePicture, profile?.profilePicture]);
 
   const getprofiledetail = async pageNum => {
     try {
@@ -241,18 +257,15 @@ const MyProfile = ({navigation, route}) => {
 
             {/* Profile Picture Section */}
 
-            {profile?.profilePicture ? (
+            {imageUri ? (
               <View>
                 <Image
                   source={{
-                    uri: `${
-                      userData.profilePicture
-                    }?timestamp=${new Date().getTime()}`,
+                    uri: imageUri,
                   }}
                   style={styles.profilePic}
                   resizeMode="cover"
                 />
-                
               </View>
             ) : (
               <View
@@ -276,9 +289,9 @@ const MyProfile = ({navigation, route}) => {
               </View>
             )}
 
-                      {/* Username + SME Icon (superscript next to name) */}
+            {/* Username + SME Icon (superscript next to name) */}
             <View style={styles.usernameContainer}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{flexDirection: 'row', alignItems: 'center'}}>
                 <Text
                   variant="semibold20"
                   color={COLORS.blue043142}
@@ -294,7 +307,6 @@ const MyProfile = ({navigation, route}) => {
                 )}
               </View>
             </View>
-
 
             {/* Show all badges with distinct colors */}
             <View style={styles.badgesContainer}>

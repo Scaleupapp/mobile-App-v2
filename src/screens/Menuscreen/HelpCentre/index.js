@@ -127,10 +127,8 @@ const styles = StyleSheet.create({
     paddingTop: nh(30),
   },
   card: {
-    // height: nh(40),
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderRadius: nh(10),
-    width: DEVICE_WIDTH - nw(32),
     borderWidth: 1,
     borderColor: 'rgba(214, 214, 214, 0.2)',
     flexDirection: 'row',
@@ -138,5 +136,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: nh(15),
     paddingVertical: nh(10),
+    backgroundColor: COLORS.whiteFFFFFF,
+    elevation: 3,
   },
 });
