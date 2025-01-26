@@ -311,13 +311,13 @@ export const Story = () => {
     startProgressAnimations();
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading stories...</Text>
-      </View>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <View style={styles.loadingContainer}>
+  //       <Text style={styles.loadingText}>Loading stories...</Text>
+  //     </View>
+  //   );
+  // }
 
   const currentUser = groupedStories[currentUserIndex];
   const currentStory = currentUser?.stories[currentStoryIndex];

@@ -71,4 +71,5 @@ export const API = {
   RAPIDFIRE_LIST: 'rapidfire-quiz/list',
   RAPIDFIRE_SEARCH: 'rapidfire-quiz/search',
   RAPIDFIRE_RECOMMEND: 'rapidfire-quiz/recommend',
+  USER_QUIZ_ATTEMPTS: 'rapidfire-quiz/user-attempts', // New endpoint for fetching user quiz attempts
 };
