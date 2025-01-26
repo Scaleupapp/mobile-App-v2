@@ -62,9 +62,6 @@ const PostView = ({
   const [position, setPosition] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
 
-
-  
-
   const getmeasure = () => {
     if (componentRef.current) {
       componentRef.current.measure((x, y, width, height, pageX, pageY) => {
@@ -358,7 +355,7 @@ const PostView = ({
           />
         </Pressable>
       ) : null}
-{item?.contentType === 'Video' && item?.contentURL ? (
+      {item?.contentType === 'Video' && item?.contentURL ? (
         <View style={styles.videoContainer}>
           {item?.isVerified && (
             <View style={styles.verifiedBadge}>
@@ -375,13 +372,13 @@ const PostView = ({
             thumbnail={item?.thumbnail}
             isVisible={isVideoVisible}
             videoDimensions={videoDimensions}
-            onProgress={(progress) => {
+            onProgress={progress => {
               // Optional: Track video progress
-              console.log('Video progress:', progress);
+              // console.log('Video progress:', progress);
             }}
             onEnd={() => {
               // Optional: Handle video completion
-              console.log('Video completed');
+              // console.log('Video completed');
             }}
           />
         </View>
