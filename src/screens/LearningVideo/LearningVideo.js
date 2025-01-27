@@ -24,6 +24,24 @@ const LearningVideo = () => {
   const [page, setPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const [visibleItems, setVisibleItems] = useState([]);
+
+  // Configure viewability
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50, // Item is considered visible when 50% in view
+    minimumViewTime: 300, // Must be visible for at least 300ms
+  }).current;
+
+  const onViewableItemsChanged = useRef(({viewableItems}) => {
+    // Update the list of visible items
+    setVisibleItems(viewableItems.map(item => item.key));
+  }).current;
+
+  useEffect(() => {
+    videoPageData(1);
+    setHasMore(true);
+  }, []);
+
   const videoPageData = async (pageNum, refresh = false) => {
     try {
       const {data} = await getHomePageData(pageNum, 15);
@@ -62,19 +80,21 @@ const LearningVideo = () => {
     throttle(() => {
       if (hasMore) {
         setLoading(true);
-        videoPageData(page + 1);
+        videoPageData(page);
       }
     }, 1000),
     [hasMore, page],
   );
 
   const renderItem = ({item, index}) => {
+    const isVisible = visibleItems.includes(index.toString());
     return (
       <PostView
         item={item}
         index={index}
         selectedIndex={selectedIndex}
         setSelectedIndex={setSelectedIndex}
+        isVideoVisible={isVisible}
       />
     );
   };
@@ -92,14 +112,23 @@ const LearningVideo = () => {
         backgroundColor={COLORS.yellowF5BE00}
       />
       <Header title={'Learning Videos'} />
-      <View style={{height: nh(10)}} />
+      {/* <View style={{height: nh(10), backgroundColor: COLORS.whiteFFFFFF}} /> */}
       <FlatList
         data={video}
         keyExtractor={(_, index) => index.toString()}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={() => (
-          <View style={{height: nh(16), backgroundColor: COLORS.whiteFFFFFF}} />
-        )}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        initialNumToRender={2}
+        updateCellsBatchingPeriod={100}
+        contentContainerStyle={{
+          backgroundColor: COLORS.whiteFFFFFF,
+          paddingTop: nh(15),
+        }}
+        //removeClippedSubviews={true}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -111,10 +140,11 @@ const LearningVideo = () => {
         ListFooterComponent={() =>
           loading && (
             <View
-              style={[
-                styles.loadingContainer,
-                {height: page > 1 ? nh(40) : DEVICE_HEIGHT},
-              ]}>
+              style={{
+                height: page > 1 ? nh(40) : DEVICE_HEIGHT,
+                paddingVertical: nh(20),
+                backgroundColor: COLORS.whiteFFFFFF,
+              }}>
               <ActivityIndicator size={'small'} color={COLORS.blue043142} />
             </View>
           )
@@ -124,7 +154,7 @@ const LearningVideo = () => {
             <View style={styles.emptyList}>
               <Text
                 variant="semibold16"
-                style={{width: '100%', textAlign: 'center'}}>
+                style={{width: '100%', textAlign: 'center', marginTop: nh(28)}}>
                 {
                   'Your Learning Video Feed is empty right now. Start exploring and following users from the search page to see their content here!'
                 }
@@ -133,7 +163,7 @@ const LearningVideo = () => {
           )
         }
         onEndReached={handleOnReachEnd}
-        onEndReachedThreshold={0.5}
+        // onEndReachedThreshold={0.5}
         // removeClippedSubviews={true}
         // maxToRenderPerBatch={5}
         // windowSize={5}
@@ -149,9 +179,10 @@ const styles = StyleSheet.create({
   },
   emptyList: {
     flex: 1,
-    justifyContent: 'center',
+    // justifyContent: 'center',
     alignItems: 'center',
-    marginTop: nh(28),
+    // marginTop: nh(28),
+    height: DEVICE_HEIGHT,
     backgroundColor: COLORS.whiteFFFFFF,
   },
   loadingContainer: {

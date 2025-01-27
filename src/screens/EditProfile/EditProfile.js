@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Pressable,
   ActivityIndicator,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, isAndroid, nh, nw} from '../../helper/scales';
@@ -25,14 +27,15 @@ import {
   isvalidMobileNumber,
 } from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
-import {launchImageLibrary} from 'react-native-image-picker';
-import {getProfile, updateProfile} from '../../services/apiService';
+import {getProfile} from '../../services/apiService';
 import {actions} from '../../redux/reducers';
 import {useToast} from '../../components/CustomToast';
 import DatePicker from 'react-native-date-picker';
 import ImagePicker from 'react-native-image-crop-picker';
 import axios from 'axios';
 import {API} from '../../services/apiConstent';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
+import {useIsFocused} from '@react-navigation/native';
 
 const professionData = [
   {
@@ -75,9 +78,10 @@ const EditProfile = ({navigation}) => {
   const [loading, setLoading] = useState(false);
   // We store the "raw" image file data here
   const [image, setImage] = useState(null);
-
+  const scrollRef = useRef(null);
   // Boolean that controls DatePicker visibility
   const [showDOBPicker, setShowDOBPicker] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
   // Single source of truth for form data, including Date of Birth
   const [form, setForm] = useState({
@@ -93,6 +97,19 @@ const EditProfile = ({navigation}) => {
     profilePicture: userData?.profilePicture ?? '',
   });
 
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      setForm(prevForm => ({
+        ...prevForm,
+        profilePicture: `${
+          userData?.profilePicture
+        }?timestamp=${new Date().getTime()}`,
+      }));
+    }
+  }, [isFocused, userData?.profilePicture]);
+
   // Error State
   const [errors, setErrors] = useState({
     firstname: '',
@@ -103,6 +120,27 @@ const EditProfile = ({navigation}) => {
     dob: '',
     about: '',
   });
+
+  useEffect(() => {
+    const keyboardShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      e => {
+        setKeyboardOpen(true);
+      },
+    );
+
+    const keyboardHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardOpen(false);
+      },
+    );
+
+    return () => {
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
+    };
+  }, []);
 
   const onSelect = number => {
     setSelected(number);
@@ -308,6 +346,193 @@ const EditProfile = ({navigation}) => {
     }
   };
 
+  const renderScrollView = () => {
+    if (isAndroid) {
+      return (
+        <ScrollView showsVerticalScrollIndicator={false} style={{flex: 1}}>
+          {renderContent()}
+        </ScrollView>
+      );
+    } else {
+      return (
+        <KeyboardAwareScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled" // Dismisses keyboard on tapping outside
+          enableResetScrollToCoords={false} // Prevents scroll reset
+          showsVerticalScrollIndicator={false}>
+          {renderContent()}
+        </KeyboardAwareScrollView>
+      );
+    }
+  };
+
+  const renderContent = () => {
+    return (
+      <>
+        {selected === 0 && (
+          <>
+            {/* Profile Picture Section */}
+            <View>
+              {form?.profilePicture ? (
+                <Image
+                  source={{
+                    uri: form?.profilePicture,
+                  }}
+                  style={styles.image}
+                  resizeMode="cover"
+                  onError={e => console.log('snkdnskdnk errrrv', e)}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.image,
+                    {
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLORS.greyD6D6D6,
+                    },
+                  ]}>
+                  <Text variant="semibold20" color={COLORS.black333333}>
+                    {`${userData?.firstname?.charAt(0)?.toUpperCase() || ''}${
+                      userData?.lastname?.charAt(0)?.toUpperCase() || ''
+                    }`}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.circle}>
+                <Icon
+                  type="antdesign"
+                  name="edit"
+                  style={{marginLeft: 0.5}}
+                  size={16}
+                  onPress={openGallery}
+                />
+              </View>
+            </View>
+
+            {/* Form Fields */}
+            <CustomTextInput
+              label="First Name"
+              placeholder="Enter First Name"
+              value={form.firstname}
+              onChangeText={value => handleInputChange('firstname', value)}
+              errorMessage={errors.firstname}
+            />
+            <CustomTextInput
+              label="Last Name"
+              placeholder="Enter Last Name"
+              value={form.lastname}
+              onChangeText={value => handleInputChange('lastname', value)}
+              errorMessage={errors.lastname}
+            />
+            <CustomTextInput
+              label="Email"
+              placeholder="Enter Email"
+              value={form.email}
+              onChangeText={value => handleInputChange('email', value)}
+              errorMessage={errors.email}
+            />
+            <CustomTextInput
+              label="Mobile No"
+              placeholder="Enter Mobile No"
+              value={form.mobile}
+              onChangeText={value => handleInputChange('mobile', value)}
+              errorMessage={errors.mobile}
+            />
+            <CustomTextInput
+              label="Location"
+              placeholder="Enter Location"
+              value={form.location}
+              onChangeText={value => handleInputChange('location', value)}
+              errorMessage={errors.location}
+            />
+
+            {/* Date of Birth */}
+            <View>
+              <Pressable
+                style={{
+                  position: 'absolute',
+                  height: '100%',
+                  width: '100%',
+                  zIndex: 1,
+                }}
+                onPress={() => setShowDOBPicker(true)}
+              />
+              <CustomTextInput
+                label="Date of Birth"
+                placeholder="Enter Date of Birth"
+                // Show the date in a readable format if it exists
+                value={
+                  form.dob
+                    ? formatDate(form.dob, true) // e.g. "MM/DD/YYYY"
+                    : ''
+                }
+                editable={false}
+                errorMessage={errors.dob}
+              />
+            </View>
+
+            <CustomTextInput
+              label="About"
+              placeholder="Enter About Yourself"
+              textinputType="L"
+              value={form.about}
+              onChangeText={value => handleInputChange('about', value)}
+              errorMessage={errors.about}
+              onFocus={() => {
+                if (Platform.OS === 'ios')
+                  scrollRef.current.scrollToEnd({animated: true});
+              }}
+              multiline
+            />
+
+            {/* Date Picker Modal */}
+            <DatePicker
+              modal
+              open={showDOBPicker}
+              date={form.dob || new Date()} // fallback if null
+              mode="date"
+              minimumDate={new Date('1970-01-01')}
+              maximumDate={new Date()}
+              onConfirm={selectedDate => {
+                // Save the new date in form
+                handleInputChange('dob', selectedDate);
+                setShowDOBPicker(false);
+              }}
+              onCancel={() => setShowDOBPicker(false)}
+            />
+          </>
+        )}
+
+        {/* Professional Section */}
+        {selected === 1 &&
+          professionData.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.card}
+              onPress={() => navigation.navigate(item.nav)}>
+              <View style={styles.cardimage}>
+                <Image
+                  source={item.image}
+                  style={{height: nh(29), width: nw(29)}}
+                  resizeMode="contain"
+                />
+              </View>
+              <View>
+                <Text variant="semibold14" color={COLORS.blue043142}>
+                  {item.title}
+                </Text>
+                <Text variant="medium12" color={COLORS.grey999999}>
+                  {item.subtitle}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        <View style={{height: nh(isAndroid ? 80 : 10)}} />
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
@@ -325,177 +550,12 @@ const EditProfile = ({navigation}) => {
           {loading ? (
             <ActivityIndicator size="large" color={COLORS.black333333} />
           ) : (
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {selected === 0 && (
-                <>
-                  {/* Profile Picture Section */}
-                  <View>
-                    {form?.profilePicture ? (
-                      <Image
-                        source={{
-                          uri: form?.profilePicture?.startsWith('file://')
-                            ? form?.profilePicture
-                            : `${
-                                form?.profilePicture
-                              }?timestamp=${new Date().getTime()}`,
-                        }}
-                        style={styles.image}
-                        resizeMode="cover"
-                        onError={e => console.log('snkdnskdnk errrrv', e)}
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.image,
-                          {
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            backgroundColor: COLORS.greyD6D6D6,
-                          },
-                        ]}>
-                        <Text variant="semibold20" color={COLORS.black333333}>
-                          {`${
-                            userData?.firstname?.charAt(0)?.toUpperCase() || ''
-                          }${
-                            userData?.lastname?.charAt(0)?.toUpperCase() || ''
-                          }`}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={styles.circle}>
-                      <Icon
-                        type="antdesign"
-                        name="edit"
-                        style={{marginLeft: 0.5}}
-                        size={16}
-                        onPress={openGallery}
-                      />
-                    </View>
-                  </View>
-
-                  {/* Form Fields */}
-                  <CustomTextInput
-                    label="First Name"
-                    placeholder="Enter First Name"
-                    value={form.firstname}
-                    onChangeText={value =>
-                      handleInputChange('firstname', value)
-                    }
-                    errorMessage={errors.firstname}
-                  />
-                  <CustomTextInput
-                    label="Last Name"
-                    placeholder="Enter Last Name"
-                    value={form.lastname}
-                    onChangeText={value => handleInputChange('lastname', value)}
-                    errorMessage={errors.lastname}
-                  />
-                  <CustomTextInput
-                    label="Email"
-                    placeholder="Enter Email"
-                    value={form.email}
-                    onChangeText={value => handleInputChange('email', value)}
-                    errorMessage={errors.email}
-                  />
-                  <CustomTextInput
-                    label="Mobile No"
-                    placeholder="Enter Mobile No"
-                    value={form.mobile}
-                    onChangeText={value => handleInputChange('mobile', value)}
-                    errorMessage={errors.mobile}
-                  />
-                  <CustomTextInput
-                    label="Location"
-                    placeholder="Enter Location"
-                    value={form.location}
-                    onChangeText={value => handleInputChange('location', value)}
-                    errorMessage={errors.location}
-                  />
-
-                  {/* Date of Birth */}
-                  <View>
-                    <Pressable
-                      style={{
-                        position: 'absolute',
-                        height: '100%',
-                        width: '100%',
-                        zIndex: 1,
-                      }}
-                      onPress={() => setShowDOBPicker(true)}
-                    />
-                    <CustomTextInput
-                      label="Date of Birth"
-                      placeholder="Enter Date of Birth"
-                      // Show the date in a readable format if it exists
-                      value={
-                        form.dob
-                          ? formatDate(form.dob, true) // e.g. "MM/DD/YYYY"
-                          : ''
-                      }
-                      editable={false}
-                      errorMessage={errors.dob}
-                    />
-                  </View>
-
-                  <CustomTextInput
-                    label="About"
-                    placeholder="Enter About Yourself"
-                    textinputType="L"
-                    value={form.about}
-                    onChangeText={value => handleInputChange('about', value)}
-                    errorMessage={errors.about}
-                    multiline
-                  />
-
-                  {/* Date Picker Modal */}
-                  <DatePicker
-                    modal
-                    open={showDOBPicker}
-                    date={form.dob || new Date()} // fallback if null
-                    mode="date"
-                    minimumDate={new Date('1970-01-01')}
-                    maximumDate={new Date()}
-                    onConfirm={selectedDate => {
-                      // Save the new date in form
-                      handleInputChange('dob', selectedDate);
-                      setShowDOBPicker(false);
-                    }}
-                    onCancel={() => setShowDOBPicker(false)}
-                  />
-                </>
-              )}
-
-              {/* Professional Section */}
-              {selected === 1 &&
-                professionData.map((item, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.card}
-                    onPress={() => navigation.navigate(item.nav)}>
-                    <View style={styles.cardimage}>
-                      <Image
-                        source={item.image}
-                        style={{height: nh(29), width: nw(29)}}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <View>
-                      <Text variant="semibold14" color={COLORS.blue043142}>
-                        {item.title}
-                      </Text>
-                      <Text variant="medium12" color={COLORS.grey999999}>
-                        {item.subtitle}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              <View style={{height: 50}} />
-            </ScrollView>
+            renderScrollView()
           )}
         </View>
       </View>
       {/* Save Button */}
-      {loading ? null : (
+      {loading || keyboardOpen ? null : (
         <View
           style={{
             // marginTop: 30,
