@@ -24,7 +24,6 @@ import convertToProxyURL from 'react-native-video-cache';
 import Icon from '../helper/icon';
 
 export const AllPost = ({data, isDrafts = false, myProfile = true}) => {
-  console.log({myProfile});
   // console.log('AllPost Component Rendered with data:', data);
 
   const navigation = useNavigation();

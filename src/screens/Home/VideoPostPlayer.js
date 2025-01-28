@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -9,19 +9,19 @@ import {
   Dimensions,
 } from 'react-native';
 import Video from 'react-native-video';
-import { COLORS } from '../../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
+import {COLORS} from '../../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import convertToProxyURL from 'react-native-video-cache';
 import Icon from '../../helper/icon';
 
-const VideoPostPlayer = ({ 
-  videoUrl, 
+const VideoPostPlayer = ({
+  videoUrl,
   thumbnail,
   isVisible,
   onProgress,
   onEnd,
   style,
-  videoDimensions 
+  videoDimensions,
 }) => {
   const videoRef = useRef(null);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -29,7 +29,7 @@ const VideoPostPlayer = ({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [resizeMode, setResizeMode] = useState('cover');
 
@@ -57,7 +57,7 @@ const VideoPostPlayer = ({
     }
   }, [isFullscreen]);
 
-  const formatTime = (seconds) => {
+  const formatTime = seconds => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -68,10 +68,10 @@ const VideoPostPlayer = ({
     return `-${formatTime(remaining)}`;
   };
 
-  const handleProgress = (progress) => {
-    const { currentTime: time } = progress;
+  const handleProgress = progress => {
+    const {currentTime: time} = progress;
     setCurrentTime(time);
-    
+
     if (!scrubbing) {
       Animated.timing(progressAnim, {
         toValue: (time / duration) * 100,
@@ -83,7 +83,7 @@ const VideoPostPlayer = ({
     onProgress?.(progress);
   };
 
-  const handleLoad = (meta) => {
+  const handleLoad = meta => {
     setDuration(meta.duration);
   };
 
@@ -119,18 +119,20 @@ const VideoPostPlayer = ({
       <Pressable onPress={handlePress}>
         <Video
           ref={videoRef}
-          source={{ uri: convertToProxyURL(videoUrl) }}
+          source={{uri: convertToProxyURL(videoUrl)}}
           style={[
             styles.video,
-            videoDimensions?.height 
+            videoDimensions?.height
               ? {
-                  aspectRatio: Number(videoDimensions.width / videoDimensions.height),
+                  aspectRatio: Number(
+                    videoDimensions.width / videoDimensions.height,
+                  ),
                   width: DEVICE_WIDTH - nw(32),
                 }
               : {
                   height: nh(250),
                   width: DEVICE_WIDTH - nw(32),
-                }
+                },
           ]}
           paused={paused}
           muted={muted}
@@ -151,8 +153,8 @@ const VideoPostPlayer = ({
             setIsFullscreen(true);
             setResizeMode('contain');
           }}
-          fullscreenAutorotate={true}  // Enable auto-rotation in fullscreen
-          fullscreenOrientation="all"   // Allow all orientations in fullscreen
+          fullscreenAutorotate={true} // Enable auto-rotation in fullscreen
+          fullscreenOrientation="all" // Allow all orientations in fullscreen
         />
 
         {/* Control overlay */}
@@ -166,7 +168,9 @@ const VideoPostPlayer = ({
             />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={toggleFullscreen} style={styles.controlButton}>
+          <TouchableOpacity
+            onPress={toggleFullscreen}
+            style={styles.controlButton}>
             <Icon
               type="ionicon"
               name={isFullscreen ? 'contract' : 'expand'}
@@ -178,9 +182,7 @@ const VideoPostPlayer = ({
 
         {/* Timer display */}
         <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>
-            {getRemainingTime()}
-          </Text>
+          <Text style={styles.timerText}>{getRemainingTime()}</Text>
         </View>
       </Pressable>
 
@@ -206,7 +208,7 @@ const VideoPostPlayer = ({
                 inputRange: [0, 100],
                 outputRange: ['0%', '100%'],
               }),
-              transform: [{ translateX: -6 }],
+              transform: [{translateX: -6}],
             },
           ]}
         />

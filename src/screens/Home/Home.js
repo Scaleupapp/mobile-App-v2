@@ -38,21 +38,15 @@ const Home = ({navigation, route}) => {
     minimumViewTime: 300, // Must be visible for at least 300ms
   }).current;
 
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+  const onViewableItemsChanged = useRef(({viewableItems}) => {
     // Update the list of visible items
     setVisibleItems(viewableItems.map(item => item.key));
   }).current;
 
-
-
-  // Refetch whenever we focus on this screen
-  useFocusEffect(
-    useCallback(() => {
-      homePageData(1);
-      setHasMore(true);
-      return () => {};
-    }, []),
-  );
+  useEffect(() => {
+    homePageData(1);
+    setHasMore(true);
+  }, []);
 
   // On mount, also fetch user profile
   useEffect(() => {
@@ -96,7 +90,7 @@ const Home = ({navigation, route}) => {
     throttle(() => {
       if (hasMore) {
         setLoading(true);
-        homePageData(page + 1);
+        homePageData(page);
       }
       console.log('handleOnReachEnd triggered');
     }, 1000),
@@ -104,9 +98,9 @@ const Home = ({navigation, route}) => {
   );
 
   // Render each post
-const renderItem = ({ item, index }) => {
+  const renderItem = ({item, index}) => {
     const isVisible = visibleItems.includes(index.toString());
-    
+
     return (
       <PostView
         item={item}
@@ -135,11 +129,10 @@ const renderItem = ({ item, index }) => {
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
             removeClippedSubviews={true}
-        maxToRenderPerBatch={3}
-        windowSize={5}
-        initialNumToRender={2}
-        updateCellsBatchingPeriod={100}
-
+            maxToRenderPerBatch={3}
+            windowSize={5}
+            initialNumToRender={2}
+            updateCellsBatchingPeriod={100}
             //removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
