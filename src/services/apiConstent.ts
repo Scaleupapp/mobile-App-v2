@@ -3,6 +3,7 @@ export const API = {
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
   APPLY_REFERRAL_CODE: 'auth/applyReferralCode',
+  GET_REFERRAL_CODE:  'auth/referral',
   PROFILE: 'users/profile',
   ALL_CONTENT: 'content/all-content',
   ALL_VIDEOS: 'content/allcontent',

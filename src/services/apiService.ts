@@ -324,3 +324,8 @@ export const getDetailedResultsApi = (quizId: string, attemptId: string) => {
 export const getLatestQuizAttemptIdApi = (quizId: string) => {
   return axiosInstance.get(`rapidfire-quiz/${quizId}/latest-attempt`);
 };
+
+
+export const getReferralDetailsApi = () => {
+  return axiosInstance.get(API.GET_REFERRAL_CODE);
+};
