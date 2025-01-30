@@ -157,7 +157,6 @@ export const addComment = (payload: any) => {
 };
 
 export const getComment = (payload: any, page: any) => {
-  console.log('🚀 ~ getComment ~ payload:', payload, page);
   return axiosInstance.post(`content/comment?page=${page}`, payload);
 };
 export const replyComment = (payload: any) => {
@@ -325,7 +324,10 @@ export const getLatestQuizAttemptIdApi = (quizId: string) => {
   return axiosInstance.get(`rapidfire-quiz/${quizId}/latest-attempt`);
 };
 
-
 export const getReferralDetailsApi = () => {
   return axiosInstance.get(API.GET_REFERRAL_CODE);
+};
+
+export const deleteContent = (contentId: any) => {
+  return axiosInstance.delete(`content/delete/${contentId}`);
 };
