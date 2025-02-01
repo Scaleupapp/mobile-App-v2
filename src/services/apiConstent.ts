@@ -11,6 +11,7 @@ export const API = {
   WORK_EXPERIENCE: 'users/work-experience',
   USER_PROFILE: 'users/profiles',
   HOMEPAGE: 'content/homepage',
+  RECOMMEND: 'content/recommendations',
   FOLLOW_UNFOLLOW: 'content/followUnfollowList',
   SEARCH_USER: 'content/search-users',
   ADD_COMMENT: 'content/add-comment',
