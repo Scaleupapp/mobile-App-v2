@@ -1,5 +1,5 @@
-import React, {useState, useEffect, useRef} from 'react';
-import {AddStory} from './AddStory';
+import React, { useState, useEffect, useRef } from 'react';
+import { AddStory } from './AddStory';
 import axios from 'axios';
 import {
   View,
@@ -17,22 +17,23 @@ import {
 import Video from 'react-native-video';
 import Text from '../../components/Text';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {getProfile} from '../../services/apiService';
+import { getProfile } from '../../services/apiService';
 
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 const STORY_DURATION = 30000;
 // const API_BASE_URL = 'https://api.scaleupapp.club/api';
 const API_BASE_URL = 'https://api.scaleupapp.club/api';
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [viewersModalVisible, setViewersModalVisible] = useState(false);
   const [currentUserIndex, setCurrentUserIndex] = useState(0);
   const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [groupedStories, setGroupedStories] = useState([]);
-  const [viewedStories, setViewedStories] = useState({});
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [profileData, setProfileData] = useState(null);
+  const [viewers, setViewers] = useState([]);
   const progressAnimations = useRef([]);
   const currentAnimation = useRef(null);
 
@@ -51,7 +52,6 @@ export const Story = () => {
       let res = await getProfile('');
       // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
-
       const userId = res?.data?.userProfileInfo?.id;
       if (userId) {
         fetchStories(userId);
@@ -64,22 +64,18 @@ export const Story = () => {
 
   const fetchStories = async userId => {
     if (!userId) return;
-
     try {
       setIsLoading(true);
       const [usersResponse, storiesResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/user`),
         axios.get(`${API_BASE_URL}/stories?userId=${userId}`),
       ]);
-
       const users = usersResponse.data || [];
       const stories = storiesResponse.data || [];
-
       // Filter out expired stories
       const activeStories = stories.filter(
         story => getRemainingTime(story.expiresAt) > 0,
       );
-
       let grouped = users
         .map(user => ({
           ...user,
@@ -89,12 +85,10 @@ export const Story = () => {
             ) || [],
         }))
         .filter(user => user.stories.length > 0);
-
       grouped = grouped.map(user => ({
         ...user,
         allStoriesViewed: user.stories.every(story => story.isViewed),
       }));
-
       // Sort by view status and expiration time
       grouped.sort((a, b) => {
         if (a.allStoriesViewed !== b.allStoriesViewed) {
@@ -109,9 +103,7 @@ export const Story = () => {
         );
         return aEarliestExpiry - bEarliestExpiry;
       });
-
       setGroupedStories(grouped);
-
       if (grouped.length > 0) {
         progressAnimations.current = grouped.map(user =>
           user.stories.map(() => new Animated.Value(0)),
@@ -136,9 +128,7 @@ export const Story = () => {
             ),
           }))
           .filter(user => user.stories.length > 0);
-
         if (updatedStories.length !== prevStories.length) {
-          // If the current story expired, close the modal
           if (
             modalVisible &&
             currentUser &&
@@ -154,7 +144,6 @@ export const Story = () => {
         return prevStories;
       });
     }, 100000000);
-
     return () => clearInterval(checkExpiration);
   }, [modalVisible, currentUser, currentStoryIndex]);
 
@@ -168,18 +157,16 @@ export const Story = () => {
 
   const markStoryAsViewed = async storyId => {
     if (!profileData?.id) return;
-
     try {
       await axios.post(`${API_BASE_URL}/stories/view`, {
         userId: profileData.id,
         storyId,
       });
-
       setGroupedStories(prev => {
         return prev.map(user => ({
           ...user,
           stories: user.stories.map(story =>
-            story._id === storyId ? {...story, isViewed: true} : story,
+            story._id === storyId ? { ...story, isViewed: true } : story,
           ),
         }));
       });
@@ -196,28 +183,20 @@ export const Story = () => {
 
   const startProgressAnimations = () => {
     if (!groupedStories[currentUserIndex]?.stories) return;
-
     if (currentAnimation.current) {
       currentAnimation.current.stop();
     }
-
     const currentUserStories = groupedStories[currentUserIndex].stories;
-
-    // Ensure the animation array exists for current user
     if (!progressAnimations.current[currentUserIndex]) {
       progressAnimations.current[currentUserIndex] = currentUserStories.map(
         () => new Animated.Value(0),
       );
     }
-
-    // Reset progress for upcoming stories
     currentUserStories.forEach((_, index) => {
       if (index > currentStoryIndex) {
         progressAnimations.current[currentUserIndex][index]?.setValue(0);
       }
     });
-
-    // Create and start animation for current story
     if (progressAnimations.current[currentUserIndex][currentStoryIndex]) {
       const animation = Animated.timing(
         progressAnimations.current[currentUserIndex][currentStoryIndex],
@@ -227,9 +206,8 @@ export const Story = () => {
           useNativeDriver: false,
         },
       );
-
       currentAnimation.current = animation;
-      animation.start(({finished}) => {
+      animation.start(({ finished }) => {
         if (finished && !isPaused) {
           handleNextStory();
         }
@@ -240,17 +218,12 @@ export const Story = () => {
   const handleNextStory = async () => {
     const currentUser = groupedStories[currentUserIndex];
     if (!currentUser) return;
-
     const currentStory = currentUser.stories[currentStoryIndex];
-
-    // Mark current story as viewed
     if (currentStory && !currentStory.isViewed) {
       await markStoryAsViewed(currentStory._id);
     }
-
     const isLastStoryInUser =
       currentStoryIndex === currentUser.stories.length - 1;
-
     if (isLastStoryInUser) {
       if (currentUserIndex === groupedStories.length - 1) {
         setModalVisible(false);
@@ -266,9 +239,7 @@ export const Story = () => {
 
   const handlePreviousStory = () => {
     if (currentStoryIndex > 0) {
-      progressAnimations.current[currentUserIndex]?.[
-        currentStoryIndex
-      ]?.setValue(0);
+      progressAnimations.current[currentUserIndex]?.[currentStoryIndex]?.setValue(0);
       setCurrentStoryIndex(prev => prev - 1);
     } else if (currentUserIndex > 0) {
       const prevUserIndex = currentUserIndex - 1;
@@ -292,7 +263,6 @@ export const Story = () => {
 
   const handleStoryPress = userIndex => {
     if (!groupedStories[userIndex]) return;
-
     setModalVisible(true);
     setCurrentUserIndex(userIndex);
     setCurrentStoryIndex(0);
@@ -311,13 +281,29 @@ export const Story = () => {
     startProgressAnimations();
   };
 
-  // if (isLoading) {
-  //   return (
-  //     <View style={styles.loadingContainer}>
-  //       <Text style={styles.loadingText}>Loading stories...</Text>
-  //     </View>
-  //   );
-  // }
+  // Function to fetch viewers for the current story (only for creator)
+  const fetchViewers = async () => {
+    if (!currentStory || !profileData) return;
+    try {
+      let token = await AsyncStorage.getItem('token');
+      token = token?.trim();
+      console.log('Token from storage:', token);
+      if (!token) {
+        throw new Error('No token found in AsyncStorage');
+      }
+      const response = await axios.get(
+        `${API_BASE_URL}/stories/${currentStory._id}/views`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setViewers(response.data);
+      setViewersModalVisible(true);
+    } catch (error) {
+      console.error(
+        'Error fetching story viewers:',
+        error.response?.data || error.message
+      );
+    }
+  };
 
   const currentUser = groupedStories[currentUserIndex];
   const currentStory = currentUser?.stories[currentStoryIndex];
@@ -332,7 +318,6 @@ export const Story = () => {
     const minutesRemaining = Math.floor(
       (earliestExpiry % (1000 * 60 * 60)) / (1000 * 60),
     );
-
     return (
       <View
         key={user._id}
@@ -350,7 +335,7 @@ export const Story = () => {
             },
           ]}>
           <Image
-            source={{uri: user.profilePicture}}
+            source={{ uri: user.profilePicture }}
             style={[
               styles.thumbnailImage,
               allStoriesViewed && styles.viewedThumbnailImage,
@@ -358,14 +343,11 @@ export const Story = () => {
           />
           <View style={styles.expiryBadge}>
             <Text style={styles.expiryText}>
-              {hoursRemaining > 0
-                ? `${hoursRemaining}h`
-                : `${minutesRemaining}m`}
+              {hoursRemaining > 0 ? `${hoursRemaining}h` : `${minutesRemaining}m`}
             </Text>
           </View>
         </TouchableOpacity>
-        <Text
-          style={[styles.username, allStoriesViewed && styles.viewedUsername]}>
+        <Text style={[styles.username, allStoriesViewed && styles.viewedUsername]}>
           {user.username}
         </Text>
       </View>
@@ -379,9 +361,7 @@ export const Story = () => {
         showsHorizontalScrollIndicator={false}
         style={styles.thumbnailScroll}>
         <AddStory />
-        {groupedStories.map((user, userIndex) =>
-          renderThumbnail(user, userIndex),
-        )}
+        {groupedStories.map((user, userIndex) => renderThumbnail(user, userIndex))}
       </ScrollView>
 
       <Modal
@@ -401,9 +381,7 @@ export const Story = () => {
                     styles.progressBarForeground,
                     {
                       width:
-                        progressAnimations.current[currentUserIndex]?.[
-                          index
-                        ]?.interpolate({
+                        progressAnimations.current[currentUserIndex]?.[index]?.interpolate({
                           inputRange: [0, 1],
                           outputRange: ['0%', '100%'],
                         }) || '0%',
@@ -416,7 +394,7 @@ export const Story = () => {
 
           <View style={styles.userInfoContainer}>
             <Image
-              source={{uri: currentUser?.profilePicture}}
+              source={{ uri: currentUser?.profilePicture }}
               style={styles.modalUserProfilePicture}
             />
             <Text style={styles.modalUsername}>{currentUser?.username}</Text>
@@ -433,12 +411,10 @@ export const Story = () => {
           <View style={styles.storyContent}>
             {currentStory?.type === 'image' ? (
               <>
-                {/* Log the URI for the image */}
                 {console.log(
                   'Image URI:',
                   `https://api.scaleupapp.club/api${currentStory?.url}`,
                 )}
-
                 <Image
                   source={{
                     uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
@@ -449,12 +425,10 @@ export const Story = () => {
               </>
             ) : currentStory?.type === 'video' ? (
               <>
-                {/* Log the URI for the video */}
                 {console.log(
                   'Video URI:',
                   `https://api.scaleupapp.club/api${currentStory?.url}`,
                 )}
-
                 <Video
                   source={{
                     uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
@@ -469,6 +443,13 @@ export const Story = () => {
             ) : null}
           </View>
 
+          {/* "Viewers" button at the bottom (only for the story creator) */}
+          {currentUser?._id === profileData?.id && (
+            <TouchableOpacity style={styles.viewersButtonBottom} onPress={fetchViewers}>
+              <Text style={styles.viewersButtonText}>Views</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.navigationContainer}>
             <Pressable
               style={[styles.navButton, styles.leftNav]}
@@ -482,6 +463,35 @@ export const Story = () => {
               onPressOut={handleTouchEnd}
               onPress={handleNextStory}
             />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Viewers Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={viewersModalVisible}
+        onRequestClose={() => setViewersModalVisible(false)}>
+        <View style={styles.viewersModalContainer}>
+          <View style={styles.viewersModalContent}>
+            <Text style={styles.viewersModalTitle}>Viewers</Text>
+            <ScrollView>
+              {viewers.map((view, index) => (
+                <View key={index} style={styles.viewerRow}>
+                  <Image
+                    source={{ uri: view.user.profilePicture }}
+                    style={styles.viewerImage}
+                  />
+                  <Text style={styles.viewerName}>{view.user.username}</Text>
+                </View>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeViewersButton}
+              onPress={() => setViewersModalVisible(false)}>
+              <Text style={styles.closeViewersButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -628,6 +638,65 @@ const styles = StyleSheet.create({
   },
   rightNav: {
     width: '70%',
+  },
+  viewersButtonBottom: {
+    position: 'absolute',
+    bottom: 70,
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    zIndex: 110,
+  },
+  viewersButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  viewersModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewersModalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+  },
+  viewersModalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  viewerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  viewerImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+  },
+  viewerName: {
+    fontSize: 14,
+    color: '#000',
+  },
+  closeViewersButton: {
+    backgroundColor: '#ff3040',
+    paddingVertical: 8,
+    borderRadius: 4,
+    marginTop: 10,
+  },
+  closeViewersButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 

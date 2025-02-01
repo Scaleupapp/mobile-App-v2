@@ -65,7 +65,6 @@ const Login = ({navigation}) => {
       setIsResendDisabled(false);
       setResendTimer(59); // Reset timer
     }
-
     return () => clearInterval(timer);
   }, [resendTimer, isResendDisabled]);
 
@@ -146,7 +145,6 @@ const Login = ({navigation}) => {
         newErrors.mobileNumber = 'Enter valid Mobile number';
         isValid = false;
       }
-
       if (state.requestedOtp && !state.otp) {
         newErrors.otp = 'OTP is required';
         isValid = false;
@@ -168,6 +166,13 @@ const Login = ({navigation}) => {
           password: state.password,
         });
         showToast({type: 'success', title: data?.message});
+        
+        // *** Store the token if returned ***
+        if (data.token) {
+          await AsyncStorage.setItem('token', data.token);
+          console.log('Token stored:', data.token);
+        }
+        
         const stringifiedUserData = JSON.stringify(data);
         await AsyncStorage.setItem('userData', stringifiedUserData);
         dispatch(actions.setUserData(stringifiedUserData));
@@ -187,8 +192,14 @@ const Login = ({navigation}) => {
             userOTP: state.otp,
           });
           showToast({type: 'success', title: 'OTP Sent Successfully'});
+          
+          // *** Store the token if returned (if applicable) ***
+          if (data.token) {
+            await AsyncStorage.setItem('token', data.token);
+            console.log('Token stored:', data.token);
+          }
+          
           const stringifiedUserData = JSON.stringify(data);
-
           await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(stringifiedUserData));
           if (phoneNumberData?.isPhoneNumberVerified) {
@@ -264,28 +275,11 @@ const Login = ({navigation}) => {
               />
               <View style={styles.rememberContainer}>
                 <View style={styles.checkboxContainer}>
-                  {/* <CheckBox
-                    checkedIcon="check-box"
-                    uncheckedIcon="check-box-outline-blank"
-                    iconType="material"
-                    checked={state.isChecked}
-                    onPress={() =>
-                      setState(prev => ({...prev, isChecked: !prev.isChecked}))
-                    }
-                    containerStyle={styles.checkboxStyle}
-                    checkedColor={COLORS.grey999999}
-                    uncheckedColor={COLORS.grey999999}
-                  />
-                  <Text variant="medium12" color={COLORS.grey999999}>
-                    Remember me
-                  </Text> */}
+                  {/* Uncomment the CheckBox if needed */}
                 </View>
                 <TouchableOpacity
                   onPress={() => navigation.navigate(Routes.ForgotPassword)}>
-                  <Text
-                    variant="medium12"
-                    color={COLORS.grey999999}
-                    style={{textDecorationLine: 'underline'}}>
+                  <Text variant="medium12" color={COLORS.grey999999} style={{textDecorationLine: 'underline'}}>
                     Forgot Password?
                   </Text>
                 </TouchableOpacity>
@@ -340,14 +334,6 @@ const Login = ({navigation}) => {
             onPress={loginUser}
           />
           {isAndroid ? <SocialLogin /> : null}
-          {/* {phoneNumberData?.loginOtp ? (
-            // <View
-            //   style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
-            //   <Text style={{color: 'red', fontSize: 20}}>
-            //     test otp: {phoneNumberData?.loginOtp}
-            //   </Text>
-            // </View>
-          ) : null} */}
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don’t have an account! </Text>
             <RNText
@@ -402,11 +388,6 @@ const styles = StyleSheet.create({
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  checkboxStyle: {
-    padding: 0,
-    margin: 0,
-    marginRight: nw(5),
   },
   signupContainer: {
     position: 'absolute',
