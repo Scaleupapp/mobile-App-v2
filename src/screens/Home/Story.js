@@ -20,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {getProfile} from '../../services/apiService';
 
 const {width, height} = Dimensions.get('window');
-const STORY_DURATION = 60000;
+const STORY_DURATION = 30000;
 // const API_BASE_URL = 'https://api.scaleupapp.club/api';
 const API_BASE_URL = 'https://api.scaleupapp.club/api';
 
