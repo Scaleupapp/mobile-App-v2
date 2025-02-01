@@ -295,7 +295,6 @@ export const RootNavigator = () => {
       if (fcmToken) {
         try {
           const {data} = await SaveFcm({FcmToken: fcmToken});
-          console.log('🚀 ~ pushAPI ~ data:', data);
         } catch (error) {
           console.log('fireeee ', error);
         }
