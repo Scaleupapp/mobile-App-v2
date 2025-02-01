@@ -65,6 +65,7 @@ const Routes = {
   Quiz: 'Quiz',
   QuizList: 'QuizList',
   QuizScreen: 'QuizScreen',
+  EditGroupProfile: 'EditGroupProfile',
 };
 
 export default Routes;

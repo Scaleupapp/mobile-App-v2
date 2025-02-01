@@ -336,3 +336,16 @@ export const getReferralDetailsApi = () => {
 export const deleteContent = (contentId: any) => {
   return axiosInstance.delete(`content/delete/${contentId}`);
 };
+
+// study groups
+export const getStudyGroups = () => {
+  return axiosInstance.get(`${API.CHAT}`);
+};
+
+export const createStudyGroups = (payload: any) => {
+  return axiosInstance.post(`${API.CREATE_GROUP}`, payload);
+};
+
+export const getStudyGroupMsg = (groupId: any) => {
+  return axiosInstance.get(`${API.CHAT}/group/${groupId}/messages`);
+};
