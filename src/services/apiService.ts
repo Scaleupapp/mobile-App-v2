@@ -41,9 +41,10 @@ export const getHomePageData = (page: any, pageSize: any) => {
   return axiosInstance.get(`${API.HOMEPAGE}?page=${page}&pageSize=${pageSize}`);
 };
 
-
 export const getRecommendedContent = (page: any, pageSize: any) => {
-  return axiosInstance.get(`${API.RECOMMEND}?page=${page}&pageSize=${pageSize}`);
+  return axiosInstance.get(
+    `${API.RECOMMEND}?page=${page}&pageSize=${pageSize}`,
+  );
 };
 
 export const getvideoPageData = (payload: any) => {
@@ -335,6 +336,10 @@ export const getReferralDetailsApi = () => {
 
 export const deleteContent = (contentId: any) => {
   return axiosInstance.delete(`content/delete/${contentId}`);
+};
+
+export const deleteStory = (payload: any) => {
+  return axiosInstance.delete(`stories`, payload);
 };
 
 // study groups

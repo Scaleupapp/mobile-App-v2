@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { AddStory } from './AddStory';
+import React, {useState, useEffect, useRef} from 'react';
+import {AddStory} from './AddStory';
 import axios from 'axios';
 import {
   View,
@@ -13,15 +13,17 @@ import {
   Platform,
   StatusBar,
   Pressable,
+  Alert,
 } from 'react-native';
 import Video from 'react-native-video';
 import Text from '../../components/Text';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getProfile } from '../../services/apiService';
+import {deleteStory} from '../../services/apiService';
+import Icon from '../../helper/icon';
+import {COLORS} from '../../helper/colors';
+import {useSelector} from 'react-redux';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 const STORY_DURATION = 30000;
-// const API_BASE_URL = 'https://api.scaleupapp.club/api';
 const API_BASE_URL = 'https://api.scaleupapp.club/api';
 
 export const Story = () => {
@@ -32,14 +34,17 @@ export const Story = () => {
   const [groupedStories, setGroupedStories] = useState([]);
   const [isPaused, setIsPaused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [profileData, setProfileData] = useState(null);
   const [viewers, setViewers] = useState([]);
   const progressAnimations = useRef([]);
   const currentAnimation = useRef(null);
+  const userData = useSelector(state => state?.userData);
+  const [profileData, setProfileData] = useState(userData);
 
   useEffect(() => {
     fetchStories();
-    getProfileData();
+  }, []);
+  useEffect(() => {
+    fetchStories();
     return () => {
       if (currentAnimation.current) {
         currentAnimation.current.stop();
@@ -47,28 +52,12 @@ export const Story = () => {
     };
   }, []);
 
-  const getProfileData = async () => {
-    try {
-      let res = await getProfile('');
-      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
-      setProfileData(res?.data?.userProfileInfo);
-      const userId = res?.data?.userProfileInfo?.id;
-      if (userId) {
-        fetchStories(userId);
-      }
-    } catch (error) {
-      console.log('Profile data fetch error:', error?.response?.data?.message);
-      setIsLoading(false);
-    }
-  };
-
-  const fetchStories = async userId => {
-    if (!userId) return;
+  const fetchStories = async () => {
     try {
       setIsLoading(true);
       const [usersResponse, storiesResponse] = await Promise.all([
         axios.get(`${API_BASE_URL}/user`),
-        axios.get(`${API_BASE_URL}/stories?userId=${userId}`),
+        axios.get(`${API_BASE_URL}/stories?userId=${userData?.id}`),
       ]);
       const users = usersResponse.data || [];
       const stories = storiesResponse.data || [];
@@ -166,7 +155,7 @@ export const Story = () => {
         return prev.map(user => ({
           ...user,
           stories: user.stories.map(story =>
-            story._id === storyId ? { ...story, isViewed: true } : story,
+            story._id === storyId ? {...story, isViewed: true} : story,
           ),
         }));
       });
@@ -207,7 +196,7 @@ export const Story = () => {
         },
       );
       currentAnimation.current = animation;
-      animation.start(({ finished }) => {
+      animation.start(({finished}) => {
         if (finished && !isPaused) {
           handleNextStory();
         }
@@ -239,7 +228,9 @@ export const Story = () => {
 
   const handlePreviousStory = () => {
     if (currentStoryIndex > 0) {
-      progressAnimations.current[currentUserIndex]?.[currentStoryIndex]?.setValue(0);
+      progressAnimations.current[currentUserIndex]?.[
+        currentStoryIndex
+      ]?.setValue(0);
       setCurrentStoryIndex(prev => prev - 1);
     } else if (currentUserIndex > 0) {
       const prevUserIndex = currentUserIndex - 1;
@@ -285,22 +276,16 @@ export const Story = () => {
   const fetchViewers = async () => {
     if (!currentStory || !profileData) return;
     try {
-      let token = await AsyncStorage.getItem('token');
-      token = token?.trim();
-      console.log('Token from storage:', token);
-      if (!token) {
-        throw new Error('No token found in AsyncStorage');
-      }
       const response = await axios.get(
         `${API_BASE_URL}/stories/${currentStory._id}/views`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        {headers: {Authorization: `Bearer ${userData?.token}`}},
       );
       setViewers(response.data);
       setViewersModalVisible(true);
     } catch (error) {
       console.error(
         'Error fetching story viewers:',
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
     }
   };
@@ -335,7 +320,7 @@ export const Story = () => {
             },
           ]}>
           <Image
-            source={{ uri: user.profilePicture }}
+            source={{uri: user.profilePicture}}
             style={[
               styles.thumbnailImage,
               allStoriesViewed && styles.viewedThumbnailImage,
@@ -343,11 +328,14 @@ export const Story = () => {
           />
           <View style={styles.expiryBadge}>
             <Text style={styles.expiryText}>
-              {hoursRemaining > 0 ? `${hoursRemaining}h` : `${minutesRemaining}m`}
+              {hoursRemaining > 0
+                ? `${hoursRemaining}h`
+                : `${minutesRemaining}m`}
             </Text>
           </View>
         </TouchableOpacity>
-        <Text style={[styles.username, allStoriesViewed && styles.viewedUsername]}>
+        <Text
+          style={[styles.username, allStoriesViewed && styles.viewedUsername]}>
           {user.username}
         </Text>
       </View>
@@ -360,8 +348,10 @@ export const Story = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.thumbnailScroll}>
-        <AddStory />
-        {groupedStories.map((user, userIndex) => renderThumbnail(user, userIndex))}
+        <AddStory onStoryAdded={fetchStories} />
+        {groupedStories.map((user, userIndex) =>
+          renderThumbnail(user, userIndex),
+        )}
       </ScrollView>
 
       <Modal
@@ -381,7 +371,9 @@ export const Story = () => {
                     styles.progressBarForeground,
                     {
                       width:
-                        progressAnimations.current[currentUserIndex]?.[index]?.interpolate({
+                        progressAnimations.current[currentUserIndex]?.[
+                          index
+                        ]?.interpolate({
                           inputRange: [0, 1],
                           outputRange: ['0%', '100%'],
                         }) || '0%',
@@ -394,10 +386,55 @@ export const Story = () => {
 
           <View style={styles.userInfoContainer}>
             <Image
-              source={{ uri: currentUser?.profilePicture }}
+              source={{uri: currentUser?.profilePicture}}
               style={styles.modalUserProfilePicture}
             />
             <Text style={styles.modalUsername}>{currentUser?.username}</Text>
+            {currentUser?._id === profileData?.id ? (
+              <TouchableOpacity
+                style={[styles.closeButton, {right: 45, top: 12}]}
+                onPress={() => {
+                  handleTouchStart();
+                  Alert.alert(
+                    'Delete Story',
+                    'Are you sure you want to delete story?',
+                    [
+                      {
+                        text: 'Cancel',
+                        onPress: () => {
+                          handleTouchEnd();
+                        },
+                        style: 'cancel',
+                      },
+                      {
+                        text: 'Yes',
+                        onPress: async () => {
+                          try {
+                            await axios.delete(API_BASE_URL + '/stories', {
+                              headers: {
+                                Authorization: `Bearer ${userData?.token}`,
+                                'Content-Type': 'application/json',
+                              },
+                              data: {storyId: currentStory?._id},
+                            });
+                            setModalVisible(false);
+                            resetAllProgress();
+                            fetchStories();
+                          } catch (error) {}
+                        },
+                      },
+                    ],
+                    {cancelable: true},
+                  );
+                }}>
+                <Icon
+                  type={'antdesign'}
+                  color={COLORS.whiteFFFFFF}
+                  name={'delete'}
+                  size={20}
+                />
+              </TouchableOpacity>
+            ) : null}
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => {
@@ -445,7 +482,9 @@ export const Story = () => {
 
           {/* "Viewers" button at the bottom (only for the story creator) */}
           {currentUser?._id === profileData?.id && (
-            <TouchableOpacity style={styles.viewersButtonBottom} onPress={fetchViewers}>
+            <TouchableOpacity
+              style={styles.viewersButtonBottom}
+              onPress={fetchViewers}>
               <Text style={styles.viewersButtonText}>Views</Text>
             </TouchableOpacity>
           )}
@@ -480,7 +519,7 @@ export const Story = () => {
               {viewers.map((view, index) => (
                 <View key={index} style={styles.viewerRow}>
                   <Image
-                    source={{ uri: view.user.profilePicture }}
+                    source={{uri: view.user.profilePicture}}
                     style={styles.viewerImage}
                   />
                   <Text style={styles.viewerName}>{view.user.username}</Text>
