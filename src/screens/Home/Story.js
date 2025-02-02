@@ -348,7 +348,7 @@ export const Story = () => {
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.thumbnailScroll}>
-        <AddStory />
+        <AddStory onStoryAdded={fetchStories} />
         {groupedStories.map((user, userIndex) =>
           renderThumbnail(user, userIndex),
         )}
@@ -395,8 +395,6 @@ export const Story = () => {
                 style={[styles.closeButton, {right: 45, top: 12}]}
                 onPress={() => {
                   handleTouchStart();
-                  // setModalVisible(false);
-                  // resetAllProgress();
                   Alert.alert(
                     'Delete Story',
                     'Are you sure you want to delete story?',
@@ -411,12 +409,18 @@ export const Story = () => {
                       {
                         text: 'Yes',
                         onPress: async () => {
-                          const {data} = await deleteStory({
-                            storyId: currentStory?._id,
-                          });
-                          console.log('🚀 ~ onPress: ~ data:', data);
-                          setModalVisible(false);
-                          resetAllProgress();
+                          try {
+                            await axios.delete(API_BASE_URL + '/stories', {
+                              headers: {
+                                Authorization: `Bearer ${userData?.token}`,
+                                'Content-Type': 'application/json',
+                              },
+                              data: {storyId: currentStory?._id},
+                            });
+                            setModalVisible(false);
+                            resetAllProgress();
+                            fetchStories();
+                          } catch (error) {}
                         },
                       },
                     ],
@@ -424,7 +428,6 @@ export const Story = () => {
                   );
                 }}>
                 <Icon
-                  // onPress={onDelete}
                   type={'antdesign'}
                   color={COLORS.whiteFFFFFF}
                   name={'delete'}
