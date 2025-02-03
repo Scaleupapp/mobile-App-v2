@@ -446,15 +446,12 @@ export const Story = () => {
           </View>
 
           <View style={styles.storyContent}>
-            {currentStory?.type === 'image' ? (
+            {currentStory?.type === 'image/jpeg' ? (
               <>
-                {console.log(
-                  'Image URI:',
-                  `https://api.scaleupapp.club/api${currentStory?.url}`,
-                )}
+                {console.log('Image URI:', currentStory?.url)}
                 <Image
                   source={{
-                    uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
+                    uri: currentStory?.url,
                   }}
                   style={styles.storyMedia}
                   resizeMode="contain"
@@ -462,13 +459,10 @@ export const Story = () => {
               </>
             ) : currentStory?.type === 'video' ? (
               <>
-                {console.log(
-                  'Video URI:',
-                  `https://api.scaleupapp.club/api${currentStory?.url}`,
-                )}
+                {console.log('Video URI:', currentStory?.url)}
                 <Video
                   source={{
-                    uri: `https://api.scaleupapp.club/api${currentStory?.url}`,
+                    uri: currentStory?.url,
                   }}
                   style={styles.storyMedia}
                   resizeMode="contain"

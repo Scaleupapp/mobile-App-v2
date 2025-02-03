@@ -12,6 +12,7 @@ import {checkVersion} from 'react-native-check-version';
 import DeviceInfo from 'react-native-device-info';
 import packageDetail from '../../package.json';
 import {isAndroid} from '../helper/scales';
+import {COLORS} from '../helper/colors';
 
 const UpdatePopup = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   updateButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: COLORS.blue043142,
     padding: 10,
     borderRadius: 10,
     marginRight: 10,
