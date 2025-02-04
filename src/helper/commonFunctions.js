@@ -224,3 +224,18 @@ export const checkIfTenMinutesPassed = timestamp => {
     return false; // Less than 10 minutes
   }
 };
+
+export const isVersionLess = (v1, v2) => {
+  const splitV1 = v1.split('.').map(Number);
+  const splitV2 = v2.split('.').map(Number);
+  const maxLength = Math.max(splitV1.length, splitV2.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    const num1 = splitV1[i] || 0; // Default to 0 if missing
+    const num2 = splitV2[i] || 0; // Default to 0 if missing
+
+    if (num1 < num2) return true; // v1 is less than v2
+    if (num1 > num2) return false; // v1 is greater than v2
+  }
+  return false; // v1 and v2 are equal
+};

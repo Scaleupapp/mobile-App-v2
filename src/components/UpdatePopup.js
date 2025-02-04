@@ -13,6 +13,7 @@ import DeviceInfo from 'react-native-device-info';
 import packageDetail from '../../package.json';
 import {isAndroid} from '../helper/scales';
 import {COLORS} from '../helper/colors';
+import {isVersionLess} from '../helper/commonFunctions';
 
 const UpdatePopup = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -32,8 +33,8 @@ const UpdatePopup = () => {
       const current = isAndroid
         ? DeviceInfo.getVersion() || packageDetail.version
         : packageDetail?.['IOS-version'];
-      console.log(latest, ' nkdnsk', current);
-      if (latest && latest != current) {
+      const needsUpdate = isVersionLess(current, latest);
+      if (latest && needsUpdate) {
         setLatestVersion(latest);
         setUpdateUrl(versionInfo?.url);
         setUpdateAvailable(true);

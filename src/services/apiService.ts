@@ -339,6 +339,5 @@ export const deleteContent = (contentId: any) => {
 };
 
 export const deleteStory = (payload: any) => {
-  console.log('🚀 ~ deleteStory ~ payload:', payload);
   return axiosInstance.delete(`stories`, payload);
 };
