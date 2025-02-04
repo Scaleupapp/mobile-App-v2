@@ -69,6 +69,7 @@ export const API = {
   SENDMESSAGE: 'chat/send',
   CHAT: 'chat',
   CREATE_GROUP: 'chat/create',
+  SEND_GROUP_MSG: 'chat/group/send',
   RAPIDFIRE_CREATE: 'rapidfire-quiz/create',
   RAPIDFIRE_EDIT: 'rapidfire-quiz/edit',
   RAPIDFIRE_LIST: 'rapidfire-quiz/list',

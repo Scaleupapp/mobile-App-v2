@@ -354,3 +354,7 @@ export const createStudyGroups = (payload: any) => {
 export const getStudyGroupMsg = (groupId: any) => {
   return axiosInstance.get(`${API.CHAT}/group/${groupId}/messages`);
 };
+
+export const sendGroupMsg = (payload: any) => {
+  return axiosInstance.post(`${API.SEND_GROUP_MSG}`, payload);
+};

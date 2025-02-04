@@ -30,7 +30,7 @@ import Icon from '../../helper/icon';
 
 const Conversation = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
-  const [loader, setLoader] = useState(false);
+  const [loader, setLoader] = useState(true);
   const [selected, setSelected] = useState(0);
   const [conversation, setConversation] = useState([]);
   const [studyGroups, setStudyGroups] = useState([]);
@@ -63,16 +63,6 @@ const Conversation = ({navigation, route}) => {
     }
   };
 
-  const fetchStudyGroupsMsg = async () => {
-    try {
-      const {data} = await getStudyGroupMsg('679e27c9acd699854799acef');
-      console.log('🚀 ~ fetchStudyGroups ~ data:', data);
-      // setStudyGroups(data);
-    } catch (error) {
-      console.error('Error fetching study groups:', error);
-    }
-  };
-
   const truncateString = (str, maxLength = 130) => {
     return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
   };
@@ -82,13 +72,11 @@ const Conversation = ({navigation, route}) => {
       <Pressable
         key={index}
         style={styles.card}
-        onPress={
-          () => fetchStudyGroupsMsg()
-          // navigation.navigate(Routes.Chat, {
-          //   chatId: item?.conversationId,
-          //   data:
-          //     item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
-          // })
+        onPress={() =>
+          navigation.navigate(Routes.GroupChat, {
+            groupId: item?._id,
+            data: item,
+          })
         }>
         <View
           style={[
