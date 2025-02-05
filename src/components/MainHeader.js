@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -17,9 +17,27 @@ import Icon from '../helper/icon';
 import {useNavigation} from '@react-navigation/native';
 import Routes from '../helper/routes';
 import {logoutUser} from '../helper/commonFunctions';
+import {io} from 'socket.io-client';
+import {useSelector} from 'react-redux';
+import {APP_FONTS} from '../assets/fonts';
 
 const MainHeader = () => {
   const navigation = useNavigation();
+  const userdata = useSelector(state => state?.userData);
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    // Connect to the Socket.IO server when the component mounts
+    const socketInstance = io('https://api.scaleupapp.club', {
+      // Your server URL
+      auth: {
+        token: userdata?.token, // If you have authentication
+      },
+    });
+    socketInstance.on('totalUnreadUpdate', data => {
+      console.log(data, 'data.....');
+      setCount(data?.allUnreadCount);
+    });
+  }, []);
   return (
     <View style={styles.container}>
       {/* Back Arrow */}
@@ -39,15 +57,42 @@ const MainHeader = () => {
 
         {/* Title */}
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <Icon
-            // onPress={logoutUser}
-            onPress={() => navigation.navigate(Routes.Conversation)}
-            type="material-community"
-            name="android-messages"
-            color={COLORS.whiteFFFFFF}
-            size={nh(24)}
-            style={{marginRight: nw(10)}}
-          />
+          <View>
+            {count > 0 && (
+              <View
+                style={{
+                  height: nh(18),
+                  width: nh(18),
+                  borderRadius: nh(9),
+                  backgroundColor: COLORS.black333333,
+                  position: 'absolute',
+                  zIndex: 1,
+                  right: 4,
+                  top: -2,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text
+                  style={{
+                    fontSize: nh(8),
+                    fontFamily: APP_FONTS.PoppinsBold,
+                    fontWeight: '900',
+                  }}
+                  color={COLORS.whiteFFFFFF}>
+                  {count}
+                </Text>
+              </View>
+            )}
+            <Icon
+              // onPress={logoutUser}
+              onPress={() => navigation.navigate(Routes.Conversation)}
+              type="material-community"
+              name="android-messages"
+              color={COLORS.whiteFFFFFF}
+              size={nh(24)}
+              style={{marginRight: nw(10)}}
+            />
+          </View>
           <Ionicons
             name="list"
             color={COLORS.whiteFFFFFF}

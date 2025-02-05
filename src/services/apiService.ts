@@ -226,6 +226,10 @@ export const getconversationbyID = (id: any, page: any) => {
 export const sendChat = (payload: any) => {
   return axiosInstance.post(`${API.SENDMESSAGE}`, payload);
 };
+export const sendChatReply = (payload: any) => {
+  return axiosInstance.post(`${API.CHAT}/reply`, payload);
+};
+
 
 export const editChatMessage = (convid: any, messageid: any, payload: any) => {
   return axiosInstance.put(
@@ -242,6 +246,12 @@ export const reactChatMessage = (convid: any, messageid: any, payload: any) => {
 export const deleteChatMessage = (convid: any, messageid: any) => {
   return axiosInstance.delete(
     `${API.CHAT}/${convid}/messages/${messageid}/delete`,
+  );
+};
+export const markReadAPI = (payload: any) => {
+  return axiosInstance.post(
+    `${API.CHAT}/mark-read`,
+    payload,
   );
 };
 
