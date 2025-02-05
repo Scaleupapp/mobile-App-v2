@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   FlatList,
   View,
@@ -16,14 +16,186 @@ import Icons from 'react-native-vector-icons/Ionicons';
 import {useNavigation} from '@react-navigation/native';
 import PlaylistSelectionModal from '../screens/Home/PlaylistSelectionModal';
 import {useToast} from './CustomToast';
-import {getProfile} from '../services/apiService';
+import {deleteContent, getProfile} from '../services/apiService';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Routes from '../helper/routes';
 import convertToProxyURL from 'react-native-video-cache';
 import Icon from '../helper/icon';
+import {MenuModal} from './MenuModal';
+import DeleteConfirmationModal from '../screens/Post/DeleteConfirmationModal';
 
-export const AllPost = ({data, isDrafts = false, myProfile = true}) => {
+const Postcard = ({
+  item,
+  index,
+  setVisible,
+  data,
+  navigation,
+  myProfile,
+  isDrafts,
+  handlePublish,
+  setPosition,
+}) => {
+  const componentRef = useRef(null);
+
+  const getmeasure = () => {
+    if (componentRef.current) {
+      componentRef.current.measure((x, y, width, height, pageX, pageY) => {
+        console.log('🚀 ~ componentRef.current.measure ~ pageY:', pageY);
+        console.log('🚀 ~ componentRef.current.measure ~ pageX:', pageX);
+        setPosition({pageX: pageX, pageY: pageY, item: item});
+      });
+    }
+  };
+  return (
+    <View style={styles.postContainer}>
+      <View>
+        {myProfile ? (
+          <View style={styles.headerContainer} ref={componentRef}>
+            <TouchableOpacity
+              style={styles.dotsButton}
+              onPress={() => {
+                getmeasure();
+                setVisible(true);
+                // console.log('Dots button pressed for item:', item?.contentId);
+                // handleBookmarkPress(item);
+              }}>
+              <Icons
+                name="ellipsis-vertical"
+                size={20}
+                color={COLORS.blue043142}
+              />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {item?.smeVerify && (
+          <View
+            style={{
+              height: nh(25),
+              width: nw(25),
+              borderRadius: nh(15),
+              backgroundColor: COLORS.blue043142,
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'absolute',
+              right: nw(12),
+              top: nh(35),
+              zIndex: 1,
+              // Centers vertically
+            }}>
+            <Icon
+              type="material-community"
+              name="check-decagram"
+              color={COLORS.yellowF5BE00}
+              size={20} // Ensure the icon size is appropriate
+            />
+          </View>
+        )}
+        {(item?.contentType === 'Image' || item?.contentType === 'Document') &&
+        item?.contentURL ? (
+          <Pressable
+            style={styles.imageContainer}
+            onPress={() => {
+              const content = data?.content;
+              const stories1 = content?.filter(f => f === item);
+              const stories2 = content?.filter(f => f !== item);
+              const newData = {
+                ...data,
+                content: [...stories1, ...stories2],
+              };
+              navigation.navigate(Routes.UserPost, {
+                data: newData,
+                myProfile: myProfile,
+              });
+            }}>
+            <Image
+              source={{uri: item?.contentURL}}
+              style={styles.mediaContent}
+              resizeMode="cover"
+            />
+            <View style={styles.metricsContainer}>
+              <View style={styles.metricItem}>
+                <Icons name="heart" size={16} color={COLORS.whiteFFFFFF} />
+                <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
+              </View>
+              {item?.rating && item?.rating > 0 ? (
+                <View style={styles.metricItem}>
+                  <Icons name="star" size={16} color={COLORS.whiteFFFFFF} />
+                  <Text style={styles.metricText}>{item?.rating}</Text>
+                </View>
+              ) : null}
+              <View style={styles.metricItem}></View>
+            </View>
+          </Pressable>
+        ) : null}
+
+        {item?.contentType === 'Video' && item?.contentURL ? (
+          <Pressable
+            style={styles.videoContainer}
+            onPress={() => {
+              const content = data?.content;
+              const stories1 = content?.filter(f => f === item);
+              const stories2 = content?.filter(f => f !== item);
+              const newData = {
+                ...data,
+                content: [...stories1, ...stories2],
+              };
+              navigation.navigate(Routes.UserPost, {
+                data: newData,
+                item: item,
+                index: index,
+              });
+            }}>
+            <Video
+              paused={true}
+              controls={false}
+              source={{uri: convertToProxyURL(item?.contentURL)}}
+              style={styles.mediaContent}
+              resizeMode="cover"
+              onBuffer={e => console.log('buffer ', e)}
+              onError={e => console.log('video error ', e)}
+            />
+            <View style={styles.metricsContainer}>
+              <View style={styles.metricItem}>
+                <Icons name="heart" size={16} color={COLORS.whiteFFFFFF} />
+                <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
+              </View>
+              <View style={styles.metricItem}>
+                <Icons name="eye" size={16} color={COLORS.whiteFFFFFF} />
+                <Text style={styles.metricText}>{item?.viewCount || 0}</Text>
+              </View>
+              {item?.rating && item?.rating > 0 ? (
+                <View style={styles.metricItem}>
+                  <Icons name="star" size={16} color={COLORS.whiteFFFFFF} />
+                  <Text style={styles.metricText}>{item?.rating}</Text>
+                </View>
+              ) : null}
+            </View>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {isDrafts && (
+        <View style={styles.draftControls}>
+          {/* <Text style={styles.draftLabel}>DRAFT</Text> */}
+          <TouchableOpacity
+            style={styles.publishButton}
+            onPress={() => handlePublish(item)}>
+            <Icon name="cloud-upload" size={20} color={COLORS.blue043142} />
+            <Text style={styles.publishText}>Publish</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+};
+
+export const AllPost = ({
+  data,
+  isDrafts = false,
+  myProfile = true,
+  apicall,
+}) => {
   // console.log('AllPost Component Rendered with data:', data);
 
   const navigation = useNavigation();
@@ -32,6 +204,43 @@ export const AllPost = ({data, isDrafts = false, myProfile = true}) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [profileData, setProfileData] = useState(null);
   const [postDetails, setPostDetails] = useState({});
+  const [visible, setVisible] = useState(false);
+  const [position, setPosition] = useState({pageX: 0, pageY: 0, item: {}});
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+  const menuItems1 = [
+    {
+      name: 'Add to playlist',
+      // image: icons.block,
+      onPress: () => {
+        setVisible(false);
+        handleBookmarkPress(position.item);
+      },
+    },
+    {
+      name: 'Delete Post',
+      // image: icons.block,
+      onPress: () => {
+        setVisible(false);
+        setTimeout(() => {
+          setDeleteModalVisible(true);
+        }, 500);
+      },
+    },
+  ];
+
+  // apicall
+
+  const handleDelete = async () => {
+    setDeleteModalVisible(false);
+    try {
+      const {data} = await deleteContent(position.item?.contentId);
+      showToast({type: 'success', title: data?.message});
+      apicall();
+    } catch (error) {
+      console.log('🚀 ~ handleDelete ~ error:', error);
+    }
+  };
 
   useEffect(() => {
     // console.log('Initial useEffect running - fetching profile data');
@@ -239,154 +448,23 @@ export const AllPost = ({data, isDrafts = false, myProfile = true}) => {
     setSelectedPost(null);
   };
 
-  const Postcard = ({item, index}) => {
-    return (
-      <View style={styles.postContainer}>
-        <View>
-          {myProfile ? (
-            <View style={styles.headerContainer}>
-              <TouchableOpacity
-                style={styles.dotsButton}
-                onPress={() => {
-                  // console.log('Dots button pressed for item:', item?.contentId);
-                  handleBookmarkPress(item);
-                }}>
-                <Icons
-                  name="ellipsis-vertical"
-                  size={20}
-                  color={COLORS.blue043142}
-                />
-              </TouchableOpacity>
-            </View>
-          ) : null}
-          {item?.smeVerify && (
-            <View
-              style={{
-                height: nh(25),
-                width: nw(25),
-                borderRadius: nh(15),
-                backgroundColor: COLORS.blue043142,
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'absolute',
-                right: nw(12),
-                top: nh(35),
-                zIndex: 1,
-                // Centers vertically
-              }}>
-              <Icon
-                type="material-community"
-                name="check-decagram"
-                color={COLORS.yellowF5BE00}
-                size={20} // Ensure the icon size is appropriate
-              />
-            </View>
-          )}
-          {(item?.contentType === 'Image' ||
-            item?.contentType === 'Document') &&
-          item?.contentURL ? (
-            <Pressable
-              style={styles.imageContainer}
-              onPress={() => {
-                const content = data?.content;
-                const stories1 = content?.filter(f => f === item);
-                const stories2 = content?.filter(f => f !== item);
-                const newData = {
-                  ...data,
-                  content: [...stories1, ...stories2],
-                };
-                navigation.navigate(Routes.UserPost, {
-                  data: newData,
-                  myProfile: myProfile,
-                });
-              }}>
-              <Image
-                source={{uri: item?.contentURL}}
-                style={styles.mediaContent}
-                resizeMode="cover"
-              />
-              <View style={styles.metricsContainer}>
-                <View style={styles.metricItem}>
-                  <Icons name="heart" size={16} color={COLORS.whiteFFFFFF} />
-                  <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
-                </View>
-                {item?.rating && item?.rating > 0 ? (
-                  <View style={styles.metricItem}>
-                    <Icons name="star" size={16} color={COLORS.whiteFFFFFF} />
-                    <Text style={styles.metricText}>{item?.rating}</Text>
-                  </View>
-                ) : null}
-                <View style={styles.metricItem}></View>
-              </View>
-            </Pressable>
-          ) : null}
-
-          {item?.contentType === 'Video' && item?.contentURL ? (
-            <Pressable
-              style={styles.videoContainer}
-              onPress={() => {
-                const content = data?.content;
-                const stories1 = content?.filter(f => f === item);
-                const stories2 = content?.filter(f => f !== item);
-                const newData = {
-                  ...data,
-                  content: [...stories1, ...stories2],
-                };
-                navigation.navigate(Routes.UserPost, {
-                  data: newData,
-                  item: item,
-                  index: index,
-                });
-              }}>
-              <Video
-                paused={true}
-                controls={false}
-                source={{uri: convertToProxyURL(item?.contentURL)}}
-                style={styles.mediaContent}
-                resizeMode="cover"
-                onBuffer={e => console.log('buffer ', e)}
-                onError={e => console.log('video error ', e)}
-              />
-              <View style={styles.metricsContainer}>
-                <View style={styles.metricItem}>
-                  <Icons name="heart" size={16} color={COLORS.whiteFFFFFF} />
-                  <Text style={styles.metricText}>{item?.likeCount || 0}</Text>
-                </View>
-                <View style={styles.metricItem}>
-                  <Icons name="eye" size={16} color={COLORS.whiteFFFFFF} />
-                  <Text style={styles.metricText}>{item?.viewCount || 0}</Text>
-                </View>
-                {item?.rating && item?.rating > 0 ? (
-                  <View style={styles.metricItem}>
-                    <Icons name="star" size={16} color={COLORS.whiteFFFFFF} />
-                    <Text style={styles.metricText}>{item?.rating}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </Pressable>
-          ) : null}
-        </View>
-
-        {isDrafts && (
-          <View style={styles.draftControls}>
-            {/* <Text style={styles.draftLabel}>DRAFT</Text> */}
-            <TouchableOpacity
-              style={styles.publishButton}
-              onPress={() => handlePublish(item)}>
-              <Icon name="cloud-upload" size={20} color={COLORS.blue043142} />
-              <Text style={styles.publishText}>Publish</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <FlatList
         data={data?.content}
-        renderItem={({item, index}) => <Postcard item={item} index={index} />}
+        renderItem={({item, index}) => (
+          <Postcard
+            item={item}
+            index={index}
+            setVisible={setVisible}
+            data={data}
+            navigation={navigation}
+            myProfile={myProfile}
+            isDrafts={isDrafts}
+            handlePublish={handlePublish}
+            setPosition={setPosition}
+          />
+        )}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         ListEmptyComponent={() => (
@@ -413,6 +491,30 @@ export const AllPost = ({data, isDrafts = false, myProfile = true}) => {
         }}
         postId={selectedPost?.contentId}
         onPostAdded={handlePlaylistSuccess}
+      />
+      {visible ? (
+        <MenuModal
+          visible={visible}
+          setVisible={setVisible}
+          menuItems={menuItems1}
+          style={{
+            maxHeight: '80%',
+            position: 'absolute',
+            // bottom: 0,
+            // bottom: nh(400),
+            top: position.pageY,
+            left: position.pageX,
+            // right: DEVICE_WIDTH / 2 - 70,
+            margin: 0,
+            width: nw(140),
+          }}
+        />
+      ) : null}
+
+      <DeleteConfirmationModal
+        visible={deleteModalVisible}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteModalVisible(false)}
       />
     </View>
   );

@@ -276,22 +276,23 @@ const CommentBottomSheetModal = forwardRef(({postId}, ref) => {
         contentId: postId,
         commentText: text,
       };
-      const {data} = await addComment(paylaod);
-      console.log('🚀 ~ sendComment ~ data:', data);
+      // const {data} = await addComment(paylaod);
       Keyboard.dismiss();
-      FlatRef.current?.scrollToEnd();
       let newPayload = [
         {
           ...paylaod,
           userId: {
             profilePicture: userData?.profilePicture,
             username: userData?.username,
-            commentDate: new Date(),
           },
+          commentDate: new Date(),
         },
       ];
       setText('');
-      setComments([...comments, ...newPayload]);
+      setComments([...newPayload, ...comments]);
+      setTimeout(() => {
+        FlatRef.current?.scrollToIndex({index: 0, animated: true});
+      }, 200);
     } catch (error) {}
   };
 
@@ -306,7 +307,6 @@ const CommentBottomSheetModal = forwardRef(({postId}, ref) => {
       };
       const {data} = await replyComment(paylaod);
       Keyboard.dismiss();
-      FlatRef.current?.scrollToEnd();
       let newComments = [];
       comments?.map(u => {
         let obj = u;

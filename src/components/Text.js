@@ -116,7 +116,7 @@ const Text = ({
     variant = 'bodyMedium',
     style,
     children,
-    color='black',
+    color = COLORS.grey999999,
     ...rest
 }: {
     as?: 'LeanText' | 'RCAText';
