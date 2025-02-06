@@ -347,12 +347,12 @@ export const getStudyGroups = () => {
   return axiosInstance.get(`${API.CHAT}`);
 };
 
-export const createStudyGroups = (payload: any) => {
-  return axiosInstance.post(`${API.CREATE_GROUP}`, payload);
-};
-
 export const getStudyGroupMsg = (groupId: any) => {
   return axiosInstance.get(`${API.CHAT}/group/${groupId}/messages`);
+};
+
+export const deleteStudyGroup = (groupId: any) => {
+  return axiosInstance.delete(`${API.CHAT}/group/${groupId}`);
 };
 
 export const sendGroupMsg = (payload: any) => {

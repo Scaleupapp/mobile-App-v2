@@ -50,6 +50,7 @@ import Video from 'react-native-video';
 import ImageModal from '../Post/ImageModal';
 import MediaModal from './ImageSendModal';
 import MessageModal from './MessageactionsModal';
+import Routes from '../../helper/routes';
 
 const GroupChat = ({navigation, route}) => {
   const {groupId, data} = route?.params;
@@ -679,13 +680,97 @@ const GroupChat = ({navigation, route}) => {
             barStyle="dark-content"
             backgroundColor={COLORS.yellowF5BE00}
           />
-          <Header
-            title={data?.name}
-            // backIcon={icons.backArrow} // Provide your back arrow icon
-            // rightIcon={selected ? true : false} // Provide your right icon
-            // onBackPress={handleBackPress}
-            // onRightIconPress={() => setVisible(true)}
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: nw(16), // Add horizontal padding
+              paddingTop: nh(2),
+              backgroundColor: COLORS.yellowF5BE00, // Set background color
+              backgroundColor: COLORS.yellowF5BE00,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{
+                  width: 40, // Fixed width for icon touchable area
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Image
+                  source={icons.backarrow}
+                  style={{
+                    width: nw(30),
+                    height: nh(30),
+                    resizeMode: 'contain',
+                    marginTop: 5,
+                  }}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate(Routes.GroupProfile, {
+                    groupData: data,
+                  })
+                }
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginLeft: 10,
+                }}>
+                {data?.profilePicture ? (
+                  <Image
+                    source={{uri: data?.profilePicture}}
+                    style={styles.image}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.image,
+                      {
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.greyD6D6D6,
+                      },
+                    ]}>
+                    <Icon
+                      type="material-community"
+                      name="account-group"
+                      style={{marginLeft: 0.5}}
+                      size={nh(30)}
+                    />
+                  </View>
+                )}
+                {/* Title */}
+                <Text
+                  variant="semibold18"
+                  style={styles.title}
+                  color={COLORS.whiteFFFFFF}>
+                  {data?.name}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Right Icon */}
+            {/* <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
+        {rightIcon && (
+          <Entypo
+            name="dots-three-vertical"
+            size={nh(20)}
+            color={COLORS.whiteFFFFFF}
+            style={styles.icon}
           />
+        )}
+      </TouchableOpacity> */}
+          </View>
+
           <View style={styles.layer1}>
             <View style={styles.layer2}>
               <View style={styles.container1}>
@@ -895,5 +980,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#555',
+  },
+  image: {
+    height: nh(40),
+    width: nh(40),
+    borderRadius: nh(20),
+    marginRight: 10,
+    borderColor: COLORS.grey777777,
+    borderWidth: 1,
   },
 });

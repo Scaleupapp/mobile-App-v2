@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import Icon from '../../helper/icon';
@@ -17,26 +18,40 @@ import {
   nh,
   nw,
 } from '../../helper/scales';
-import {createStudyGroups} from '../../services/apiService';
+import {deleteStudyGroup} from '../../services/apiService';
 import Text from '../../components/Text';
 import Button from '../../components/Button';
-import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import CustomTextInput from '../../components/TextInput';
 import Header from '../../components/Header';
 import ImagePicker from 'react-native-image-crop-picker';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import SquareToggle from '../../components/ToggleButton';
+import {useSelector} from 'react-redux';
+import axios from 'axios';
+import {API} from '../../services/apiConstent';
 const options = ['Public', 'Private'];
 
-const EditGroupProfile = ({route}) => {
-  const {groupMembers, groupMembersDetails} = route.params;
-  const [selectedMembers, setSelectedMembers] = useState([]);
+const EditGroupProfile = ({route, navigation}) => {
+  const {groupMembersDetails = [], groupData = {}, edit = false} = route.params;
+  const userData = useSelector(state => state?.userData);
+  const [selectedMembers, setSelectedMembers] = useState(
+    edit ? groupData?.admins?.map(admin => admin?._id || admin?.userId) : [],
+  );
   const [input, setInput] = useState('');
-  const [words, setWords] = useState([]);
-  const [groupName, setGroupName] = useState('');
-  const [groupDesc, setGroupDesc] = useState('');
-  const [selected, setSelected] = useState(0);
+  const [words, setWords] = useState(groupData?.topics || []);
+  const [groupName, setGroupName] = useState(groupData?.name || '');
+  const [groupNameErr, setGroupNameErr] = useState('');
+  const [groupDesc, setGroupDesc] = useState(groupData?.description || '');
+  const [selected, setSelected] = useState(
+    groupData?.privacy ? (groupData?.privacy == 'public' ? 0 : 1) : 0,
+  );
+  const [memberDetails, setMemberDetails] = useState(
+    edit ? groupData?.members : groupMembersDetails,
+  );
+  const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState(groupData?.profilePicture || null);
 
   const handleAddWord = () => {
     if (input.trim()) {
@@ -64,14 +79,7 @@ const EditGroupProfile = ({route}) => {
       compressImageQuality: 0.8,
     })
       .then(image => {
-        console.log('🚀 ~ openGallery ~ image:', image);
-        // Update the form's displayed profile picture
-        // setForm(prevForm => ({
-        //   ...prevForm,
-        //   profilePicture: 'file://' + image?.path,
-        // }));
-
-        // Prepare the media data for upload
+        setImageUrl('file://' + image?.path);
         setImage({
           uri: 'file://' + image?.path,
           name: image?.filename || 'media', // fallback
@@ -81,21 +89,109 @@ const EditGroupProfile = ({route}) => {
       .catch(e => console.log('errrrrrr ', e));
   };
 
-  const createGroupApi = async () => {
-    const paylaod = {
-      name: groupName.trim(),
-      description: groupDesc.trim(),
-      members: groupMembers,
-      admins: selectedMembers,
-      topics: words,
-      privacy: options[selected]?.toLocaleLowerCase(),
-    };
-    try {
-      const {data} = await createStudyGroups(paylaod);
-      navigationRef.goBack();
-    } catch (error) {
-      console.log('🚀 ~ createGroupApi ~ error:', error);
+  const handleSave = async () => {
+    const name = groupName.trim();
+    if (!name || name?.length == 0) {
+      setGroupNameErr('Please enter group name');
+      return;
     }
+    console.log('anskansknaksnkansknkasnkansknaks');
+    setLoading(true);
+    const getMemberIds = memberDetails?.map(
+      member => member?._id || member?.userId,
+    );
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('description', groupDesc.trim());
+    formData.append('members', JSON.stringify(getMemberIds));
+    formData.append('admins', JSON.stringify(selectedMembers));
+    formData.append('topics', JSON.stringify(words));
+    formData.append('privacy', options[selected]?.toLocaleLowerCase());
+
+    // Append the profile picture only if a new image was selected
+    if (image?.uri) {
+      formData.append('profilePicture', {
+        uri: image.uri,
+        name: image.name,
+        type: image.type,
+      });
+    }
+    if (edit) editGroupApi(formData);
+    else createGroupApi(formData);
+  };
+
+  const createGroupApi = async formData => {
+    try {
+      const {data} = await axios.post(
+        `${API.BASE_URL}${API.CREATE_GROUP}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${userData?.token}`,
+          },
+        },
+      );
+      navigation.goBack();
+    } catch (error) {
+      console.log('🚀 ~ createGroupApi ~ error:', error?.response?.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const editGroupApi = async formData => {
+    try {
+      const {data} = await axios.put(
+        `${API.BASE_URL}${API.CHAT}/${groupData?._id}`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${userData?.token}`,
+          },
+        },
+      );
+      const newdata = {
+        ...data,
+        members: memberDetails,
+        admins: selectedMembers?.map(a => ({_id: a})),
+      };
+      navigation.replace(Routes.GroupProfile, {
+        groupData: newdata,
+        canGoBack: false,
+      });
+    } catch (error) {
+      console.log('🚀 ~ editGroupApi ~ error:', error?.response?.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ondelete = () => {
+    Alert.alert(
+      'Delete Group',
+      'Are you sure you want to delete study group?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {},
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => deleteStudyGroupApi(),
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
+  const deleteStudyGroupApi = async () => {
+    try {
+      await deleteStudyGroup(groupData?._id);
+      navigation.pop(3);
+    } catch (error) {}
   };
 
   return (
@@ -105,7 +201,7 @@ const EditGroupProfile = ({route}) => {
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header title="Create Group" />
+      <Header title={edit ? 'Edit Group' : 'Create Group'} />
 
       <View style={styles.layer1}>
         <View style={styles.layer2}>
@@ -114,41 +210,39 @@ const EditGroupProfile = ({route}) => {
             enableResetScrollToCoords={false} // Prevents scroll reset
             showsVerticalScrollIndicator={false}>
             <View>
-              {/* {form?.profilePicture ? (
+              {imageUrl ? (
                 <Image
                   source={{
-                    uri: form?.profilePicture,
+                    uri: imageUrl,
                   }}
                   style={styles.image}
                   resizeMode="cover"
                   onError={e => console.log('snkdnskdnk errrrv', e)}
                 />
-              ) : ( */}
-              <View
-                style={[
-                  styles.image,
-                  {
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: COLORS.greyD6D6D6,
-                  },
-                ]}>
-                <Icon
-                  type="material-community"
-                  name="account-group"
-                  style={{marginLeft: 0.5}}
-                  size={nh(60)}
-                  onPress={openGallery}
-                />
-              </View>
-              {/* <View style={{width: 200, backgroundColor: COLORS.blue043142}}> */}
+              ) : (
+                <View
+                  style={[
+                    styles.image,
+                    {
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLORS.greyD6D6D6,
+                    },
+                  ]}>
+                  <Icon
+                    type="material-community"
+                    name="account-group"
+                    style={{marginLeft: 0.5}}
+                    size={nh(60)}
+                    onPress={openGallery}
+                  />
+                </View>
+              )}
               <SquareToggle
                 options={options}
                 selected={selected}
                 onToggle={val => setSelected(val)}
               />
-              {/* </View> */}
-              {/* )} */}
               <View style={styles.circle}>
                 <Icon
                   type="antdesign"
@@ -158,12 +252,25 @@ const EditGroupProfile = ({route}) => {
                   onPress={openGallery}
                 />
               </View>
+              <TouchableOpacity style={styles.editButton} onPress={ondelete}>
+                <Icon
+                  type={'antdesign'}
+                  color={COLORS.whiteFFFFFF}
+                  name={'delete'}
+                  size={nw(15)}
+                />
+                <Text style={styles.editButtonText}> Delete</Text>
+              </TouchableOpacity>
             </View>
             <CustomTextInput
               label="Group Name"
               placeholder="Enter group name"
               value={groupName}
-              onChangeText={setGroupName}
+              onChangeText={val => {
+                setGroupName(val);
+                if (val?.length > 0) setGroupNameErr('');
+              }}
+              errorMessage={groupNameErr}
             />
             <CustomTextInput
               label="Group Description"
@@ -217,35 +324,67 @@ const EditGroupProfile = ({route}) => {
               variant="medium12"
               color={COLORS.greyBBBBBB}
               style={{marginBottom: words?.length > 0 ? 5 : -5}}>
-              {'Members (' + groupMembers?.length + ')'}
+              {'Members (' + memberDetails?.length + ')'}
             </Text>
             <FlatList
-              data={groupMembersDetails}
-              renderItem={({item, index}) => (
-                <View key={index} style={styles.card}>
-                  <Image
-                    source={{uri: item?.profilePicture}}
-                    style={styles.image1}
-                  />
-                  <View style={{width: nw(175)}}>
-                    <Text variant="medium14" color={COLORS.blue043142}>
-                      {item?.username}
-                    </Text>
+              scrollEnabled={false}
+              data={memberDetails || []}
+              contentContainerStyle={{paddingBottom: 50}}
+              renderItem={({item, index}) => {
+                const userId = item?._id || item?.userId;
+                return (
+                  <View key={index} style={styles.card}>
+                    <Image
+                      source={{uri: item?.profilePicture}}
+                      style={styles.image1}
+                    />
+                    <View style={{width: nw(150)}}>
+                      <Text variant="medium14" color={COLORS.blue043142}>
+                        {item?.username}
+                      </Text>
+                    </View>
+                    {userData?.id !== userId ? (
+                      <>
+                        <Button
+                          onPress={() => toggleSelection(userId)}
+                          text={
+                            selectedMembers.includes(userId)
+                              ? 'Make Member'
+                              : 'Make Admin'
+                          }
+                          variant="outline"
+                          width={nw(90)}
+                          height={nh(30)}
+                          textStyle={{fontSize: 14}}
+                        />
+                        <Icon
+                          type="entypo"
+                          name="remove-user"
+                          color={COLORS.blue043142}
+                          style={{marginLeft: 5}}
+                          size={nh(20)}
+                          onPress={() =>
+                            setMemberDetails(prev =>
+                              prev.includes(item)
+                                ? prev.filter(member => member !== item)
+                                : [...prev, item],
+                            )
+                          }
+                        />
+                      </>
+                    ) : (
+                      <Button
+                        disabled
+                        text={'Admin'}
+                        variant="outline"
+                        width={nw(90)}
+                        height={nh(30)}
+                        textStyle={{fontSize: 14}}
+                      />
+                    )}
                   </View>
-                  <Button
-                    onPress={() => toggleSelection(item.userId)}
-                    text={
-                      selectedMembers.includes(item.userId)
-                        ? 'Make Member'
-                        : 'Make Admin'
-                    }
-                    variant="outline"
-                    width={nw(90)}
-                    height={nh(35)}
-                    textStyle={{fontSize: 14}}
-                  />
-                </View>
-              )}
+                );
+              }}
             />
           </KeyboardAwareScrollView>
         </View>
@@ -258,8 +397,8 @@ const EditGroupProfile = ({route}) => {
           alignSelf: 'center',
         }}>
         <Button
-          text="Create Group"
-          onPress={createGroupApi}
+          text={edit ? 'Edit Group' : 'Create Group'}
+          onPress={handleSave}
           buttonStyle={{
             borderRadius: 0,
           }}
@@ -361,6 +500,20 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E9E9E9',
     paddingBottom: 15,
     paddingTop: nh(22),
+  },
+  editButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: COLORS.blue043142,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute',
+    right: 10,
+  },
+  editButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

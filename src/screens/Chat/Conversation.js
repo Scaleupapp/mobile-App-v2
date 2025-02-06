@@ -46,7 +46,6 @@ const Conversation = ({navigation, route}) => {
     try {
       const {data} = await getconversation();
       setConversation(data);
-      //   console.log('🚀 ~ fetchConversations ~ data:', data);
     } catch (error) {
       console.log('🚀 ~ fetchConversations ~ error..:', error);
     } finally {
@@ -72,28 +71,36 @@ const Conversation = ({navigation, route}) => {
       <Pressable
         key={index}
         style={styles.card}
-        onPress={() =>
-          navigation.navigate(Routes.GroupChat, {
-            groupId: item?._id,
-            data: item,
-          })
+        onPress={
+          () =>
+            navigation.navigate(Routes.GroupChat, {
+              groupId: item?._id,
+              data: item,
+            })
+          // navigation.navigate(Routes.GroupProfile, {
+          //   groupData: item,
+          // })
         }>
-        <View
-          style={[
-            styles.image,
-            {
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: COLORS.greyD6D6D6,
-            },
-          ]}>
-          <Icon
-            type="material-community"
-            name="account-group"
-            style={{marginLeft: 0.5}}
-            size={nh(30)}
-          />
-        </View>
+        {item?.profilePicture ? (
+          <Image source={{uri: item?.profilePicture}} style={styles.image} />
+        ) : (
+          <View
+            style={[
+              styles.image,
+              {
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: COLORS.greyD6D6D6,
+              },
+            ]}>
+            <Icon
+              type="material-community"
+              name="account-group"
+              style={{marginLeft: 0.5}}
+              size={nh(30)}
+            />
+          </View>
+        )}
         <View style={{flex: 9}}>
           <Text variant="medium12" color={COLORS.blue043142}>
             {item?.name}
