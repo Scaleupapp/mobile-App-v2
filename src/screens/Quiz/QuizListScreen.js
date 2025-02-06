@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   FlatList,
@@ -16,17 +16,17 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
 import Text from '../../components/Text';
-import { COLORS } from '../../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
+import {COLORS} from '../../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
 import CustomTextInput from '../../components/TextInput';
 import LeaderboardModal from './LeaderboardModal';
-import { 
-  listAllQuizEventsApi, 
-  registerForQuizApi, 
+import {
+  listAllQuizEventsApi,
+  registerForQuizApi,
   startQuizAttemptApi,
   fetchUserQuizAttemptsApi,
-  fetchUserRegisteredQuizzesApi // New API call to get user's registered quizzes
+  fetchUserRegisteredQuizzesApi, // New API call to get user's registered quizzes
 } from '../../services/apiService';
 
 const TABS = {
@@ -42,12 +42,15 @@ const EmptyStateImages = {
 };
 
 const EmptyStateMessages = {
-  UPCOMING: "You're all set for now! No quizzes are scheduled. Keep exploring and stay sharp!",
-  ACTIVE: "You're not taking any quizzes at the moment. Ready to test your knowledge? Jump into a new challenge!",
-  COMPLETED: "It looks like you haven't completed any quizzes. Start one today and track your progress!",
+  UPCOMING:
+    "You're all set for now! No quizzes are scheduled. Keep exploring and stay sharp!",
+  ACTIVE:
+    "You're not taking any quizzes at the moment. Ready to test your knowledge? Jump into a new challenge!",
+  COMPLETED:
+    "It looks like you haven't completed any quizzes. Start one today and track your progress!",
 };
 
-const QuizList = ({ navigation }) => {
+const QuizList = ({navigation}) => {
   const [quizzes, setQuizzes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(TABS.UPCOMING);
@@ -59,8 +62,6 @@ const QuizList = ({ navigation }) => {
   const [countdowns, setCountdowns] = useState({});
   const [userQuizAttempts, setUserQuizAttempts] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -87,7 +88,6 @@ const QuizList = ({ navigation }) => {
     fetchUserData();
   }, [activeTab]);
 
-
   useEffect(() => {
     const fetchUserQuizAttempts = async () => {
       try {
@@ -103,8 +103,6 @@ const QuizList = ({ navigation }) => {
     fetchQuizzes(); // Your existing method to fetch quizzes
   }, []);
 
-
-
   useEffect(() => {
     const intervalId = setInterval(updateCountdowns, 1000);
     return () => clearInterval(intervalId);
@@ -115,7 +113,7 @@ const QuizList = ({ navigation }) => {
     try {
       const response = await listAllQuizEventsApi(1, 10);
       const sortedQuizzes = response.data.quizzes.sort(
-        (a, b) => new Date(a.startTime) - new Date(b.startTime)
+        (a, b) => new Date(a.startTime) - new Date(b.startTime),
       );
       setQuizzes(sortedQuizzes);
     } catch (error) {
@@ -129,52 +127,62 @@ const QuizList = ({ navigation }) => {
   const updateCountdowns = () => {
     let updatedCountdowns = {};
     const currentTime = new Date().getTime();
-    
+
     quizzes.forEach(quiz => {
       const startTime = new Date(quiz.startTime).getTime();
       const endTime = new Date(quiz.endTime).getTime();
-      
+
       if (registeredQuizIds.includes(quiz._id)) {
         // Check if the quiz is currently active
         if (startTime <= currentTime && endTime >= currentTime) {
           let distance = endTime - currentTime;
-          
+
           if (distance > 0) {
             let days = Math.floor(distance / (1000 * 60 * 60 * 24));
-            let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            let hours = Math.floor(
+              (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+            );
+            let minutes = Math.floor(
+              (distance % (1000 * 60 * 60)) / (1000 * 60),
+            );
             let seconds = Math.floor((distance % (1000 * 60)) / 1000);
-            
-            updatedCountdowns[quiz._id] = `Ends in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+            updatedCountdowns[
+              quiz._id
+            ] = `Ends in: ${days}d ${hours}h ${minutes}m ${seconds}s`;
           } else {
             updatedCountdowns[quiz._id] = 'Quiz Ended';
           }
         } else if (startTime > currentTime) {
           let distance = startTime - currentTime;
-          
+
           let days = Math.floor(distance / (1000 * 60 * 60 * 24));
-          let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          let hours = Math.floor(
+            (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+          );
           let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
           let seconds = Math.floor((distance % (1000 * 60)) / 1000);
-          
-          updatedCountdowns[quiz._id] = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+          updatedCountdowns[
+            quiz._id
+          ] = `${days}d ${hours}h ${minutes}m ${seconds}s`;
         } else {
           updatedCountdowns[quiz._id] = 'Quiz Ended';
         }
       }
     });
-    
+
     setCountdowns(updatedCountdowns);
   };
 
-  const handleRegister = async (quizId) => {
+  const handleRegister = async quizId => {
     Alert.alert(
       'Register',
       'Are you sure you want to register?',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Yes', 
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Yes',
           onPress: async () => {
             try {
               await registerForQuizApi(quizId);
@@ -182,109 +190,111 @@ const QuizList = ({ navigation }) => {
               setRegisteredQuizIds(prev => [...prev, quizId]);
             } catch (error) {
               console.error('Registration failed:', error);
-              Alert.alert('Error', 'Failed to register for the quiz. Please try again.');
+              Alert.alert(
+                'Error',
+                'Failed to register for the quiz. Please try again.',
+              );
             }
-          } 
+          },
         },
       ],
-      { cancelable: true }
+      {cancelable: true},
     );
   };
 
-  const handleStartQuiz = async (quizId) => {
+  const handleStartQuiz = async quizId => {
     try {
       const response = await startQuizAttemptApi(quizId);
-      
+
       // Navigate to quiz screen
-      navigation.navigate('QuizScreen', { 
+      navigation.navigate('QuizScreen', {
         quizId: quizId,
         attemptId: response.data.attemptId,
       });
     } catch (error) {
       console.error('Error starting quiz:', error);
-      
+
       // Check for specific error about existing attempt
-      if (error.response && error.response.data.error === 'QUIZ_ATTEMPT_EXISTS') {
+      if (
+        error.response &&
+        error.response.data.error === 'QUIZ_ATTEMPT_EXISTS'
+      ) {
         Alert.alert(
           'Quiz Attempt Exists',
           'You have already started or completed this quiz. You cannot attempt it again.',
-          [{ text: 'OK' }]
+          [{text: 'OK'}],
         );
       } else {
         Alert.alert(
-          'Error', 
-          'Failed to start the quiz. Please try again later.'
+          'Error',
+          'Failed to start the quiz. Please try again later.',
         );
       }
     }
   };
 
-
   const filteredQuizzes = quizzes.filter(quiz => {
-    const matchesSearch = quiz.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = quiz.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
     const currentTime = new Date().getTime();
     const startTime = new Date(quiz.startTime).getTime();
     const endTime = new Date(quiz.endTime).getTime();
 
     // Check if user has already attempted this quiz
     const hasAttempted = userQuizAttempts.some(
-      attempt => attempt.quiz === quiz._id
+      attempt => attempt.quiz === quiz._id,
     );
 
     const isRegistered = registeredQuizIds.includes(quiz._id);
 
-
     switch (activeTab) {
       case TABS.UPCOMING:
-        return matchesSearch && 
-               startTime > currentTime && 
-               !hasAttempted;
-      
+        return matchesSearch && startTime > currentTime && !hasAttempted;
+
       case TABS.ACTIVE:
-        return matchesSearch && 
-               startTime <= currentTime && 
-               endTime >= currentTime && 
-               !hasAttempted &&
-               isRegistered;
-      
+        return (
+          matchesSearch &&
+          startTime <= currentTime &&
+          endTime >= currentTime &&
+          !hasAttempted &&
+          isRegistered
+        );
+
       case TABS.COMPLETED:
-        return matchesSearch && 
-               (endTime < currentTime || hasAttempted);
-      
+        return matchesSearch && (endTime < currentTime || hasAttempted);
+
       default:
         return false;
     }
   });
-
-  
 
   const handleViewLeaderboard = quizId => {
     setSelectedQuizId(quizId);
     setIsLeaderboardVisible(true);
   };
 
-  const renderQuizCard = ({ item }) => {
+  const renderQuizCard = ({item}) => {
     const isRegistered = registeredQuizIds.includes(item._id);
     const countdown = countdowns[item._id];
     const quizDate = new Date(item.startTime);
     const formattedDate = moment(item.startTime).format('DD/MM/YYYY');
     const formattedTime = moment(item.startTime).format('HH:mm');
-    const hasStarted = countdown && 
-    !countdown.startsWith('Quiz Ended') && 
-    countdown.includes('Ends in:');
-        const hasAttempted = userQuizAttempts.some(
-      attempt => attempt.quiz === item._id && attempt.isCompleted
+    const hasStarted =
+      countdown &&
+      !countdown.startsWith('Quiz Ended') &&
+      countdown.includes('Ends in:');
+    const hasAttempted = userQuizAttempts.some(
+      attempt => attempt.quiz === item._id && attempt.isCompleted,
     );
     const currentTime = new Date().getTime();
     const endTime = new Date(item.endTime).getTime();
     const isQuizEnded = currentTime > endTime;
 
-    
-
     return (
       <TouchableOpacity
         style={styles.quizCard}
-        onPress={() => navigation.navigate('QuizDetails', { quizId: item._id })}>
+        onPress={() => navigation.navigate('QuizDetails', {quizId: item._id})}>
         <View style={styles.quizIconContainer}>
           <Image
             source={require('../../assets/images/image.png')}
@@ -315,7 +325,7 @@ const QuizList = ({ navigation }) => {
               {formattedTime}
             </Text>
           </View>
-          
+
           {activeTab === TABS.COMPLETED ? (
             <TouchableOpacity
               style={styles.leaderboardButton}
@@ -341,18 +351,15 @@ const QuizList = ({ navigation }) => {
                 </TouchableOpacity>
               )}
             </>
-          ) : (
-            isQuizEnded || hasAttempted ? null : (
-              <TouchableOpacity
-                style={styles.registerButton}
-                onPress={() => handleRegister(item._id)}>
-                <Text variant="regular14" color={COLORS.whiteFFFFFF}>
-                  Register
-                </Text>
-              </TouchableOpacity>
-            )
-          )
-          }
+          ) : isQuizEnded || hasAttempted ? null : (
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={() => handleRegister(item._id)}>
+              <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                Register
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -454,7 +461,7 @@ const QuizList = ({ navigation }) => {
           />
         }
       />
-      
+
       <LeaderboardModal
         visible={isLeaderboardVisible}
         onClose={() => setIsLeaderboardVisible(false)}
@@ -537,74 +544,74 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     elevation: 2,
     shadowColor: '#000',
-  shadowOffset: {
-    width: 0,
-    height: 2,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-},
-quizIconContainer: {
-  marginRight: nw(12),
-},
-quizIcon: {
-  width: nw(40),
-  height: nh(40),
-},
-quizInfo: {
-  flex: 1,
-},
-quizTitle: {
-  marginBottom: nh(4),
-},
-quizSubtitle: {
-  marginBottom: nh(8),
-},
-dateTimeContainer: {
-  flexDirection: 'row',
-  marginBottom: nh(8),
-},
-dateTime2: {
-  marginLeft: nw(12),
-},
-registeredBadge: {
-  position: 'absolute',
-  bottom: nh(1),
-  right: nw(0),
-  backgroundColor: COLORS.blue043142,
-  paddingHorizontal: nw(8),
-  paddingVertical: nh(6),
-  borderRadius: 8,
-},
-registerButton: {
-  backgroundColor: COLORS.blue043142,
-  paddingVertical: nh(6),
-  paddingHorizontal: nw(12),
-  borderRadius: 8,
-  alignSelf: 'flex-end',
-  marginTop: nh(-30),
-},
-startQuizButton: {
-  backgroundColor: COLORS.yellowF5BE00,
-  paddingVertical: nh(6),
-  paddingHorizontal: nw(12),
-  borderRadius: 8,
-  alignSelf: 'flex-start',
-  marginTop: nh(8),
-},
-leaderboardButton: {
-  position: 'absolute',
-  bottom: nh(1),
-  right: nw(0),
-  backgroundColor: COLORS.blue043142,
-  paddingHorizontal: nw(8),
-  paddingVertical: nh(6),
-  borderRadius: 8,
-},
-emptyStateTitle: {
-  marginBottom: nh(8),
-  textAlign: 'center',
-},
+  quizIconContainer: {
+    marginRight: nw(12),
+  },
+  quizIcon: {
+    width: nw(40),
+    height: nh(40),
+  },
+  quizInfo: {
+    flex: 1,
+  },
+  quizTitle: {
+    marginBottom: nh(4),
+  },
+  quizSubtitle: {
+    marginBottom: nh(8),
+  },
+  dateTimeContainer: {
+    flexDirection: 'row',
+    marginBottom: nh(8),
+  },
+  dateTime2: {
+    marginLeft: nw(12),
+  },
+  registeredBadge: {
+    position: 'absolute',
+    bottom: nh(1),
+    right: nw(0),
+    backgroundColor: COLORS.blue043142,
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(6),
+    borderRadius: 8,
+  },
+  registerButton: {
+    backgroundColor: COLORS.blue043142,
+    paddingVertical: nh(6),
+    paddingHorizontal: nw(12),
+    borderRadius: 8,
+    alignSelf: 'flex-end',
+    marginTop: nh(-30),
+  },
+  startQuizButton: {
+    backgroundColor: COLORS.yellowF5BE00,
+    paddingVertical: nh(6),
+    paddingHorizontal: nw(12),
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: nh(8),
+  },
+  leaderboardButton: {
+    position: 'absolute',
+    bottom: nh(1),
+    right: nw(0),
+    backgroundColor: COLORS.blue043142,
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(6),
+    borderRadius: 8,
+  },
+  emptyStateTitle: {
+    marginBottom: nh(8),
+    textAlign: 'center',
+  },
 });
 
 export default QuizList;
