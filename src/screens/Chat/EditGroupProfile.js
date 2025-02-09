@@ -252,15 +252,17 @@ const EditGroupProfile = ({route, navigation}) => {
                   onPress={openGallery}
                 />
               </View>
-              <TouchableOpacity style={styles.editButton} onPress={ondelete}>
-                <Icon
-                  type={'antdesign'}
-                  color={COLORS.whiteFFFFFF}
-                  name={'delete'}
-                  size={nw(15)}
-                />
-                <Text style={styles.editButtonText}> Delete</Text>
-              </TouchableOpacity>
+              {edit ? (
+                <TouchableOpacity style={styles.editButton} onPress={ondelete}>
+                  <Icon
+                    type={'antdesign'}
+                    color={COLORS.whiteFFFFFF}
+                    name={'delete'}
+                    size={nw(15)}
+                  />
+                  <Text style={styles.editButtonText}> Delete</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
             <CustomTextInput
               label="Group Name"

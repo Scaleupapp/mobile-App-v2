@@ -163,6 +163,7 @@ const ChatModal = forwardRef(({group}, ref) => {
                       groupMembersDetails: members,
                     });
                     ref?.current?.close();
+                    setSelectedMembers([]);
                   }}
                   // width={DEVICE_WIDTH - 32}
                   width={nw(80)}

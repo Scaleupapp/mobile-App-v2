@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Image,
@@ -8,6 +8,7 @@ import {
   StatusBar,
   SafeAreaView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import Header from '../../components/Header';
 import {COLORS} from '../../helper/colors';
@@ -15,6 +16,10 @@ import {nh, nw} from '../../helper/scales';
 import Icon from '../../helper/icon';
 import Text from '../../components/Text';
 import Routes from '../../helper/routes';
+import {MenuModal} from '../../components/MenuModal';
+import {icons} from '../../assets/icons';
+import {deleteStudyGroup} from '../../services/apiService';
+import {useSelector} from 'react-redux';
 
 // const groupData = {
 //   _id: '679e27c9acd699854799acef',
@@ -61,13 +66,51 @@ const GroupProfile = ({
   navigation,
 }) => {
   console.log({groupData});
+  const userData = useSelector(state => state?.userData);
+  const [visible, setVisible] = useState(false);
+  const isAdmin = groupData?.admins?.some(admin => admin?._id === userData?.id);
+
   const handleEditProfile = () => {
     navigation.navigate(Routes.EditGroupProfile, {
       groupData: groupData,
-      // groupMembers: selectedMembers,
       groupMembersDetails: groupData?.members,
       edit: true,
     });
+  };
+
+  const menuItems = [
+    {
+      name: 'Delete Group',
+      image: icons.delete,
+      onPress: () => ondelete(),
+    },
+  ];
+
+  const ondelete = () => {
+    Alert.alert(
+      'Delete Group',
+      'Are you sure you want to delete study group?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {},
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => deleteStudyGroupApi(),
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
+  const deleteStudyGroupApi = async () => {
+    setVisible(false);
+    try {
+      await deleteStudyGroup(groupData?._id);
+      navigation.pop(2);
+    } catch (error) {}
   };
   return (
     <SafeAreaView style={styles.container}>
@@ -85,8 +128,8 @@ const GroupProfile = ({
           }
         }}
         title={'Group Profile'}
-        // onRightIconPress={() => setVisible(!visible)}
-        // rightIcon={!!route?.params?.id} // show right icon if it's 'other' user
+        onRightIconPress={() => setVisible(!visible)}
+        rightIcon={isAdmin}
       />
 
       <View style={styles.layer1}>
@@ -136,19 +179,21 @@ const GroupProfile = ({
                 ))}
               </View>
               <Text style={styles.privacy}>Privacy: {groupData?.privacy}</Text>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEditProfile}>
-                <Icon
-                  //  onPress={onEdit}
-                  type={'feather'}
-                  // type={'antdesign'}
-                  color={COLORS.whiteFFFFFF}
-                  name={'edit'}
-                  size={nw(15)}
-                />
-                <Text style={styles.editButtonText}> Edit</Text>
-              </TouchableOpacity>
+              {isAdmin ? (
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={handleEditProfile}>
+                  <Icon
+                    //  onPress={onEdit}
+                    type={'feather'}
+                    // type={'antdesign'}
+                    color={COLORS.whiteFFFFFF}
+                    name={'edit'}
+                    size={nw(15)}
+                  />
+                  <Text style={styles.editButtonText}> Edit</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <Text variant="medium16" style={styles.sectionTitle}>
@@ -169,6 +214,12 @@ const GroupProfile = ({
           </ScrollView>
         </View>
       </View>
+      {/* Menu Modal for blocking user, etc. */}
+      <MenuModal
+        visible={visible}
+        setVisible={setVisible}
+        menuItems={menuItems}
+      />
     </SafeAreaView>
   );
 };
