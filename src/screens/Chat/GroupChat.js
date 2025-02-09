@@ -20,14 +20,13 @@ import {FlatList} from 'react-native';
 import {TextInput} from 'react-native';
 import Button from '../../components/Button';
 import {
-  deleteChatMessage,
-  editChatMessage,
-  getconversation,
-  getconversationbyID,
+  deleteGroupMsg,
+  editGroupMsg,
   getStudyGroupMsg,
-  reactChatMessage,
-  sendChat,
+  markReadAPI,
+  reactGroupMsg,
   sendGroupMsg,
+  sendGroupReply,
 } from '../../services/apiService';
 import {useSelector} from 'react-redux';
 import Text from '../../components/Text';
@@ -51,26 +50,27 @@ import ImageModal from '../Post/ImageModal';
 import MediaModal from './ImageSendModal';
 import MessageModal from './MessageactionsModal';
 import Routes from '../../helper/routes';
+import moment from 'moment';
 
 const GroupChat = ({navigation, route}) => {
   const {groupId, data} = route?.params;
   const userData = useSelector(state => state?.userData);
   const [messages, setMessages] = useState([]);
-  console.log('🚀 ~ GroupChat ~ messages:', messages);
   const [input, setInput] = useState('');
   const flatListRef = useRef(null);
-  const [apiData, setApiData] = useState();
+
   const [selected, setSelected] = useState();
   const [visible, setVisible] = useState(false);
   const [edit, setEdit] = useState(false);
   const textInputRef = useRef(null);
-  const [isEditable, setIsEditable] = useState(false);
+  const [isread, setIsread] = useState(false);
   const {showToast} = useToast();
   const imageModalRef = useRef(null);
   const [modalvisible, setModalVisible] = useState(false);
   const [itemclicked, setItemcliked] = useState({});
   const [file, setFile] = useState({});
   const [loadingsmall, setLoadingsmal] = useState(false);
+  const [reply, setReply] = useState(false);
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
@@ -82,16 +82,24 @@ const GroupChat = ({navigation, route}) => {
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club', {
-      token: userData?.token,
+      // Your server URL
+      auth: {
+        token: userData?.token, // If you have authentication
+      },
     }); // Replace with your server URL
     setSocket(socketInstance);
+
     socketInstance.on('connect', () => {
       console.log('group opened ', groupId);
       socketInstance.emit('joinGroup', groupId);
     });
+
     socketInstance.on('receiveMessage', data => {
-      console.log({data});
+      console.log('receiveMessage ', data);
+      data = {...data, createdAt: moment()};
+
       // if (data.conversationId === groupId) {
+      // markasRead(data?._id);
       setMessages(prevMessages => [...prevMessages, data]);
       // }
     });
@@ -113,7 +121,7 @@ const GroupChat = ({navigation, route}) => {
     });
 
     socketInstance.on('messageDeleted', data => {
-      console.log('🚀 ~ useEffect ~ messageDeleted:', data);
+      // console.log('🚀 ~ useEffect ~ messageDeleted:', data);
 
       const updatedData = {
         _id: data?.messageId,
@@ -131,7 +139,7 @@ const GroupChat = ({navigation, route}) => {
     });
 
     socketInstance.on('reactionAdded', data => {
-      console.log('🚀 ~ useEffect ~ reactionAdded:', data);
+      // console.log('🚀 ~ useEffect ~ reactionAdded:', data);
 
       const updatedMessages = messages.map(
         msg =>
@@ -149,6 +157,8 @@ const GroupChat = ({navigation, route}) => {
     // Clean up the socket connection when the component unmounts
     return () => {
       if (socketInstance) {
+        console.log('leaveRoom');
+        socketInstance.emit('leaveRoom', groupId); // Ensure to leave the room on cleanup
         socketInstance.disconnect();
       }
     };
@@ -205,9 +215,11 @@ const GroupChat = ({navigation, route}) => {
       }
 
       const {data} = await sendGroupMsg(formData);
+      // markasRead(data?._id);
       console.log('🚀 ~ sendMessage ~ data:', data);
-      setUserHasScrolled(false);
       // setMessages(prevMessages => [...prevMessages, data]);
+      setUserHasScrolled(false);
+      setIsread(true);
       if (socket) {
         socket.emit('sendMessage', {
           groupId,
@@ -229,17 +241,13 @@ const GroupChat = ({navigation, route}) => {
         content: input,
       };
       try {
-        const {data} = await editChatMessage(
-          selected?.conversationId,
-          selected?._id,
-          payload,
-        );
+        const {data} = await editGroupMsg(groupId, selected?._id, payload);
         const updatedData = {
           _id: selected?._id,
           message: input,
           edited: true,
         };
-        console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
+        // console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
 
         const updatedMessages = messages.map(
           msg =>
@@ -247,7 +255,7 @@ const GroupChat = ({navigation, route}) => {
               ? {...msg, ...updatedData} // Update the matching object
               : msg, // Keep others unchanged
         );
-        console.log('🚀 ~ editMessage ~ updatedMessages:', updatedMessages);
+        // console.log('🚀 ~ editMessage ~ updatedMessages:', updatedMessages);
 
         setInput('');
         setMessages(updatedMessages);
@@ -255,7 +263,7 @@ const GroupChat = ({navigation, route}) => {
         setEdit(false);
 
         setSelected(null);
-        console.log('🚀 ~ editMessage ~ data:', data);
+        // console.log('🚀 ~ editMessage ~ data:', data);
       } catch (error) {
         console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
       }
@@ -263,17 +271,13 @@ const GroupChat = ({navigation, route}) => {
   };
 
   const reactMessage = async emojis => {
-    console.log('🚀 ~ Chat ~ emoji:', emojis);
+    // console.log('🚀 ~ Chat ~ emoji:', emojis);
     const payload = {
       emoji: emojis,
     };
-    console.log('🚀 ~ Chat ~ payload:', payload);
+    // console.log('🚀 ~ Chat ~ payload:', payload);
     try {
-      const {data} = await reactChatMessage(
-        selected?.conversationId,
-        selected?._id,
-        payload,
-      );
+      const {data} = await reactGroupMsg(groupId, selected?._id, payload);
 
       const updatedData = {
         _id: selected?._id,
@@ -292,7 +296,7 @@ const GroupChat = ({navigation, route}) => {
       setMessages(updatedMessages);
       setVisible(false);
       setSelected(null);
-      console.log('🚀 ~ editMessage ~ data:', JSON.stringify(data));
+      // console.log('🚀 ~ editMessage ~ data:', JSON.stringify(data));
     } catch (error) {
       console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
     }
@@ -300,10 +304,7 @@ const GroupChat = ({navigation, route}) => {
 
   const deleteMessage = async () => {
     try {
-      const {data} = await deleteChatMessage(
-        selected?.conversationId,
-        selected?._id,
-      );
+      const {data} = await deleteGroupMsg(groupId, selected?._id);
       setVisible(false);
       const updatedData = {
         _id: selected?._id,
@@ -321,16 +322,68 @@ const GroupChat = ({navigation, route}) => {
       setSelected(null);
       showToast({type: 'success', title: data?.message});
     } catch (error) {
-      console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
+      console.log('🚀 ~ deleteMessage ~ error:', error?.response?.data);
     }
   };
 
   const onEditClick = () => {
     setEdit(true);
-    setInput(selected?.message);
+    setInput(selected?.message || selected?.content);
     setVisible(false);
     if (textInputRef.current) {
       textInputRef.current.focus();
+    }
+  };
+
+  const onReplyClick = () => {
+    setReply(true);
+    setVisible(false);
+    if (textInputRef.current) {
+      textInputRef.current.focus();
+    }
+  };
+  const replyMessage = async () => {
+    setLoadingsmal(true);
+    // if (!newMessage.trim()) return;
+    if (input.trim() || file?.fileName) {
+      const formData = new FormData();
+
+      formData.append('groupId', groupId);
+      // Format topics and hashtags as arrays
+
+      formData.append('message', input);
+      formData.append('parentMessageId', selected?._id);
+      // Format topics and hashtags as arrays
+
+      // formData.append('message', 'heheh');
+
+      if (file?.fileName) {
+        formData.append('media', {
+          uri: file.uri,
+          name: file.fileName,
+          type: file.type,
+        });
+      }
+
+      const {data} = await sendGroupReply(formData);
+      // markasRead(data?._id);
+      // setMessages(prevMessages => [...prevMessages, data]);
+      console.log('🚀 ~ sendMesendChatReplyssage ~ data:', data);
+      setUserHasScrolled(false);
+      setReply(false);
+      setSelected();
+      setIsread(true);
+      if (socket) {
+        socket.emit('sendMessage', {
+          groupId,
+          message: data?.newMessage,
+          sender: data?.newMessage?.sender,
+        });
+      }
+      setLoadingsmal(false);
+      setModalVisible(false);
+      setInput('');
+      setFile({});
     }
   };
   const openGallery = async () => {
@@ -354,7 +407,7 @@ const GroupChat = ({navigation, route}) => {
     }
   };
   const handleFileSelection = async asset => {
-    console.log('🚀 ~ Chat ~ asset:', asset);
+    // console.log('🚀 ~ Chat ~ asset:', asset);
 
     try {
       if (asset.type && asset.type.toLowerCase().includes('gif')) {
@@ -391,40 +444,50 @@ const GroupChat = ({navigation, route}) => {
     }
   };
 
-  const menuItems = [
-    ...(isEditable
-      ? [
-          {
-            name: 'Edit Message',
-            image: icons.editsolid,
-            onPress: () => onEditClick(), // Edit action
-          },
-        ]
-      : []),
-    ...(isEditable
-      ? [
-          {
-            name: 'Delete Message',
-            image: icons.delete,
-            onPress: () => deleteMessage(), // Delete action (this should be onDeleteClick, not onEditClick)
-          },
-        ]
-      : []),
-  ];
-  const formatGroupedMessages = () => {
+  const formatGroupedMessages = id => {
+    // console.log(messages);
     let groupedMessages = groupMessagesByDate(messages);
-    // console.log(
-    //   '🚀 ~ formatGroupedMessages ~ groupedMessages:',
-    //   groupedMessages,
-    // );
-    return groupedMessages.flatMap(group => [
-      {type: 'header', date: group.date},
-      ...group.messages.map(msg => ({...msg, type: 'message'})),
-    ]);
-  };
-  const fetchMessages = async page => {
-    console.log('🚀 ~ GroupChat ~ page:', page);
 
+    // return groupedMessages.flatMap(group => [
+    //   {type: 'header', date: group.date},
+    //   ...group.messages.map(msg => ({...msg, type: 'message'})),
+    // ]);
+    let unreadInserted = false;
+    return groupedMessages.flatMap(group => {
+      let section = [{type: 'header', date: group.date}];
+
+      const messageSection = group.messages.flatMap(msg => {
+        const isUnread = !msg.readAt && msg.sender._id !== userData?.id; // Ensure message is unread & not sent by me
+
+        if (isUnread && !unreadInserted) {
+          unreadInserted = true;
+          return [
+            {type: 'unreadHeader', text: 'Unread Messages'},
+            {...msg, type: 'message'},
+          ];
+        }
+
+        return {...msg, type: 'message'};
+      });
+
+      return [...section, ...messageSection];
+    });
+  };
+
+  const markasRead = async id => {
+    console.log('🚀 ~ markasRead ~ id:', id);
+    try {
+      let res = await markReadAPI({
+        messageId: id,
+      });
+      console.log('🚀 ~ markasRead ~ res:', res?.data);
+    } catch (error) {
+      console.log('🚀 ~ markasRead ~ error:', error);
+    }
+  };
+
+  const fetchMessages = async page => {
+    // const {data} = await getconversationbyID(route?.params?.chatId, page);
     try {
       const {data} = await getStudyGroupMsg(groupId);
       console.log('🚀 ~ GroupChat ~ data:', data);
@@ -432,24 +495,34 @@ const GroupChat = ({navigation, route}) => {
     } catch (error) {
       console.log('🚀 ~ GroupChat ~ error:', error);
     }
-    // const {data} = await getconversationbyID(groupId, page);
-
     // setApiData(data);
+    return data?.messages;
   };
   const loadMoreMessages = async () => {
     if (loading || allMessagesFetched) return;
 
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
-    console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages.length);
-
+    setLoading(false);
+    console.log('🚀 ~ loadMoreMessages ~ newMessages:', page.current);
+    // if (page.current == 1) {
+    //   const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
+    //     if (msg.sender._id !== userData?.id && !msg.readAt) {
+    //       return msg; // Keep updating with the latest unread message
+    //     }
+    //     return lastUnread;
+    //   }, null);
+    //   if (lastUnreadMessage) {
+    //     markasRead(lastUnreadMessage?._id);
+    //   }
+    // }
     if (newMessages.length === 0) {
       setAllMessagesFetched(true);
     } else {
       setMessages(prevMessages => [...newMessages, ...prevMessages]);
       page.current += 1;
     }
-    setLoading(false);
+    // setLoading(false);
   };
 
   // Handle when the user scrolls to the top
@@ -475,6 +548,22 @@ const GroupChat = ({navigation, route}) => {
               variant="semibold14"
               color={COLORS.blue043142}>
               {checkDate(item.date)}
+            </Text>
+            <View style={styles.line} />
+          </View>
+        </View>
+      );
+    }
+    if (item.type === 'unreadHeader' && !isread) {
+      return (
+        <View style={styles.headerContainer}>
+          <View style={styles.lineContainer}>
+            <View style={styles.line} />
+            <Text
+              style={{marginHorizontal: 10}}
+              variant="semibold12"
+              color={COLORS.black333333}>
+              Unread Messages
             </Text>
             <View style={styles.line} />
           </View>
@@ -538,13 +627,100 @@ const GroupChat = ({navigation, route}) => {
                   paddingBottom: 18,
                 },
               ]}>
+              {item?.parentMessageId && (
+                <View
+                  style={{
+                    backgroundColor: COLORS.whiteFFFFFF,
+                    borderRadius: 8,
+                    paddingHorizontal: 5,
+                    borderLeftWidth: 2,
+                    borderLeftColor: COLORS.yellowF5BE00,
+                    paddingVertical: 5,
+                    marginBottom: 3,
+                  }}>
+                  <Text variant="medium12" color={COLORS.yellowF5BE00}>
+                    {item?.parentMessageId?.sender?._id == userData?.id
+                      ? 'You'
+                      : item?.parentMessageId?.sender?.username}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                    {item?.parentMessageId?.message &&
+                      !item?.parentMessageId?.mediaType && (
+                        <Text
+                          variant="medium12"
+                          color={COLORS.black333333}
+                          numberOfLines={1}
+                          ellipsizeMode="tail">
+                          {item?.parentMessageId?.message}
+                        </Text>
+                      )}
+
+                    {item?.parentMessageId?.media &&
+                      (item?.parentMessageId?.mediaType == 'Image' ||
+                        item?.parentMessageId?.mediaType?.includes(
+                          'image',
+                        )) && (
+                        <Pressable
+                        // onPress={() => {
+                        //   setItemcliked(item);
+                        //   imageModalRef.current?.present();
+                        // }}
+                        >
+                          <Image
+                            source={{uri: item?.parentMessageId?.media}}
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                          />
+                        </Pressable>
+                      )}
+
+                    {item?.parentMessageId?.media &&
+                      item?.parentMessageId?.mediaType?.includes('video') && (
+                        <Pressable
+                        // onPress={() => {
+                        //   setItemcliked(item);
+                        //   imageModalRef.current?.present();
+                        // }}
+                        >
+                          <Video
+                            source={{uri: item?.parentMessageId?.media}}
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                            controls
+                          />
+                        </Pressable>
+                      )}
+                    {item?.parentMessageId?.message &&
+                      item?.parentMessageId?.mediaType && (
+                        <Text
+                          style={[styles.messageText, {marginLeft: 10}]}
+                          variant="medium14"
+                          color={COLORS.black333333}>
+                          {item?.parentMessageId?.message}
+                        </Text>
+                      )}
+                  </View>
+                </View>
+              )}
               <View>
-                {item?.content && !item?.mediaType && (
+                {(item?.content || item?.message) && !item?.mediaType && (
                   <Text
-                    style={styles.messageText}
+                    // style={styles.messageText}
                     variant="medium14"
                     color={COLORS.black333333}>
-                    {item?.content}
+                    {item?.content || item?.message}
                   </Text>
                 )}
                 {item?.media &&
@@ -604,6 +780,7 @@ const GroupChat = ({navigation, route}) => {
                   resizeMode="cover"
                 />
               )} */}
+
                 {/* <Text
                   style={{
                     fontSize: 10,
@@ -612,6 +789,7 @@ const GroupChat = ({navigation, route}) => {
                   }}>
                   {formatAMPM(item?.updatedAt)}
                 </Text> */}
+
                 {item?.edited && (
                   <Text
                     style={{
@@ -680,35 +858,46 @@ const GroupChat = ({navigation, route}) => {
             barStyle="dark-content"
             backgroundColor={COLORS.yellowF5BE00}
           />
-
           <View
             style={{
               flexDirection: 'row',
+
               alignItems: 'center',
+
               justifyContent: 'space-between',
+
               paddingHorizontal: nw(16), // Add horizontal padding
+
               paddingTop: nh(2),
+
               backgroundColor: COLORS.yellowF5BE00, // Set background color
+
               backgroundColor: COLORS.yellowF5BE00,
             }}>
             <View
               style={{
                 flexDirection: 'row',
+
                 alignItems: 'center',
               }}>
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
                 style={{
                   width: 40, // Fixed width for icon touchable area
+
                   alignItems: 'center',
+
                   justifyContent: 'center',
                 }}>
                 <Image
                   source={icons.backarrow}
                   style={{
                     width: nw(30),
+
                     height: nh(30),
+
                     resizeMode: 'contain',
+
                     marginTop: 5,
                   }}
                 />
@@ -722,7 +911,9 @@ const GroupChat = ({navigation, route}) => {
                 }
                 style={{
                   flexDirection: 'row',
+
                   alignItems: 'center',
+
                   marginLeft: 10,
                 }}>
                 {data?.profilePicture ? (
@@ -734,9 +925,12 @@ const GroupChat = ({navigation, route}) => {
                   <View
                     style={[
                       styles.image,
+
                       {
                         alignItems: 'center',
+
                         justifyContent: 'center',
+
                         backgroundColor: COLORS.greyD6D6D6,
                       },
                     ]}>
@@ -748,7 +942,9 @@ const GroupChat = ({navigation, route}) => {
                     />
                   </View>
                 )}
+
                 {/* Title */}
+
                 <Text
                   variant="semibold18"
                   style={styles.title}
@@ -759,15 +955,24 @@ const GroupChat = ({navigation, route}) => {
             </View>
 
             {/* Right Icon */}
+
             {/* <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
-        {rightIcon && (
-          <Entypo
-            name="dots-three-vertical"
-            size={nh(20)}
-            color={COLORS.whiteFFFFFF}
-            style={styles.icon}
-          />
-        )}
+
+{rightIcon && (
+
+<Entypo
+
+name="dots-three-vertical"
+
+size={nh(20)}
+
+color={COLORS.whiteFFFFFF}
+
+style={styles.icon}
+
+/>
+)}
+
       </TouchableOpacity> */}
           </View>
 
@@ -780,6 +985,7 @@ const GroupChat = ({navigation, route}) => {
                   renderItem={renderMessage}
                   initialNumToRender={100}
                   keyExtractor={item => item.id || item?.date}
+                  //   contentContainerStyle={styles.messagesList}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
                   extraData={messages}
@@ -790,11 +996,78 @@ const GroupChat = ({navigation, route}) => {
                       <ActivityIndicator size="small" color="#0000ff" />
                     ) : null
                   } // Show loading spinner when fetching older messages
-                  contentContainerStyle={{
-                    paddingBottom: 50,
-                  }}
+                  contentContainerStyle={{paddingBottom: 50}}
                 />
-
+                {reply && (
+                  <View
+                    style={{
+                      height: nh(50),
+                      backgroundColor: COLORS.grey333333 + 10,
+                      borderColor: COLORS.grey777777 + 20,
+                      borderWidth: 1,
+                      borderRadius: 8,
+                      borderLeftColor: COLORS.yellowF5BE00,
+                      borderLeftWidth: 2,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      marginBottom: 5,
+                    }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        console.log('hreee1111');
+                        setSelected();
+                        setReply(false);
+                      }}
+                      style={{
+                        height: 20,
+                        width: 20,
+                        position: 'absolute',
+                        right: 0,
+                        top: 5,
+                      }}>
+                      <Icon type="entypo" name="cross" size={20} style={{}} />
+                    </TouchableOpacity>
+                    <Text variant="bold12" color={COLORS.blue043142}>
+                      {selected?.sender?._id === userData?.id
+                        ? 'You'
+                        : selected?.sender?.username}
+                    </Text>
+                    <View style={{flexDirection: 'row'}}>
+                      {selected?.media && (
+                        <Icon
+                          type="material-community"
+                          name={
+                            selected?.mediaType?.includes('image')
+                              ? 'image'
+                              : 'video-outline'
+                          }
+                          size={20}
+                          // style={{
+                          //   alignSelf: 'center',
+                          //   marginRight: 10,
+                          //   marginLeft: -10,
+                          // }}
+                        />
+                      )}
+                      {!selected?.message && (
+                        <Text variant="medium12" style={{marginLeft: 10}}>
+                          {selected?.mediaType?.includes('image')
+                            ? 'Image'
+                            : 'Video'}
+                        </Text>
+                      )}
+                      {selected?.message && (
+                        <Text
+                          variant="medium12"
+                          style={{marginHorizontal: 10}}
+                          numberOfLines={1}
+                          ellipsizeMode="tail">
+                          {selected?.message}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                )}
                 <View style={styles.inputContainer}>
                   <Icon
                     type="material-community"
@@ -835,20 +1108,31 @@ const GroupChat = ({navigation, route}) => {
                       setModalVisible(false);
                     }}
                     file={file}
-                    onSend={sendMessage}
+                    onSend={reply ? replyMessage : sendMessage}
                     input={input}
                     setInput={setInput}
                     loadingsmall={loadingsmall}
+                    reply={reply}
                   />
 
                   <TouchableOpacity
                     style={styles.sendButton}
-                    onPress={selected?._id ? editMessage : sendMessage}>
+                    onPress={
+                      selected?._id && edit
+                        ? editMessage
+                        : reply
+                        ? replyMessage
+                        : sendMessage
+                    }>
                     {loadingsmall ? (
                       <ActivityIndicator size="small" color="white" />
                     ) : (
                       <Text style={styles.sendButtonText}>
-                        {selected?._id && edit ? 'Edit' : 'Send'}
+                        {selected?._id && edit
+                          ? 'Edit'
+                          : reply
+                          ? 'Reply'
+                          : 'Send'}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -870,8 +1154,8 @@ const GroupChat = ({navigation, route}) => {
             item={selected}
             onEdit={onEditClick}
             onDelete={deleteMessage}
-            isEditable={isEditable}
             onReact={reactMessage}
+            onReply={onReplyClick}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>

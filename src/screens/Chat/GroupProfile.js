@@ -50,13 +50,14 @@ import {useSelector} from 'react-redux';
 //     },
 //   ],
 //   admins: [
-//     {
-//       _id: '65dc66dd55fd97c98892ba2d',
-//     },
+//       '65dc66dd55fd97c98892ba2d',
 //   ],
 //   topics: ['The only', 'The most common'],
 //   privacy: 'private',
 //   createdDate: '2025-02-01T13:55:21.899Z',
+//   lastMessage:{
+
+//   }
 // };
 
 const GroupProfile = ({

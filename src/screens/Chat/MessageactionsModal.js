@@ -32,7 +32,7 @@ const MessageModal = ({
       !checkIfTenMinutesPassed(item?.createdAt) &&
       item?.sender?._id == userData?.id
     ) {
-      if (item?.message) {
+      if (item?.message || item?.content) {
         setIsEditable(true);
       }
       setIsDeletable(true);
@@ -80,12 +80,12 @@ const MessageModal = ({
             },
           ]}>
           <View>
-            {item?.message && !item?.mediaType && (
+            {(item?.message || item?.content) && !item?.mediaType && (
               <Text
                 style={styles.messageText}
                 variant="medium14"
                 color={COLORS.black333333}>
-                {item.message}
+                {item?.message || item?.content}
               </Text>
             )}
             {item?.media &&

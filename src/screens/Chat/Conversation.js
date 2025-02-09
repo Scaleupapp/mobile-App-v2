@@ -127,6 +127,19 @@ const Conversation = ({navigation, route}) => {
     return str?.length > maxLength ? str?.slice(0, maxLength) + '...' : str;
   };
   const GroupCard = ({item, index}) => {
+    let lastMessage = {};
+    let senderName = '';
+    let length = item?.messages?.length || 0;
+    if (length > 0) {
+      const sender = item?.members?.filter(
+        f => f._id == item?.messages[length - 1]?.sender,
+      );
+      if (sender?.length > 0) {
+        lastMessage = item?.messages[length - 1];
+        senderName = sender[0]?.firstname;
+      }
+    }
+
     // console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
     return (
       <Pressable
@@ -162,13 +175,15 @@ const Conversation = ({navigation, route}) => {
           <Text variant="medium12" color={COLORS.blue043142}>
             {item?.name}
           </Text>
-          {/* <Text variant="medium12" color={COLORS.grey999999}>
-            {truncateString(item?.lastMessage?.message, 30)}
-          </Text> */}
+          {senderName ? (
+            <Text variant="medium12" color={COLORS.grey999999}>
+              {senderName + ': ' + truncateString(lastMessage?.content, 20)}
+            </Text>
+          ) : null}
         </View>
         <View style={{flex: 3, alignItems: 'center'}}>
           <Text variant="medium12" color={COLORS.blue043142}>
-            {formatDateforchat(item?.createdAt)}
+            {formatDateforchat(lastMessage?.timestamp || item?.createdDate)}
           </Text>
           {/* <View
             style={{

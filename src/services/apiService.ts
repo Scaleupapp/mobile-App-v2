@@ -235,7 +235,6 @@ export const sendChatReply = (payload: any) => {
   return axiosInstance.post(`${API.CHAT}/reply`, payload);
 };
 
-
 export const editChatMessage = (convid: any, messageid: any, payload: any) => {
   return axiosInstance.put(
     `${API.CHAT}/${convid}/messages/${messageid}/edit`,
@@ -254,10 +253,7 @@ export const deleteChatMessage = (convid: any, messageid: any) => {
   );
 };
 export const markReadAPI = (payload: any) => {
-  return axiosInstance.post(
-    `${API.CHAT}/mark-read`,
-    payload,
-  );
+  return axiosInstance.post(`${API.CHAT}/mark-read`, payload);
 };
 
 // Create a new quiz event (Admin)
@@ -367,4 +363,24 @@ export const deleteStudyGroup = (groupId: any) => {
 
 export const sendGroupMsg = (payload: any) => {
   return axiosInstance.post(`${API.SEND_GROUP_MSG}`, payload);
+};
+
+export const deleteGroupMsg = (groupId: any, messageid: any) => {
+  return axiosInstance.delete(
+    `${API.CHAT}/${groupId}/group/${messageid}/delete`,
+  );
+};
+
+export const editGroupMsg = (groupId: any, messageid: any) => {
+  return axiosInstance.put(`${API.CHAT}/${groupId}/group/${messageid}/edit`);
+};
+export const sendGroupReply = (payload: any) => {
+  // route needs to be changed
+  return axiosInstance.post(`${API.CHAT}/reply`, payload);
+};
+export const reactGroupMsg = (groupId: any, messageid: any, payload: any) => {
+  return axiosInstance.post(
+    `${API.CHAT}/group/${groupId}/messages/${messageid}/reactions`,
+    payload,
+  );
 };

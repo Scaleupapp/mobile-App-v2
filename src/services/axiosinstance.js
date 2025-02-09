@@ -31,7 +31,9 @@ export const setupAxiosInterceptors = showToast => {
       if (
         error.response.status == 400 ||
         error.response.status == 429 ||
-        error.response.status == 500
+        error.response.status == 500 ||
+        error.response.status == 401 ||
+        error.response.status == 403
       ) {
         showToast({type: 'error', title: error?.response?.data?.message});
         console.log('error11', error?.response?.data?.message);
@@ -43,13 +45,11 @@ export const setupAxiosInterceptors = showToast => {
         });
         console.log('error22', 'Somethig went wrong, Please try again.');
       }
-      if (error.response.status == 401) {
-        showToast({type: 'error', title: error.response?.data?.message});
-        console.log('error33', error.response?.data?.message);
-        // setTimeout(() => {
-        //   logoutUser();
-        // }, 1000);
-      }
+      // if (error.response.status == 401) {
+      //   setTimeout(() => {
+      //     logoutUser();
+      //   }, 1000);
+      // }
 
       return Promise.reject(error);
     },
