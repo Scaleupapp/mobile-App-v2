@@ -28,7 +28,7 @@ import {
   sendGroupMsg,
   sendGroupReply,
 } from '../../services/apiService';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import Text from '../../components/Text';
 import {images} from '../../assets/images';
 import {Image} from 'react-native';
@@ -51,11 +51,14 @@ import MediaModal from './ImageSendModal';
 import MessageModal from './MessageactionsModal';
 import Routes from '../../helper/routes';
 import moment from 'moment';
+import {actions} from '../../redux/reducers';
 
 const GroupChat = ({navigation, route}) => {
   const {groupId, data} = route?.params;
+  const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
   const [messages, setMessages] = useState([]);
+  console.log('🚀 ~ GroupChat ~ messages:', messages);
   const [input, setInput] = useState('');
   const flatListRef = useRef(null);
 
@@ -164,6 +167,7 @@ const GroupChat = ({navigation, route}) => {
     };
   }, [groupId, messages]); // Ensure that the effect runs when the conversationId changes
   useEffect(() => {
+    dispatch(actions.setGroupData(data));
     loadMoreMessages();
   }, []);
 
@@ -457,7 +461,7 @@ const GroupChat = ({navigation, route}) => {
       let section = [{type: 'header', date: group.date}];
 
       const messageSection = group.messages.flatMap(msg => {
-        const isUnread = !msg.readAt && msg.sender._id !== userData?.id; // Ensure message is unread & not sent by me
+        const isUnread = !msg.readAt && msg.sender?._id !== userData?.id; // Ensure message is unread & not sent by me
 
         if (isUnread && !unreadInserted) {
           unreadInserted = true;
@@ -487,15 +491,7 @@ const GroupChat = ({navigation, route}) => {
   };
 
   const fetchMessages = async page => {
-    // const {data} = await getconversationbyID(route?.params?.chatId, page);
-    try {
-      const {data} = await getStudyGroupMsg(groupId);
-      console.log('🚀 ~ GroupChat ~ data:', data);
-      return data;
-    } catch (error) {
-      console.log('🚀 ~ GroupChat ~ error:', error);
-    }
-    // setApiData(data);
+    const {data} = await getStudyGroupMsg(groupId, page);
     return data?.messages;
   };
   const loadMoreMessages = async () => {
@@ -504,7 +500,11 @@ const GroupChat = ({navigation, route}) => {
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
     setLoading(false);
-    console.log('🚀 ~ loadMoreMessages ~ newMessages:', page.current);
+    console.log(
+      '🚀 ~ loadMoreMessages ~ newMessages:',
+      page.current,
+      newMessages,
+    );
     // if (page.current == 1) {
     //   const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
     //     if (msg.sender._id !== userData?.id && !msg.readAt) {
@@ -516,13 +516,13 @@ const GroupChat = ({navigation, route}) => {
     //     markasRead(lastUnreadMessage?._id);
     //   }
     // }
+    console.log('sndknskdnka');
     if (newMessages.length === 0) {
       setAllMessagesFetched(true);
     } else {
       setMessages(prevMessages => [...newMessages, ...prevMessages]);
       page.current += 1;
     }
-    // setLoading(false);
   };
 
   // Handle when the user scrolls to the top
@@ -904,11 +904,9 @@ const GroupChat = ({navigation, route}) => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate(Routes.GroupProfile, {
-                    groupData: data,
-                  })
-                }
+                onPress={() => {
+                  navigation.navigate(Routes.GroupProfile, {canGoBack: true});
+                }}
                 style={{
                   flexDirection: 'row',
 

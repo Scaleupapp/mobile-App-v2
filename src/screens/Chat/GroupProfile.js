@@ -21,55 +21,18 @@ import {icons} from '../../assets/icons';
 import {deleteStudyGroup} from '../../services/apiService';
 import {useSelector} from 'react-redux';
 
-// const groupData = {
-//   _id: '679e27c9acd699854799acef',
-//   name: 'try and find',
-//   description: 'Ddddd kasl la ms mmn',
-//   groupProfilePicture:
-//     'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/65dc66dd55fd97c98892ba2d/65dc66dd55fd97c98892ba2d.jpg',
-//   members: [
-//     {
-//       bio: {bioAbout: 'Founder and CEO, ScaleUp'},
-//       _id: '65dc66dd55fd97c98892ba2d',
-//       username: 'nirpeksh',
-//       role: 'Subject Matter Expert',
-//       firstname: 'Nirpeksh',
-//       lastname: 'Nandan',
-//       profilePicture:
-//         'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/65dc66dd55fd97c98892ba2d/65dc66dd55fd97c98892ba2d.jpg',
-//     },
-//     {
-//       bio: {bioAbout: 'Founder and CEO, ScaleUp'},
-//       _id: '65dc66dd55fd97c98892ba2d',
-//       username: 'nirpeksh',
-//       role: 'Subject Matter Expert',
-//       firstname: 'Nirpeksh',
-//       lastname: 'Nandan',
-//       profilePicture:
-//         'https://scaleupbucket.s3.ap-southeast-2.amazonaws.com/65dc66dd55fd97c98892ba2d/65dc66dd55fd97c98892ba2d.jpg',
-//     },
-//   ],
-//   admins: [
-//       '65dc66dd55fd97c98892ba2d',
-//   ],
-//   topics: ['The only', 'The most common'],
-//   privacy: 'private',
-//   createdDate: '2025-02-01T13:55:21.899Z',
-//   lastMessage:{
-
-//   }
-// };
-
 const GroupProfile = ({
   route: {
-    params: {groupData, canGoBack = true},
+    params: {canGoBack = true},
   },
   navigation,
 }) => {
-  console.log({groupData});
   const userData = useSelector(state => state?.userData);
+  const groupData = useSelector(state => state?.groupData);
+  console.log({groupData});
+
   const [visible, setVisible] = useState(false);
-  const isAdmin = groupData?.admins?.some(admin => admin?._id === userData?.id);
+  const isAdmin = groupData?.admins?.some(admin => admin === userData?.id);
 
   const handleEditProfile = () => {
     navigation.navigate(Routes.EditGroupProfile, {
@@ -203,9 +166,7 @@ const GroupProfile = ({
             <FlatList
               data={groupData?.members.map(member => ({
                 ...member,
-                isAdmin: groupData?.admins.some(
-                  admin => admin?._id === member?._id,
-                ),
+                isAdmin: groupData?.admins.some(admin => admin === member?._id),
               }))}
               scrollEnabled={false}
               renderItem={({item}) => <MemberCard member={item} />}

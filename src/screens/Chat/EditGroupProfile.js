@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   Image,
   StyleSheet,
@@ -27,16 +27,20 @@ import Header from '../../components/Header';
 import ImagePicker from 'react-native-image-crop-picker';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import SquareToggle from '../../components/ToggleButton';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import axios from 'axios';
 import {API} from '../../services/apiConstent';
+import {actions} from '../../redux/reducers';
+import ChatModal from './ChatModal';
 const options = ['Public', 'Private'];
 
 const EditGroupProfile = ({route, navigation}) => {
   const {groupMembersDetails = [], groupData = {}, edit = false} = route.params;
   const userData = useSelector(state => state?.userData);
+  const dispatch = useDispatch();
+  const chatmodelRef = useRef(null);
   const [selectedMembers, setSelectedMembers] = useState(
-    edit ? groupData?.admins?.map(admin => admin?._id || admin?.userId) : [],
+    edit ? groupData?.admins : [],
   );
   const [input, setInput] = useState('');
   const [words, setWords] = useState(groupData?.topics || []);
@@ -155,10 +159,10 @@ const EditGroupProfile = ({route, navigation}) => {
       const newdata = {
         ...data,
         members: memberDetails,
-        admins: selectedMembers?.map(a => ({_id: a})),
+        admins: selectedMembers,
       };
+      dispatch(actions.setGroupData(newdata));
       navigation.replace(Routes.GroupProfile, {
-        groupData: newdata,
         canGoBack: false,
       });
     } catch (error) {
@@ -322,12 +326,43 @@ const EditGroupProfile = ({route, navigation}) => {
               onChangeText={setInput}
               onSubmitEditing={handleAddWord}
             />
-            <Text
-              variant="medium12"
-              color={COLORS.greyBBBBBB}
-              style={{marginBottom: words?.length > 0 ? 5 : -5}}>
-              {'Members (' + memberDetails?.length + ')'}
-            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <Text
+                variant="medium12"
+                color={COLORS.greyBBBBBB}
+                style={{marginBottom: words?.length > 0 ? 5 : -5}}>
+                {'Members (' + memberDetails?.length + ')'}
+              </Text>
+              {/* <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginRight: nw(28),
+                }}>
+                <Button
+                  onPress={() => chatmodelRef.current?.present()}
+                  text={'Add Members'}
+                  variant="outline"
+                  width={nw(90)}
+                  height={nh(30)}
+                  textStyle={{fontSize: 14}}
+                />
+                <Icon
+                  type="entypo"
+                  name="add-user"
+                  color={COLORS.blue043142}
+                  style={{marginLeft: 5}}
+                  size={nh(20)}
+                  onPress={() => chatmodelRef.current?.present()}
+                />
+              </View> */}
+            </View>
             <FlatList
               scrollEnabled={false}
               data={memberDetails || []}
@@ -408,6 +443,12 @@ const EditGroupProfile = ({route, navigation}) => {
           textStyle={{fontSize: 20}}
         />
       </View>
+      <ChatModal
+        group={true}
+        ref={chatmodelRef}
+        selectedMembers={memberDetails}
+        setSelectedMembers={setMemberDetails}
+      />
     </SafeAreaView>
   );
 };

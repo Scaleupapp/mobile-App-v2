@@ -14,11 +14,7 @@ import Header from '../../components/Header';
 import {Image} from 'react-native';
 import Text from '../../components/Text';
 import Routes from '../../helper/routes';
-import {
-  getconversation,
-  getStudyGroupMsg,
-  getStudyGroups,
-} from '../../services/apiService';
+import {getconversation, getStudyGroups} from '../../services/apiService';
 import {useSelector} from 'react-redux';
 import Button from '../../components/Button';
 import {images} from '../../assets/images';
@@ -116,7 +112,7 @@ const Conversation = ({navigation, route}) => {
   const fetchStudyGroups = async () => {
     try {
       const {data} = await getStudyGroups();
-      console.log('🚀 ~ fetchStudyGroups ~ data:', data);
+      console.log('🚀 ~ fetchStudyGroups ~ data:', JSON.stringify(data));
       setStudyGroups(data);
     } catch (error) {
       console.error('Error fetching study groups:', error);
@@ -127,15 +123,12 @@ const Conversation = ({navigation, route}) => {
     return str?.length > maxLength ? str?.slice(0, maxLength) + '...' : str;
   };
   const GroupCard = ({item, index}) => {
-    let lastMessage = {};
+    let lastMessage = item?.lastMessage || {};
     let senderName = '';
-    let length = item?.messages?.length || 0;
+    let length = Object.keys(lastMessage)?.length || 0;
     if (length > 0) {
-      const sender = item?.members?.filter(
-        f => f._id == item?.messages[length - 1]?.sender,
-      );
+      const sender = item?.members?.filter(f => f._id == lastMessage?.sender);
       if (sender?.length > 0) {
-        lastMessage = item?.messages[length - 1];
         senderName = sender[0]?.firstname;
       }
     }
@@ -175,13 +168,13 @@ const Conversation = ({navigation, route}) => {
           <Text variant="medium12" color={COLORS.blue043142}>
             {item?.name}
           </Text>
-          {senderName ? (
+          {length > 0 ? (
             <Text variant="medium12" color={COLORS.grey999999}>
               {senderName + ': ' + truncateString(lastMessage?.content, 20)}
             </Text>
           ) : null}
         </View>
-        <View style={{flex: 3, alignItems: 'center'}}>
+        <View style={{flex: 4, alignItems: 'center'}}>
           <Text variant="medium12" color={COLORS.blue043142}>
             {formatDateforchat(lastMessage?.timestamp || item?.createdDate)}
           </Text>

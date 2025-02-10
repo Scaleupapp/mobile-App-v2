@@ -353,8 +353,10 @@ export const getStudyGroups = () => {
   return axiosInstance.get(`${API.CHAT}`);
 };
 
-export const getStudyGroupMsg = (groupId: any) => {
-  return axiosInstance.get(`${API.CHAT}/group/${groupId}/messages`);
+export const getStudyGroupMsg = (groupId: any, page: any) => {
+  return axiosInstance.get(
+    `${API.CHAT}/group/${groupId}/messages?page=${page}`,
+  );
 };
 
 export const deleteStudyGroup = (groupId: any) => {
