@@ -7,6 +7,8 @@ import {
   StatusBar,
   Pressable,
   Alert,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import Text from '../../components/Text';
 import {DEVICE_WIDTH, guidelineBaseWidth, nh, nw} from '../../helper/scales';
@@ -37,6 +39,7 @@ import {MenuModal} from '../../components/MenuModal';
 import ReportPostModal from '../Post/ReportPostModal';
 import VideoPostPlayer from './VideoPostPlayer';
 import DeleteConfirmationModal from '../Post/DeleteConfirmationModal';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PostView = ({
   item,
@@ -64,6 +67,15 @@ const PostView = ({
   const [position, setPosition] = useState(0);
   const [isModalVisible, setModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [playlistInfo, setPlaylistInfo] = useState(null);
+  const [showPlaylistInfo, setShowPlaylistInfo] = useState(false);
+  const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
+  const [shouldRedirectToPlaylist, setShouldRedirectToPlaylist] =
+    useState(false);
+
+  const [expandedPlaylistId, setExpandedPlaylistId] = useState(null);
+  const [playlistPosts, setPlaylistPosts] = useState([]);
+  const [showInfoButton, setShowInfoButton] = useState(false);
 
   const getmeasure = () => {
     if (componentRef.current) {
@@ -72,6 +84,21 @@ const PostView = ({
       });
     }
   };
+
+  useEffect(() => {
+    // When playlist info is available and we should redirect, perform navigation
+    if (playlistInfo && shouldRedirectToPlaylist) {
+      // Reset the redirect flag
+      setShouldRedirectToPlaylist(false);
+
+      // Navigate to MyPlaylists screen with specific playlist info
+      navigationRef.navigate('MyPlaylists', {
+        initialView: 'public',
+        playlistToExpand: playlistInfo[0]?._id, // Expand the first playlist containing this post
+        scrollToPost: item._id,
+      });
+    }
+  }, [playlistInfo, shouldRedirectToPlaylist]);
 
   useEffect(() => {
     getProfileData();
@@ -91,6 +118,256 @@ const PostView = ({
     const {width, height} = data.naturalSize;
     setVideoDimensions({width, height});
   };
+
+  const fetchPlaylistInfo = async () => {
+    if (!item?._id) return;
+
+    setIsLoadingPlaylists(true);
+
+    try {
+      // Retrieve the authentication token, just like in fetchPostDetails
+      const userData = await AsyncStorage.getItem('userData');
+      const currentToken = userData ? JSON.parse(userData).token : null;
+
+      // Prepare headers object if we have a token
+      const headers = currentToken
+        ? {
+            Authorization: `Bearer ${currentToken}`,
+          }
+        : {};
+
+      // First attempt to get playlists, with auth token if available
+      const playlistsResponse = await axios.get(
+        'https://api.scaleupapp.club/api/playlists/public',
+        {headers},
+      );
+
+      // Filter playlists containing the current post
+      const containingPlaylists = playlistsResponse.data.filter(playlist =>
+        playlist.items.some(playlistItem => playlistItem.postId === item._id),
+      );
+      console.log('1sttt', containingPlaylists);
+
+      setPlaylistInfo(containingPlaylists);
+
+      // Fetch posts for the first playlist if any are found
+      if (containingPlaylists.length > 0) {
+        fetchPlaylistPosts(containingPlaylists[0]._id);
+        setExpandedPlaylistId(containingPlaylists[0]._id);
+      }
+    } catch (error) {
+      console.error('Error fetching playlist info:', error);
+    } finally {
+      setIsLoadingPlaylists(false);
+    }
+  };
+
+  // Add PlaylistInfoModal component
+  const PlaylistInfoModal = () => (
+    <Modal
+      visible={showPlaylistInfo}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowPlaylistInfo(false)}>
+      <Pressable
+        style={styles.modalOverlay}
+        onPress={() => setShowPlaylistInfo(false)}>
+        <View style={[styles.modalContent, {maxHeight: '80%'}]}>
+          <View style={styles.modalHeader}>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              Included in Playlists
+            </Text>
+            <TouchableOpacity onPress={() => setShowPlaylistInfo(false)}>
+              <Icon
+                type="antdesign"
+                name="close"
+                size={24}
+                color={COLORS.blue043142}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView>
+            {playlistInfo && playlistInfo.length > 0 ? (
+              playlistInfo.map((playlist, idx) => (
+                <View key={idx}>
+                  <TouchableOpacity
+                    style={styles.playlistItem}
+                    onPress={() => {
+                      setExpandedPlaylistId(
+                        expandedPlaylistId === playlist._id
+                          ? null
+                          : playlist._id,
+                      );
+                      fetchPlaylistPosts(playlist._id);
+                    }}>
+                    <Icon
+                      type="material"
+                      name="playlist-play"
+                      size={24}
+                      color={COLORS.blue043142}
+                      style={styles.playlistIcon}
+                    />
+                    <View style={styles.playlistDetails}>
+                      <Text variant="medium14" color={COLORS.blue043142}>
+                        {playlist.playlistName}
+                      </Text>
+                      {/* {playlist.description && (
+                        <Text variant="regular12" color={COLORS.grey333333}>
+                          {playlist.description}
+                        </Text>
+                      )} */}
+                    </View>
+                    <Icon
+                      type="material"
+                      name={
+                        expandedPlaylistId === playlist._id
+                          ? 'expand-less'
+                          : 'expand-more'
+                      }
+                      size={24}
+                      color={COLORS.blue043142}
+                    />
+                  </TouchableOpacity>
+
+                  {/* Expanded playlist content */}
+                  {expandedPlaylistId === playlist._id && (
+                    <View style={styles.expandedContent}>
+                      {playlistPosts.map((post, postIdx) => (
+                        <TouchableOpacity
+                          key={postIdx}
+                          style={[
+                            styles.playlistPostItem,
+                            post._id === item._id && styles.highlightedPost,
+                          ]}
+                          onPress={() => handlePlaylistVideoPress(post)}>
+                          <View style={styles.postThumbnailContainer}>
+                            {post.thumbnail ? (
+                              <Image
+                                source={{uri: post.thumbnail}}
+                                style={styles.postThumbnail}
+                              />
+                            ) : (
+                              <View style={styles.postThumbnailPlaceholder}>
+                                <Icon
+                                  type="feather"
+                                  name="video"
+                                  size={24}
+                                  color={COLORS.whiteFFFFFF}
+                                />
+                              </View>
+                            )}
+                          </View>
+                          <View style={styles.postDetails}>
+                            <Text variant="medium14" color={COLORS.blue043142}>
+                              {post.heading}
+                            </Text>
+                          </View>
+                          {post._id === item._id}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text variant="regular14" color={COLORS.grey333333}>
+                This video is not part of any playlist
+              </Text>
+            )}
+          </ScrollView>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+
+  // Add new handler for playlist video selection
+  const handlePlaylistVideoPress = post => {
+    if (post._id === item._id) {
+      // Currently playing video - do nothing or maybe restart
+      return;
+    }
+
+    // Update the current video
+    setSelectedIndex(post._id);
+    // Additional video player logic here
+  };
+
+  const fetchPostDetails = async postId => {
+    try {
+      // Get the latest token from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      const currentToken = userData ? JSON.parse(userData).token : null;
+
+      // For public playlists, we'll try to fetch without token first
+      let response;
+      try {
+        response = await axios.get(
+          `https://api.scaleupapp.club/api/content/post/${postId}`,
+        );
+      } catch (err) {
+        // If that fails and we have a token, try with authentication
+        if (currentToken) {
+          response = await axios.get(
+            `https://api.scaleupapp.club/api/content/post/${postId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${currentToken}`,
+              },
+            },
+          );
+        } else {
+          throw err;
+        }
+      }
+      return response.data.contentDetails;
+    } catch (err) {
+      // Don't log 403 errors as they're expected for private posts
+      if (err?.response?.status !== 403) {
+        console.error(`Failed to fetch details for post ${postId}:`, err);
+      }
+      return null;
+    }
+  };
+
+  // Function to fetch posts for a specific playlist
+  const fetchPlaylistPosts = async playlistId => {
+    setIsLoadingPlaylists(true);
+    try {
+      const userData = await AsyncStorage.getItem('userData');
+      const currentToken = userData ? JSON.parse(userData).token : null;
+
+      // Prepare headers object
+      const headers = currentToken
+        ? {
+            Authorization: `Bearer ${currentToken}`,
+          }
+        : {};
+
+      const response = await axios.get(
+        `https://api.scaleupapp.club/api/playlists/public/${playlistId}`,
+      );
+
+      const posts = response.data.items.map(item => item.postId);
+      console.log('postssssssss', posts);
+      const postDetails = await Promise.all(
+        posts.map(postId => fetchPostDetails(postId)),
+      );
+      console.log('postdetailsssssss', postDetails);
+
+      setPlaylistPosts(postDetails.filter(post => post !== null));
+    } catch (error) {
+      console.error('Error fetching playlist posts:', error);
+    } finally {
+      setIsLoadingPlaylists(false);
+    }
+  };
+
+  useEffect(() => {
+    if (item?.contentType === 'Video') {
+      fetchPlaylistInfo();
+    }
+  }, [item, profileData]);
 
   const likeHandler = async () => {
     if (!profileData?.id) return;
@@ -308,6 +585,54 @@ const PostView = ({
       ]);
     }
   };
+
+  const renderVideoContainer = () => (
+    <View style={styles.videoContainer}>
+      {item?.isVerified && (
+        <View style={styles.verifiedBadge}>
+          <Icon
+            type="material-community"
+            name="check-decagram"
+            color={COLORS.yellowF5BE00}
+            size={20}
+          />
+        </View>
+      )}
+      {playlistInfo && playlistInfo.length > 0 && showInfoButton && (
+        <TouchableOpacity
+          style={styles.infoButton}
+          onPress={() => {
+            setShowPlaylistInfo(true);
+          }}>
+          <Icon
+            type="feather"
+            name="info"
+            size={20}
+            color={COLORS.whiteFFFFFF}
+          />
+        </TouchableOpacity>
+      )}
+      <VideoPostPlayer
+        videoUrl={item?.contentURL}
+        thumbnail={item?.thumbnail}
+        isVisible={isVideoVisible}
+        videoDimensions={videoDimensions}
+        onProgress={progress => {
+          // Optional: Track video progress
+          // console.log('Video progress:', progress);
+          if (progress.currentTime >= 5) {
+            // Add a state to control info button visibility
+            setShowInfoButton(true);
+          }
+        }}
+        onEnd={() => {
+          // Optional: Handle video completion
+          // console.log('Video completed');
+        }}
+      />
+    </View>
+  );
+
   // console.log({profileData});
   const profilePicture = myProfile
     ? profileData?.profilePicture
@@ -391,34 +716,9 @@ const PostView = ({
           />
         </Pressable>
       ) : null}
-      {item?.contentType === 'Video' && item?.contentURL ? (
-        <View style={styles.videoContainer}>
-          {item?.isVerified && (
-            <View style={styles.verifiedBadge}>
-              <Icon
-                type="material-community"
-                name="check-decagram"
-                color={COLORS.yellowF5BE00}
-                size={20}
-              />
-            </View>
-          )}
-          <VideoPostPlayer
-            videoUrl={item?.contentURL}
-            thumbnail={item?.thumbnail}
-            isVisible={isVideoVisible}
-            videoDimensions={videoDimensions}
-            onProgress={progress => {
-              // Optional: Track video progress
-              // console.log('Video progress:', progress);
-            }}
-            onEnd={() => {
-              // Optional: Handle video completion
-              // console.log('Video completed');
-            }}
-          />
-        </View>
-      ) : null}
+      {item?.contentType === 'Video' && item?.contentURL
+        ? renderVideoContainer()
+        : null}
 
       <View style={styles.view}>
         <View
@@ -585,6 +885,7 @@ const PostView = ({
         onConfirm={handleDelete}
         onCancel={() => setDeleteModalVisible(false)}
       />
+      <PlaylistInfoModal />
 
       {/* <SavedPostsModal
         // visible={isSavedModalVisible}
@@ -602,6 +903,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  postThumbnailContainer: {
+    marginRight: 12,
+  },
+  postThumbnailPlaceholder: {
+    width: 80,
+    height: 45,
+    borderRadius: 8,
+    backgroundColor: COLORS.black000000,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  postThumbnail: {
+    width: 80,
+    height: 45,
+    borderRadius: 8,
+  },
+
   image: {
     height: nh(30),
     width: nh(30),
@@ -643,6 +961,85 @@ const styles = StyleSheet.create({
     left: 10,
     top: 20,
     zIndex: 1,
+  },
+  infoButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Slightly darker overlay
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 16, // More rounded corners
+    shadowColor: COLORS.blue043142,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyD6D6D6,
+  },
+  playlistItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyD6D6D6,
+    backgroundColor: COLORS.whiteFFFFFF,
+    transition: 'background-color 0.2s',
+  },
+  playlistItemPressed: {
+    backgroundColor: COLORS.blue043142 + '10', // Slight background on press
+  },
+  playlistIcon: {
+    marginLeft: 12,
+    opacity: 0.7,
+  },
+  expandedContent: {
+    backgroundColor: COLORS.greyF5F5F5,
+    borderRadius: 8,
+    marginHorizontal: 16,
+    marginVertical: 8,
+  },
+  playlistPostItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyD6D6D6,
+  },
+  highlightedPost: {
+    backgroundColor: 'rgba(245, 190, 0, 0.15)', // More subtle highlight
+    borderRadius: 8,
+  },
+  postThumbnail: {
+    width: 80,
+    height: 45,
+    borderRadius: 8, // More rounded
+    marginRight: 12,
   },
 });
 
