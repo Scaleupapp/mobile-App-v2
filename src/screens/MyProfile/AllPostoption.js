@@ -10,8 +10,8 @@ import {VideoList} from './VideoList';
 import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import {nh} from '../../helper/scales';
 import {useToast} from '../../components/CustomToast';
-
-const AllPostoption = ({type, data}) => {
+import UserPlaylists from './UserPlaylists';
+const AllPostoption = ({type, data, apicall}) => {
   // Navigation hook for screen transitions
   const navigation = useNavigation();
   const {showToast} = useToast();
@@ -104,7 +104,7 @@ const AllPostoption = ({type, data}) => {
       {type === 'user' ? (
         <>
           <ToggleWithIconUnderline onToggle={setSelected} />
-          {selected === 0 && <AllPost data={data} />}
+          {selected === 0 && <AllPost data={data} apicall={apicall} />}
           {selected === 1 && <SavedPosts />}
           {selected === 2 && (
             <AllPost
@@ -113,17 +113,18 @@ const AllPostoption = ({type, data}) => {
               onPublish={handlePublishDraft} // Pass the entire draft post object
             />
           )}
-          {selected === 3 && <VideoList />}
+          {selected === 3 && <UserPlaylists />}
         </>
       ) : (
         <View style={{marginTop: nh(30), flex: 1}}>
           <View style={{marginBottom: nh(30)}}>
             <ToggleWithUnderline
-              options={['ALL POSTS', 'PLAYLISTS']}
+              // options={['ALL POSTS', 'PLAYLISTS']}
+              options={['ALL POSTS']}
               onToggle={setSelected}
             />
           </View>
-          {selected === 0 && <AllPost data={data} />}
+          {selected === 0 && <AllPost data={data} myProfile={false} />}
         </View>
       )}
     </View>

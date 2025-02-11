@@ -132,7 +132,7 @@ const Search = () => {
                     resizeMode="contain"
                     tintColor={'#F6BE00'}
                     source={require('../../assets/icons/medal-star.png')}
-                    style={{height: 18, width: 18, marginLeft: 5}}
+                    style={{height: 25, width: 25, marginLeft: 2}}
                   />
                 )}
               </View>

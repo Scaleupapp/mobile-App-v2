@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import Modal from 'react-native-modal';
+import {COLORS} from '../../helper/colors';
 
 const ReportPostModal = ({isModalVisible, setModalVisible, handleReport}) => {
   const reportOptions = [
@@ -60,6 +61,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
+    color: COLORS.black333333,
   },
   cancelButton: {
     padding: 15,

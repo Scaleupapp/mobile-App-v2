@@ -17,9 +17,17 @@ export const registerApi = (payload: any) => {
   return axiosInstance.post(API.REGISTER, payload);
 };
 
-// export const changePassword = (payload: any) => {
-//   return axiosInstance.post(API.CHANGE_PASSWORD, payload);
-// };
+export const applyReferralCodeApi = (payload: {referralCode: string}) => {
+  return axiosInstance.post(API.APPLY_REFERRAL_CODE, payload);
+};
+
+export const fetchUserQuizAttemptsApi = () => {
+  return axiosInstance.get(API.USER_QUIZ_ATTEMPTS);
+};
+
+export const changePassword = (payload: any) => {
+  return axiosInstance.post(API.CHANGE_PASSWORD, payload);
+};
 
 export const otpPassword = (payload: any) => {
   return axiosInstance.post(API.OTP_PASSWORD, payload);
@@ -31,6 +39,12 @@ export const resetMyPassword = (payload: any) => {
 
 export const getHomePageData = (page: any, pageSize: any) => {
   return axiosInstance.get(`${API.HOMEPAGE}?page=${page}&pageSize=${pageSize}`);
+};
+
+export const getRecommendedContent = (page: any, pageSize: any) => {
+  return axiosInstance.get(
+    `${API.RECOMMEND}?page=${page}&pageSize=${pageSize}`,
+  );
 };
 
 export const getvideoPageData = (payload: any) => {
@@ -147,6 +161,10 @@ export const declineInnerCircleRequestAPI = (payload: any) => {
 export const addComment = (payload: any) => {
   return axiosInstance.post(`${API.ADD_COMMENT}`, payload);
 };
+
+export const getComment = (payload: any, page: any) => {
+  return axiosInstance.post(`content/comment?page=${page}`, payload);
+};
 export const replyComment = (payload: any) => {
   return axiosInstance.post(`${API.COMMENT}/reply`, payload);
 };
@@ -213,6 +231,10 @@ export const getconversationbyID = (id: any, page: any) => {
 export const sendChat = (payload: any) => {
   return axiosInstance.post(`${API.SENDMESSAGE}`, payload);
 };
+export const sendChatReply = (payload: any) => {
+  return axiosInstance.post(`${API.CHAT}/reply`, payload);
+};
+
 
 export const editChatMessage = (convid: any, messageid: any, payload: any) => {
   return axiosInstance.put(
@@ -220,9 +242,112 @@ export const editChatMessage = (convid: any, messageid: any, payload: any) => {
     payload,
   );
 };
-
+export const reactChatMessage = (convid: any, messageid: any, payload: any) => {
+  return axiosInstance.post(
+    `${API.CHAT}/${convid}/${messageid}/reactions`,
+    payload,
+  );
+};
 export const deleteChatMessage = (convid: any, messageid: any) => {
   return axiosInstance.delete(
     `${API.CHAT}/${convid}/messages/${messageid}/delete`,
   );
+};
+export const markReadAPI = (payload: any) => {
+  return axiosInstance.post(
+    `${API.CHAT}/mark-read`,
+    payload,
+  );
+};
+
+// Create a new quiz event (Admin)
+export const createQuizEventApi = (payload: any) => {
+  return axiosInstance.post(API.RAPIDFIRE_CREATE, payload);
+};
+
+// Edit an existing quiz event (Admin)
+export const editQuizEventApi = (payload: any) => {
+  return axiosInstance.put(API.RAPIDFIRE_EDIT, payload);
+};
+
+// List all upcoming quiz events
+export const listAllQuizEventsApi = (
+  page: number = 1,
+  pageSize: number = 10,
+) => {
+  return axiosInstance.get(
+    `${API.RAPIDFIRE_LIST}?page=${page}&pageSize=${pageSize}`,
+  );
+};
+
+// Search quiz events
+export const searchQuizEventsApi = (query: string) => {
+  return axiosInstance.get(
+    `${API.RAPIDFIRE_SEARCH}?query=${encodeURIComponent(query)}`,
+  );
+};
+
+// Recommend quiz events
+export const recommendQuizEventsApi = () => {
+  return axiosInstance.get(API.RAPIDFIRE_RECOMMEND);
+};
+
+// Register for a quiz event
+export const registerForQuizApi = (quizId: string) => {
+  return axiosInstance.post(`rapidfire-quiz/${quizId}/register`);
+};
+
+export const fetchUserRegisteredQuizzesApi = () => {
+  return axiosInstance.get('rapidfire-quiz/user-registered');
+};
+
+// Start a quiz attempt for a user
+export const startQuizAttemptApi = (quizId: string) => {
+  return axiosInstance.post(`rapidfire-quiz/${quizId}/start`);
+};
+
+// Get the next unanswered question for an attempt
+export const getNextQuestionApi = (attemptId: string) => {
+  return axiosInstance.get(`rapidfire-quiz/attempt/${attemptId}/next-question`);
+};
+
+// Submit an answer for a specific quiz attempt
+export const submitAnswerApi = (
+  quizId: string,
+  attemptId: string,
+  payload: any,
+) => {
+  return axiosInstance.post(
+    `rapidfire-quiz/${quizId}/attempt/${attemptId}/answer`,
+    payload,
+  );
+};
+
+// Get current leaderboard and user's ranking for a quiz
+export const getUserRankingApi = (quizId: string, limit: number = 10) => {
+  return axiosInstance.get(`rapidfire-quiz/${quizId}/ranking?limit=${limit}`);
+};
+
+// Get detailed results for a user's quiz attempt
+export const getDetailedResultsApi = (quizId: string, attemptId: string) => {
+  return axiosInstance.get(
+    `rapidfire-quiz/${quizId}/attempt/${attemptId}/results`,
+  );
+};
+
+// Get the latest attempt ID for a specific quiz
+export const getLatestQuizAttemptIdApi = (quizId: string) => {
+  return axiosInstance.get(`rapidfire-quiz/${quizId}/latest-attempt`);
+};
+
+export const getReferralDetailsApi = () => {
+  return axiosInstance.get(API.GET_REFERRAL_CODE);
+};
+
+export const deleteContent = (contentId: any) => {
+  return axiosInstance.delete(`content/delete/${contentId}`);
+};
+
+export const deleteStory = (payload: any) => {
+  return axiosInstance.delete(`stories`, payload);
 };

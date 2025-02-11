@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -19,6 +21,8 @@ import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Routes from '../../helper/routes';
 import {getPreferences, savePreferences} from '../../services/apiService';
+import {TouchableWithoutFeedback} from 'react-native';
+import {ScrollView} from 'react-native';
 const Preferences = ({navigation, route}) => {
   const [visible, setVisible] = useState(false);
   const [input, setInput] = useState('');
@@ -159,29 +163,7 @@ const Preferences = ({navigation, route}) => {
   };
 
   const currentQuestion = questions[currentQuestionIndex];
-  const menuItems = [
-    {id: 1, name: 'Settings', icon: 'settings-sharp'},
-    {id: 5, name: 'Restore Defaults', icon: 'Restore Defaults'},
-    {id: 3, name: 'Notifications', icon: 'notifications'},
-    {id: 4, name: 'Profile', icon: 'person'},
 
-    {id: 5, name: 'Help Centre', icon: 'help-circle'},
-  ];
-
-  // Render item for FlatList
-  const renderMenuItem = ({item}) => (
-    <TouchableOpacity
-      onPress={() => alert(`${item.name} clicked`)}
-      style={{flexDirection: 'row', marginBottom: nh(15)}}>
-      <Icon
-        name={item.icon}
-        size={19}
-        color={COLORS.grey999999}
-        style={{marginRight: 7}}
-      />
-      <Text variant="medium12">{item.name}</Text>
-    </TouchableOpacity>
-  );
   const bottomComp = param => {
     return (
       <View
@@ -191,7 +173,7 @@ const Preferences = ({navigation, route}) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           width: DEVICE_WIDTH - 36,
-          marginTop: nh(30),
+          marginTop: nh(10),
         }}>
         <Button
           width={nw(63)}
@@ -208,145 +190,125 @@ const Preferences = ({navigation, route}) => {
   };
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.yellowF5BE00}
-      />
-      <Header
-        title="Preferences"
-        onBackPress={() => navigation.goBack()}
-        onRightIconPress={() => setVisible(true)}
-      />
-
-      <Modal
-        isVisible={visible}
-        animationType="fade"
-        transparent={true}
-        style={{
-          position: 'absolute',
-          top: nh(10),
-          right: nh(20),
-        }}
-        onBackdropPress={() => setVisible(false)}
-        onRequestClose={() => setVisible(false)} // To handle back press or close
-      >
-        <View
-          style={{
-            backgroundColor: COLORS.whiteFFFFFF,
-            flex: 1,
-            width: nw(250),
-            height: nh(187),
-            padding: 16,
-            borderRadius: 8,
-            boxShadow: '2 4 4 0 rgba(0, 0, 0, 0.15)',
-          }}>
-          <View style={styles.modalContent}>
-            <FlatList
-              data={menuItems}
-              renderItem={renderMenuItem}
-              keyExtractor={item => item.id.toString()}
+      {/* Dismiss Keyboard when tapping outside */}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{flex: 1}}>
+          <ScrollView
+            contentContainerStyle={{flexGrow: 1}}
+            keyboardShouldPersistTaps="handled">
+            {/* Your Header */}
+            <Header
+              title="Preferences"
+              onBackPress={() => navigation.goBack()}
+              onRightIconPress={() => setVisible(true)}
             />
-          </View>
-        </View>
-      </Modal>
 
-      <View style={styles.layer1}>
-        <View style={styles.layer2}>
-          <Image
-            source={currentQuestion.image}
-            style={[styles.image, {width: nw(currentQuestion.width)}]}
-          />
+            {/* Rest of the content */}
+            <View style={styles.layer1}>
+              <View style={styles.layer2}>
+                <Image
+                  source={currentQuestion.image}
+                  style={[styles.image, {width: nw(currentQuestion.width)}]}
+                />
 
-          {/* Title */}
-          <Text variant="semibold14" color={COLORS.yellowF5BE00}>
-            {currentQuestion.title}
-          </Text>
-          <Text
-            variant="medium12"
-            color={COLORS.grey999999}
-            style={{marginBottom: nh(15)}}>
-            {currentQuestion.subtitle}
-          </Text>
+                <Text variant="semibold14" color={COLORS.yellowF5BE00}>
+                  {currentQuestion.title}
+                </Text>
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey999999}
+                  style={{marginBottom: nh(15)}}>
+                  {currentQuestion.subtitle}
+                </Text>
 
-          {/* Checkboxes */}
-          {currentQuestion.type == 'checkbox' && (
-            <FlatList
-              data={currentQuestion.options}
-              renderItem={({item}) => (
-                <TouchableOpacity
-                  style={styles.optionContainer}
-                  onPress={() => handleCheckboxChange(item.title)}>
-                  {/* Checkbox */}
-                  <View
-                    style={[
-                      styles.checkbox,
-                      currentQuestion.answer.includes(item.title) &&
-                        styles.checkboxSelected,
-                    ]}>
-                    {currentQuestion.answer.includes(item.title) && (
-                      <Text style={styles.checkboxTick}>✔</Text>
+                {/* Handle Checkboxes */}
+                {currentQuestion.type === 'checkbox' && (
+                  <FlatList
+                    data={currentQuestion.options}
+                    renderItem={({item}) => (
+                      <TouchableOpacity
+                        style={styles.optionContainer}
+                        onPress={() => handleCheckboxChange(item.title)}>
+                        <View
+                          style={[
+                            styles.checkbox,
+                            currentQuestion.answer.includes(item.title) &&
+                              styles.checkboxSelected,
+                          ]}>
+                          {currentQuestion.answer.includes(item.title) && (
+                            <Text
+                              color={COLORS.blue043142}
+                              style={styles.checkboxTick}>
+                              ✔
+                            </Text>
+                          )}
+                        </View>
+                        <View style={styles.optionTextContainer}>
+                          <Text variant="semibold12" color={COLORS.grey999999}>
+                            {item.maintitle}
+                          </Text>
+                          <Text variant="medium12" color={COLORS.grey999999}>
+                            {item.title}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
                     )}
-                  </View>
+                    keyExtractor={(item, index) => `${item.title}-${index}`}
+                    ListFooterComponent={bottomComp}
+                    keyboardShouldPersistTaps="handled"
+                  />
+                )}
 
-                  {/* Option Title and Subtitle */}
-                  <View style={styles.optionTextContainer}>
-                    <Text variant="semibold12" color={COLORS.grey999999}>
-                      {item.maintitle}
-                    </Text>
-                    <Text variant="medium12" color={COLORS.grey999999}>
-                      {item.title}
-                    </Text>
+                {/* Handle Text Input */}
+                {currentQuestion.type === 'textinput' && (
+                  <View>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        flexWrap: 'wrap',
+                        marginBottom: 10,
+                      }}>
+                      {words.map((item, index) => (
+                        <View
+                          key={index.toString()}
+                          style={{
+                            padding: 10,
+                            margin: 4,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                          }}>
+                          <Text color={COLORS.grey999999} variant="semibold12">
+                            {item}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.crossButton}
+                            onPress={() => handleRemoveWord(index)}>
+                            <Text color={COLORS.grey999999}>✕</Text>
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+
+                    <CustomTextInput
+                      placeholder="Please specify"
+                      errorMessage=""
+                      value={input}
+                      onChangeText={setInput}
+                      onSubmitEditing={handleAddWord}
+                    />
+
+                    {bottomComp()}
                   </View>
-                </TouchableOpacity>
-              )}
-              keyExtractor={(item, index) => `${item.title}-${index}`}
-              ListFooterComponent={bottomComp}
-            />
-          )}
-          {currentQuestion.type == 'textinput' && (
-            <View>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  flexWrap: 'wrap', // Enables wrapping to the next line
-                  marginBottom: 10,
-                }}>
-                {words.map((item, index) => (
-                  <View
-                    key={index.toString()}
-                    style={{
-                      padding: 10,
-                      margin: 4, // Adds spacing between items
-                      borderRadius: 8,
-                      borderWidth: 1,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                    }}>
-                    <Text variant="semibold12">{item}</Text>
-                    <TouchableOpacity
-                      style={styles.crossButton}
-                      onPress={() => handleRemoveWord(index)}>
-                      <Text style={styles.crossText}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
+                )}
               </View>
-
-              <CustomTextInput
-                placeholder="Please specify"
-                errorMessage=""
-                value={input}
-                onChangeText={setInput}
-                onSubmitEditing={handleAddWord} // Triggered when Enter is pressed
-              />
-
-              {bottomComp()}
             </View>
-          )}
-          {/* Next Button */}
-        </View>
-      </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };
@@ -375,6 +337,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: nh(25),
     paddingHorizontal: nw(16),
     paddingTop: nh(30),
+  },
+  contentContainer: {
+    paddingTop: nh(30),
+    paddingBottom: nh(40), // Add padding at the bottom for better scrolling
   },
 
   checkboxSelected: {

@@ -5,6 +5,7 @@ import {
   StatusBar,
   View,
   Pressable,
+  Alert, // <-- Import Alert
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -17,45 +18,61 @@ import {logoutUser} from '../../helper/commonFunctions';
 
 const MenuScreen = ({navigation, route}) => {
   const menu = [
-    // commented
+    {
+      title: 'My Badge',
+      nav: Routes.MyBadge,
+    },
     {
       title: 'Quiz',
-      nav: 'Quiz',
+      nav: Routes.QuizList,
     },
     {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
     },
-    // {
-    //   title: 'My Inner Request',
-    //   nav: Routes.InnerCircleRequest,
-    // },
-
-    // {
-    //   title: 'Achievements',
-    //   nav: '',
-    // },
+    {
+      title: 'Performance & Analytics',
+      nav: Routes.UserAnalyticsPerf,
+    },
     {
       title: 'Help Centre',
       nav: Routes.HelpScreen,
     },
-    // {
-    //   title: 'Report an Issue',
-    //   nav: '',
-    // },
     {
       title: 'Settings',
       nav: Routes.Settings,
     },
   ];
+
   const Card = ({item}) => {
     return (
       <Pressable
         style={styles.card}
         onPress={() => {
-          if (item?.title == 'Logout') {
-            logoutUser();
-          } else {
+          if (item?.title === 'Logout') {
+            // Show confirmation alert before logging out
+            Alert.alert(
+              'Logout',
+              'Are you sure you want to log out?',
+              [
+                {
+                  text: 'Cancel',
+                  onPress: () => {},
+                  style: 'cancel',
+                },
+                {
+                  text: 'Yes',
+                  onPress: () => logoutUser(),
+                },
+              ],
+              {cancelable: true},
+            );
+          }
+          // else if (item.nav === Routes.QuizList) {
+          //   // Navigate to the Home screen and switch to QuizList tab
+          //   navigation.navigate(Routes.Home, {screen: Routes.QuizList});
+          // }
+          else {
             navigation.navigate(item.nav);
           }
         }}>
@@ -74,29 +91,17 @@ const MenuScreen = ({navigation, route}) => {
       </Pressable>
     );
   };
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
       />
-      <Header
-        title=""
-        // backIcon={icons.backArrow} // Provide your back arrow icon
-        rightIcon={false} // Provide your right icon
-        // onBackPress={handleBackPress}
-        // onRightIconPress={handleRightIconPress}
-      />
+      <Header title="" rightIcon={false} />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
-          <View
-            style={
-              {
-                // commented
-                // marginBottom: nh(100)
-              }
-            }>
+          <View>
             <FlatList
               data={menu}
               renderItem={({item}) => <Card item={item} />}
@@ -140,15 +145,15 @@ const styles = StyleSheet.create({
     paddingTop: nh(30),
   },
   card: {
-    height: nh(40),
-    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
-    borderRadius: nh(10),
-    width: DEVICE_WIDTH - nw(32),
-    borderWidth: 1,
-    borderColor: 'rgba(214, 214, 214, 0.2)',
+    marginBottom: nh(15),
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: nh(15),
+    borderWidth: 1,
+    borderRadius: nh(10),
+    height: nh(40),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderColor: 'rgba(214, 214, 214, 0.2)',
+    boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
+    elevation: 3,
   },
 });

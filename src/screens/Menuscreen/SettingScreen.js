@@ -14,27 +14,14 @@ import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
 import {images} from '../../assets/images';
-import CustomTextInput from '../../components/TextInput';
-import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Text from '../../components/Text';
-import Button from '../../components/Button';
-import Icon from '../../helper/icon';
 import Routes from '../../helper/routes';
 import {icons} from '../../assets/icons';
 import ConfirmDelete from './ConfirmDelete';
+import {useFocusEffect} from '@react-navigation/native';
+import {getReferralDetailsApi} from '../../services/apiService';
 
 const menuItems = [
-  // commented
-  // {
-  //   heading: '',
-  //   data: [
-  //     {
-  //       title: 'Notifications',
-  //       icon: 'bell-icon',
-  //       navKey: 'Notifications',
-  //     },
-  //   ],
-  // },
   {
     heading: 'Account',
     data: [
@@ -43,10 +30,6 @@ const menuItems = [
         icon: icons.changePass,
         navKey: Routes.ChangePassword,
       },
-      // commented
-      // {title: 'Your Activity', icon: 'activity-icon', navKey: 'YourActivity'},
-      // {title: 'Language', icon: 'language-icon', navKey: 'Language'},
-      // {title: 'Theme', icon: 'theme-icon', navKey: 'Theme'},
       {title: 'Block List', icon: icons.block, navKey: Routes.BlockUsers},
       {
         title: 'Delete Account',
@@ -59,57 +42,36 @@ const menuItems = [
     heading: 'Posts',
     data: [
       {title: 'Saved', icon: icons.saved, navKey: Routes.MyPlaylist},
-      // commented
-      // {title: 'Drafts', icon: 'drafts-icon', navKey: Routes.DraftPost},
-      // {title: 'Verified', icon: 'verified-icon', navKey: Routes.VerifiedPost},
-      // {
-      //   title: 'Not Verified',
-      //   icon: 'not-verified-icon',
-      //   navKey: Routes.PendingPost,
-      // },
-      // {
-      //   title: 'Post Visibility',
-      //   icon: 'visibility-icon',
-      //   navKey: 'PostVisibility',
-      // },
-      {
-        title: 'Performance & Analytics',
-        icon: icons.perf,
-        navKey: Routes.UserAnalyticsPerf,
-      },
     ],
   },
-  // {
-  //   heading: 'Rewards',
-  //   data: [
-  //     {
-  //       title: 'Achievements',
-  //       icon: 'achievements-icon',
-  //       navKey: 'Achievements',
-  //     },
-  //   ],
-  // },
-  // {
-  //   heading: 'Help',
-  //   data: [
-  //     {title: 'Report an Issue', icon: 'report-icon', navKey: 'ReportIssue'},
-  //     {title: 'Help Center', icon: 'help-center-icon', navKey: 'HelpCenter'},
-  //     {title: 'Feedback', icon: 'feedback-icon', navKey: 'Feedback'},
-  //   ],
-  // },
-
-  // {
-  //   heading: '',
-  //   data: [{title: 'Log out', icon: 'logout-icon', navKey: 'Logout'}],
-  // },
 ];
 
 const Settings = ({navigation, route}) => {
   const [open, setOpen] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchReferralCode = async () => {
+        try {
+          const response = await getReferralDetailsApi();
+          setReferralCode(response.data.referralCode);
+          setError('');
+        } catch (err) {
+          setError('Failed to load referral code');
+          console.error('Error fetching referral code:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchReferralCode();
+    }, []),
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* StatusBar */}
       <StatusBar
         barStyle="dark-content"
         backgroundColor={COLORS.yellowF5BE00}
@@ -119,21 +81,12 @@ const Settings = ({navigation, route}) => {
         source={images.ellipse}
         style={styles.semicirlce}
         resizeMode="stretch">
-        <Header
-          title="Settings"
-          // backIcon={icons.backArrow} // Provide your back arrow icon
-          rightIcon={false} // Provide your right icon
-          // onBackPress={handleBackPress}
-          // onRightIconPress={handleRightIconPress}
-        />
+        <Header title="Settings" rightIcon={false} />
       </ImageBackground>
-      {/* commented */}
-      {/* <View style={{position: 'absolute', left: nw(16), right: 0, top: 80}}>
-        <CustomTextInput width={DEVICE_WIDTH - 32} height={nh(50)} />
-      </View> */}
+
       <ScrollView contentContainerStyle={{flexGrow: 1}}>
-        {menuItems.map(item => (
-          <>
+        {menuItems.map((item, index) => (
+          <View key={index}>
             <Text
               variant="medium12"
               color={COLORS.greyBBBBBB}
@@ -146,77 +99,72 @@ const Settings = ({navigation, route}) => {
                 data={item?.data}
                 keyExtractor={(item, index) => index.toString()}
                 contentContainerStyle={{marginBottom: nh(15)}}
-                renderItem={({item, index}) => {
-                  return (
-                    <Pressable
-                      key={index}
-                      style={styles.card}
-                      onPress={() => {
-                        if (item?.navKey == 'delete') {
-                          setOpen(true);
-                        } else {
-                          navigation.navigate(item?.navKey);
-                        }
-                      }}>
-                      <View
-                        style={{flexDirection: 'row', alignItems: 'center'}}>
-                        <View style={styles.image}>
-                          <Image
-                            source={item.icon}
-                            style={{width: nw(21), height: nh(21)}}
-                          />
-                        </View>
-                        <Text variant="medium14" color={COLORS.blue043142}>
-                          {item.title}
-                        </Text>
+                renderItem={({item, index}) => (
+                  <Pressable
+                    style={styles.card}
+                    onPress={() => {
+                      if (item?.navKey === 'delete') {
+                        setOpen(true);
+                      } else {
+                        navigation.navigate(item?.navKey);
+                      }
+                    }}>
+                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                      <View style={styles.image}>
+                        <Image
+                          source={item.icon}
+                          style={{width: nw(21), height: nh(21)}}
+                        />
                       </View>
-                      <Icon
-                        type="material"
-                        name="keyboard-arrow-right"
-                        color={COLORS.grey777777}
-                        style={{marginRight: nw(10)}}
-                      />
-                    </Pressable>
-                  );
-                }}
+                      <Text variant="medium14" color={COLORS.blue043142}>
+                        {item.title}
+                      </Text>
+                    </View>
+                    <Image
+                      source={icons.arrowRight}
+                      style={{width: nw(24), height: nh(24)}}
+                    />
+                  </Pressable>
+                )}
               />
             </View>
-          </>
+          </View>
         ))}
-      </ScrollView>
-      <ConfirmDelete isVisible={open} setvisibleModal={setOpen} />
 
-      {/* <View>
-          <Image
-            source={images.notification}
-            resizeMode="contain"
-            style={styles.notimage}
-          />
-
+        {/* Simple Referral Section */}
+        <View style={styles.referralSection}>
           <Text
-            variant="semibold20"
-            color={COLORS.blue043142}
-            style={{textAlign: 'center', marginTop: nh(30)}}>
-            You’re All Caught Up{' '}
+            variant="medium12"
+            color={COLORS.greyBBBBBB}
+            style={styles.sectionHeader}>
+            Referral Code
           </Text>
+
+          {loading ? (
+            <Text style={styles.loadingText}>Loading referral code...</Text>
+          ) : error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : (
+            <View style={styles.referralCodeContainer}>
+              <Text variant="bold18" color={COLORS.yellowF5BE00}>
+                {referralCode}
+              </Text>
+            </View>
+          )}
+
           <Text
-            variant="medium14"
+            variant="regular12"
             color={COLORS.grey999999}
-            style={{
-              textAlign: 'center',
-              marginTop: nh(5),
-              marginBottom: nh(20),
-            }}>
-            No new notifications right now. Check back later or explore more
-            content in the meantime.
+            style={styles.referralMessage}>
+            Share this code with your network
           </Text>
-          <Button text="Explore Content" />
-        </View> */}
+        </View>
+      </ScrollView>
+
+      <ConfirmDelete isVisible={open} setvisibleModal={setOpen} />
     </SafeAreaView>
   );
 };
-
-export default Settings;
 
 const styles = StyleSheet.create({
   container: {
@@ -240,22 +188,37 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    // boxShadow: '0 2 5 0 #00000026',
-
     alignItems: 'center',
     paddingHorizontal: nw(16),
-    // borderBottomWidth: 1,
-    // borderBottomColor: '#E9E9E9',
-    // borderRadius: nh(10),
-    // paddingBottom: 15,
     marginBottom: nh(15),
-
-    // paddingTop: nh(22),
   },
-  notimage: {
-    height: nh(275),
-    width: nw(300),
-    alignSelf: 'center',
-    marginTop: nh(30),
+  referralSection: {
+    marginTop: nh(20),
+    paddingHorizontal: nw(16),
+    marginBottom: nh(40),
+    alignItems: 'center',
+  },
+  sectionHeader: {
+    marginBottom: nh(15),
+  },
+  referralCodeContainer: {
+    padding: nh(15),
+    marginBottom: nh(10),
+  },
+  referralMessage: {
+    textAlign: 'center',
+    marginHorizontal: nw(20),
+  },
+  errorText: {
+    color: COLORS.red,
+    textAlign: 'center',
+    marginVertical: nh(10),
+  },
+  loadingText: {
+    color: COLORS.greyBBBBBB,
+    textAlign: 'center',
+    marginVertical: nh(10),
   },
 });
+
+export default Settings;

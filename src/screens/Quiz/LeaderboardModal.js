@@ -9,14 +9,14 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import Text from '../../components/Text';
-import { COLORS } from '../../helper/colors';
-import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
+import {COLORS} from '../../helper/colors';
+import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const API_URL = 'https://api.scaleupapp.club/api';
 
-const LeaderboardModal = ({ visible, onClose, quizId }) => {
+const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [loading, setLoading] = React.useState(true);
   const [results, setResults] = React.useState(null);
   const [error, setError] = React.useState(null);
@@ -31,44 +31,44 @@ const LeaderboardModal = ({ visible, onClose, quizId }) => {
     try {
       const userData = await AsyncStorage.getItem('userData');
       const parsedUser = JSON.parse(userData);
-      
+
       const response = await axios.get(
         `${API_URL}/quiz/quiz-results/${quizId}`,
         {
-          headers: { Authorization: `Bearer ${parsedUser?.token}` }
-        }
+          headers: {Authorization: `Bearer ${parsedUser?.token}`},
+        },
       );
-      
+
       // Add winners from quizInfo to results if they exist
       const formattedResults = [];
       const winners = response.data.quizInfo.winners;
-      
+
       if (winners.first) {
         formattedResults.push({
           userId: winners.first.userId,
           rank: 1,
-          finalScore: winners.first.totalPoints
+          finalScore: winners.first.totalPoints,
         });
       }
-      
+
       if (winners.second) {
         formattedResults.push({
           userId: winners.second.userId,
           rank: 2,
-          finalScore: winners.second.totalPoints
+          finalScore: winners.second.totalPoints,
         });
       }
-      
+
       if (winners.third) {
         formattedResults.push({
           userId: winners.third.userId,
           rank: 3,
-          finalScore: winners.third.totalPoints
+          finalScore: winners.third.totalPoints,
         });
       }
-      
+
       console.log('Formatted results:', formattedResults);
-      setResults({ results: formattedResults });
+      setResults({results: formattedResults});
       setLoading(false);
     } catch (error) {
       console.error('Error:', error);
@@ -77,7 +77,7 @@ const LeaderboardModal = ({ visible, onClose, quizId }) => {
     }
   };
 
-  const renderMedal = (rank) => {
+  const renderMedal = rank => {
     switch (rank) {
       case 1:
         return '🥇';
@@ -97,23 +97,30 @@ const LeaderboardModal = ({ visible, onClose, quizId }) => {
           {renderMedal(participant.rank) || `#${participant.rank}`}
         </Text>
       </View>
-      
+
       <View style={styles.userInfo}>
         <Image
-          source={{ uri: participant.userId.profilePicture }}
+          source={{uri: participant.userId.profilePicture}}
           style={styles.profilePic}
         />
-        <Text variant="regular16" color={COLORS.blue043142} numberOfLines={1} style={styles.username}>
+        <Text
+          variant="regular16"
+          color={COLORS.blue043142}
+          numberOfLines={1}
+          style={styles.username}>
           {participant.userId.username}
         </Text>
       </View>
-      
+
       <View style={styles.scoreContainer}>
         <Text variant="semibold16" color={COLORS.blue043142}>
           {participant.finalScore.toFixed(1)}
         </Text>
         {participant.additionalPoints > 0 && (
-          <Text variant="regular12" color={COLORS.green} style={styles.bonusPoints}>
+          <Text
+            variant="regular12"
+            color={COLORS.green}
+            style={styles.bonusPoints}>
             +{participant.additionalPoints}
           </Text>
         )}
@@ -123,11 +130,7 @@ const LeaderboardModal = ({ visible, onClose, quizId }) => {
 
   if (loading) {
     return (
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-      >
+      <Modal visible={visible} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <ActivityIndicator size="large" color={COLORS.blue043142} />
@@ -138,11 +141,7 @@ const LeaderboardModal = ({ visible, onClose, quizId }) => {
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-    >
+    <Modal visible={visible} transparent animationType="slide">
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <View style={styles.header}>
@@ -150,12 +149,17 @@ const LeaderboardModal = ({ visible, onClose, quizId }) => {
               Leaderboard
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text variant="semibold16" color={COLORS.blue043142}>✕</Text>
+              <Text variant="semibold16" color={COLORS.blue043142}>
+                ✕
+              </Text>
             </TouchableOpacity>
           </View>
 
           {error ? (
-            <Text variant="regular16" color={COLORS.red} style={styles.errorText}>
+            <Text
+              variant="regular16"
+              color={COLORS.red}
+              style={styles.errorText}>
               {error}
             </Text>
           ) : (

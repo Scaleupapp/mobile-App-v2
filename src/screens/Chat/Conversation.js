@@ -21,6 +21,7 @@ import {images} from '../../assets/images';
 import ChatModal from './ChatModal';
 import {formatDateforchat} from '../../helper/commonFunctions';
 import {useFocusEffect} from '@react-navigation/native';
+import {io} from 'socket.io-client';
 
 const Conversation = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -33,6 +34,66 @@ const Conversation = ({navigation, route}) => {
       fetchConversations(); // Function to fetch conversations
     }, []), // Add dependencies if needed
   );
+
+  useEffect(() => {
+    // Connect to the Socket.IO server when the component mounts
+    const socketInstance = io('https://api.scaleupapp.club', {
+      // Your server URL
+      auth: {
+        token: userData?.token, // If you have authentication
+      },
+    });
+    socketInstance.on('conversationDetailUpdate', data => {
+      console.log('🚀 ~ useEffect ~ data:', data);
+
+      const index = conversation.filter(
+        conv => conv.conversationId === data?.conversationId,
+      );
+
+      // console.log('jeyeeyeyeyeyyeey1', conversation);
+      console.log('🚀 ~ useEffect ~ index:', index);
+      if (index.length > 0) {
+        // Update the existing object
+        let updatedData = {
+          lastMessage: data?.lastMessage,
+          unreadMessageCount: data?.unreadMessageCount,
+          updatedAt: data?.updatedAt,
+        };
+        console.log('🚀 ~ useEffect ~ index:1', index);
+        const updatedMessages = conversation.map(
+          msg =>
+            msg.conversationId === data.conversationId
+              ? {...msg, ...updatedData} // Update the matching object
+              : msg, // Keep others unchanged
+        );
+
+        const index = updatedMessages.findIndex(
+          conv => conv.conversationId === data?.conversationId,
+        );
+
+        if (index !== -1) {
+          // Remove the matched conversation and insert it at index 0
+          const [matchedConversation] = updatedMessages.splice(index, 1);
+          updatedMessages.unshift(matchedConversation);
+        }
+
+        setConversation(updatedMessages);
+      } else {
+        console.log('jeyeeyeyeyeyyeey222');
+        // Insert the new object at index 1
+        let updatedData = [data, ...conversation];
+        setConversation(updatedData);
+      }
+    });
+    return () => {
+      if (socketInstance) {
+        console.log('leaveRoom');
+        socketInstance.emit('leaveRoom', route?.params?.chatId); // Ensure to leave the room on cleanup
+        socketInstance.disconnect();
+      }
+    };
+  }, [conversation]);
+
   const fetchConversations = async () => {
     try {
       const {data} = await getconversation();
@@ -47,7 +108,7 @@ const Conversation = ({navigation, route}) => {
     // setConversations(data);
   };
   const truncateString = (str, maxLength = 130) => {
-    return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
+    return str?.length > maxLength ? str?.slice(0, maxLength) + '...' : str;
   };
   const Card = ({item}) => {
     console.log('🚀 ~ Card ~ item:', JSON.stringify(item));
@@ -57,7 +118,8 @@ const Conversation = ({navigation, route}) => {
         onPress={() =>
           navigation.navigate(Routes.Chat, {
             chatId: item?.conversationId,
-            data: item,
+            data:
+              item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
           })
         }>
         <Image
@@ -72,24 +134,26 @@ const Conversation = ({navigation, route}) => {
             {truncateString(item?.lastMessage?.message, 30)}
           </Text>
         </View>
-        <View style={{flex: 3, alignItems: 'center'}}>
+        <View style={{flex: 4, alignItems: 'center'}}>
           <Text variant="medium12" color={COLORS.blue043142}>
-            {formatDateforchat(item?.lastMessage?.createdAt)}
+            {formatDateforchat(item?.lastMessage?.updatedAt)}
           </Text>
-          {/* <View
-            style={{
-              height: nh(20),
-              minWidth: nh(20),
-              borderRadius: nh(10),
-              backgroundColor: '#34A853',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: nw(5),
-            }}>
-            <Text variant="medium12" color={COLORS.whiteFFFFFF}>
-              5
-            </Text>
-          </View> */}
+          {item?.unreadMessageCount > 0 && (
+            <View
+              style={{
+                height: nh(20),
+                minWidth: nh(20),
+                borderRadius: nh(10),
+                backgroundColor: '#34A853',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: nw(5),
+              }}>
+              <Text variant="medium12" color={COLORS.whiteFFFFFF}>
+                {item?.unreadMessageCount}
+              </Text>
+            </View>
+          )}
         </View>
       </Pressable>
     );

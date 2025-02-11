@@ -4,6 +4,7 @@ import { Text as RCAText, StyleProp, TextProps, TextStyle } from 'react-native';
 import { NativeText } from 'react-native/Libraries/Text/TextNativeComponent';
 import { nh, nw } from '../helper/scales';
 import { APP_FONTS } from '../assets/fonts';
+import { COLORS } from '../helper/colors';
 
 
 /**
@@ -78,6 +79,20 @@ const useTextVariants = () => {
             letterSpacing: nw(0.15),
             fontWeight: '600',
         },
+        bold32: {
+            fontSize: nh(32),
+            fontFamily: APP_FONTS.PoppinsBold,
+            // lineHeight: nh(30),
+            // letterSpacing: nw(0.15),
+            fontWeight: '800',
+        },
+        bold22: {
+            fontSize: nh(22),
+            fontFamily: APP_FONTS.PoppinsBold,
+            // lineHeight: nh(30),
+            // letterSpacing: nw(0.15),
+            fontWeight: '700',
+        },
         bold20: {
             fontSize: nh(20),
             fontFamily: APP_FONTS.PoppinsBold,
@@ -101,7 +116,7 @@ const Text = ({
     variant = 'bodyMedium',
     style,
     children,
-    color,
+    color = COLORS.grey999999,
     ...rest
 }: {
     as?: 'LeanText' | 'RCAText';

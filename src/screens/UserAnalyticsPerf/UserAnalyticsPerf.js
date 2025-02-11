@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   Pressable,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {getTimeAgo} from '../../helper/commonFunctions';
 import {COLORS} from '../../helper/colors';
@@ -20,21 +21,26 @@ import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {UserAnalytics} from '../../services/apiService';
 
-export const UserAnalyticsPerf = () => {
+export const UserAnalyticsPerf = ({navigation}) => {
   const [data, setData] = useState({});
   const [expandedActivity, setExpandedActivity] = useState(true);
   const [expandedInterests, setExpandedInterests] = useState(true);
   const [expandedAreas, setExpandedAreas] = useState(true);
   const [moreActivity, setMoreActivity] = useState(false);
   const [moreInterests, seMoreInterests] = useState(false);
+  const [moreImp, seMoreImp] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    UserAnalytics().then(res => {
-      setIsLoading(false);
-      console.log('🚀 ~ UserAnalyticsPerf ~ res:', res.data);
-      setData(res?.data);
-    });
+    UserAnalytics()
+      .then(res => {
+        setIsLoading(false);
+        setData(res?.data);
+      })
+      .catch(e => {
+        console.log('🚀 ~ UserAnalyticsPerf ~ err:', e?.response?.data);
+        setIsLoading(false);
+      });
   }, []);
 
   const renderActivityItem = ({item}) => (
@@ -69,13 +75,23 @@ export const UserAnalyticsPerf = () => {
     </Pressable>
   );
 
-  const renderInterestTag = (interest, index) => (
-    <Text
-      key={index}
-      style={[styles.interestTag, {fontSize: nh(12 + interest?.count / 2)}]}>
-      {interest.interest}
-    </Text>
-  );
+  const renderInterestTag = (interest, index) => {
+    const topic = interest?.interest || interest?.topic;
+    const calculateFontSize = count => {
+      const minFontSize = 18;
+      const maxFontSize = 40;
+      if (!count || typeof count !== 'number') {
+        return minFontSize; // Default to the smallest size if count is invalid
+      }
+      return Math.min(Math.max(count, minFontSize), maxFontSize);
+    };
+    const fontSize = calculateFontSize(interest?.count);
+    return (
+      <Text key={index} style={[styles.interestTag, {fontSize: nh(fontSize)}]}>
+        {topic}
+      </Text>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,7 +181,11 @@ export const UserAnalyticsPerf = () => {
 
           {/* Areas of Improvement Section */}
           <View style={styles.section}>
-            <TouchableOpacity onPress={() => setExpandedAreas(!expandedAreas)}>
+            <TouchableOpacity
+              onPress={() => {
+                setExpandedAreas(!expandedAreas);
+                seMoreImp(false);
+              }}>
               <Text style={styles.heading}>
                 {expandedAreas
                   ? '▼ Areas of Improvement'
@@ -182,17 +202,30 @@ export const UserAnalyticsPerf = () => {
                   </Text>
                   <TouchableOpacity
                     style={styles.quizButton}
-                    // onPress={() => navigationRef.navigate(Routes.QuizScreen)}
-                  >
+                    onPress={() => navigation.navigate(Routes.QuizList)}>
                     <Text style={styles.quizButtonText}>Take Quiz</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
-                data.areasOfImprovement.map((area, index) => (
-                  <Text key={index} style={styles.areaTag}>
-                    {area}
-                  </Text>
-                ))
+                <>
+                  <View style={styles.interestsContainer}>
+                    {(moreImp
+                      ? data.areasOfImprovement
+                      : data.areasOfImprovement.slice(0, 7)
+                    ).map((interest, index) =>
+                      renderInterestTag(interest, index),
+                    )}
+                  </View>
+                  {data.areasOfImprovement.length > 7 && (
+                    <TouchableOpacity
+                      onPress={() => seMoreImp(!moreImp)}
+                      style={styles.expandButton}>
+                      <Text style={styles.expandButtonText}>
+                        {moreImp ? 'Show Less' : 'Show More'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               ))}
           </View>
         </ScrollView>
@@ -261,6 +294,7 @@ const styles = StyleSheet.create({
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: nh(1),
     borderColor: 'rgba(214, 214, 214, 0.2)',
+    elevation: 3,
   },
   profilePicture: {
     width: nw(50),
@@ -329,6 +363,7 @@ const styles = StyleSheet.create({
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     borderWidth: nh(1),
     borderColor: 'rgba(214, 214, 214, 0.2)',
+    elevation: 3,
   },
   quizMessage: {
     fontSize: nh(14),

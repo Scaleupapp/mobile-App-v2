@@ -1,65 +1,33 @@
-import React, {useState, useEffect} from 'react';
-import {
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  View,
-  Image,
-  Text as RNText,
-} from 'react-native';
+import React, {useState} from 'react';
+import {StyleSheet, SafeAreaView, StatusBar, View, Image} from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
-import Text from '../../components/Text';
 import CustomTextInput from '../../components/TextInput';
 import Button from '../../components/Button';
 import {APP_FONTS} from '../../assets/fonts';
 import {images} from '../../assets/images';
 import {icons} from '../../assets/icons';
-import Routes from '../../helper/routes';
-import {otpPassword, resetMyPassword} from '../../services/apiService';
+import {changePassword} from '../../services/apiService';
 import {useToast} from '../../components/CustomToast';
-import {isValidEmail} from '../../helper/commonFunctions';
 import Header from '../../components/Header';
 
-const ChangePassword = ({navigation, route}) => {
+const ChangePassword = ({navigation}) => {
   const {showToast} = useToast();
   const [form, setForm] = useState({
-    email: route.params?.email,
-    code: '',
+    oldPassword: '',
     password: '',
     confirmPassword: '',
   });
 
   const [errors, setErrors] = useState({
-    email: '',
-    code: '',
+    oldPassword: '',
     password: '',
     confirmPassword: '',
   });
 
-  const [resendTimer, setResendTimer] = useState(60);
-  const [isResendDisabled, setIsResendDisabled] = useState(true);
-  const [otp, setOtp] = useState(route?.params?.testOtp || '');
-
-  useEffect(() => {
-    let timer;
-    if (resendTimer > 0 && isResendDisabled) {
-      timer = setInterval(() => {
-        setResendTimer(prev => prev - 1);
-      }, 1000);
-    } else if (resendTimer === 0) {
-      setIsResendDisabled(false);
-      setResendTimer(59); // Reset timer
-    }
-
-    return () => clearInterval(timer);
-  }, [resendTimer, isResendDisabled]);
-
-  const handleResendClick = () => {
-    setIsResendDisabled(true);
-    setResendTimer(59);
-    reSendOtpToEmail();
-  };
+  const [secureTextEntry, setsecureTextEntry] = useState(true);
+  const [secureTextEntry1, setsecureTextEntry1] = useState(true);
+  const [secureTextEntry2, setsecureTextEntry2] = useState(true);
 
   const handleInputChange = (field, value) => {
     setForm({...form, [field]: value});
@@ -73,16 +41,8 @@ const ChangePassword = ({navigation, route}) => {
     let isValid = true;
     const newErrors = {};
 
-    // if (!form.email) {
-    //   newErrors.email = 'Email is required';
-    //   isValid = false;
-    // } else if (!isValidEmail(form.email)) {
-    //   newErrors.email = 'Please Enter valid email address';
-    //   isValid = false;
-    // }
-
-    if (!form.code) {
-      newErrors.code = 'Code is required';
+    if (!form.oldPassword) {
+      newErrors.code = 'Old Password is required';
       isValid = false;
     }
 
@@ -105,34 +65,23 @@ const ChangePassword = ({navigation, route}) => {
 
   const handleSubmit = () => {
     if (validateFields()) {
-      resetPasswordApi();
+      forgotPassword();
     }
   };
 
-  const resetPasswordApi = async () => {
+  const forgotPassword = async () => {
+    const payload = {
+      oldPassword: form.oldPassword,
+      newPassword: form.password,
+      confirmNewPassword: form.confirmPassword,
+    };
     try {
-      const params = {
-        loginIdentifier: form.email?.toLowerCase(),
-        otp: form.code,
-        newPassword: form.password,
-      };
-      const {data} = await resetMyPassword(params);
+      const {data} = await changePassword(payload);
+      console.log('🚀 ~ forgotPassword ~ data:', data);
       showToast({type: 'success', title: data?.message});
-      navigation.navigate(Routes.Login);
+      navigation.goBack();
     } catch (error) {
-      console.log('Get OTP Error:', error?.response?.data);
-    }
-  };
-
-  const reSendOtpToEmail = async () => {
-    try {
-      const {data} = await otpPassword({
-        loginIdentifier: form.email?.toLowerCase(),
-      });
-      showToast({type: 'success', title: data?.message});
-      setOtp(data?.testOtp);
-    } catch (error) {
-      console.log('Get OTP Error:', error);
+      console.log('🚀 ~ forgotPassword ~ error:', error);
     }
   };
 
@@ -146,38 +95,14 @@ const ChangePassword = ({navigation, route}) => {
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <Image source={images.set} style={styles.logo} />
-
-          {/* <CustomTextInput
-            placeholder="Email"
-            value={form.email}
-            onChangeText={value => handleInputChange('email', value)}
-            errorMessage={errors.email}
-            editable={false}
-          />
-
-          <CustomTextInput
-            placeholder="Code"
-            value={form.code}
-            onChangeText={value => handleInputChange('code', value)}
-            errorMessage={errors.code}
-          />
-
-          <View style={styles.resendContainer}>
-            <Text style={styles.resendText}>Didn’t receive the OTP? </Text>
-            {isResendDisabled ? (
-              <Text style={styles.timerText}>Resend in {resendTimer}s</Text>
-            ) : (
-              <RNText onPress={handleResendClick} style={styles.resendLink}>
-                Click to resend
-              </RNText>
-            )}
-          </View> */}
           <CustomTextInput
             placeholder="Old Password"
-            value={form.password}
-            onChangeText={value => handleInputChange('password', value)}
+            value={form.oldPassword}
+            onChangeText={value => handleInputChange('oldPassword', value)}
             errorMessage={errors.password}
-            rightIcon={icons.hide}
+            secureTextEntry={secureTextEntry}
+            rightIcon={secureTextEntry ? icons.hide : icons.unhide}
+            onRightIconPress={() => setsecureTextEntry(!secureTextEntry)}
           />
 
           <CustomTextInput
@@ -185,7 +110,9 @@ const ChangePassword = ({navigation, route}) => {
             value={form.password}
             onChangeText={value => handleInputChange('password', value)}
             errorMessage={errors.password}
-            rightIcon={icons.hide}
+            secureTextEntry={secureTextEntry1}
+            rightIcon={secureTextEntry1 ? icons.hide : icons.unhide}
+            onRightIconPress={() => setsecureTextEntry1(!secureTextEntry1)}
           />
 
           <CustomTextInput
@@ -193,16 +120,12 @@ const ChangePassword = ({navigation, route}) => {
             value={form.confirmPassword}
             onChangeText={value => handleInputChange('confirmPassword', value)}
             errorMessage={errors.confirmPassword}
-            rightIcon={icons.hide}
+            secureTextEntry={secureTextEntry2}
+            rightIcon={secureTextEntry2 ? icons.hide : icons.unhide}
+            onRightIconPress={() => setsecureTextEntry2(!secureTextEntry2)}
           />
           <View style={{marginBottom: nh(20)}} />
           <Button text={'Change Password'} onPress={handleSubmit} />
-          {/* {otp ? (
-            <View
-              style={{position: 'absolute', bottom: 40, alignSelf: 'center'}}>
-              <Text style={{color: 'red', fontSize: 20}}>test otp: {otp}</Text>
-            </View>
-          ) : null} */}
         </View>
       </View>
     </SafeAreaView>
