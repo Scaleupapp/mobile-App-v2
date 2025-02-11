@@ -326,3 +326,26 @@ export const getDetailedResultsApi = (quizId: string, attemptId: string) => {
 export const getLatestQuizAttemptIdApi = (quizId: string) => {
   return axiosInstance.get(`rapidfire-quiz/${quizId}/latest-attempt`);
 };
+
+export const createPaymentOrderApi = async (quizId: string) => {
+  try {
+    const response = await axiosInstance.post('rapidfire-quiz/create-order', { quizId });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const verifyPaymentApi = async (paymentData: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+  quizId: string;
+}) => {
+  try {
+    const response = await axiosInstance.post('rapidfire-quiz/verify-payment', paymentData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};

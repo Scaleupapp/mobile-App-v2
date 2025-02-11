@@ -31,6 +31,7 @@ const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
   const route = useRoute();
   const draftData = route.params?.draftData;
+  console.log('draftttttttt',draftData)
 
   // Form state
   const [heading, setHeading] = useState('');

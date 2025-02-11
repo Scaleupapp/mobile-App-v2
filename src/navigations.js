@@ -67,6 +67,7 @@ import Chat from './screens/Chat/Chat';
 import MyBadge from './screens/MyBadge/MyBadge';
 import QuizScreen from './screens/Quiz/QuizScreen';
 import QuizListScreen from './screens/Quiz/QuizListScreen';
+import MyPlaylists from './screens/MyProfile/MyPlayList';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -539,6 +540,8 @@ export const RootNavigator = () => {
         component={QuizListScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen name="MyPlaylists" component={MyPlaylists} options={{headerShown: false}} />
+
     </Stack.Navigator>
   );
 };

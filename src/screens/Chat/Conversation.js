@@ -21,6 +21,11 @@ import {images} from '../../assets/images';
 import ChatModal from './ChatModal';
 import {formatDateforchat} from '../../helper/commonFunctions';
 import {useFocusEffect} from '@react-navigation/native';
+import CallInterface from './CallInterface';
+import { io } from "socket.io-client";
+
+const socketInstance = io("https://api.scaleupapp.club"); // Replace with your actual socket URL
+
 
 const Conversation = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -50,48 +55,38 @@ const Conversation = ({navigation, route}) => {
     return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
   };
   const Card = ({item}) => {
-    console.log('🚀 ~ Card ~ item:', JSON.stringify(item));
     return (
       <Pressable
         style={styles.card}
         onPress={() =>
           navigation.navigate(Routes.Chat, {
             chatId: item?.conversationId,
-            data:
-              item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
+            data: item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
           })
         }>
-        <Image
-          source={{uri: item?.members[0]?.profilePicture}}
-          style={styles.image}
-        />
-        <View style={{flex: 9}}>
-          <Text variant="medium12" color={COLORS.blue043142}>
-            {item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname}
-          </Text>
-          <Text variant="medium12" color={COLORS.grey999999}>
-            {truncateString(item?.lastMessage?.message, 30)}
-          </Text>
-        </View>
-        <View style={{flex: 3, alignItems: 'center'}}>
-          <Text variant="medium12" color={COLORS.blue043142}>
-            {formatDateforchat(item?.lastMessage?.createdAt)}
-          </Text>
-          {/* <View
-            style={{
-              height: nh(20),
-              minWidth: nh(20),
-              borderRadius: nh(10),
-              backgroundColor: '#34A853',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: nw(5),
-            }}>
-            <Text variant="medium12" color={COLORS.whiteFFFFFF}>
-              5
+        <View style={styles.cardContent}>
+          <Image
+            source={{uri: item?.members[0]?.profilePicture}}
+            style={styles.image}
+          />
+          <View style={{flex: 9}}>
+            <Text variant="medium12" color={COLORS.blue043142}>
+              {item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname}
             </Text>
-          </View> */}
+            <Text variant="medium12" color={COLORS.grey999999}>
+              {truncateString(item?.lastMessage?.message, 30)}
+            </Text>
+          </View>
+          <View style={{flex: 3, alignItems: 'center'}}>
+            <Text variant="medium12" color={COLORS.blue043142}>
+              {formatDateforchat(item?.lastMessage?.createdAt)}
+            </Text>
+          </View>
         </View>
+        <CallInterface 
+          userId={item?.members[0]?._id} // Make sure to pass the correct user ID
+          socket={socketInstance}
+        />
       </Pressable>
     );
   };
@@ -198,6 +193,11 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     marginBottom: nh(15),
+    alignItems: 'center',
+    flex: 1,
+  },
+  cardContent: {
+    flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   FlatList,
@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {jwtDecode} from 'jwt-decode';
 import moment from 'moment';
 import Text from '../../components/Text';
 import { COLORS } from '../../helper/colors';
@@ -21,6 +22,7 @@ import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
 import Header from '../../components/Header';
 import CustomTextInput from '../../components/TextInput';
 import LeaderboardModal from './LeaderboardModal';
+import PaymentModal from './PaymentModal';
 import { 
   listAllQuizEventsApi, 
   registerForQuizApi, 
@@ -59,33 +61,49 @@ const QuizList = ({ navigation }) => {
   const [countdowns, setCountdowns] = useState({});
   const [userQuizAttempts, setUserQuizAttempts] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-
-
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Fetch registered quizzes from the server
-        const registeredResponse = await fetchUserRegisteredQuizzesApi();
-        setRegisteredQuizIds(registeredResponse.data.registeredQuizIds || []);
-
-        // Fetch user quiz attempts
-        const attemptsResponse = await fetchUserQuizAttemptsApi();
-        setUserQuizAttempts(attemptsResponse.data.attempts);
-
-        // Fetch quizzes
-        await fetchQuizzes();
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setIsInitialLoading(false);
-        setIsLoading(false);
-        setIsRefreshing(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [paymentModal, setPaymentModal] = useState({
+    visible: false,
+    selectedQuiz: null
+  });
+  const fetchUserData = useCallback(async () => {
+    try {
+      // Get user data from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const parsedData = JSON.parse(userData);
+        const decodedToken = jwtDecode(parsedData.token);
+        setCurrentUserId(decodedToken.userId);
       }
-    };
 
+      // Fetch registered quizzes from the server
+      const registeredResponse = await fetchUserRegisteredQuizzesApi();
+      setRegisteredQuizIds(registeredResponse.data.registeredQuizIds || []);
+
+      // Fetch user quiz attempts
+      const attemptsResponse = await fetchUserQuizAttemptsApi();
+      setUserQuizAttempts(attemptsResponse.data.attempts);
+
+      // Fetch quizzes
+      await fetchQuizzes();
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setIsInitialLoading(false);
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []); // Empty dependency array since this function doesn't depend on any props or state
+
+  // Update the useEffect to use the callback
+  useEffect(() => {
     fetchUserData();
-  }, [activeTab]);
+  }, [fetchUserData, activeTab]);
+
+  // Now handlePaymentSuccess can safely use fetchUserData
+  const handlePaymentSuccess = () => {
+    fetchUserData(); // This will work now
+  };
 
 
   useEffect(() => {
@@ -278,6 +296,9 @@ const QuizList = ({ navigation }) => {
     const currentTime = new Date().getTime();
     const endTime = new Date(item.endTime).getTime();
     const isQuizEnded = currentTime > endTime;
+    const hasPaid = item.participants?.some(
+      p => p.userId === currentUserId && p.hasPaid
+    );
 
     
 
@@ -324,7 +345,19 @@ const QuizList = ({ navigation }) => {
                 View Leaderboard
               </Text>
             </TouchableOpacity>
-          ) : isRegistered && !hasAttempted ? (
+          ): item.isPaid && !hasPaid ? (
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={() => setPaymentModal({
+                visible: true,
+                selectedQuiz: item
+              })}>
+              <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                Pay ₹{item.entryFee}
+              </Text>
+            </TouchableOpacity>
+          )
+           : isRegistered && !hasAttempted ? (
             <>
               <View style={styles.registeredBadge}>
                 <Text variant="regular14" color={COLORS.whiteFFFFFF}>
@@ -342,7 +375,7 @@ const QuizList = ({ navigation }) => {
               )}
             </>
           ) : (
-            isQuizEnded || hasAttempted ? null : (
+            !isQuizEnded && !hasAttempted && !item.isPaid && (
               <TouchableOpacity
                 style={styles.registerButton}
                 onPress={() => handleRegister(item._id)}>
@@ -353,6 +386,7 @@ const QuizList = ({ navigation }) => {
             )
           )
           }
+
         </View>
       </TouchableOpacity>
     );
@@ -460,6 +494,13 @@ const QuizList = ({ navigation }) => {
         onClose={() => setIsLeaderboardVisible(false)}
         quizId={selectedQuizId}
       />
+
+      <PaymentModal
+            visible={paymentModal.visible}
+            onClose={() => setPaymentModal({ visible: false, selectedQuiz: null })}
+            quiz={paymentModal.selectedQuiz}
+            onPaymentSuccess={handlePaymentSuccess}
+          />
     </SafeAreaView>
   );
 };
