@@ -9,7 +9,7 @@ import {
   Modal,
   TouchableOpacity,
   Image, // for image preview
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
@@ -23,7 +23,7 @@ import {useToast} from '../../components/CustomToast';
 import {getProfile} from '../../services/apiService';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { useRoute } from '@react-navigation/native';
+import {useRoute} from '@react-navigation/native';
 
 import {compressImage, compressVideo} from '../../helper/commonFunctions';
 
@@ -48,7 +48,6 @@ const CreatePost = ({navigation}) => {
   // Modal for selecting media
   const [modalVisible, setModalVisible] = useState(false);
 
-
   // User data state
   const [profileData, setProfileData] = useState(null);
 
@@ -58,25 +57,25 @@ const CreatePost = ({navigation}) => {
       setHeading(draftData.heading);
       // Map relatedTopics to topics field
       // Handle topics - ensure proper string format
-    const topicsString = Array.isArray(draftData.relatedTopics)
-    ? draftData.relatedTopics.join(', ')
-    : draftData.relatedTopics || '';
-  setTopics(topicsString);
-  
-  // Handle hashtags - ensure proper string format
-  const hashtagsString = Array.isArray(draftData.hashtags)
-    ? draftData.hashtags.join(' ')
-    : draftData.hashtags || '';
-  setHashtags(hashtagsString);
-  
-  setCaptions(draftData.captions);
+      const topicsString = Array.isArray(draftData.relatedTopics)
+        ? draftData.relatedTopics.join(', ')
+        : draftData.relatedTopics || '';
+      setTopics(topicsString);
+
+      // Handle hashtags - ensure proper string format
+      const hashtagsString = Array.isArray(draftData.hashtags)
+        ? draftData.hashtags.join(' ')
+        : draftData.hashtags || '';
+      setHashtags(hashtagsString);
+
+      setCaptions(draftData.captions);
       setContentType(draftData.contentType);
       // Ensure we have a proper file object
       if (draftData.file) {
         setFile({
           uri: draftData.file.uri,
           type: draftData.file.type,
-          name: draftData.file.name
+          name: draftData.file.name,
         });
       }
     }
@@ -122,12 +121,11 @@ const CreatePost = ({navigation}) => {
     }
   };
 
-
   // Separate function for handling file selection and compression
- const handleFileSelection = async (asset) => {
+  const handleFileSelection = async asset => {
     try {
       setIsCompressing(true);
-      
+
       if (asset.type && asset.type.toLowerCase().includes('video')) {
         setContentType('Video');
         let compress_video = await compressVideo(asset?.uri);
@@ -168,8 +166,6 @@ const CreatePost = ({navigation}) => {
       if (result.assets && result.assets.length > 0) {
         await handleFileSelection(result.assets[0]);
       }
-
-      
     } catch (err) {
       console.error('Error selecting file:', err);
       showToast({
@@ -190,7 +186,7 @@ const CreatePost = ({navigation}) => {
       });
       return;
     }
-  
+
     if (!heading || !topics || !hashtags || !file || !captions) {
       showToast({
         title: 'Please fill all fields and upload a file.',
@@ -198,41 +194,41 @@ const CreatePost = ({navigation}) => {
       });
       return;
     }
-  
+
     try {
       setIsUploading(true);
       setUploadProgress(0);
-  
+
       const userData = await AsyncStorage.getItem('userData');
       const {token} = JSON.parse(userData);
-  
+
       if (!token) {
         throw new Error('Authentication token not found');
       }
-  
+
       // Create FormData for either update or create
       const formData = new FormData();
       formData.append('heading', heading);
-       // Format topics and hashtags as arrays
-    const topicsArray = topics.split(',').map(t => t.trim());
-    const hashtagsArray = hashtags.split(' ').filter(h => h.startsWith('#'));
-    
-    formData.append('relatedTopics', JSON.stringify(topicsArray));
-    formData.append('hashtags', JSON.stringify(hashtagsArray));
+      // Format topics and hashtags as arrays
+      const topicsArray = topics.split(',').map(t => t.trim());
+      const hashtagsArray = hashtags.split(' ').filter(h => h.startsWith('#'));
+
+      formData.append('relatedTopics', JSON.stringify(topicsArray));
+      formData.append('hashtags', JSON.stringify(hashtagsArray));
       formData.append('verify', 'Yes');
       formData.append('captions', captions);
       formData.append('contentType', contentType);
       formData.append('isDraft', isDraft ? 'true' : 'false');
-  
+
       // Only append media if it's changed (new file selected)
       if (file && (!draftData?.file || file.uri !== draftData.file.uri)) {
         formData.append('media', {
           uri: file.uri,
           type: file.type,
-          name: file.name || 'media'
+          name: file.name || 'media',
         });
       }
-  
+
       let response;
 
       const config = {
@@ -247,7 +243,7 @@ const CreatePost = ({navigation}) => {
           setUploadProgress(percentCompleted);
         },
       };
-  
+
       // If we're editing an existing draft
       if (draftData?.id) {
         if (isDraft) {
@@ -255,10 +251,9 @@ const CreatePost = ({navigation}) => {
           response = await axios.put(
             `https://api.scaleupapp.club/api/content/${draftData.id}`,
             formData,
-            config
-            
+            config,
           );
-          
+
           console.log('Draft Updated:', response.data);
           showToast({
             title: 'Draft updated successfully!',
@@ -269,9 +264,9 @@ const CreatePost = ({navigation}) => {
           response = await axios.put(
             `https://api.scaleupapp.club/api/content/publish/${draftData.id}`,
             formData,
-            config
+            config,
           );
-  
+
           console.log('Draft Published:', response.data);
           showToast({
             title: response.data?.message || 'Post published successfully!',
@@ -283,16 +278,18 @@ const CreatePost = ({navigation}) => {
         response = await axios.post(
           'https://api.scaleupapp.club/api/content/create',
           formData,
-          config
+          config,
         );
-  
+
         console.log('Post Upload Success:', response.data);
         showToast({
-          title: isDraft ? 'Draft saved successfully!' : 'Post published successfully!',
+          title: isDraft
+            ? 'Draft saved successfully!'
+            : 'Post published successfully!',
           type: 'success',
         });
       }
-  
+
       setTimeout(() => {
         resetForm();
         navigation.goBack();
@@ -308,18 +305,20 @@ const CreatePost = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
       <Header title="New Post" />
 
       {/* ScrollView that fills screen, becomes scrollable if content > screen height */}
       <ScrollView
-        style={{ flex: 1 }}
+        style={{flex: 1}}
         contentContainerStyle={{
           flexGrow: 1,
           minHeight: '100%',
         }}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.layer1}>
           <View style={styles.layer2}>
             <CustomTextInput
@@ -355,9 +354,8 @@ const CreatePost = ({navigation}) => {
                 onPress={() => setModalVisible(true)}
                 width={nw(96)}
                 height={nh(35)}
-                textStyle={{ fontSize: 14 }}
+                textStyle={{fontSize: 14}}
                 disabled={isCompressing || isUploading}
-
               />
 
               {/* Compression Status */}
@@ -403,7 +401,7 @@ const CreatePost = ({navigation}) => {
                   <TouchableOpacity
                     style={styles.closeIconContainer}
                     onPress={removeFile}
-                                        disabled={isUploading}>
+                    disabled={isUploading}>
                     <Icon name="close-circle" size={24} color="red" />
                   </TouchableOpacity>
                 </View>
@@ -457,8 +455,7 @@ const CreatePost = ({navigation}) => {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+        onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Choose Media</Text>
@@ -466,8 +463,7 @@ const CreatePost = ({navigation}) => {
             <TouchableOpacity
               style={styles.modalOption}
               onPress={openGallery}
-              disabled={isUploading}
-            >
+              disabled={isUploading}>
               <Icon name="image" size={24} color={COLORS.blue043142} />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
@@ -475,8 +471,7 @@ const CreatePost = ({navigation}) => {
             <TouchableOpacity
               style={styles.modalCancelOption}
               onPress={() => setModalVisible(false)}
-              disabled={isUploading}
-            >
+              disabled={isUploading}>
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>

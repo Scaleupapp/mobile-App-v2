@@ -35,7 +35,7 @@ import PlaylistSearch from './PlaylistSearch';
 import PlaylistInfoModal from './PlaylistInfoModal';
 import PlaylistCreateModal from './PlaylistCreateModal';
 
-const MyPlaylists = ({navigation}) => {
+const MyPlaylists = ({route, navigation}) => {
   // State Management
   const [playlists, setPlaylists] = useState([]);
   const [expandedPlaylist, setExpandedPlaylist] = useState(null);
@@ -67,10 +67,35 @@ const MyPlaylists = ({navigation}) => {
   const [filteredPublicPlaylists, setFilteredPublicPlaylists] = useState([]);
   const [isInfoModalVisible, setIsInfoModalVisible] = useState(false);
   const [selectedPlaylistForInfo, setSelectedPlaylistForInfo] = useState(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   // User Authentication State
   const [userId, setUserId] = useState(null);
   const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    // Handle navigation parameters
+    const handleNavigationParams = async () => {
+      // Safely access route params with optional chaining
+      const params = route?.params;
+      if (params?.initialView === 'public' && !initialLoadComplete) {
+        // Expand public playlists section
+        if (!isPublicPlaylistsExpanded) {
+          await fetchPublicPlaylists();
+          setIsPublicPlaylistsExpanded(true);
+        }
+
+        // If a specific playlist should be expanded
+        if (params.playlistToExpand) {
+          await fetchPublicPlaylistDetails(params.playlistToExpand);
+        }
+
+        setInitialLoadComplete(true);
+      }
+    };
+
+    handleNavigationParams();
+  }, [route?.params, initialLoadComplete, isPublicPlaylistsExpanded]);
 
   // Initialize user authentication data
   useEffect(() => {
@@ -1037,6 +1062,7 @@ const MyPlaylists = ({navigation}) => {
     isExpanded,
     publicPlaylistPosts,
     openPublicPlaylistCommentsModal,
+    highlightPostId,
   }) => {
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState(null);
@@ -1154,7 +1180,10 @@ const MyPlaylists = ({navigation}) => {
             {publicPlaylistPosts.map(postDetail => (
               <TouchableOpacity
                 key={postDetail._id}
-                style={styles.publicPlaylistPostItem}
+                style={[
+                  styles.publicPlaylistPostItem,
+                  highlightPostId === postDetail._id && styles.highlightedPost,
+                ]}
                 onPress={() =>
                   handleVideoPress(postDetail, playlist._id, true)
                 }>
@@ -1206,10 +1235,17 @@ const MyPlaylists = ({navigation}) => {
           isExpanded={isExpanded}
           publicPlaylistPosts={publicPlaylistPosts}
           openPublicPlaylistCommentsModal={openPublicPlaylistCommentsModal}
+          highlightPostId={route?.params?.scrollToPost}
         />
       );
     },
-    [expandedPublicPlaylist, userId, usernamesCache, publicPlaylistPosts],
+    [
+      expandedPublicPlaylist,
+      userId,
+      usernamesCache,
+      publicPlaylistPosts,
+      route?.params?.scrollToPost,
+    ],
   );
 
   // ... rest of your component code ...
@@ -1387,6 +1423,12 @@ const styles = StyleSheet.create({
   searchContainer: {
     marginVertical: 10,
     paddingHorizontal: 15,
+  },
+  highlightedPost: {
+    backgroundColor: COLORS.yellowF5BE00 + '20', // Add slight highlight
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.yellowF5BE00,
   },
   searchInput: {
     backgroundColor: COLORS.whiteFFFFFF,
