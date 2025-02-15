@@ -4,6 +4,7 @@ import { Text as RCAText, StyleProp, TextProps, TextStyle } from 'react-native';
 import { NativeText } from 'react-native/Libraries/Text/TextNativeComponent';
 import { nh, nw } from '../helper/scales';
 import { APP_FONTS } from '../assets/fonts';
+import { COLORS } from '../helper/colors';
 
 
 /**
@@ -115,7 +116,7 @@ const Text = ({
     variant = 'bodyMedium',
     style,
     children,
-    color,
+    color = COLORS.grey999999,
     ...rest
 }: {
     as?: 'LeanText' | 'RCAText';

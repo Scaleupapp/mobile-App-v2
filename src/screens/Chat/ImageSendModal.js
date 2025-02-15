@@ -25,9 +25,10 @@ const MediaModal = ({
   input,
   setInput,
   loadingsmall,
+  reply,
 }) => {
-  console.log('🚀 ~ MediaModal ~ isVisible:', isVisible);
-  const [selectedMedia, setSelectedMedia] = useState(null); // { type: 'image' | 'video', uri: string }
+  //   console.log('🚀 ~ MediaModal ~ isVisible:', isVisible);
+  // const [selectedMedia, setSelectedMedia] = useState(null); // { type: 'image' | 'video', uri: string }
 
   const handleSend = () => {
     console.log('herr');
@@ -84,7 +85,9 @@ const MediaModal = ({
               {loadingsmall ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={styles.buttonText}>Send</Text>
+                <Text style={styles.buttonText}>
+                  {reply ? 'Reply' : 'Send'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>

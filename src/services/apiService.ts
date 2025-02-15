@@ -45,6 +45,12 @@ export const getHomePageData = (page: any, pageSize: any) => {
   return axiosInstance.get(`${API.HOMEPAGE}?page=${page}&pageSize=${pageSize}`);
 };
 
+export const getRecommendedContent = (page: any, pageSize: any) => {
+  return axiosInstance.get(
+    `${API.RECOMMEND}?page=${page}&pageSize=${pageSize}`,
+  );
+};
+
 export const getvideoPageData = (payload: any) => {
   return axiosInstance.get(`${API.ALL_VIDEOS}?page=${payload}&pageSize=10`);
 };
@@ -161,7 +167,6 @@ export const addComment = (payload: any) => {
 };
 
 export const getComment = (payload: any, page: any) => {
-  console.log('🚀 ~ getComment ~ payload:', payload, page);
   return axiosInstance.post(`content/comment?page=${page}`, payload);
 };
 export const replyComment = (payload: any) => {
@@ -230,6 +235,10 @@ export const getconversationbyID = (id: any, page: any) => {
 export const sendChat = (payload: any) => {
   return axiosInstance.post(`${API.SENDMESSAGE}`, payload);
 };
+export const sendChatReply = (payload: any) => {
+  return axiosInstance.post(`${API.CHAT}/reply`, payload);
+};
+
 
 export const editChatMessage = (convid: any, messageid: any, payload: any) => {
   return axiosInstance.put(
@@ -246,6 +255,12 @@ export const reactChatMessage = (convid: any, messageid: any, payload: any) => {
 export const deleteChatMessage = (convid: any, messageid: any) => {
   return axiosInstance.delete(
     `${API.CHAT}/${convid}/messages/${messageid}/delete`,
+  );
+};
+export const markReadAPI = (payload: any) => {
+  return axiosInstance.post(
+    `${API.CHAT}/mark-read`,
+    payload,
   );
 };
 
@@ -327,6 +342,7 @@ export const getLatestQuizAttemptIdApi = (quizId: string) => {
   return axiosInstance.get(`rapidfire-quiz/${quizId}/latest-attempt`);
 };
 
+<<<<<<< HEAD
 export const createPaymentOrderApi = async (quizId: string) => {
   try {
     const response = await axiosInstance.post('rapidfire-quiz/create-order', { quizId });
@@ -349,3 +365,16 @@ export const verifyPaymentApi = async (paymentData: {
     throw error;
   }
 };
+=======
+export const getReferralDetailsApi = () => {
+  return axiosInstance.get(API.GET_REFERRAL_CODE);
+};
+
+export const deleteContent = (contentId: any) => {
+  return axiosInstance.delete(`content/delete/${contentId}`);
+};
+
+export const deleteStory = (payload: any) => {
+  return axiosInstance.delete(`stories`, payload);
+};
+>>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72

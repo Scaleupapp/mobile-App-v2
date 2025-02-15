@@ -98,7 +98,7 @@ const AllPostoption = ({type, data}) => {
       {type === 'user' ? (
         <>
           <ToggleWithIconUnderline onToggle={setSelected} />
-          {selected === 0 && <AllPost data={data} />}
+          {selected === 0 && <AllPost data={data} apicall={apicall} />}
           {selected === 1 && <SavedPosts />}
           {selected === 2 && (
             <AllPost

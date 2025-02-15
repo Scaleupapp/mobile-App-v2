@@ -24,6 +24,7 @@ import {
   unsavePostAPI,
   getProfile,
   ReportPost,
+  deleteContent,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
@@ -404,6 +405,7 @@ const PlaylistInfoModal = () => (
       },
     },
   ];
+
   const menuItems1 = [
     {
       name: 'Add to playlist',
@@ -413,7 +415,39 @@ const PlaylistInfoModal = () => (
         handleBookmarkPress();
       },
     },
+    ...(myProfile
+      ? [
+          {
+            name: 'Delete Post',
+            // image: icons.block,
+            onPress: () => {
+              setVisible(false);
+              setTimeout(() => {
+                setDeleteModalVisible(true);
+              }, 500);
+            },
+          },
+        ]
+      : []),
   ];
+
+  const handleDelete = async () => {
+    setDeleteModalVisible(false);
+    try {
+      const {data} = await deleteContent(postId);
+      showToast({type: 'success', title: data?.message});
+      // if (myProfile) {
+      navigationRef.goBack();
+      // } else {
+      //   navigationRef.reset({
+      //     index: 0,
+      //     routes: [{name: Routes.Home}],
+      //   });
+      // }
+    } catch (error) {
+      console.log('🚀 ~ handleDelete ~ error:', error);
+    }
+  };
 
   const ReportHanlder = async reportType => {
     setModalVisible(false);
@@ -832,9 +866,10 @@ const PlaylistInfoModal = () => (
             item?.userId?._id !== profileData?.id ? menuItems : menuItems1
           }
           style={{
-            alignItems: 'flex-end',
-            marginTop: position + nh(35),
-            maxHeight: nh(50),
+            position: 'absolute',
+            top: position + nh(20),
+            right: nw(16),
+            margin: 0,
           }}
         />
       ) : null}
@@ -848,6 +883,12 @@ const PlaylistInfoModal = () => (
       ) : null}
             <PlaylistInfoModal />
 
+
+      <DeleteConfirmationModal
+        visible={deleteModalVisible}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteModalVisible(false)}
+      />
 
       {/* <SavedPostsModal
         // visible={isSavedModalVisible}

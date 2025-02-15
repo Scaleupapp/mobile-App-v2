@@ -29,7 +29,7 @@ import {
   widrawInnerCircleRequestAPI,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
-import {getTimeAgo} from '../../helper/commonFunctions';
+import {formatDateforchat, getTimeAgo} from '../../helper/commonFunctions';
 import moment from 'moment';
 import {navigationRef} from '../../../App';
 
@@ -409,7 +409,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                           {item?.username}
                         </Text>
                         <Text variant="medium12" color={COLORS.blue043142}>
-                          {item?.Timestamp}
+                          {formatDateforchat(item?.Timestamp)}
                         </Text>
                       </View>
                       <View

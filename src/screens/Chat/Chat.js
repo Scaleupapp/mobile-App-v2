@@ -24,8 +24,10 @@ import {
   editChatMessage,
   getconversation,
   getconversationbyID,
+  markReadAPI,
   reactChatMessage,
   sendChat,
+  sendChatReply,
 } from '../../services/apiService';
 import {useSelector} from 'react-redux';
 import Text from '../../components/Text';
@@ -54,18 +56,19 @@ const Chat = ({navigation, route}) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const flatListRef = useRef(null);
-  const [apiData, setApiData] = useState();
+
   const [selected, setSelected] = useState();
   const [visible, setVisible] = useState(false);
   const [edit, setEdit] = useState(false);
   const textInputRef = useRef(null);
-  const [isEditable, setIsEditable] = useState(false);
+  const [isread, setIsread] = useState(false);
   const {showToast} = useToast();
   const imageModalRef = useRef(null);
   const [modalvisible, setModalVisible] = useState(false);
   const [itemclicked, setItemcliked] = useState({});
   const [file, setFile] = useState({});
   const [loadingsmall, setLoadingsmal] = useState(false);
+  const [reply, setReply] = useState(false);
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
@@ -76,7 +79,16 @@ const Chat = ({navigation, route}) => {
 
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
+<<<<<<< HEAD
     const socketInstance = io('http://192.168.136.240:3000'); // Replace with your server URL
+=======
+    const socketInstance = io('https://api.scaleupapp.club', {
+      // Your server URL
+      auth: {
+        token: userData?.token, // If you have authentication
+      },
+    }); // Replace with your server URL
+>>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
@@ -86,6 +98,7 @@ const Chat = ({navigation, route}) => {
 
     socketInstance.on('receiveMessage', data => {
       if (data.conversationId === route?.params?.chatId) {
+        // markasRead(data?._id);
         setMessages(prevMessages => [...prevMessages, data]);
       }
     });
@@ -107,7 +120,7 @@ const Chat = ({navigation, route}) => {
     });
 
     socketInstance.on('messageDeleted', data => {
-      console.log('🚀 ~ useEffect ~ messageDeleted:', data);
+      // console.log('🚀 ~ useEffect ~ messageDeleted:', data);
 
       const updatedData = {
         _id: data?.messageId,
@@ -125,7 +138,7 @@ const Chat = ({navigation, route}) => {
     });
 
     socketInstance.on('reactionAdded', data => {
-      console.log('🚀 ~ useEffect ~ reactionAdded:', data);
+      // console.log('🚀 ~ useEffect ~ reactionAdded:', data);
 
       const updatedMessages = messages.map(
         msg =>
@@ -202,9 +215,11 @@ const Chat = ({navigation, route}) => {
 
       let conversationId = route?.params?.chatId;
       const {data} = await sendChat(formData);
-      console.log('🚀 ~ sendMessage ~ data:', data);
-      setUserHasScrolled(false);
+      // markasRead(data?._id);
+      // console.log('🚀 ~ sendMessage ~ data:', data);
       // setMessages(prevMessages => [...prevMessages, data]);
+      setUserHasScrolled(false);
+      setIsread(true);
       if (socket) {
         socket.emit('sendMessage', {
           conversationId,
@@ -235,7 +250,7 @@ const Chat = ({navigation, route}) => {
           message: input,
           edited: true,
         };
-        console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
+        // console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
 
         const updatedMessages = messages.map(
           msg =>
@@ -243,7 +258,7 @@ const Chat = ({navigation, route}) => {
               ? {...msg, ...updatedData} // Update the matching object
               : msg, // Keep others unchanged
         );
-        console.log('🚀 ~ editMessage ~ updatedMessages:', updatedMessages);
+        // console.log('🚀 ~ editMessage ~ updatedMessages:', updatedMessages);
 
         setInput('');
         setMessages(updatedMessages);
@@ -251,7 +266,7 @@ const Chat = ({navigation, route}) => {
         setEdit(false);
 
         setSelected(null);
-        console.log('🚀 ~ editMessage ~ data:', data);
+        // console.log('🚀 ~ editMessage ~ data:', data);
       } catch (error) {
         console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
       }
@@ -259,11 +274,11 @@ const Chat = ({navigation, route}) => {
   };
 
   const reactMessage = async emojis => {
-    console.log('🚀 ~ Chat ~ emoji:', emojis);
+    // console.log('🚀 ~ Chat ~ emoji:', emojis);
     const payload = {
       emoji: emojis,
     };
-    console.log('🚀 ~ Chat ~ payload:', payload);
+    // console.log('🚀 ~ Chat ~ payload:', payload);
     try {
       const {data} = await reactChatMessage(
         selected?.conversationId,
@@ -288,7 +303,7 @@ const Chat = ({navigation, route}) => {
       setMessages(updatedMessages);
       setVisible(false);
       setSelected(null);
-      console.log('🚀 ~ editMessage ~ data:', JSON.stringify(data));
+      // console.log('🚀 ~ editMessage ~ data:', JSON.stringify(data));
     } catch (error) {
       console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
     }
@@ -329,6 +344,58 @@ const Chat = ({navigation, route}) => {
       textInputRef.current.focus();
     }
   };
+
+  const onReplyClick = () => {
+    setReply(true);
+    setVisible(false);
+    if (textInputRef.current) {
+      textInputRef.current.focus();
+    }
+  };
+  const replyMessage = async () => {
+    setLoadingsmal(true);
+    // if (!newMessage.trim()) return;
+    if (input.trim() || file?.fileName) {
+      const formData = new FormData();
+
+      formData.append('conversationId', route?.params?.chatId);
+      // Format topics and hashtags as arrays
+
+      formData.append('message', input);
+      formData.append('parentMessageId', selected?._id);
+      // Format topics and hashtags as arrays
+
+      // formData.append('message', 'heheh');
+
+      if (file?.fileName) {
+        formData.append('media', {
+          uri: file.uri,
+          name: file.fileName,
+          type: file.type,
+        });
+      }
+
+      let conversationId = route?.params?.chatId;
+      const {data} = await sendChatReply(formData);
+      // markasRead(data?._id);
+      // setMessages(prevMessages => [...prevMessages, data]);
+      console.log('🚀 ~ sendMesendChatReplyssage ~ data:', data);
+      setUserHasScrolled(false);
+      setReply(false);
+      setSelected();
+      setIsread(true);
+      if (socket) {
+        socket.emit('sendMessage', {
+          conversationId,
+          data,
+        });
+      }
+      setLoadingsmal(false);
+      setModalVisible(false);
+      setInput('');
+      setFile({});
+    }
+  };
   const openGallery = async () => {
     try {
       const result = await launchImageLibrary({
@@ -350,7 +417,7 @@ const Chat = ({navigation, route}) => {
     }
   };
   const handleFileSelection = async asset => {
-    console.log('🚀 ~ Chat ~ asset:', asset);
+    // console.log('🚀 ~ Chat ~ asset:', asset);
 
     try {
       if (asset.type && asset.type.toLowerCase().includes('gif')) {
@@ -387,37 +454,48 @@ const Chat = ({navigation, route}) => {
     }
   };
 
-  const menuItems = [
-    ...(isEditable
-      ? [
-          {
-            name: 'Edit Message',
-            image: icons.editsolid,
-            onPress: () => onEditClick(), // Edit action
-          },
-        ]
-      : []),
-    ...(isEditable
-      ? [
-          {
-            name: 'Delete Message',
-            image: icons.delete,
-            onPress: () => deleteMessage(), // Delete action (this should be onDeleteClick, not onEditClick)
-          },
-        ]
-      : []),
-  ];
-  const formatGroupedMessages = () => {
+  const formatGroupedMessages = id => {
+    // console.log(messages);
     let groupedMessages = groupMessagesByDate(messages);
-    // console.log(
-    //   '🚀 ~ formatGroupedMessages ~ groupedMessages:',
-    //   groupedMessages,
-    // );
-    return groupedMessages.flatMap(group => [
-      {type: 'header', date: group.date},
-      ...group.messages.map(msg => ({...msg, type: 'message'})),
-    ]);
+
+    // return groupedMessages.flatMap(group => [
+    //   {type: 'header', date: group.date},
+    //   ...group.messages.map(msg => ({...msg, type: 'message'})),
+    // ]);
+    let unreadInserted = false;
+    return groupedMessages.flatMap(group => {
+      let section = [{type: 'header', date: group.date}];
+
+      const messageSection = group.messages.flatMap(msg => {
+        const isUnread = !msg.readAt && msg.sender._id !== userData?.id; // Ensure message is unread & not sent by me
+
+        if (isUnread && !unreadInserted) {
+          unreadInserted = true;
+          return [
+            {type: 'unreadHeader', text: 'Unread Messages'},
+            {...msg, type: 'message'},
+          ];
+        }
+
+        return {...msg, type: 'message'};
+      });
+
+      return [...section, ...messageSection];
+    });
   };
+
+  const markasRead = async id => {
+    console.log('🚀 ~ markasRead ~ id:', id);
+    try {
+      let res = await markReadAPI({
+        messageId: id,
+      });
+      console.log('🚀 ~ markasRead ~ res:', res?.data);
+    } catch (error) {
+      console.log('🚀 ~ markasRead ~ error:', error);
+    }
+  };
+
   const fetchMessages = async page => {
     const {data} = await getconversationbyID(route?.params?.chatId, page);
 
@@ -429,8 +507,18 @@ const Chat = ({navigation, route}) => {
 
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
-    console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages.length);
-
+    console.log('🚀 ~ loadMoreMessages ~ newMessages:', page.current);
+    if (page.current == 1) {
+      const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
+        if (msg.sender._id !== userData?.id && !msg.readAt) {
+          return msg; // Keep updating with the latest unread message
+        }
+        return lastUnread;
+      }, null);
+      if (lastUnreadMessage) {
+        markasRead(lastUnreadMessage?._id);
+      }
+    }
     if (newMessages.length === 0) {
       setAllMessagesFetched(true);
     } else {
@@ -463,6 +551,22 @@ const Chat = ({navigation, route}) => {
               variant="semibold14"
               color={COLORS.blue043142}>
               {checkDate(item.date)}
+            </Text>
+            <View style={styles.line} />
+          </View>
+        </View>
+      );
+    }
+    if (item.type === 'unreadHeader' && !isread) {
+      return (
+        <View style={styles.headerContainer}>
+          <View style={styles.lineContainer}>
+            <View style={styles.line} />
+            <Text
+              style={{marginHorizontal: 10}}
+              variant="semibold12"
+              color={COLORS.black333333}>
+              Unread Messages
             </Text>
             <View style={styles.line} />
           </View>
@@ -526,10 +630,97 @@ const Chat = ({navigation, route}) => {
                   paddingBottom: 18,
                 },
               ]}>
+              {item?.parentMessageId && (
+                <View
+                  style={{
+                    backgroundColor: COLORS.whiteFFFFFF,
+                    borderRadius: 8,
+                    paddingHorizontal: 5,
+                    borderLeftWidth: 2,
+                    borderLeftColor: COLORS.yellowF5BE00,
+                    paddingVertical: 5,
+                    marginBottom: 3,
+                  }}>
+                  <Text variant="medium12" color={COLORS.yellowF5BE00}>
+                    {item?.parentMessageId?.sender?._id == userData?.id
+                      ? 'You'
+                      : item?.parentMessageId?.sender?.username}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                    }}>
+                    {item?.parentMessageId?.message &&
+                      !item?.parentMessageId?.mediaType && (
+                        <Text
+                          variant="medium12"
+                          color={COLORS.black333333}
+                          numberOfLines={1}
+                          ellipsizeMode="tail">
+                          {item?.parentMessageId?.message}
+                        </Text>
+                      )}
+
+                    {item?.parentMessageId?.media &&
+                      (item?.parentMessageId?.mediaType == 'Image' ||
+                        item?.parentMessageId?.mediaType?.includes(
+                          'image',
+                        )) && (
+                        <Pressable
+                        // onPress={() => {
+                        //   setItemcliked(item);
+                        //   imageModalRef.current?.present();
+                        // }}
+                        >
+                          <Image
+                            source={{uri: item?.parentMessageId?.media}}
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                          />
+                        </Pressable>
+                      )}
+
+                    {item?.parentMessageId?.media &&
+                      item?.parentMessageId?.mediaType?.includes('video') && (
+                        <Pressable
+                        // onPress={() => {
+                        //   setItemcliked(item);
+                        //   imageModalRef.current?.present();
+                        // }}
+                        >
+                          <Video
+                            source={{uri: item?.parentMessageId?.media}}
+                            style={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                            controls
+                          />
+                        </Pressable>
+                      )}
+                    {item?.parentMessageId?.message &&
+                      item?.parentMessageId?.mediaType && (
+                        <Text
+                          style={[styles.messageText, {marginLeft: 10}]}
+                          variant="medium14"
+                          color={COLORS.black333333}>
+                          {item?.parentMessageId?.message}
+                        </Text>
+                      )}
+                  </View>
+                </View>
+              )}
               <View>
                 {item?.message && !item?.mediaType && (
                   <Text
-                    style={styles.messageText}
+                    // style={styles.messageText}
                     variant="medium14"
                     color={COLORS.black333333}>
                     {item.message}
@@ -697,7 +888,76 @@ const Chat = ({navigation, route}) => {
                   } // Show loading spinner when fetching older messages
                   contentContainerStyle={{paddingBottom: 50}}
                 />
-
+                {reply && (
+                  <View
+                    style={{
+                      height: nh(50),
+                      backgroundColor: COLORS.grey333333 + 10,
+                      borderColor: COLORS.grey777777 + 20,
+                      borderWidth: 1,
+                      borderRadius: 8,
+                      borderLeftColor: COLORS.yellowF5BE00,
+                      borderLeftWidth: 2,
+                      paddingHorizontal: 10,
+                      paddingVertical: 5,
+                      marginBottom: 5,
+                    }}>
+                    <TouchableOpacity
+                      onPress={() => {
+                        console.log('hreee1111');
+                        setSelected();
+                        setReply(false);
+                      }}
+                      style={{
+                        height: 20,
+                        width: 20,
+                        position: 'absolute',
+                        right: 0,
+                        top: 5,
+                      }}>
+                      <Icon type="entypo" name="cross" size={20} style={{}} />
+                    </TouchableOpacity>
+                    <Text variant="bold12" color={COLORS.blue043142}>
+                      {selected?.sender?._id === userData?.id
+                        ? 'You'
+                        : selected?.sender?.username}
+                    </Text>
+                    <View style={{flexDirection: 'row'}}>
+                      {selected?.media && (
+                        <Icon
+                          type="material-community"
+                          name={
+                            selected?.mediaType?.includes('image')
+                              ? 'image'
+                              : 'video-outline'
+                          }
+                          size={20}
+                          // style={{
+                          //   alignSelf: 'center',
+                          //   marginRight: 10,
+                          //   marginLeft: -10,
+                          // }}
+                        />
+                      )}
+                      {!selected?.message && (
+                        <Text variant="medium12" style={{marginLeft: 10}}>
+                          {selected?.mediaType?.includes('image')
+                            ? 'Image'
+                            : 'Video'}
+                        </Text>
+                      )}
+                      {selected?.message && (
+                        <Text
+                          variant="medium12"
+                          style={{marginHorizontal: 10}}
+                          numberOfLines={1}
+                          ellipsizeMode="tail">
+                          {selected?.message}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                )}
                 <View style={styles.inputContainer}>
                   <Icon
                     type="material-community"
@@ -738,20 +998,31 @@ const Chat = ({navigation, route}) => {
                       setModalVisible(false);
                     }}
                     file={file}
-                    onSend={sendMessage}
+                    onSend={reply ? replyMessage : sendMessage}
                     input={input}
                     setInput={setInput}
                     loadingsmall={loadingsmall}
+                    reply={reply}
                   />
 
                   <TouchableOpacity
                     style={styles.sendButton}
-                    onPress={selected?._id ? editMessage : sendMessage}>
+                    onPress={
+                      selected?._id && edit
+                        ? editMessage
+                        : reply
+                        ? replyMessage
+                        : sendMessage
+                    }>
                     {loadingsmall ? (
                       <ActivityIndicator size="small" color="white" />
                     ) : (
                       <Text style={styles.sendButtonText}>
-                        {selected?._id && edit ? 'Edit' : 'Send'}
+                        {selected?._id && edit
+                          ? 'Edit'
+                          : reply
+                          ? 'Reply'
+                          : 'Send'}
                       </Text>
                     )}
                   </TouchableOpacity>
@@ -773,8 +1044,8 @@ const Chat = ({navigation, route}) => {
             item={selected}
             onEdit={onEditClick}
             onDelete={deleteMessage}
-            isEditable={isEditable}
             onReact={reactMessage}
+            onReply={onReplyClick}
           />
         </KeyboardAvoidingView>
       </SafeAreaView>

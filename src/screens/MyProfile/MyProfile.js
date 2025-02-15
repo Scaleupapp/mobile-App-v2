@@ -54,15 +54,12 @@ const MyProfile = ({navigation, route}) => {
     'Subject Matter Expert': '#FFD700', // gold
   };
 
-  useEffect(() => {
-    getprofiledetail(1);
-  }, [route?.params?.id]);
-
   const isFocused = useIsFocused();
   const [imageUri, setImageUri] = useState('');
 
   useEffect(() => {
     if (isFocused) {
+      getprofiledetail(1);
       if (type == 'other') {
         setImageUri(profile?.profilePicture);
       } else if (userData?.profilePicture) {
@@ -84,46 +81,25 @@ const MyProfile = ({navigation, route}) => {
         pageNum,
       );
 
-      // Log the entire response object
-      // console.log('API Response:', resp);
-
-      // Optionally, log specific parts of the response for clarity
-      // console.log('Response Data:', JSON.stringify(resp?.data));
-      // console.log('Content Array:', resp?.data?.content);
-      // console.log('Followers:', resp?.data?.followers);
-      // console.log('Pagination Info:', resp?.data?.pagination);
-
       // Update the profile state with the new data
-      setProfile(prev => ({
-        ...prev, // Spread the existing properties of prev
-        ...resp?.data,
-        content: [
-          ...(prev?.content || []), // Spread the existing content array or use an empty array if it's undefined
-          ...(resp?.data?.content || []), // Append the new content from resp.data.content
-        ],
-      }));
-
-      // Log the updated profile state (optional)
-      // console.log('Updated Profile State:', {
-      //   ...profile,
-      //   ...resp?.data,
-      //   content: [...(profile?.content || []), ...(resp?.data?.content || [])],
-      // });
+      if (pageNum == 1) {
+        setProfile(resp?.data);
+      } else {
+        setProfile(prev => ({
+          ...prev, // Spread the existing properties of prev
+          ...resp?.data,
+          content: [
+            ...(prev?.content || []), // Spread the existing content array or use an empty array if it's undefined
+            ...(resp?.data?.content || []), // Append the new content from resp.data.content
+          ],
+        }));
+      }
 
       // Update the follow status
       setFollow(resp?.data?.followers.includes(userData?.username));
 
-      // Log the follow status
-      // console.log(
-      //   `Is Following: ${resp?.data?.followers.includes(userData?.username)}`,
-      // );
-
       // Handle pagination by checking if more pages are available
       if (resp?.data?.pagination?.totalPages > pageNum) {
-        // console.log(
-        //   `Total Pages: ${resp?.data?.pagination?.totalPages} > Current Page: ${pageNum}`,
-        // );
-
         setTimeout(() => {
           getprofiledetail(pageNum + 1);
           console.log('API triggered for next page');
@@ -473,7 +449,11 @@ const MyProfile = ({navigation, route}) => {
             )}
 
             {/* All Posts Option */}
-            <AllPostoption type={type} data={profile} />
+            <AllPostoption
+              type={type}
+              data={profile}
+              apicall={() => getprofiledetail(1)}
+            />
           </ScrollView>
         </View>
       </View>
