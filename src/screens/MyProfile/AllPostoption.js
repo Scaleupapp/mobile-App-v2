@@ -15,19 +15,15 @@ const AllPostoption = ({type, data, apicall}) => {
   // Navigation hook for screen transitions
   const navigation = useNavigation();
   const {showToast} = useToast();
-
-  // State management for selected tab and draft posts
   const [selected, setSelected] = useState(0);
-  const [draftPosts, setDraftPosts] = useState([]);
+  const [draftPosts, setDraftPosts] = useState({content: []}); // Initialize with proper structure
 
-  // Fetch draft posts whenever the 'drafts' tab is selected
   useEffect(() => {
     if (selected === 2) {
       fetchDraftPosts();
     }
   }, [selected]);
 
-  // Function to fetch all draft posts from the server
   const fetchDraftPosts = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
@@ -50,7 +46,8 @@ const AllPostoption = ({type, data, apicall}) => {
         },
       );
 
-      setDraftPosts(response.data.drafts);
+      // Structure the data properly with a content property
+      setDraftPosts({content: response.data.drafts});
     } catch (error) {
       console.error('Error fetching drafts:', error);
       showToast({
@@ -60,10 +57,8 @@ const AllPostoption = ({type, data, apicall}) => {
     }
   };
 
-  // This function is passed to the AllPost component to handle draft publishing
   const handlePublishDraft = async draftPost => {
     try {
-      // First validate user authentication
       const userData = await AsyncStorage.getItem('userData');
       if (!userData) {
         showToast({
@@ -73,7 +68,6 @@ const AllPostoption = ({type, data, apicall}) => {
         return;
       }
 
-      // Navigate to CreatePost screen with the draft data
       navigation.navigate('CreatePost', {
         draftData: {
           heading: draftPost.heading,
@@ -98,7 +92,6 @@ const AllPostoption = ({type, data, apicall}) => {
     }
   };
 
-  // Render the appropriate content based on the selected tab and user type
   return (
     <View style={{flex: 1}}>
       {type === 'user' ? (
@@ -110,7 +103,7 @@ const AllPostoption = ({type, data, apicall}) => {
             <AllPost
               data={draftPosts}
               isDrafts={true}
-              onPublish={handlePublishDraft} // Pass the entire draft post object
+              onPublish={handlePublishDraft}
             />
           )}
           {selected === 3 && <UserPlaylists />}
@@ -119,7 +112,6 @@ const AllPostoption = ({type, data, apicall}) => {
         <View style={{marginTop: nh(30), flex: 1}}>
           <View style={{marginBottom: nh(30)}}>
             <ToggleWithUnderline
-              // options={['ALL POSTS', 'PLAYLISTS']}
               options={['ALL POSTS']}
               onToggle={setSelected}
             />

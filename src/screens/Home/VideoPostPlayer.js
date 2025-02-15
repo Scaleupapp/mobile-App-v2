@@ -6,7 +6,6 @@ import {
   Animated,
   Text,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import Video from 'react-native-video';
 import {COLORS} from '../../helper/colors';
@@ -22,9 +21,13 @@ const VideoPostPlayer = ({
   onEnd,
   style,
   videoDimensions,
+  globalMuted, // New prop
 }) => {
   const videoRef = useRef(null);
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const controlsTimeout = useRef(null);
+
   const [paused, setPaused] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -32,7 +35,54 @@ const VideoPostPlayer = ({
   const [muted, setMuted] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [resizeMode, setResizeMode] = useState('cover');
+  const [showControls1, setShowControls] = useState(true);
 
+  // Function to hide controls
+  const hideControls = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setShowControls(false);
+    });
+  };
+
+  // Function to show controls
+  const showControls = () => {
+    setShowControls(true);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Reset and start the control hide timer
+  const resetControlsTimer = () => {
+    if (controlsTimeout.current) {
+      clearTimeout(controlsTimeout.current);
+    }
+
+    if (!paused) {
+      controlsTimeout.current = setTimeout(() => {
+        hideControls();
+      }, 1000);
+    }
+  };
+
+  // Handle video press
+  const handleVideoPress = () => {
+    if (showControls) {
+      setPaused(!paused);
+      resetControlsTimer();
+    } else {
+      showControls();
+      resetControlsTimer();
+    }
+  };
+
+  // Effect to manage controls visibility
   useEffect(() => {
     if (!isVisible) {
       if (videoRef.current) {
@@ -42,19 +92,29 @@ const VideoPostPlayer = ({
         progressAnim.setValue(0);
       }
     } else {
-      setPaused(false);
+      setPaused(true);
+      resetControlsTimer();
     }
+
+    return () => {
+      if (controlsTimeout.current) {
+        clearTimeout(controlsTimeout.current);
+      }
+    };
   }, [isVisible]);
 
-  // Handle orientation changes in fullscreen
+  // Effect to handle control visibility when pausing
   useEffect(() => {
-    if (isFullscreen) {
-      // Set resizeMode to 'contain' in fullscreen
-      setResizeMode('contain');
+    if (paused) {
+      showControls();
     } else {
-      // Reset to 'cover' when exiting fullscreen
-      setResizeMode('cover');
+      resetControlsTimer();
     }
+  }, [paused]);
+
+  // Effect for fullscreen mode
+  useEffect(() => {
+    setResizeMode(isFullscreen ? 'contain' : 'cover');
   }, [isFullscreen]);
 
   const formatTime = seconds => {
@@ -69,17 +129,14 @@ const VideoPostPlayer = ({
   };
 
   const handleProgress = progress => {
-    const {currentTime: time} = progress;
-    setCurrentTime(time);
-
     if (!scrubbing) {
+      setCurrentTime(progress.currentTime);
       Animated.timing(progressAnim, {
-        toValue: (time / duration) * 100,
+        toValue: (progress.currentTime / duration) * 100,
         duration: 250,
         useNativeDriver: false,
       }).start();
     }
-
     onProgress?.(progress);
   };
 
@@ -92,15 +149,13 @@ const VideoPostPlayer = ({
     videoRef.current?.seek(0);
     setCurrentTime(0);
     progressAnim.setValue(0);
+    showControls();
     onEnd?.();
-  };
-
-  const handlePress = () => {
-    setPaused(!paused);
   };
 
   const toggleMute = () => {
     setMuted(!muted);
+    resetControlsTimer();
   };
 
   const toggleFullscreen = () => {
@@ -111,12 +166,13 @@ const VideoPostPlayer = ({
         videoRef.current.dismissFullscreenPlayer();
       }
       setIsFullscreen(!isFullscreen);
+      resetControlsTimer();
     }
   };
 
   return (
     <View style={[styles.container, style]}>
-      <Pressable onPress={handlePress}>
+      <Pressable onPress={handleVideoPress}>
         <Video
           ref={videoRef}
           source={{uri: convertToProxyURL(videoUrl)}}
@@ -153,66 +209,87 @@ const VideoPostPlayer = ({
             setIsFullscreen(true);
             setResizeMode('contain');
           }}
-          fullscreenAutorotate={true} // Enable auto-rotation in fullscreen
-          fullscreenOrientation="all" // Allow all orientations in fullscreen
+          fullscreenAutorotate={true}
+          fullscreenOrientation="all"
         />
+
+        {/* Play/Pause Button */}
+        <Animated.View style={[styles.centerButton, {opacity: fadeAnim}]}>
+          <TouchableOpacity
+            onPress={handleVideoPress}
+            style={styles.playPauseButton}>
+            <Icon
+              type="ionicon"
+              name={paused ? 'play' : 'pause'}
+              size={40}
+              color={COLORS.whiteFFFFFF}
+            />
+          </TouchableOpacity>
+        </Animated.View>
 
         {/* Control overlay */}
-        <View style={styles.controlsOverlay}>
-          <TouchableOpacity onPress={toggleMute} style={styles.controlButton}>
-            <Icon
-              type="ionicon"
-              name={muted ? 'volume-mute' : 'volume-medium'}
-              size={24}
-              color={COLORS.whiteFFFFFF}
-            />
-          </TouchableOpacity>
+        {showControls && (
+          <Animated.View style={[styles.controlsOverlay, {opacity: fadeAnim}]}>
+            <TouchableOpacity onPress={toggleMute} style={styles.controlButton}>
+              <Icon
+                type="ionicon"
+                name={muted ? 'volume-mute' : 'volume-medium'}
+                size={24}
+                color={COLORS.whiteFFFFFF}
+              />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={toggleFullscreen}
-            style={styles.controlButton}>
-            <Icon
-              type="ionicon"
-              name={isFullscreen ? 'contract' : 'expand'}
-              size={24}
-              color={COLORS.whiteFFFFFF}
-            />
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={toggleFullscreen}
+              style={styles.controlButton}>
+              <Icon
+                type="ionicon"
+                name={isFullscreen ? 'contract' : 'expand'}
+                size={24}
+                color={COLORS.whiteFFFFFF}
+              />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Timer display */}
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>{getRemainingTime()}</Text>
-        </View>
-      </Pressable>
+        {showControls && (
+          <Animated.View style={[styles.timerContainer, {opacity: fadeAnim}]}>
+            <Text style={styles.timerText}>{getRemainingTime()}</Text>
+          </Animated.View>
+        )}
 
-      {/* Progress bar container */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBackground} />
-        <Animated.View
-          style={[
-            styles.progressBar,
-            {
-              width: progressAnim.interpolate({
-                inputRange: [0, 100],
-                outputRange: ['0%', '100%'],
-              }),
-            },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.progressIndicator,
-            {
-              left: progressAnim.interpolate({
-                inputRange: [0, 100],
-                outputRange: ['0%', '100%'],
-              }),
-              transform: [{translateX: -6}],
-            },
-          ]}
-        />
-      </View>
+        {/* Progress bar */}
+        {showControls && (
+          <Animated.View
+            style={[styles.progressContainer, {opacity: fadeAnim}]}>
+            <View style={styles.progressBackground} />
+            <Animated.View
+              style={[
+                styles.progressBar,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+            <Animated.View
+              style={[
+                styles.progressIndicator,
+                {
+                  left: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                  transform: [{translateX: -6}],
+                },
+              ]}
+            />
+          </Animated.View>
+        )}
+      </Pressable>
     </View>
   );
 };
@@ -226,6 +303,20 @@ const styles = StyleSheet.create({
   },
   video: {
     backgroundColor: COLORS.whiteFFFFFF,
+  },
+  centerButton: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{translateX: -25}, {translateY: -25}],
+  },
+  playPauseButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   controlsOverlay: {
     position: 'absolute',

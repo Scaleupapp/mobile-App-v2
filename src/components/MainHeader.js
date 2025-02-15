@@ -24,7 +24,9 @@ import {APP_FONTS} from '../assets/fonts';
 const MainHeader = () => {
   const navigation = useNavigation();
   const userdata = useSelector(state => state?.userData);
-  const [count, setCount] = useState(0);
+
+  console.log(userdata?.unreadMessageCount, 'unreadMessageCount');
+  const [count, setCount] = useState(userdata?.unreadMessageCount);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club', {
@@ -34,10 +36,15 @@ const MainHeader = () => {
       },
     });
     socketInstance.on('totalUnreadUpdate', data => {
-      console.log(data, 'data.....');
+      console.log('🚀 ~ useEffect ~ data:', data);
+
       setCount(data?.allUnreadCount);
     });
   }, []);
+
+  useEffect(() => {
+    setCount(userdata?.unreadMessageCount);
+  }, [userdata?.unreadMessageCount]);
   return (
     <View style={styles.container}>
       {/* Back Arrow */}
@@ -57,7 +64,8 @@ const MainHeader = () => {
 
         {/* Title */}
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View>
+          <TouchableOpacity
+            onPress={() => navigation.navigate(Routes.Conversation)}>
             {count > 0 && (
               <View
                 style={{
@@ -92,7 +100,7 @@ const MainHeader = () => {
               size={nh(24)}
               style={{marginRight: nw(10)}}
             />
-          </View>
+          </TouchableOpacity>
           <Ionicons
             name="list"
             color={COLORS.whiteFFFFFF}
