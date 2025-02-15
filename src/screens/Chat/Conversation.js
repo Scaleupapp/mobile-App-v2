@@ -7,7 +7,10 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
+  TouchableOpacity,
+  Modal
 } from 'react-native';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
@@ -23,21 +26,31 @@ import {formatDateforchat} from '../../helper/commonFunctions';
 import {useFocusEffect} from '@react-navigation/native';
 import CallInterface from './CallInterface';
 import { io } from "socket.io-client";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const socketInstance = io("https://api.scaleupapp.club"); // Replace with your actual socket URL
+
+const socketInstance = io("http://192.168.136.240:3000"); // Replace with your actual socket URL
 
 
 const Conversation = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
+  console.log(userData?.id)
   const [loader, setLoader] = useState(true);
 
   const [conversation, setConversation] = useState([]);
   const chatmodelRef = useRef(null);
+
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [showCallInterface, setShowCallInterface] = useState(false);
+
+
   useFocusEffect(
     useCallback(() => {
       fetchConversations(); // Function to fetch conversations
     }, []), // Add dependencies if needed
   );
+
+  
   const fetchConversations = async () => {
     try {
       const {data} = await getconversation();
@@ -54,39 +67,50 @@ const Conversation = ({navigation, route}) => {
   const truncateString = (str, maxLength = 130) => {
     return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
   };
+
+  // Modify your Card component to include call buttons:
   const Card = ({item}) => {
+    const member = item?.members[0];
     return (
-      <Pressable
-        style={styles.card}
-        onPress={() =>
-          navigation.navigate(Routes.Chat, {
-            chatId: item?.conversationId,
-            data: item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
-          })
-        }>
+      <Pressable style={styles.card}>
         <View style={styles.cardContent}>
           <Image
-            source={{uri: item?.members[0]?.profilePicture}}
+            source={{uri: member?.profilePicture}}
             style={styles.image}
           />
-          <View style={{flex: 9}}>
+          <View style={{flex: 7}}>
             <Text variant="medium12" color={COLORS.blue043142}>
-              {item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname}
+              {member?.firstname + ' ' + member?.lastname}
             </Text>
             <Text variant="medium12" color={COLORS.grey999999}>
               {truncateString(item?.lastMessage?.message, 30)}
             </Text>
           </View>
-          <View style={{flex: 3, alignItems: 'center'}}>
-            <Text variant="medium12" color={COLORS.blue043142}>
-              {formatDateforchat(item?.lastMessage?.createdAt)}
-            </Text>
+          <View style={styles.callButtons}>
+            <TouchableOpacity 
+              style={styles.callButton}
+              onPress={() => {
+                setSelectedUser({
+                  id: member?._id, // Ensure this matches your user object structure
+                  name: member?.firstname + ' ' + member?.lastname
+                });
+                setShowCallInterface(true);
+              }}>
+              <Icon name="call-outline" size={20} color={COLORS.blue043142} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.callButton}
+              onPress={() => {
+                setSelectedUser({
+                  id: member?._id, // Ensure this matches your user object structure
+                  name: member?.firstname + ' ' + member?.lastname
+                });
+                setShowCallInterface(true);
+              }}>
+              <Icon name="videocam-outline" size={20} color={COLORS.blue043142} />
+            </TouchableOpacity>
           </View>
         </View>
-        <CallInterface 
-          userId={item?.members[0]?._id} // Make sure to pass the correct user ID
-          socket={socketInstance}
-        />
       </Pressable>
     );
   };
@@ -111,6 +135,29 @@ const Conversation = ({navigation, route}) => {
         // onBackPress={handleBackPress}
         // onRightIconPress={handleRightIconPress}
       />
+      {showCallInterface && (
+        <Modal
+          visible={showCallInterface}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowCallInterface(false)}>
+          <View style={styles.modalContainer}>
+          <CallInterface 
+        userId={selectedUser?.id}
+        receiverName={selectedUser?.name}
+        socket={socketInstance}
+        onClose={() => {
+          setShowCallInterface(false);
+          setSelectedUser(null);
+        }}
+        onError={(error) => {
+          Alert.alert('Call Error', error);
+          setShowCallInterface(false);
+        }}
+      />
+          </View>
+        </Modal>
+      )}
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <ChatModal ref={chatmodelRef} />
@@ -181,6 +228,21 @@ const styles = StyleSheet.create({
     borderTopRightRadius: nh(25),
     paddingHorizontal: nw(16),
     paddingTop: nh(30),
+  },
+  callButtons: {
+    flex: 3,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  callButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: COLORS.greyF5F5F5,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'black',
   },
   image: {
     height: nh(50),

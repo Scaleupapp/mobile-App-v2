@@ -120,7 +120,7 @@ const Home = ({navigation, route}) => {
       />
       <MainHeader />
 
-      <View style={styles.layer1}>
+      {/* <View style={styles.layer1}>
         <View style={styles.layer2}>
           <FlatList
             data={home}
@@ -189,7 +189,7 @@ const Home = ({navigation, route}) => {
             // windowSize={5}
           />
         </View>
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 };

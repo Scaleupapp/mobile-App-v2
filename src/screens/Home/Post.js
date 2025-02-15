@@ -351,7 +351,7 @@ const PlaylistInfoModal = () => (
       const postDetails = await Promise.all(
       posts.map(postId => fetchPostDetails(postId))
     );
-      console.log('postdetailsssssss',postDetails)
+      // console.log('postdetailsssssss',postDetails)
       
       setPlaylistPosts(postDetails.filter(post => post !== null));
     } catch (error) {

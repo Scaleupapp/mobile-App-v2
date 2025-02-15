@@ -35,7 +35,7 @@ export const AddStory = ({onStoryAdded}) => {
     try {
       // Fetch profile information using the API
       let res = await getProfile('');
-      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -128,6 +128,7 @@ export const AddStory = ({onStoryAdded}) => {
         // Get fresh user data from AsyncStorage
         const userData = await AsyncStorage.getItem('userData');
         const parsedUser = JSON.parse(userData);
+        console.log(parsedUser)
         if (asset.type && asset.type.toLowerCase().includes('video')) {
           uri = await compressVideo(asset?.uri);
         } else {
