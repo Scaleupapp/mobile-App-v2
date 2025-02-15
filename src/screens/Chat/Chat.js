@@ -79,16 +79,7 @@ const Chat = ({navigation, route}) => {
 
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-<<<<<<< HEAD
     const socketInstance = io('http://192.168.136.240:3000'); // Replace with your server URL
-=======
-    const socketInstance = io('https://api.scaleupapp.club', {
-      // Your server URL
-      auth: {
-        token: userData?.token, // If you have authentication
-      },
-    }); // Replace with your server URL
->>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {

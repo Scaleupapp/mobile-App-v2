@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from 'react';
-=======
-import React, {useState, useEffect} from 'react';
->>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
 import {
   View,
   FlatList,
@@ -26,16 +22,10 @@ import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import Header from '../../components/Header';
 import CustomTextInput from '../../components/TextInput';
 import LeaderboardModal from './LeaderboardModal';
-<<<<<<< HEAD
 import PaymentModal from './PaymentModal';
 import { 
   listAllQuizEventsApi, 
   registerForQuizApi, 
-=======
-import {
-  listAllQuizEventsApi,
-  registerForQuizApi,
->>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
   startQuizAttemptApi,
   fetchUserQuizAttemptsApi,
   fetchUserRegisteredQuizzesApi, // New API call to get user's registered quizzes
@@ -74,7 +64,6 @@ const QuizList = ({navigation}) => {
   const [countdowns, setCountdowns] = useState({});
   const [userQuizAttempts, setUserQuizAttempts] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-<<<<<<< HEAD
   const [currentUserId, setCurrentUserId] = useState(null);
   const [paymentModal, setPaymentModal] = useState({
     visible: false,
@@ -88,28 +77,6 @@ const QuizList = ({navigation}) => {
         const parsedData = JSON.parse(userData);
         const decodedToken = jwtDecode(parsedData.token);
         setCurrentUserId(decodedToken.userId);
-=======
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Fetch registered quizzes from the server
-        const registeredResponse = await fetchUserRegisteredQuizzesApi();
-        setRegisteredQuizIds(registeredResponse.data.registeredQuizIds || []);
-
-        // Fetch user quiz attempts
-        const attemptsResponse = await fetchUserQuizAttemptsApi();
-        setUserQuizAttempts(attemptsResponse.data.attempts);
-
-        // Fetch quizzes
-        await fetchQuizzes();
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-      } finally {
-        setIsInitialLoading(false);
-        setIsLoading(false);
-        setIsRefreshing(false);
->>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
       }
 
       // Fetch registered quizzes from the server
@@ -419,21 +386,6 @@ const QuizList = ({navigation}) => {
                 </TouchableOpacity>
               )}
             </>
-<<<<<<< HEAD
-          ) : (
-            !isQuizEnded && !hasAttempted && !item.isPaid && (
-              <TouchableOpacity
-                style={styles.registerButton}
-                onPress={() => handleRegister(item._id)}>
-                <Text variant="regular14" color={COLORS.whiteFFFFFF}>
-                  Register
-                </Text>
-              </TouchableOpacity>
-            )
-          )
-          }
-
-=======
           ) : isQuizEnded || hasAttempted ? null : (
             <TouchableOpacity
               style={styles.registerButton}
@@ -443,7 +395,6 @@ const QuizList = ({navigation}) => {
               </Text>
             </TouchableOpacity>
           )}
->>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
         </View>
       </TouchableOpacity>
     );

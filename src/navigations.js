@@ -517,11 +517,11 @@ export const RootNavigator = () => {
         component={UserPost}
         options={{headerShown: false}}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="QuizList"
         component={QuizList}
         options={{title: 'Available Quizzes'}}
-      />
+      /> */}
       <Stack.Screen
         name="QuizDetails"
         component={QuizDetails}

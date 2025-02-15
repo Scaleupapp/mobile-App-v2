@@ -342,7 +342,6 @@ export const getLatestQuizAttemptIdApi = (quizId: string) => {
   return axiosInstance.get(`rapidfire-quiz/${quizId}/latest-attempt`);
 };
 
-<<<<<<< HEAD
 export const createPaymentOrderApi = async (quizId: string) => {
   try {
     const response = await axiosInstance.post('rapidfire-quiz/create-order', { quizId });
@@ -365,16 +364,3 @@ export const verifyPaymentApi = async (paymentData: {
     throw error;
   }
 };
-=======
-export const getReferralDetailsApi = () => {
-  return axiosInstance.get(API.GET_REFERRAL_CODE);
-};
-
-export const deleteContent = (contentId: any) => {
-  return axiosInstance.delete(`content/delete/${contentId}`);
-};
-
-export const deleteStory = (payload: any) => {
-  return axiosInstance.delete(`stories`, payload);
-};
->>>>>>> 48c9c54e6b661873b37f62e8c642c8b6b4503b72
