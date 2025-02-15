@@ -1,7 +1,7 @@
 {
   "name": "ScaleUp",
-  "version": "1.4",
-  "IOS-version": "1.4",
+  "version": "1.5",
+  "IOS-version": "1.5",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
