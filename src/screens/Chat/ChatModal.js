@@ -109,10 +109,28 @@ const ChatModal = forwardRef(({group}, ref) => {
                     else createConvo(item.userId, item);
                   }}
                   style={styles.card}>
-                  <Image
-                    source={{uri: item?.profilePicture}}
-                    style={styles.image}
-                  />
+                  {item?.profilePicture ? (
+                    <Image
+                      source={{uri: item?.profilePicture}}
+                      style={styles.image}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        ...styles.image,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.greyD6D6D6,
+                      }}>
+                      <Text variant="semibold16" color={COLORS.black333333}>
+                        {`${item?.firstname
+                          ?.charAt(0)
+                          .toUpperCase()}${item?.lastname
+                          ?.charAt(0)
+                          .toUpperCase()}`}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{width: nw(195)}}>
                     <Text variant="medium14" color={COLORS.blue043142}>
                       {item?.username}

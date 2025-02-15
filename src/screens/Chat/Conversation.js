@@ -90,10 +90,47 @@ const Conversation = ({navigation, route}) => {
         setConversation(updatedData);
       }
     });
+    socketInstance.on('groupInfoUpdates', data => {
+      console.log('🚀 groupInfoUpdates:', JSON.stringify(data));
+
+      const index = studyGroups.filter(
+        conv => conv.conversationId === data?.conversationId,
+      );
+
+      console.log('🚀 ~ groupInfoUpdates ~ index:', index);
+      if (index.length > 0) {
+        // Update the existing object
+        let updatedData = {
+          lastMessage: data?.lastMessage,
+          unreadMessageCount: data?.unreadMessageCount,
+          updatedAt: data?.timestamp || data?.updatedAt,
+        };
+        console.log('🚀 ~ groupInfoUpdates ~ index:1', index);
+        const updatedMessages = studyGroups.map(
+          msg =>
+            msg?._id === data?._id
+              ? {...msg, ...updatedData} // Update the matching object
+              : msg, // Keep others unchanged
+        );
+
+        const index = updatedMessages.findIndex(conv => conv._id === data?._id);
+
+        if (index !== -1) {
+          // Remove the matched conversation and insert it at index 0
+          const [matchedConversation] = updatedMessages.splice(index, 1);
+          updatedMessages.unshift(matchedConversation);
+        }
+
+        setStudyGroups(updatedMessages);
+      } else {
+        console.log('jeyeeyeyeyeyyeey222');
+        // Insert the new object at index 1
+        let updatedData = [data, ...conversation];
+        setStudyGroups(updatedData);
+      }
+    });
     return () => {
       if (socketInstance) {
-        console.log('leaveRoom');
-        socketInstance.emit('leaveRoom', route?.params?.chatId); // Ensure to leave the room on cleanup
         socketInstance.disconnect();
       }
     };
@@ -112,7 +149,7 @@ const Conversation = ({navigation, route}) => {
   const fetchStudyGroups = async () => {
     try {
       const {data} = await getStudyGroups();
-      console.log('🚀 ~ fetchStudyGroups ~ data:', JSON.stringify(data));
+      // console.log('🚀 ~ fetchStudyGroups ~ data:', JSON.stringify(data));
       setStudyGroups(data);
     } catch (error) {
       console.error('Error fetching study groups:', error);
@@ -123,16 +160,7 @@ const Conversation = ({navigation, route}) => {
     return str?.length > maxLength ? str?.slice(0, maxLength) + '...' : str;
   };
   const GroupCard = ({item, index}) => {
-    let lastMessage = item?.lastMessage || {};
-    let senderName = '';
-    let length = Object.keys(lastMessage)?.length || 0;
-    if (length > 0) {
-      const sender = item?.members?.filter(f => f._id == lastMessage?.sender);
-      if (sender?.length > 0) {
-        senderName = sender[0]?.firstname;
-      }
-    }
-
+    let lastMessage = item?.lastMessage;
     // console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
     return (
       <Pressable
@@ -168,9 +196,11 @@ const Conversation = ({navigation, route}) => {
           <Text variant="medium12" color={COLORS.blue043142}>
             {item?.name}
           </Text>
-          {length > 0 ? (
+          {lastMessage ? (
             <Text variant="medium12" color={COLORS.grey999999}>
-              {senderName + ': ' + truncateString(lastMessage?.content, 20)}
+              {lastMessage?.sender?.username +
+                ': ' +
+                truncateString(lastMessage?.content, 30)}
             </Text>
           ) : null}
         </View>
@@ -178,20 +208,22 @@ const Conversation = ({navigation, route}) => {
           <Text variant="medium12" color={COLORS.blue043142}>
             {formatDateforchat(lastMessage?.timestamp || item?.createdDate)}
           </Text>
-          {/* <View
-            style={{
-              height: nh(20),
-              minWidth: nh(20),
-              borderRadius: nh(10),
-              backgroundColor: '#34A853',
-              alignItems: 'center',
-              justifyContent: 'center',
-              paddingHorizontal: nw(5),
-            }}>
-            <Text variant="medium12" color={COLORS.whiteFFFFFF}>
-              5
-            </Text>
-          </View> */}
+          {item?.unreadMessageCount > 0 && (
+            <View
+              style={{
+                height: nh(20),
+                minWidth: nh(20),
+                borderRadius: nh(10),
+                backgroundColor: '#34A853',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: nw(5),
+              }}>
+              <Text variant="medium12" color={COLORS.whiteFFFFFF}>
+                {item?.unreadMessageCount}
+              </Text>
+            </View>
+          )}
         </View>
       </Pressable>
     );
@@ -208,10 +240,29 @@ const Conversation = ({navigation, route}) => {
               item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname,
           })
         }>
-        <Image
-          source={{uri: item?.members[0]?.profilePicture}}
-          style={styles.image}
-        />
+        {item?.members[0]?.profilePicture ? (
+          <Image
+            source={{uri: item?.members[0]?.profilePicture}}
+            style={styles.image}
+          />
+        ) : (
+          <View
+            style={{
+              ...styles.image,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: COLORS.greyD6D6D6,
+            }}>
+            <Text variant="semibold16" color={COLORS.black333333}>
+              {`${item?.members[0]?.firstname
+                ?.charAt(0)
+                .toUpperCase()}${item?.members[0]?.lastname
+                ?.charAt(0)
+                .toUpperCase()}`}
+            </Text>
+          </View>
+        )}
+
         <View style={{flex: 9}}>
           <Text variant="medium12" color={COLORS.blue043142}>
             {item?.members[0]?.firstname + ' ' + item?.members[0]?.lastname}

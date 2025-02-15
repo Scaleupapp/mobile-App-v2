@@ -40,7 +40,17 @@ const MessageModal = ({
       setIsEditable(false);
     }
   }, [item]);
-
+  const message = item?.message || item?.content;
+  const mediaType =
+    item?.attachments?.length > 0
+      ? item?.attachments[0]?.mediaType
+      : item?.media
+      ? item?.mediaType
+      : null;
+  const mediaUrl =
+    item?.attachments?.length > 0
+      ? item?.attachments[0]?.mediaUrl
+      : item?.media ?? '';
   return (
     <Modal
       isVisible={isVisible}
@@ -80,19 +90,18 @@ const MessageModal = ({
             },
           ]}>
           <View>
-            {(item?.message || item?.content) && !item?.mediaType && (
+            {message && !mediaType && (
               <Text
                 style={styles.messageText}
                 variant="medium14"
                 color={COLORS.black333333}>
-                {item?.message || item?.content}
+                {message}
               </Text>
             )}
-            {item?.media &&
-              (item?.mediaType == 'Image' ||
-                item?.mediaType?.includes('image')) && (
+            {mediaType &&
+              (mediaType == 'Image' || mediaType?.includes('image')) && (
                 <Image
-                  source={{uri: item.media}}
+                  source={{uri: mediaUrl}}
                   style={{
                     width: 200,
                     height: 200,
@@ -102,9 +111,9 @@ const MessageModal = ({
                 />
               )}
 
-            {item?.media && item?.mediaType?.includes('video') && (
+            {mediaType && mediaType?.includes('video') && (
               <Video
-                source={{uri: item.media}}
+                source={{uri: mediaUrl}}
                 style={{
                   width: 200,
                   height: 200,
@@ -114,12 +123,12 @@ const MessageModal = ({
                 controls
               />
             )}
-            {item?.message && item?.mediaType && (
+            {message && mediaType && (
               <Text
                 style={[styles.messageText, {marginTop: 10}]}
                 variant="medium14"
                 color={COLORS.black333333}>
-                {item.message}
+                {message}
               </Text>
             )}
             {/* {item.contentType === 'gif' && (
@@ -139,7 +148,7 @@ const MessageModal = ({
                 alignSelf: 'flex-end',
                 color: COLORS.grey777777,
               }}>
-              {formatAMPM(item?.updatedAt)}
+              {formatAMPM(item?.updatedAt || item?.timestamp)}
             </Text>
             {item?.edited && (
               <Text

@@ -29,7 +29,7 @@ const GroupProfile = ({
 }) => {
   const userData = useSelector(state => state?.userData);
   const groupData = useSelector(state => state?.groupData);
-  console.log({groupData});
+  // console.log('groupData ', JSON.stringify(groupData));
 
   const [visible, setVisible] = useState(false);
   const isAdmin = groupData?.admins?.some(admin => admin === userData?.id);
@@ -135,13 +135,15 @@ const GroupProfile = ({
                   {groupData?.description}
                 </Text>
               ) : null}
-              <View style={styles.topicsContainer}>
-                {groupData?.topics.map((topic, index) => (
-                  <Text key={index} style={styles.topicBadge}>
-                    {topic}
-                  </Text>
-                ))}
-              </View>
+              {groupData?.topics && groupData?.topics?.length > 0 ? (
+                <View style={styles.topicsContainer}>
+                  {groupData?.topics.map((topic, index) => (
+                    <Text key={index} style={styles.topicBadge}>
+                      {topic}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
               <Text style={styles.privacy}>Privacy: {groupData?.privacy}</Text>
               {isAdmin ? (
                 <TouchableOpacity
@@ -195,14 +197,14 @@ const MemberCard = ({member}) => {
       />
       <View style={styles.memberInfo}>
         <Text variant="medium14" style={styles.memberName}>
-          {member?.firstname} {member?.lastname} {member?.isAdmin && '(Admin)'}
+          {member?.username} {member?.isAdmin && '(Admin)'}
         </Text>
         {/* <Text variant="medium12" style={styles.memberRole}>
           {member?.role}
         </Text> */}
-        <Text variant="medium12" style={styles.memberRole}>
+        {/* <Text variant="medium12" style={styles.memberRole}>
           {member?.bio?.bioAbout || member?.role}
-        </Text>
+        </Text> */}
       </View>
     </View>
   );

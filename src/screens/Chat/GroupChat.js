@@ -10,33 +10,26 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Pressable,
+  Platform,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import Header from '../../components/Header';
 import io from 'socket.io-client';
-import axiosInstance from '../../services/axiosinstance';
 import {FlatList} from 'react-native';
 import {TextInput} from 'react-native';
-import Button from '../../components/Button';
 import {
   deleteGroupMsg,
   editGroupMsg,
   getStudyGroupMsg,
-  markReadAPI,
+  markReadGrpMsg,
   reactGroupMsg,
-  sendGroupMsg,
-  sendGroupReply,
 } from '../../services/apiService';
 import {useDispatch, useSelector} from 'react-redux';
 import Text from '../../components/Text';
-import {images} from '../../assets/images';
 import {Image} from 'react-native';
-import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
 import {
   checkDate,
-  checkIfTenMinutesPassed,
   compressImage,
   compressVideo,
   formatAMPM,
@@ -58,7 +51,6 @@ const GroupChat = ({navigation, route}) => {
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
   const [messages, setMessages] = useState([]);
-  console.log('🚀 ~ GroupChat ~ messages:', messages);
   const [input, setInput] = useState('');
   const flatListRef = useRef(null);
 
@@ -124,8 +116,6 @@ const GroupChat = ({navigation, route}) => {
     });
 
     socketInstance.on('messageDeleted', data => {
-      // console.log('🚀 ~ useEffect ~ messageDeleted:', data);
-
       const updatedData = {
         _id: data?.messageId,
         deleted: true,
@@ -142,8 +132,6 @@ const GroupChat = ({navigation, route}) => {
     });
 
     socketInstance.on('reactionAdded', data => {
-      // console.log('🚀 ~ useEffect ~ reactionAdded:', data);
-
       const updatedMessages = messages.map(
         msg =>
           msg._id === data?.messageId
@@ -196,45 +184,50 @@ const GroupChat = ({navigation, route}) => {
   }, []);
 
   const sendMessage = async () => {
-    setLoadingsmal(true);
-    // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
-      const formData = new FormData();
+      setLoadingsmal(true);
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${userData?.token}`);
 
-      formData.append('groupId', groupId);
-      // Format topics and hashtags as arrays
-
-      formData.append('message', input);
-
-      // Format topics and hashtags as arrays
-
-      // formData.append('message', 'heheh');
-
+      const formdata = new FormData();
+      formdata.append('groupId', groupId);
+      formdata.append('message', input);
       if (file?.fileName) {
-        formData.append('media', {
+        formdata.append('attachments', {
           uri: file.uri,
           name: file.fileName,
           type: file.type,
         });
       }
 
-      const {data} = await sendGroupMsg(formData);
-      // markasRead(data?._id);
-      console.log('🚀 ~ sendMessage ~ data:', data);
-      // setMessages(prevMessages => [...prevMessages, data]);
-      setUserHasScrolled(false);
-      setIsread(true);
-      if (socket) {
-        socket.emit('sendMessage', {
-          groupId,
-          message: data?.newMessage,
-          sender: data?.newMessage?.sender,
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow',
+      };
+
+      fetch('https://api.scaleupapp.club/api/chat/group/send', requestOptions)
+        .then(response => response.text())
+        .then(data => {
+          console.log('🚀 ~ sendMessage ~ data:', data);
+          if (socket) {
+            socket.emit('sendMessage', {
+              groupId,
+              message: data?.newMessage,
+              sender: data?.newMessage?.sender,
+            });
+          }
+        })
+        .catch(error => console.error(error))
+        .finally(() => {
+          setUserHasScrolled(false);
+          setIsread(true);
+          setLoadingsmal(false);
+          setModalVisible(false);
+          setInput('');
+          setFile({});
         });
-      }
-      setLoadingsmal(false);
-      setModalVisible(false);
-      setInput('');
-      setFile({});
     }
   };
 
@@ -248,7 +241,7 @@ const GroupChat = ({navigation, route}) => {
         const {data} = await editGroupMsg(groupId, selected?._id, payload);
         const updatedData = {
           _id: selected?._id,
-          message: input,
+          content: input,
           edited: true,
         };
         // console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
@@ -309,7 +302,6 @@ const GroupChat = ({navigation, route}) => {
   const deleteMessage = async () => {
     try {
       const {data} = await deleteGroupMsg(groupId, selected?._id);
-      setVisible(false);
       const updatedData = {
         _id: selected?._id,
         deleted: true,
@@ -323,8 +315,6 @@ const GroupChat = ({navigation, route}) => {
       );
       setMessages(updatedMessages);
       setVisible(false);
-      setSelected(null);
-      showToast({type: 'success', title: data?.message});
     } catch (error) {
       console.log('🚀 ~ deleteMessage ~ error:', error?.response?.data);
     }
@@ -347,47 +337,53 @@ const GroupChat = ({navigation, route}) => {
     }
   };
   const replyMessage = async () => {
-    setLoadingsmal(true);
-    // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
-      const formData = new FormData();
+      setLoadingsmal(true);
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${userData?.token}`);
 
-      formData.append('groupId', groupId);
-      // Format topics and hashtags as arrays
-
-      formData.append('message', input);
-      formData.append('parentMessageId', selected?._id);
-      // Format topics and hashtags as arrays
-
-      // formData.append('message', 'heheh');
-
+      const formdata = new FormData();
+      formdata.append('groupId', groupId);
+      formdata.append('message', input);
       if (file?.fileName) {
-        formData.append('media', {
+        formdata.append('attachments', {
           uri: file.uri,
           name: file.fileName,
           type: file.type,
         });
       }
+      formdata.append('parentMessageId', selected?._id);
 
-      const {data} = await sendGroupReply(formData);
-      // markasRead(data?._id);
-      // setMessages(prevMessages => [...prevMessages, data]);
-      console.log('🚀 ~ sendMesendChatReplyssage ~ data:', data);
-      setUserHasScrolled(false);
-      setReply(false);
-      setSelected();
-      setIsread(true);
-      if (socket) {
-        socket.emit('sendMessage', {
-          groupId,
-          message: data?.newMessage,
-          sender: data?.newMessage?.sender,
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow',
+      };
+
+      fetch('https://api.scaleupapp.club/api/chat/group/reply', requestOptions)
+        .then(response => response.text())
+        .then(data => {
+          console.log('🚀 ~ replyMessage ~ data:', data);
+          if (socket) {
+            socket.emit('sendMessage', {
+              groupId,
+              message: data?.newMessage,
+              sender: data?.newMessage?.sender,
+            });
+          }
+        })
+        .catch(error => console.error(error))
+        .finally(() => {
+          setUserHasScrolled(false);
+          setReply(false);
+          setSelected();
+          setIsread(true);
+          setLoadingsmal(false);
+          setModalVisible(false);
+          setInput('');
+          setFile({});
         });
-      }
-      setLoadingsmal(false);
-      setModalVisible(false);
-      setInput('');
-      setFile({});
     }
   };
   const openGallery = async () => {
@@ -479,9 +475,8 @@ const GroupChat = ({navigation, route}) => {
   };
 
   const markasRead = async id => {
-    console.log('🚀 ~ markasRead ~ id:', id);
     try {
-      let res = await markReadAPI({
+      let res = await markReadGrpMsg({
         messageId: id,
       });
       console.log('🚀 ~ markasRead ~ res:', res?.data);
@@ -499,24 +494,20 @@ const GroupChat = ({navigation, route}) => {
 
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
+    console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages);
     setLoading(false);
-    console.log(
-      '🚀 ~ loadMoreMessages ~ newMessages:',
-      page.current,
-      newMessages,
-    );
-    // if (page.current == 1) {
-    //   const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
-    //     if (msg.sender._id !== userData?.id && !msg.readAt) {
-    //       return msg; // Keep updating with the latest unread message
-    //     }
-    //     return lastUnread;
-    //   }, null);
-    //   if (lastUnreadMessage) {
-    //     markasRead(lastUnreadMessage?._id);
-    //   }
-    // }
-    console.log('sndknskdnka');
+    if (page.current == 1) {
+      const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
+        if (msg?.sender?._id !== userData?.id && !msg?.readAt) {
+          return msg; // Keep updating with the latest unread message
+        }
+        return lastUnread;
+      }, null);
+      console.log({lastUnreadMessage});
+      if (lastUnreadMessage) {
+        markasRead(lastUnreadMessage?._id);
+      }
+    }
     if (newMessages.length === 0) {
       setAllMessagesFetched(true);
     } else {
@@ -579,7 +570,8 @@ const GroupChat = ({navigation, route}) => {
               ? styles.sent
               : styles.received,
           ]}>
-          {item?.sender?._id === userData?.id ? null : (
+          {item?.sender?._id === userData?.id ? null : item.sender
+              ?.profilePicture ? (
             <Image
               source={{uri: item.sender?.profilePicture}}
               style={{
@@ -590,6 +582,22 @@ const GroupChat = ({navigation, route}) => {
                 borderColor: COLORS.blue043142,
               }}
             />
+          ) : (
+            <View
+              style={{
+                height: nh(50),
+                width: nh(50),
+                borderWidth: 1,
+                borderRadius: nh(25),
+                borderColor: COLORS.blue043142,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: COLORS.greyD6D6D6,
+              }}>
+              <Text variant="semibold16" color={COLORS.black333333}>
+                {item.sender?.username?.charAt(0)?.toUpperCase()}
+              </Text>
+            </View>
           )}
           <View style={{marginLeft: nw(10)}}>
             <Text
@@ -648,20 +656,21 @@ const GroupChat = ({navigation, route}) => {
                       flexDirection: 'row',
                       alignItems: 'center',
                     }}>
-                    {item?.parentMessageId?.message &&
-                      !item?.parentMessageId?.mediaType && (
+                    {item?.parentMessageId?.content &&
+                      !item?.parentMessageId?.attachments && (
                         <Text
                           variant="medium12"
                           color={COLORS.black333333}
                           numberOfLines={1}
                           ellipsizeMode="tail">
-                          {item?.parentMessageId?.message}
+                          {item?.parentMessageId?.content}
                         </Text>
                       )}
 
-                    {item?.parentMessageId?.media &&
-                      (item?.parentMessageId?.mediaType == 'Image' ||
-                        item?.parentMessageId?.mediaType?.includes(
+                    {item?.parentMessageId?.attachments?.length > 0 &&
+                      (item?.parentMessageId?.attachments[0]?.mediaType ==
+                        'Image' ||
+                        item?.parentMessageId?.attachments[0]?.mediaType?.includes(
                           'image',
                         )) && (
                         <Pressable
@@ -671,7 +680,10 @@ const GroupChat = ({navigation, route}) => {
                         // }}
                         >
                           <Image
-                            source={{uri: item?.parentMessageId?.media}}
+                            source={{
+                              uri: item?.parentMessageId?.attachments[0]
+                                ?.mediaUrl,
+                            }}
                             style={{
                               width: 30,
                               height: 30,
@@ -682,8 +694,10 @@ const GroupChat = ({navigation, route}) => {
                         </Pressable>
                       )}
 
-                    {item?.parentMessageId?.media &&
-                      item?.parentMessageId?.mediaType?.includes('video') && (
+                    {item?.parentMessageId?.attachments?.length > 0 &&
+                      item?.parentMessageId?.attachments[0]?.mediaType?.includes(
+                        'video',
+                      ) && (
                         <Pressable
                         // onPress={() => {
                         //   setItemcliked(item);
@@ -691,7 +705,10 @@ const GroupChat = ({navigation, route}) => {
                         // }}
                         >
                           <Video
-                            source={{uri: item?.parentMessageId?.media}}
+                            source={{
+                              uri: item?.parentMessageId?.attachments[0]
+                                ?.mediaUrl,
+                            }}
                             style={{
                               width: 30,
                               height: 30,
@@ -702,20 +719,20 @@ const GroupChat = ({navigation, route}) => {
                           />
                         </Pressable>
                       )}
-                    {item?.parentMessageId?.message &&
-                      item?.parentMessageId?.mediaType && (
+                    {item?.parentMessageId?.content &&
+                      item?.parentMessageId?.attachments && (
                         <Text
                           style={[styles.messageText, {marginLeft: 10}]}
                           variant="medium14"
                           color={COLORS.black333333}>
-                          {item?.parentMessageId?.message}
+                          {item?.parentMessageId?.content}
                         </Text>
                       )}
                   </View>
                 </View>
               )}
               <View>
-                {(item?.content || item?.message) && !item?.mediaType && (
+                {(item?.content || item?.message) && !item?.attachments && (
                   <Text
                     // style={styles.messageText}
                     variant="medium14"
@@ -723,16 +740,16 @@ const GroupChat = ({navigation, route}) => {
                     {item?.content || item?.message}
                   </Text>
                 )}
-                {item?.media &&
-                  (item?.mediaType == 'Image' ||
-                    item?.mediaType?.includes('image')) && (
+                {item?.attachments?.length > 0 &&
+                  (item?.attachments[0]?.mediaType == 'Image' ||
+                    item?.attachments[0]?.mediaType?.includes('image')) && (
                     <Pressable
                       onPress={() => {
                         setItemcliked(item);
                         imageModalRef.current?.present();
                       }}>
                       <Image
-                        source={{uri: item.media}}
+                        source={{uri: item?.attachments[0]?.mediaUrl}}
                         style={{
                           width: 200,
                           height: 200,
@@ -743,30 +760,31 @@ const GroupChat = ({navigation, route}) => {
                     </Pressable>
                   )}
 
-                {item?.media && item?.mediaType?.includes('video') && (
-                  <Pressable
-                    onPress={() => {
-                      setItemcliked(item);
-                      imageModalRef.current?.present();
-                    }}>
-                    <Video
-                      source={{uri: item.media}}
-                      style={{
-                        width: 200,
-                        height: 200,
-                        borderRadius: 10,
-                      }}
-                      resizeMode="cover"
-                      controls
-                    />
-                  </Pressable>
-                )}
-                {item?.message && item?.mediaType && (
+                {item?.attachments?.length > 0 &&
+                  item?.attachments[0]?.mediaType?.includes('video') && (
+                    <Pressable
+                      onPress={() => {
+                        setItemcliked(item);
+                        imageModalRef.current?.present();
+                      }}>
+                      <Video
+                        source={{uri: item?.attachments[0]?.mediaUrl}}
+                        style={{
+                          width: 200,
+                          height: 200,
+                          borderRadius: 10,
+                        }}
+                        resizeMode="cover"
+                        controls
+                      />
+                    </Pressable>
+                  )}
+                {(item?.content || item?.message) && item?.attachments && (
                   <Text
                     style={[styles.messageText, {marginTop: 10}]}
                     variant="medium14"
                     color={COLORS.black333333}>
-                    {item.message}
+                    {item?.content || item?.message}
                   </Text>
                 )}
                 {/* {item.contentType === 'gif' && (
@@ -781,14 +799,14 @@ const GroupChat = ({navigation, route}) => {
                 />
               )} */}
 
-                {/* <Text
+                <Text
                   style={{
                     fontSize: 10,
                     alignSelf: 'flex-end',
                     color: COLORS.grey777777,
                   }}>
-                  {formatAMPM(item?.updatedAt)}
-                </Text> */}
+                  {formatAMPM(item?.updatedAt || item?.timestamp)}
+                </Text>
 
                 {item?.edited && (
                   <Text
@@ -826,17 +844,35 @@ const GroupChat = ({navigation, route}) => {
             </TouchableOpacity>
           </View>
           {item?.sender?._id === userData?.id ? (
-            <Image
-              source={{uri: userData?.profilePicture}}
-              style={{
-                height: nh(50),
-                width: nh(50),
-                borderWidth: 1,
-                borderRadius: nh(25),
-                borderColor: COLORS.blue043142,
-                marginLeft: 10,
-              }}
-            />
+            userData?.profilePicture ? (
+              <Image
+                source={{uri: userData?.profilePicture}}
+                style={{
+                  height: nh(50),
+                  width: nh(50),
+                  borderWidth: 1,
+                  borderRadius: nh(25),
+                  borderColor: COLORS.blue043142,
+                  marginLeft: 10,
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  height: nh(50),
+                  width: nh(50),
+                  borderWidth: 1,
+                  borderRadius: nh(25),
+                  borderColor: COLORS.blue043142,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                }}>
+                <Text variant="semibold16" color={COLORS.black333333}>
+                  {userData?.username?.charAt(0)?.toUpperCase()}
+                </Text>
+              </View>
+            )
           ) : null}
         </View>
       );
@@ -982,7 +1018,7 @@ style={styles.icon}
                   data={formatGroupedMessages()}
                   renderItem={renderMessage}
                   initialNumToRender={100}
-                  keyExtractor={item => item.id || item?.date}
+                  keyExtractor={(_, index) => index.toString()}
                   //   contentContainerStyle={styles.messagesList}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
@@ -1031,11 +1067,13 @@ style={styles.icon}
                         : selected?.sender?.username}
                     </Text>
                     <View style={{flexDirection: 'row'}}>
-                      {selected?.media && (
+                      {selected?.attachments?.length > 0 && (
                         <Icon
                           type="material-community"
                           name={
-                            selected?.mediaType?.includes('image')
+                            selected?.attachments[0]?.mediaType?.includes(
+                              'image',
+                            )
                               ? 'image'
                               : 'video-outline'
                           }
@@ -1047,20 +1085,22 @@ style={styles.icon}
                           // }}
                         />
                       )}
-                      {!selected?.message && (
+                      {selected?.attachments?.length > 0 && (
                         <Text variant="medium12" style={{marginLeft: 10}}>
-                          {selected?.mediaType?.includes('image')
+                          {selected?.attachments[0]?.mediaType?.includes(
+                            'image',
+                          )
                             ? 'Image'
                             : 'Video'}
                         </Text>
                       )}
-                      {selected?.message && (
+                      {(selected?.message || selected?.content) && (
                         <Text
                           variant="medium12"
                           style={{marginHorizontal: 10}}
                           numberOfLines={1}
                           ellipsizeMode="tail">
-                          {selected?.message}
+                          {selected?.message || selected?.content}
                         </Text>
                       )}
                     </View>
@@ -1090,11 +1130,16 @@ style={styles.icon}
                   <ImageModal
                     ref={imageModalRef}
                     type={
-                      itemclicked?.mediaType?.includes('video')
+                      itemclicked?.attachments?.length > 0 &&
+                      itemclicked?.attachments[0]?.mediaType?.includes('video')
                         ? 'Video'
                         : 'Image'
                     }
-                    URL={itemclicked?.media}
+                    URL={
+                      itemclicked?.attachments?.length > 0
+                        ? itemclicked?.attachments[0]?.mediaUrl
+                        : ''
+                    }
                   />
 
                   <MediaModal

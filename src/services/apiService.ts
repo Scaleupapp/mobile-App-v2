@@ -350,7 +350,7 @@ export const deleteStory = (payload: any) => {
 
 // study groups
 export const getStudyGroups = () => {
-  return axiosInstance.get(`${API.CHAT}`);
+  return axiosInstance.get(`${API.CHAT}/`);
 };
 
 export const getStudyGroupMsg = (groupId: any, page: any) => {
@@ -363,26 +363,26 @@ export const deleteStudyGroup = (groupId: any) => {
   return axiosInstance.delete(`${API.CHAT}/group/${groupId}`);
 };
 
-export const sendGroupMsg = (payload: any) => {
-  return axiosInstance.post(`${API.SEND_GROUP_MSG}`, payload);
-};
-
 export const deleteGroupMsg = (groupId: any, messageid: any) => {
   return axiosInstance.delete(
     `${API.CHAT}/${groupId}/group/${messageid}/delete`,
   );
 };
 
-export const editGroupMsg = (groupId: any, messageid: any) => {
-  return axiosInstance.put(`${API.CHAT}/${groupId}/group/${messageid}/edit`);
+export const editGroupMsg = (groupId: any, messageid: any, payload: any) => {
+  return axiosInstance.put(
+    `${API.CHAT}/${groupId}/group/${messageid}/edit`,
+    payload,
+  );
 };
-export const sendGroupReply = (payload: any) => {
-  // route needs to be changed
-  return axiosInstance.post(`${API.CHAT}/reply`, payload);
-};
+
 export const reactGroupMsg = (groupId: any, messageid: any, payload: any) => {
   return axiosInstance.post(
     `${API.CHAT}/group/${groupId}/messages/${messageid}/reactions`,
     payload,
   );
+};
+
+export const markReadGrpMsg = (payload: any) => {
+  return axiosInstance.post(`${API.CHAT}/group/mark-read`, payload);
 };
