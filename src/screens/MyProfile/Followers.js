@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -8,6 +8,7 @@ import {
   ImageBackground,
   FlatList,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -26,7 +27,11 @@ import {
 import Routes from '../../helper/routes';
 
 const Followers = ({navigation, route}) => {
-  const [followers, setFollowers] = useState();
+  const [followers, setFollowers] = useState([]);
+
+  const [loading, setLoading] = useState(false); // Loading state
+  const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
+  const page = useRef(1);
 
   useEffect(() => {
     getfollowers();
@@ -34,11 +39,21 @@ const Followers = ({navigation, route}) => {
 
   let getfollowers = async () => {
     try {
-      let resp = await getFollowerlist(route?.params?.id);
-      setFollowers(resp?.data?.followerList);
-    } catch (error) {}
+      let resp = await getFollowerlist(route?.params?.id, page?.current);
+      console.log(resp?.data);
+      if (loading || allMessagesFetched) return;
+      setLoading(true);
+      if (page.current == resp?.data?.totalPages) {
+        setAllMessagesFetched(true);
+      }
+      setFollowers(follower => [...follower, ...resp?.data?.followerList]);
+      page.current += 1;
+    } catch (error) {
+      console.log('🚀 ~ getfollowers ~ error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
-
   const UserView = ({item}) => {
     const [follow, setFollow] = useState(item?.isFollowed);
 
@@ -130,7 +145,14 @@ const Followers = ({navigation, route}) => {
 
       <FlatList
         data={followers}
+        onEndReached={getfollowers}
+        ListFooterComponent={
+          loading && !allMessagesFetched ? (
+            <ActivityIndicator size="small" color="#0000ff" />
+          ) : null
+        }
         renderItem={({item}) => <UserView item={item} />}
+        extraData={followers}
       />
 
       {/* <View>

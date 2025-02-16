@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -7,6 +7,7 @@ import {
   Image,
   ImageBackground,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -20,6 +21,7 @@ import Icon from '../../helper/icon';
 import {
   followUser,
   getFollowerlist,
+  getFollowinglist,
   unlfollowUser,
 } from '../../services/apiService';
 import {Pressable} from 'react-native';
@@ -27,9 +29,11 @@ import Routes from '../../helper/routes';
 import {useSelector} from 'react-redux';
 
 const Following = ({navigation, route}) => {
-  const [followers, setFollowers] = useState();
+  const [followers, setFollowers] = useState([]);
   const userData = useSelector(state => state?.userData);
-  console.log('🚀 ~ Following ~ userData:', userData?.id);
+  const [loading, setLoading] = useState(false); // Loading state
+  const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
+  const page = useRef(1);
 
   useEffect(() => {
     getfollowers();
@@ -37,9 +41,20 @@ const Following = ({navigation, route}) => {
 
   let getfollowers = async () => {
     try {
-      let resp = await getFollowerlist(route?.params?.id);
-      setFollowers(resp?.data?.followingList);
-    } catch (error) {}
+      let resp = await getFollowinglist(route?.params?.id, page?.current);
+      console.log(resp?.data);
+      if (loading || allMessagesFetched) return;
+      setLoading(true);
+      if (page.current == resp?.data?.totalPages) {
+        setAllMessagesFetched(true);
+      }
+      setFollowers(follower => [...follower, ...resp?.data?.followingList]);
+      page.current += 1;
+    } catch (error) {
+      console.log('🚀 ~ getfollowers ~ error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const UserView = ({item}) => {
@@ -135,7 +150,14 @@ const Following = ({navigation, route}) => {
 
       <FlatList
         data={followers}
+        onEndReached={getfollowers}
+        ListFooterComponent={
+          loading && !allMessagesFetched ? (
+            <ActivityIndicator size="small" color="#0000ff" />
+          ) : null
+        }
         renderItem={({item}) => <UserView item={item} />}
+        extraData={followers}
       />
 
       {/* <View>

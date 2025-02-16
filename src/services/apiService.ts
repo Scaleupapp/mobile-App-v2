@@ -139,12 +139,15 @@ export const markReadNotificationAPI = (payload: any) => {
   return axiosInstance.post(`${API.MARK_READ}`, payload);
 };
 
-export const myInnerCircleRequestAPI = () => {
-  return axiosInstance.get(`${API.INNERCIRCLE}`);
+export const myInnerCirclesentAPI = (page:any) => {
+  return axiosInstance.get(`${API.INNERCIRCLE}?page=${page}`);
+};
+export const myInnerCirclerecievedAPI = (page:any) => {
+  return axiosInstance.get(`${API.INNERCIRCLERECIVED}?page=${page}`);
 };
 
-export const myInnerCircleAPI = () => {
-  return axiosInstance.get(`${API.GETINNERCIRCLE}`);
+export const myInnerCircleAPI = (page:any) => {
+  return axiosInstance.get(`${API.GETINNERCIRCLE}?page=${page}`);
 };
 
 export const acceptInnerCircleRequestAPI = (payload: any) => {
@@ -175,8 +178,12 @@ export const unlikeComment = (id: any) => {
   return axiosInstance.post(`${API.COMMENT}/unlike/${id}`);
 };
 
-export const getFollowerlist = (id: any) => {
-  return axiosInstance.get(`${API.FOLLOW_UNFOLLOW}/${id}`);
+export const getFollowerlist = (id: any,page:any) => {
+  return axiosInstance.get(`${API.FOLLOWERS_LIST}/${id}?page=${page}`);
+};
+
+export const getFollowinglist = (id: any,page:any) => {
+  return axiosInstance.get(`${API.FOLLOWING_LIST}/${id}?page=${page}`);
 };
 
 export const followUser = (payload: any) => {
@@ -217,8 +224,8 @@ export const UserAnalytics = () => {
   return axiosInstance.get(`${API.USERANALYTICS}`);
 };
 
-export const getconversation = (id: any) => {
-  return axiosInstance.get(`${API.CONVERSATION}`);
+export const getconversation = (page: any) => {
+  return axiosInstance.get(`${API.CONVERSATION}?page=${page}`);
 };
 
 export const createConversation = (payload: any) => {

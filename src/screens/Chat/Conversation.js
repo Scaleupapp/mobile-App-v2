@@ -29,6 +29,10 @@ const Conversation = ({navigation, route}) => {
 
   const [conversation, setConversation] = useState([]);
   const chatmodelRef = useRef(null);
+  const [fetchconversation, setAllconversationfetched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const page = useRef(1);
+
   useFocusEffect(
     useCallback(() => {
       fetchConversations(); // Function to fetch conversations
@@ -96,13 +100,20 @@ const Conversation = ({navigation, route}) => {
 
   const fetchConversations = async () => {
     try {
-      const {data} = await getconversation();
-      setConversation(data);
-      //   console.log('🚀 ~ fetchConversations ~ data:', data);
+      if (loading || fetchconversation) return;
+      setLoading(true);
+      const {data} = await getconversation(page?.current);
+      setConversation(val => [...val, ...data?.conversations]);
+      if (page?.current == data?.totalPages) {
+        setAllconversationfetched(true);
+      }
+      page.current += 1;
+      console.log('🚀 ~ fetchConversations ~ data:', data);
     } catch (error) {
       console.log('🚀 ~ fetchConversations ~ error..:', error);
     } finally {
       setLoader(false);
+      setLoading(false);
     }
 
     // setConversations(data);
@@ -184,6 +195,13 @@ const Conversation = ({navigation, route}) => {
           <ChatModal ref={chatmodelRef} />
           <FlatList
             data={conversation}
+            onEndReached={fetchConversations}
+            ListFooterComponent={
+              loading && !fetchconversation ? (
+                <ActivityIndicator size="small" color="#0000ff" />
+              ) : null
+            }
+            extraData={conversation}
             renderItem={({item}) => <Card item={item} />}
             ListEmptyComponent={() => {
               return (
