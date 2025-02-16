@@ -93,40 +93,36 @@ const Conversation = ({navigation, route}) => {
     socketInstance.on('groupInfoUpdates', data => {
       console.log('🚀 groupInfoUpdates:', JSON.stringify(data));
 
-      const index = studyGroups.filter(
-        conv => conv.conversationId === data?.conversationId,
-      );
+      const filtered = studyGroups.filter(conv => conv._id === data?.groupId);
 
-      console.log('🚀 ~ groupInfoUpdates ~ index:', index);
-      if (index.length > 0) {
+      if (filtered.length > 0) {
         // Update the existing object
         let updatedData = {
           lastMessage: data?.lastMessage,
           unreadMessageCount: data?.unreadMessageCount,
-          updatedAt: data?.timestamp || data?.updatedAt,
+          timestamp: data?.createdDate,
         };
-        console.log('🚀 ~ groupInfoUpdates ~ index:1', index);
         const updatedMessages = studyGroups.map(
           msg =>
-            msg?._id === data?._id
+            msg?._id === data?.groupId
               ? {...msg, ...updatedData} // Update the matching object
               : msg, // Keep others unchanged
         );
 
-        const index = updatedMessages.findIndex(conv => conv._id === data?._id);
+        const index = updatedMessages.findIndex(
+          conv => conv?._id === data?.groupId,
+        );
 
         if (index !== -1) {
           // Remove the matched conversation and insert it at index 0
           const [matchedConversation] = updatedMessages.splice(index, 1);
           updatedMessages.unshift(matchedConversation);
         }
-
         setStudyGroups(updatedMessages);
       } else {
-        console.log('jeyeeyeyeyeyyeey222');
-        // Insert the new object at index 1
-        let updatedData = [data, ...conversation];
+        let updatedData = [data, ...studyGroups];
         setStudyGroups(updatedData);
+        fetchStudyGroups();
       }
     });
     return () => {
@@ -134,7 +130,7 @@ const Conversation = ({navigation, route}) => {
         socketInstance.disconnect();
       }
     };
-  }, [conversation]);
+  }, [conversation, studyGroups]);
 
   const fetchConversations = async () => {
     try {
@@ -160,8 +156,9 @@ const Conversation = ({navigation, route}) => {
     return str?.length > maxLength ? str?.slice(0, maxLength) + '...' : str;
   };
   const GroupCard = ({item, index}) => {
+    // console.log('item?.unreadMessageCount ', item?.unreadMessageCount);
     let lastMessage = item?.lastMessage;
-    // console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
+    console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
     return (
       <Pressable
         key={index}

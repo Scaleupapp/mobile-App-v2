@@ -11,12 +11,12 @@ import {
   ActivityIndicator,
   Pressable,
   Platform,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
 import io from 'socket.io-client';
-import {FlatList} from 'react-native';
-import {TextInput} from 'react-native';
 import {
   deleteGroupMsg,
   editGroupMsg,
@@ -63,7 +63,7 @@ const GroupChat = ({navigation, route}) => {
   const imageModalRef = useRef(null);
   const [modalvisible, setModalVisible] = useState(false);
   const [itemclicked, setItemcliked] = useState({});
-  const [file, setFile] = useState({});
+  const [file, setFile] = useState([]);
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
@@ -192,11 +192,13 @@ const GroupChat = ({navigation, route}) => {
       const formdata = new FormData();
       formdata.append('groupId', groupId);
       formdata.append('message', input);
-      if (file?.fileName) {
-        formdata.append('attachments', {
-          uri: file.uri,
-          name: file.fileName,
-          type: file.type,
+      if (file.length > 0) {
+        file.forEach(f => {
+          formdata.append('attachments', {
+            uri: f.uri,
+            name: f.fileName,
+            type: f.type,
+          });
         });
       }
 
@@ -345,11 +347,13 @@ const GroupChat = ({navigation, route}) => {
       const formdata = new FormData();
       formdata.append('groupId', groupId);
       formdata.append('message', input);
-      if (file?.fileName) {
-        formdata.append('attachments', {
-          uri: file.uri,
-          name: file.fileName,
-          type: file.type,
+      if (file.length > 0) {
+        file.forEach(f => {
+          formdata.append('attachments', {
+            uri: f.uri,
+            name: f.fileName,
+            type: f.type,
+          });
         });
       }
       formdata.append('parentMessageId', selected?._id);
@@ -389,58 +393,49 @@ const GroupChat = ({navigation, route}) => {
   const openGallery = async () => {
     try {
       const result = await launchImageLibrary({
-        mediaType: 'mixed', // allows both image & video
+        mediaType: 'mixed', // Allows both image & video
+        selectionLimit: 4,
       });
 
-      // Always close modal so we can re-open it next time
-
       if (result.assets && result.assets.length > 0) {
-        await handleFileSelection(result.assets[0]);
+        await handleMultipleFileSelection(result.assets);
       }
     } catch (err) {
       console.error('Error selecting file:', err);
       showToast({
-        title: 'Failed to select file',
+        title: 'Failed to select files',
         type: 'error',
       });
-      // Close modal in case of error
     }
   };
-  const handleFileSelection = async asset => {
-    // console.log('🚀 ~ Chat ~ asset:', asset);
 
+  const handleMultipleFileSelection = async assets => {
     try {
-      if (asset.type && asset.type.toLowerCase().includes('gif')) {
-        setFile({...asset});
-      } else if (asset.type && asset.type.toLowerCase().includes('video')) {
-        let compress_video = await compressVideo(asset?.uri);
-        setFile({...asset, uri: compress_video});
-      } else {
-        let compress_image = await compressImage(asset?.uri);
-        setFile({...asset, uri: compress_image});
-      }
+      const processedFiles = await Promise.all(
+        assets.map(async asset => {
+          if (asset.type && asset.type.toLowerCase().includes('gif')) {
+            return {...asset};
+          } else if (asset.type && asset.type.toLowerCase().includes('video')) {
+            let compress_video = await compressVideo(asset?.uri);
+            return {...asset, uri: compress_video};
+          } else {
+            let compress_image = await compressImage(asset?.uri);
+            return {...asset, uri: compress_image};
+          }
+        }),
+      );
+
+      setFile(processedFiles); // Assuming you have a state like setFiles([])
+
       setTimeout(() => {
         setModalVisible(true);
       }, 500);
-      // let conversationId = route?.params?.chatId;
-      // const {data} = await sendChat(formData);
-      // setInput('');
-      // console.log('🚀 ~ sendMessage ~ data:.....', data);
-      // setUserHasScrolled(false);
-      // //   setMessages(prevMessages => [...prevMessages, data]);
-      // if (socket) {
-      //   socket.emit('sendMessage', {
-      //     conversationId,
-      //     data,
-      //   });
-      // }
     } catch (error) {
-      console.error('Error processing file:', error);
+      console.error('Error processing files:', error);
       showToast({
-        title: 'Failed to process file',
+        title: 'Failed to process files',
         type: 'error',
       });
-    } finally {
     }
   };
 
@@ -673,12 +668,7 @@ const GroupChat = ({navigation, route}) => {
                         item?.parentMessageId?.attachments[0]?.mediaType?.includes(
                           'image',
                         )) && (
-                        <Pressable
-                        // onPress={() => {
-                        //   setItemcliked(item);
-                        //   imageModalRef.current?.present();
-                        // }}
-                        >
+                        <Pressable>
                           <Image
                             source={{
                               uri: item?.parentMessageId?.attachments[0]
@@ -698,12 +688,7 @@ const GroupChat = ({navigation, route}) => {
                       item?.parentMessageId?.attachments[0]?.mediaType?.includes(
                         'video',
                       ) && (
-                        <Pressable
-                        // onPress={() => {
-                        //   setItemcliked(item);
-                        //   imageModalRef.current?.present();
-                        // }}
-                        >
+                        <Pressable>
                           <Video
                             source={{
                               uri: item?.parentMessageId?.attachments[0]
@@ -740,45 +725,87 @@ const GroupChat = ({navigation, route}) => {
                     {item?.content || item?.message}
                   </Text>
                 )}
-                {item?.attachments?.length > 0 &&
-                  (item?.attachments[0]?.mediaType == 'Image' ||
-                    item?.attachments[0]?.mediaType?.includes('image')) && (
-                    <Pressable
-                      onPress={() => {
-                        setItemcliked(item);
-                        imageModalRef.current?.present();
-                      }}>
-                      <Image
-                        source={{uri: item?.attachments[0]?.mediaUrl}}
-                        style={{
-                          width: 200,
-                          height: 200,
-                          borderRadius: 10,
-                        }}
-                        resizeMode="cover"
-                      />
-                    </Pressable>
-                  )}
 
                 {item?.attachments?.length > 0 &&
-                  item?.attachments[0]?.mediaType?.includes('video') && (
-                    <Pressable
-                      onPress={() => {
-                        setItemcliked(item);
-                        imageModalRef.current?.present();
-                      }}>
-                      <Video
-                        source={{uri: item?.attachments[0]?.mediaUrl}}
-                        style={{
-                          width: 200,
-                          height: 200,
-                          borderRadius: 10,
+                  (item.attachments.length === 1 ? (
+                    // Single attachment: Use View
+                    <View style={{alignItems: 'center'}}>
+                      <Pressable
+                        onPress={() => {
+                          setItemcliked(item.attachments[0]);
+                          imageModalRef.current?.present();
                         }}
-                        resizeMode="cover"
-                        controls
-                      />
-                    </Pressable>
-                  )}
+                        style={{margin: 5}}>
+                        {item.attachments[0]?.mediaType?.includes('image') ? (
+                          <Image
+                            source={{uri: item.attachments[0]?.mediaUrl}}
+                            style={{
+                              width: 200,
+                              height: 200,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                          />
+                        ) : item.attachments[0]?.mediaType?.includes(
+                            'video',
+                          ) ? (
+                          <Video
+                            source={{uri: item.attachments[0]?.mediaUrl}}
+                            style={{
+                              width: 200,
+                              height: 200,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                            controls
+                          />
+                        ) : null}
+                      </Pressable>
+                    </View>
+                  ) : (
+                    // Multiple attachments: Use FlatList with 2 columns
+                    <FlatList
+                      data={item.attachments}
+                      keyExtractor={(attachment, index) => index.toString()}
+                      numColumns={2} // Grid layout for multiple attachments
+                      columnWrapperStyle={{justifyContent: 'space-between'}}
+                      renderItem={({item: attachment, index}) => (
+                        <Pressable
+                          key={index}
+                          onPress={() => {
+                            setItemcliked(attachment);
+                            imageModalRef.current?.present();
+                          }}
+                          style={{
+                            margin: 5,
+                            width: '48%', // Adjust width for grid layout
+                          }}>
+                          {attachment?.mediaType?.includes('image') ? (
+                            <Image
+                              source={{uri: attachment?.mediaUrl}}
+                              style={{
+                                width: '100%',
+                                height: 160,
+                                borderRadius: 10,
+                              }}
+                              resizeMode="cover"
+                            />
+                          ) : attachment?.mediaType?.includes('video') ? (
+                            <Video
+                              source={{uri: attachment?.mediaUrl}}
+                              style={{
+                                width: '100%',
+                                height: 160,
+                                borderRadius: 10,
+                              }}
+                              resizeMode="cover"
+                              controls
+                            />
+                          ) : null}
+                        </Pressable>
+                      )}
+                    />
+                  ))}
                 {(item?.content || item?.message) && item?.attachments && (
                   <Text
                     style={[styles.messageText, {marginTop: 10}]}
@@ -798,7 +825,6 @@ const GroupChat = ({navigation, route}) => {
                   resizeMode="cover"
                 />
               )} */}
-
                 <Text
                   style={{
                     fontSize: 10,
@@ -807,7 +833,6 @@ const GroupChat = ({navigation, route}) => {
                   }}>
                   {formatAMPM(item?.updatedAt || item?.timestamp)}
                 </Text>
-
                 {item?.edited && (
                   <Text
                     style={{
@@ -1130,14 +1155,13 @@ style={styles.icon}
                   <ImageModal
                     ref={imageModalRef}
                     type={
-                      itemclicked?.attachments?.length > 0 &&
-                      itemclicked?.attachments[0]?.mediaType?.includes('video')
+                      itemclicked?.mediaType?.includes('video')
                         ? 'Video'
                         : 'Image'
                     }
                     URL={
-                      itemclicked?.attachments?.length > 0
-                        ? itemclicked?.attachments[0]?.mediaUrl
+                      Object.keys(itemclicked)?.length > 0
+                        ? itemclicked?.mediaUrl
                         : ''
                     }
                   />
@@ -1145,11 +1169,11 @@ style={styles.icon}
                   <MediaModal
                     isVisible={modalvisible}
                     onClose={() => {
-                      setFile({});
+                      setFile([]);
                       setInput('');
-
                       setModalVisible(false);
                     }}
+                    multi={true}
                     file={file}
                     onSend={reply ? replyMessage : sendMessage}
                     input={input}
