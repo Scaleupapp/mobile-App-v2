@@ -104,11 +104,14 @@ const EditGroupProfile = ({route, navigation}) => {
     const getMemberIds = memberDetails?.map(
       member => member?._id || member?.userId,
     );
+    const filteredAdmins = selectedMembers.filter(admin =>
+      getMemberIds.includes(admin),
+    );
     const formData = new FormData();
     formData.append('name', name);
     formData.append('description', groupDesc.trim());
     formData.append('members', JSON.stringify(getMemberIds));
-    formData.append('admins', JSON.stringify(selectedMembers));
+    formData.append('admins', JSON.stringify(filteredAdmins));
     formData.append('topics', JSON.stringify(words));
     formData.append('privacy', options[selected]?.toLocaleLowerCase());
 
@@ -338,30 +341,33 @@ const EditGroupProfile = ({route, navigation}) => {
                 style={{marginBottom: words?.length > 0 ? 5 : -5}}>
                 {'Members (' + memberDetails?.length + ')'}
               </Text>
-              {/* <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginRight: nw(28),
-                }}>
-                <Button
-                  onPress={() => chatmodelRef.current?.present()}
-                  text={'Add Members'}
-                  variant="outline"
-                  width={nw(90)}
-                  height={nh(30)}
-                  textStyle={{fontSize: 14}}
-                />
-                <Icon
-                  type="entypo"
-                  name="add-user"
-                  color={COLORS.blue043142}
-                  style={{marginLeft: 5}}
-                  size={nh(20)}
-                  onPress={() => chatmodelRef.current?.present()}
-                />
-              </View> */}
+              {edit ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginRight: nw(3),
+                    // marginRight: nw(28),
+                  }}>
+                  <Button
+                    onPress={() => chatmodelRef.current?.present()}
+                    text={'Add Members'}
+                    variant="outline"
+                    width={nw(90)}
+                    height={nh(30)}
+                    textStyle={{fontSize: 14}}
+                  />
+                  <Icon
+                    type="entypo"
+                    name="add-user"
+                    color={COLORS.blue043142}
+                    style={{marginLeft: 5}}
+                    size={nh(20)}
+                    onPress={() => chatmodelRef.current?.present()}
+                  />
+                </View>
+              ) : null}
             </View>
             <FlatList
               scrollEnabled={false}
@@ -371,10 +377,25 @@ const EditGroupProfile = ({route, navigation}) => {
                 const userId = item?._id || item?.userId;
                 return (
                   <View key={index} style={styles.card}>
-                    <Image
-                      source={{uri: item?.profilePicture}}
-                      style={styles.image1}
-                    />
+                    {item?.profilePicture ? (
+                      <Image
+                        source={{uri: item?.profilePicture}}
+                        style={styles.image1}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          ...styles.image1,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: COLORS.greyD6D6D6,
+                        }}>
+                        <Text variant="semibold16" color={COLORS.black333333}>
+                          {`${item?.username?.charAt(0).toUpperCase()}`}
+                        </Text>
+                      </View>
+                    )}
+
                     <View style={{width: nw(150)}}>
                       <Text variant="medium14" color={COLORS.blue043142}>
                         {item?.username}
@@ -446,8 +467,14 @@ const EditGroupProfile = ({route, navigation}) => {
       <ChatModal
         group={true}
         ref={chatmodelRef}
-        selectedMembers={memberDetails}
-        setSelectedMembers={setMemberDetails}
+        grpMembers={memberDetails.map(user => user?._id || user?.userId)}
+        setGrpMembers={mem => {
+          const me = groupData?.members?.filter(
+            f => f?._id == userData?.id || f?.userId == userData?.id,
+          );
+          setMemberDetails([...me, ...mem]);
+        }}
+        edit={true}
       />
     </SafeAreaView>
   );

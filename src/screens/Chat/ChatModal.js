@@ -24,177 +24,187 @@ import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {CheckBox} from 'react-native-elements';
 
-const ChatModal = forwardRef(({group}, ref) => {
-  const [loading, setLoading] = useState(false);
-  const [myInnerCircle, setMyInnerCircle] = useState([]);
-  const [selectedMembers, setSelectedMembers] = useState([]);
+const ChatModal = forwardRef(
+  ({group, edit = false, grpMembers = [], setGrpMembers}, ref) => {
+    const [loading, setLoading] = useState(false);
+    const [myInnerCircle, setMyInnerCircle] = useState([]);
+    const [selectedMembers, setSelectedMembers] = useState(grpMembers || []);
 
-  useEffect(() => {
-    getMyInnerCircleList();
-  }, []);
+    useEffect(() => {
+      getMyInnerCircleList();
+    }, []);
 
-  const getMyInnerCircleList = async () => {
-    try {
-      setLoading(true);
-      let resp = await myInnerCircleAPI();
-      setMyInnerCircle(resp?.data || []);
-    } catch (error) {
-      console.log(error, 'error fetching inner circle');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const getMyInnerCircleList = async () => {
+      try {
+        setLoading(true);
+        let resp = await myInnerCircleAPI();
+        setMyInnerCircle(resp?.data || []);
+      } catch (error) {
+        console.log(error, 'error fetching inner circle');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const toggleSelection = id => {
-    setSelectedMembers(prev =>
-      prev.includes(id) ? prev.filter(member => member !== id) : [...prev, id],
-    );
-  };
+    const toggleSelection = id => {
+      setSelectedMembers(prev =>
+        prev.includes(id)
+          ? prev.filter(member => member !== id)
+          : [...prev, id],
+      );
+    };
 
-  const createConvo = async (id, item) => {
-    try {
-      let payload = {recipientId: id};
-      let resp = await createConversation(payload);
-      ref?.current?.close();
+    const createConvo = async (id, item) => {
+      try {
+        let payload = {recipientId: id};
+        let resp = await createConversation(payload);
+        ref?.current?.close();
 
-      navigationRef.navigate(Routes.Chat, {
-        chatId: resp?.data?._id,
-        data: `${item?.firstname} ${item?.lastname}`,
-      });
-    } catch (error) {
-      console.log(error, 'error creating conversation');
-    }
-  };
+        navigationRef.navigate(Routes.Chat, {
+          chatId: resp?.data?._id,
+          data: `${item?.firstname} ${item?.lastname}`,
+        });
+      } catch (error) {
+        console.log(error, 'error creating conversation');
+      }
+    };
 
-  return (
-    <BottomSheetModal
-      ref={ref}
-      maxDynamicContentSize={nh(600)}
-      handleComponent={null}
-      animateOnMount={false}
-      containerStyle={{borderTopLeftRadius: 24}}
-      style={styles.modalContainer}>
-      <BottomSheetView style={styles.bottomSheetView}>
-        <Icon
-          type={'antdesign'}
-          color={COLORS.black333333}
-          name="close"
-          size={nh(20)}
-          style={styles.closeIcon}
-          onPress={() => ref?.current?.close()}
-        />
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.black333333} />
-          </View>
-        ) : (
-          <BottomSheetView>
-            <FlatList
-              scrollEnabled
-              data={myInnerCircle}
-              contentContainerStyle={{marginTop: nh(30)}}
-              ListHeaderComponent={() => (
-                <Text
-                  variant="semibold14"
-                  color={COLORS.blue043142}
-                  style={{textAlign: 'center'}}>
-                  {group ? 'Selelct group members' : 'Start conversation'}
-                </Text>
-              )}
-              ListFooterComponent={() => <View style={{height: nh(80)}} />}
-              renderItem={({item}) => (
-                <Pressable
-                  onPress={() => {
-                    if (group) toggleSelection(item.userId);
-                    else createConvo(item.userId, item);
-                  }}
-                  style={styles.card}>
-                  {item?.profilePicture ? (
-                    <Image
-                      source={{uri: item?.profilePicture}}
-                      style={styles.image}
-                    />
-                  ) : (
-                    <View
-                      style={{
-                        ...styles.image,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: COLORS.greyD6D6D6,
-                      }}>
-                      <Text variant="semibold16" color={COLORS.black333333}>
-                        {`${item?.firstname
-                          ?.charAt(0)
-                          .toUpperCase()}${item?.lastname
-                          ?.charAt(0)
-                          .toUpperCase()}`}
+    return (
+      <BottomSheetModal
+        ref={ref}
+        maxDynamicContentSize={nh(600)}
+        handleComponent={null}
+        animateOnMount={false}
+        containerStyle={{borderTopLeftRadius: 24}}
+        onDismiss={() => setSelectedMembers(grpMembers || [])}
+        style={styles.modalContainer}>
+        <BottomSheetView style={styles.bottomSheetView}>
+          <Icon
+            type={'antdesign'}
+            color={COLORS.black333333}
+            name="close"
+            size={nh(20)}
+            style={styles.closeIcon}
+            onPress={() => ref?.current?.close()}
+          />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.black333333} />
+            </View>
+          ) : (
+            <BottomSheetView>
+              <FlatList
+                scrollEnabled
+                data={myInnerCircle}
+                contentContainerStyle={{marginTop: nh(30)}}
+                ListHeaderComponent={() => (
+                  <Text
+                    variant="semibold14"
+                    color={COLORS.blue043142}
+                    style={{textAlign: 'center'}}>
+                    {group ? 'Selelct group members' : 'Start conversation'}
+                  </Text>
+                )}
+                ListFooterComponent={() => <View style={{height: nh(80)}} />}
+                renderItem={({item}) => (
+                  <Pressable
+                    onPress={() => {
+                      if (group) toggleSelection(item.userId);
+                      else createConvo(item.userId, item);
+                    }}
+                    style={styles.card}>
+                    {item?.profilePicture ? (
+                      <Image
+                        source={{uri: item?.profilePicture}}
+                        style={styles.image}
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          ...styles.image,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: COLORS.greyD6D6D6,
+                        }}>
+                        <Text variant="semibold16" color={COLORS.black333333}>
+                          {`${item?.firstname
+                            ?.charAt(0)
+                            .toUpperCase()}${item?.lastname
+                            ?.charAt(0)
+                            .toUpperCase()}`}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={{width: nw(195)}}>
+                      <Text variant="medium14" color={COLORS.blue043142}>
+                        {item?.username}
                       </Text>
                     </View>
-                  )}
-                  <View style={{width: nw(195)}}>
-                    <Text variant="medium14" color={COLORS.blue043142}>
-                      {item?.username}
-                    </Text>
-                  </View>
-                  {group ? (
-                    <CheckBox
-                      checkedIcon="check-box"
-                      uncheckedIcon="check-box-outline-blank"
-                      iconType="material"
-                      checked={selectedMembers.includes(item.userId)}
-                      onPress={() => toggleSelection(item.userId)}
-                      checkedColor={COLORS.grey999999}
-                      uncheckedColor={COLORS.grey999999}
-                    />
-                  ) : (
-                    <Button
-                      onPress={() => createConvo(item.userId, item)}
-                      text="Message"
-                      variant="outline"
-                      width={nw(90)}
-                      height={nh(35)}
-                      textStyle={{fontSize: 14}}
-                    />
-                  )}
-                </Pressable>
-              )}
-            />
-            {group && selectedMembers?.length > 0 ? (
-              <View
-                style={{
-                  position: 'absolute',
-                  height: nh(70),
-                  bottom: 0,
-                  right: 0,
-                  backgroundColor: COLORS.whiteFFFFFF,
-                }}>
-                <Button
-                  text="Next"
-                  onPress={() => {
-                    let members = [];
-                    selectedMembers.map(u => {
-                      const member = myInnerCircle.filter(f => f.userId == u);
-                      if (member?.length > 0) members.push(member[0]);
-                    });
-                    navigationRef.navigate(Routes.EditGroupProfile, {
-                      groupMembers: selectedMembers,
-                      groupMembersDetails: members,
-                    });
-                    ref?.current?.close();
-                    setSelectedMembers([]);
-                  }}
-                  // width={DEVICE_WIDTH - 32}
-                  width={nw(80)}
-                  textStyle={{fontSize: 20}}
-                />
-              </View>
-            ) : null}
-          </BottomSheetView>
-        )}
-      </BottomSheetView>
-    </BottomSheetModal>
-  );
-});
+                    {group ? (
+                      <CheckBox
+                        checkedIcon="check-box"
+                        uncheckedIcon="check-box-outline-blank"
+                        iconType="material"
+                        checked={selectedMembers.includes(item.userId)}
+                        onPress={() => toggleSelection(item.userId)}
+                        checkedColor={COLORS.grey999999}
+                        uncheckedColor={COLORS.grey999999}
+                      />
+                    ) : (
+                      <Button
+                        onPress={() => createConvo(item.userId, item)}
+                        text="Message"
+                        variant="outline"
+                        width={nw(90)}
+                        height={nh(35)}
+                        textStyle={{fontSize: 14}}
+                      />
+                    )}
+                  </Pressable>
+                )}
+              />
+              {group && selectedMembers?.length > 0 ? (
+                <View
+                  style={{
+                    position: 'absolute',
+                    height: nh(70),
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: COLORS.whiteFFFFFF,
+                  }}>
+                  <Button
+                    text="Next"
+                    onPress={() => {
+                      let members = [];
+                      const uniqueUsers = [...new Set(selectedMembers)];
+                      uniqueUsers.map(u => {
+                        const member = myInnerCircle.filter(f => f.userId == u);
+                        if (member?.length > 0) members.push(member[0]);
+                      });
+                      if (edit) {
+                        setGrpMembers(members);
+                      } else {
+                        navigationRef.navigate(Routes.EditGroupProfile, {
+                          groupMembers: selectedMembers,
+                          groupMembersDetails: members,
+                        });
+                        setSelectedMembers([]);
+                      }
+                      ref?.current?.close();
+                    }}
+                    // width={DEVICE_WIDTH - 32}
+                    width={nw(80)}
+                    textStyle={{fontSize: 20}}
+                  />
+                </View>
+              ) : null}
+            </BottomSheetView>
+          )}
+        </BottomSheetView>
+      </BottomSheetModal>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   modalContainer: {

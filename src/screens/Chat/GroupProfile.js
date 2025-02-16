@@ -168,7 +168,9 @@ const GroupProfile = ({
             <FlatList
               data={groupData?.members.map(member => ({
                 ...member,
-                isAdmin: groupData?.admins.some(admin => admin === member?._id),
+                isAdmin: groupData?.admins.some(
+                  admin => admin === member?._id || admin === member?.userId,
+                ),
               }))}
               scrollEnabled={false}
               renderItem={({item}) => <MemberCard member={item} />}
@@ -191,10 +193,24 @@ const GroupProfile = ({
 const MemberCard = ({member}) => {
   return (
     <View style={styles.memberCard}>
-      <Image
-        source={{uri: member.profilePicture}}
-        style={styles.profileImage}
-      />
+      {member.profilePicture ? (
+        <Image
+          source={{uri: member.profilePicture}}
+          style={styles.profileImage}
+        />
+      ) : (
+        <View
+          style={{
+            ...styles.profileImage,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: COLORS.greyD6D6D6,
+          }}>
+          <Text variant="semibold16" color={COLORS.black333333}>
+            {`${member?.username?.charAt(0).toUpperCase()}`}
+          </Text>
+        </View>
+      )}
       <View style={styles.memberInfo}>
         <Text variant="medium14" style={styles.memberName}>
           {member?.username} {member?.isAdmin && '(Admin)'}
