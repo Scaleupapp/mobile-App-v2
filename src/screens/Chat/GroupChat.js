@@ -894,7 +894,11 @@ const GroupChat = ({navigation, route}) => {
                   backgroundColor: COLORS.greyD6D6D6,
                 }}>
                 <Text variant="semibold16" color={COLORS.black333333}>
-                  {userData?.username?.charAt(0)?.toUpperCase()}
+                  {`${userData?.firstname
+                    ?.charAt(0)
+                    .toUpperCase()}${userData?.lastname
+                    ?.charAt(0)
+                    .toUpperCase()}`}
                 </Text>
               </View>
             )

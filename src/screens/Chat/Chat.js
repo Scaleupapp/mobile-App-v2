@@ -578,7 +578,8 @@ const Chat = ({navigation, route}) => {
               ? styles.sent
               : styles.received,
           ]}>
-          {item?.sender?._id === userData?.id ? null : (
+          {item?.sender?._id === userData?.id ? null : item.sender
+              ?.profilePicture ? (
             <Image
               source={{uri: item.sender?.profilePicture}}
               style={{
@@ -589,6 +590,22 @@ const Chat = ({navigation, route}) => {
                 borderColor: COLORS.blue043142,
               }}
             />
+          ) : (
+            <View
+              style={{
+                height: nh(50),
+                width: nh(50),
+                borderWidth: 1,
+                borderRadius: nh(25),
+                borderColor: COLORS.blue043142,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: COLORS.greyD6D6D6,
+              }}>
+              <Text variant="semibold16" color={COLORS.black333333}>
+                {item.sender?.username?.charAt(0)?.toUpperCase()}
+              </Text>
+            </View>
           )}
           <View style={{marginLeft: nw(10)}}>
             <Text
@@ -823,17 +840,39 @@ const Chat = ({navigation, route}) => {
             </TouchableOpacity>
           </View>
           {item?.sender?._id === userData?.id ? (
-            <Image
-              source={{uri: userData?.profilePicture}}
-              style={{
-                height: nh(50),
-                width: nh(50),
-                borderWidth: 1,
-                borderRadius: nh(25),
-                borderColor: COLORS.blue043142,
-                marginLeft: 10,
-              }}
-            />
+            userData?.profilePicture ? (
+              <Image
+                source={{uri: userData?.profilePicture}}
+                style={{
+                  height: nh(50),
+                  width: nh(50),
+                  borderWidth: 1,
+                  borderRadius: nh(25),
+                  borderColor: COLORS.blue043142,
+                  marginLeft: 10,
+                }}
+              />
+            ) : (
+              <View
+                style={{
+                  height: nh(50),
+                  width: nh(50),
+                  borderWidth: 1,
+                  borderRadius: nh(25),
+                  borderColor: COLORS.blue043142,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: COLORS.greyD6D6D6,
+                }}>
+                <Text variant="semibold16" color={COLORS.black333333}>
+                  {`${userData?.firstname
+                    ?.charAt(0)
+                    .toUpperCase()}${userData?.lastname
+                    ?.charAt(0)
+                    .toUpperCase()}`}
+                </Text>
+              </View>
+            )
           ) : null}
         </View>
       );
