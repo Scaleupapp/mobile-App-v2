@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -26,6 +26,8 @@ import {
   declineInnerCircleRequestAPI,
   myInnerCircleAPI,
   myInnerCircleRequestAPI,
+  myInnerCirclerecievedAPI,
+  myInnerCirclesentAPI,
   widrawInnerCircleRequestAPI,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
@@ -38,23 +40,79 @@ const InnerCircleRequest = ({navigation, route}) => {
   const [myinnerCircle, setMyInnerCircle] = useState([]);
   const [sent, setSentRequest] = useState([]);
   const [loader, setloader] = useState(true);
+  const [loading, setLoading] = useState(false); // Loading state
+  const [allFetched, setAllFetched] = useState(false); // Indicates if all messages are loaded
+  const [allsentFetched, setAllsentFetched] = useState(false);
+  const [allrecivedFetched, setAllrecievedFetched] = useState(false);
+  const page = useRef(1);
+  const page1 = useRef(1);
+  const page2 = useRef(1);
   useEffect(() => {
     getInnerCircleList();
     getmyInnerCircleList();
+    getInnerCirclerecivedList();
   }, []);
 
   let getmyInnerCircleList = async () => {
     try {
-      let resp = await myInnerCircleAPI();
-      setMyInnerCircle(resp?.data);
-      setFilteredUsers(resp?.data);
-      console.log(resp?.data, 'myInnerCircleRequestAPI1');
+      if (loading || allFetched) return;
+      setLoading(true);
+      let resp = await myInnerCircleAPI(page?.current);
+      setMyInnerCircle(val => [...val, ...resp?.data?.users]);
+      setFilteredUsers(val => [...val, ...resp?.data?.users]);
+      if (page?.current == resp?.data?.totalPages) {
+        setAllFetched(true);
+      }
+      page.current += 1;
     } catch (error) {
       console.log(error, 'rerrr');
     } finally {
       setloader(false);
+      setLoading(false);
     }
   };
+
+  let getInnerCircleList = async () => {
+    try {
+      if (loading || allsentFetched) return;
+      setLoading(true);
+      let resp = await myInnerCirclesentAPI(page1?.current);
+
+      // setInnerCircle(resp?.data?.reqReceived);
+
+      setSentRequest(val => [...val, ...resp?.data?.users]);
+      if (page1?.current == resp?.data?.totalPages) {
+        setAllsentFetched(true);
+      }
+      page1.current += 1;
+    } catch (error) {
+      console.log(error, 'rerrr');
+    } finally {
+      setloader(false);
+      setLoading(false);
+    }
+  };
+
+  let getInnerCirclerecivedList = async () => {
+    try {
+      if (loading || allrecivedFetched) return;
+      setLoading(true);
+      let resp = await myInnerCirclerecievedAPI(page2.current);
+      console.log(resp?.data, 'resp?.data11111');
+      setInnerCircle(val => [...val, ...resp?.data?.users]);
+
+      if (page2?.current == resp?.data?.totalPages) {
+        setAllrecievedFetched(true);
+      }
+      page2.current += 1;
+    } catch (error) {
+      console.log(error, 'rerrr');
+    } finally {
+      setloader(false);
+      setLoading(false);
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedTerm, setDebouncedTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -88,21 +146,10 @@ const InnerCircleRequest = ({navigation, route}) => {
         targetUserId: id,
       };
       let resp = await declineInnerCircleRequestAPI(payload);
-      console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
+      // console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
       let data = innerCircle.filter(user => user.userId !== id);
       setInnerCircle(data);
     } catch (error) {}
-  };
-  let getInnerCircleList = async () => {
-    try {
-      let resp = await myInnerCircleRequestAPI();
-      setloader(false);
-      setInnerCircle(resp?.data?.reqReceived);
-      setSentRequest(resp?.data?.reqSent);
-      console.log(resp?.data, 'myInnerCircleRequestAPI');
-    } catch (error) {
-      console.log(error, 'rerrr');
-    }
   };
 
   const [selected, setSelected] = useState(0);
@@ -117,7 +164,7 @@ const InnerCircleRequest = ({navigation, route}) => {
         action: type,
       };
       let resp = await acceptInnerCircleRequestAPI(payload);
-      console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
+      // console.log('🚀 ~ acceptRequest ~ resp:', resp?.data);
       let data = innerCircle.filter(user => user.id !== id);
       setInnerCircle(data);
     } catch (error) {}
@@ -137,14 +184,14 @@ const InnerCircleRequest = ({navigation, route}) => {
   };
 
   let createConvo = async (id, item) => {
-    console.log('🚀 ~ createConvo ~ id:', id);
+    // console.log('🚀 ~ createConvo ~ id:', id);
     try {
       let paylaod = {
         recipientId: id,
       };
 
       let resp = await createConversation(paylaod);
-      console.log(resp?.data);
+      // console.log(resp?.data);
       navigationRef.navigate(Routes.Chat, {
         chatId: resp?.data?._id,
         data: item?.firstname + ' ' + item?.lastname,
@@ -251,8 +298,15 @@ const InnerCircleRequest = ({navigation, route}) => {
       {selected == 0 && myinnerCircle?.length > 0 ? (
         <FlatList
           data={filteredUsers}
+          onEndReached={getmyInnerCircleList}
+          ListFooterComponent={
+            loading && !allFetched ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : null
+          }
+          extraData={filteredUsers}
           renderItem={({item}) => {
-            console.log('🚀 ~ InnerCircleRequest ~ item:', item);
+            // console.log('🚀 ~ InnerCircleRequest ~ item:', item);
             return (
               <View>
                 <View style={styles.card}>
@@ -347,6 +401,13 @@ const InnerCircleRequest = ({navigation, route}) => {
       {selected == 1 && innerCircle?.length > 0 ? (
         <FlatList
           data={innerCircle}
+          onEndReached={getInnerCirclerecivedList}
+          ListFooterComponent={
+            loading && !allrecivedFetched ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : null
+          }
+          extraData={innerCircle}
           renderItem={({item}) => <RequestView item={item} />}
         />
       ) : (
@@ -385,8 +446,15 @@ const InnerCircleRequest = ({navigation, route}) => {
       {selected == 2 && sent?.length > 0 ? (
         <FlatList
           data={sent}
+          onEndReached={getInnerCircleList}
+          ListFooterComponent={
+            loading && !allsentFetched ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : null
+          }
+          extraData={sent}
           renderItem={({item}) => {
-            console.log('🚀 ~ InnerCircleRequest ~ item:', item);
+            // console.log('🚀 ~ InnerCircleRequest ~ item:', item);
             return (
               <View>
                 <View style={styles.card}>
@@ -409,7 +477,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                           {item?.username}
                         </Text>
                         <Text variant="medium12" color={COLORS.blue043142}>
-                          {formatDateforchat(item?.Timestamp)}
+                          {formatDateforchat(item?.timestamp)}
                         </Text>
                       </View>
                       <View

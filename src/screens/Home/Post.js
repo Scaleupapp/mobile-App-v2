@@ -349,11 +349,11 @@ const PostView = ({
       );
 
       const posts = response.data.items.map(item => item.postId);
-      console.log('postssssssss', posts);
+      // console.log('postssssssss', posts);
       const postDetails = await Promise.all(
         posts.map(postId => fetchPostDetails(postId)),
       );
-      console.log('postdetailsssssss', postDetails);
+      // console.log('postdetailsssssss', postDetails);
 
       setPlaylistPosts(postDetails.filter(post => post !== null));
     } catch (error) {

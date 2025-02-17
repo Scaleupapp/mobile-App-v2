@@ -974,26 +974,26 @@ const GroupChat = ({navigation, route}) => {
                 }}
                 style={{
                   flexDirection: 'row',
-
                   alignItems: 'center',
-
                   marginLeft: 10,
                 }}>
                 {data?.profilePicture ? (
                   <Image
-                    source={{uri: data?.profilePicture}}
+                    // source={{uri: data?.profilePicture}}
+                    source={{
+                      uri: `${
+                        data?.profilePicture
+                      }?timestamp=${new Date().getTime()}`,
+                    }}
                     style={styles.image}
                   />
                 ) : (
                   <View
                     style={[
                       styles.image,
-
                       {
                         alignItems: 'center',
-
                         justifyContent: 'center',
-
                         backgroundColor: COLORS.greyD6D6D6,
                       },
                     ]}>

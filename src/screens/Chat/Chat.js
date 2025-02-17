@@ -503,7 +503,6 @@ const Chat = ({navigation, route}) => {
 
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
-    console.log('🚀 ~ loadMoreMessages ~ newMessages:', page.current);
     if (page.current == 1) {
       const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
         if (msg.sender._id !== userData?.id && !msg.readAt) {

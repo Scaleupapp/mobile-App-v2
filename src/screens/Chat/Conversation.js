@@ -33,6 +33,10 @@ const Conversation = ({navigation, route}) => {
   const [studyGroups, setStudyGroups] = useState([]);
   const chatmodelRef = useRef(null);
   const DataArray = selected ? studyGroups : conversation;
+  const [fetchconversation, setAllconversationfetched] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const page = useRef(1);
+
   useFocusEffect(
     useCallback(() => {
       fetchConversations(); // Function to fetch conversations
@@ -134,12 +138,20 @@ const Conversation = ({navigation, route}) => {
 
   const fetchConversations = async () => {
     try {
-      const {data} = await getconversation();
-      setConversation(data);
+      if (loading || fetchconversation) return;
+      setLoading(true);
+      const {data} = await getconversation(page?.current);
+      setConversation(val => [...val, ...data?.conversations]);
+      if (page?.current == data?.totalPages) {
+        setAllconversationfetched(true);
+      }
+      page.current += 1;
+      console.log('🚀 ~ fetchConversations ~ data:', data);
     } catch (error) {
       console.log('🚀 ~ fetchConversations ~ error..:', error);
     } finally {
       setLoader(false);
+      setLoading(false);
     }
   };
   const fetchStudyGroups = async () => {
@@ -170,7 +182,13 @@ const Conversation = ({navigation, route}) => {
           })
         }>
         {item?.profilePicture ? (
-          <Image source={{uri: item?.profilePicture}} style={styles.image} />
+          <Image
+            source={{
+              uri: `${item?.profilePicture}?timestamp=${new Date().getTime()}`,
+            }}
+            // source={{uri: item?.profilePicture}}
+            style={styles.image}
+          />
         ) : (
           <View
             style={[
@@ -329,6 +347,13 @@ const Conversation = ({navigation, route}) => {
                 <Card item={item} index={index} />
               )
             }
+            onEndReached={fetchConversations}
+            ListFooterComponent={
+              loading && !fetchconversation ? (
+                <ActivityIndicator size="small" color="#0000ff" />
+              ) : null
+            }
+            extraData={conversation}
             ListEmptyComponent={() => {
               return (
                 <View>
