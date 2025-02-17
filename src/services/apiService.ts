@@ -139,14 +139,14 @@ export const markReadNotificationAPI = (payload: any) => {
   return axiosInstance.post(`${API.MARK_READ}`, payload);
 };
 
-export const myInnerCirclesentAPI = (page:any) => {
+export const myInnerCirclesentAPI = (page: any) => {
   return axiosInstance.get(`${API.INNERCIRCLE}?page=${page}`);
 };
-export const myInnerCirclerecievedAPI = (page:any) => {
+export const myInnerCirclerecievedAPI = (page: any) => {
   return axiosInstance.get(`${API.INNERCIRCLERECIVED}?page=${page}`);
 };
 
-export const myInnerCircleAPI = (page:any) => {
+export const myInnerCircleAPI = (page: any) => {
   return axiosInstance.get(`${API.GETINNERCIRCLE}?page=${page}`);
 };
 
@@ -178,11 +178,11 @@ export const unlikeComment = (id: any) => {
   return axiosInstance.post(`${API.COMMENT}/unlike/${id}`);
 };
 
-export const getFollowerlist = (id: any,page:any) => {
+export const getFollowerlist = (id: any, page: any) => {
   return axiosInstance.get(`${API.FOLLOWERS_LIST}/${id}?page=${page}`);
 };
 
-export const getFollowinglist = (id: any,page:any) => {
+export const getFollowinglist = (id: any, page: any) => {
   return axiosInstance.get(`${API.FOLLOWING_LIST}/${id}?page=${page}`);
 };
 
@@ -242,7 +242,6 @@ export const sendChatReply = (payload: any) => {
   return axiosInstance.post(`${API.CHAT}/reply`, payload);
 };
 
-
 export const editChatMessage = (convid: any, messageid: any, payload: any) => {
   return axiosInstance.put(
     `${API.CHAT}/${convid}/messages/${messageid}/edit`,
@@ -261,10 +260,7 @@ export const deleteChatMessage = (convid: any, messageid: any) => {
   );
 };
 export const markReadAPI = (payload: any) => {
-  return axiosInstance.post(
-    `${API.CHAT}/mark-read`,
-    payload,
-  );
+  return axiosInstance.post(`${API.CHAT}/mark-read`, payload);
 };
 
 // Create a new quiz event (Admin)
@@ -357,4 +353,47 @@ export const deleteContent = (contentId: any) => {
 
 export const deleteStory = (payload: any) => {
   return axiosInstance.delete(`stories`, payload);
+};
+
+// study groups
+export const getStudyGroups = () => {
+  return axiosInstance.get(`${API.CHAT}/`);
+};
+
+export const getStudyGroupMsg = (groupId: any, page: any) => {
+  return axiosInstance.get(
+    `${API.CHAT}/group/${groupId}/messages?page=${page}`,
+  );
+};
+
+export const deleteStudyGroup = (groupId: any) => {
+  return axiosInstance.delete(`${API.CHAT}/group/${groupId}`);
+};
+
+export const deleteGroupMsg = (groupId: any, messageid: any) => {
+  return axiosInstance.delete(
+    `${API.CHAT}/${groupId}/group/${messageid}/delete`,
+  );
+};
+
+export const editGroupMsg = (groupId: any, messageid: any, payload: any) => {
+  return axiosInstance.put(
+    `${API.CHAT}/${groupId}/group/${messageid}/edit`,
+    payload,
+  );
+};
+
+export const reactGroupMsg = (groupId: any, messageid: any, payload: any) => {
+  return axiosInstance.post(
+    `${API.CHAT}/group/${groupId}/messages/${messageid}/reactions`,
+    payload,
+  );
+};
+
+export const markReadGrpMsg = (payload: any) => {
+  return axiosInstance.post(`${API.CHAT}/group/mark-read`, payload);
+};
+
+export const leaveStudyGroup = (groupId: any) => {
+  return axiosInstance.post(`${API.CHAT}/group/${groupId}/leave`);
 };

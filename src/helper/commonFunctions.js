@@ -165,7 +165,8 @@ export function formatAMPM(isoTimestamp) {
 export function groupMessagesByDate(messages) {
   const groupedMessages = messages.reduce((acc, message) => {
     // Extract the date part from the 'createdAt' field
-    const date = new Date(message.createdAt).toISOString().split('T')[0];
+    const createdAt = message?.createdAt || message?.timestamp;
+    const date = new Date(createdAt).toISOString().split('T')[0];
 
     // Initialize a new group if it doesn't exist
     if (!acc[date]) {
