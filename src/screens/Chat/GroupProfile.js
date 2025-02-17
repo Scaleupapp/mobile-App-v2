@@ -18,7 +18,7 @@ import Text from '../../components/Text';
 import Routes from '../../helper/routes';
 import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
-import {deleteStudyGroup} from '../../services/apiService';
+import {deleteStudyGroup, leaveStudyGroup} from '../../services/apiService';
 import {useSelector} from 'react-redux';
 
 const GroupProfile = ({
@@ -42,11 +42,24 @@ const GroupProfile = ({
     });
   };
 
-  const menuItems = [
+  const adminItems = [
     {
       name: 'Delete Group',
       image: icons.delete,
-      onPress: () => ondelete(),
+      onPress: () => {
+        ondelete();
+        setVisible(false);
+      },
+    },
+  ];
+  const memItems = [
+    {
+      name: 'Leave Group',
+      // image: icons.perf,
+      onPress: () => {
+        onLeave();
+        setVisible(false);
+      },
     },
   ];
 
@@ -69,13 +82,39 @@ const GroupProfile = ({
     );
   };
 
+  const onLeave = () => {
+    Alert.alert(
+      'Leave Group',
+      'Are you sure you want to leave study group?',
+      [
+        {
+          text: 'Cancel',
+          onPress: () => {},
+          style: 'cancel',
+        },
+        {
+          text: 'Yes',
+          onPress: async () => leaveStudyGroupApi(),
+        },
+      ],
+      {cancelable: true},
+    );
+  };
+
   const deleteStudyGroupApi = async () => {
-    setVisible(false);
     try {
       await deleteStudyGroup(groupData?._id);
       navigation.pop(2);
     } catch (error) {}
   };
+
+  const leaveStudyGroupApi = async () => {
+    try {
+      await leaveStudyGroup(groupData?._id);
+      navigation.pop(2);
+    } catch (error) {}
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
@@ -93,7 +132,7 @@ const GroupProfile = ({
         }}
         title={'Group Profile'}
         onRightIconPress={() => setVisible(!visible)}
-        rightIcon={isAdmin}
+        rightIcon={true}
       />
 
       <View style={styles.layer1}>
@@ -163,7 +202,7 @@ const GroupProfile = ({
             </View>
 
             <Text variant="medium16" style={styles.sectionTitle}>
-              Members
+              Members ({groupData?.members?.length})
             </Text>
             <FlatList
               data={groupData?.members.map(member => ({
@@ -184,7 +223,7 @@ const GroupProfile = ({
       <MenuModal
         visible={visible}
         setVisible={setVisible}
-        menuItems={menuItems}
+        menuItems={isAdmin ? adminItems : memItems}
       />
     </SafeAreaView>
   );

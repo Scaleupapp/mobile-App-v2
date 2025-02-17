@@ -66,13 +66,13 @@ const GroupChat = ({navigation, route}) => {
   const [file, setFile] = useState([]);
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
-  //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
-
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
   const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
   const page = useRef(1); //
   const [userHasScrolled, setUserHasScrolled] = useState(false);
+  const [mentionList, setMentionList] = useState([]); // List of users to show
+  const [showMentions, setShowMentions] = useState(false);
 
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
@@ -908,6 +908,23 @@ const GroupChat = ({navigation, route}) => {
     }
   };
 
+  // Function to detect '@' and filter user list
+  const handleInputChange = text => {
+    setInput(text);
+    const lastWord = text.split(' ').pop(); // Get the last word being typed
+
+    if (lastWord.startsWith('@')) {
+      const query = lastWord.slice(1).toLowerCase();
+      const filteredUsers = data?.members?.filter(user =>
+        user.username.toLowerCase().includes(query),
+      );
+      setMentionList(filteredUsers);
+      setShowMentions(true);
+    } else {
+      setShowMentions(false);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback
       onPress={() => {
@@ -1151,7 +1168,7 @@ style={styles.icon}
                     style={styles.textInput}
                     placeholder="Type a message..."
                     value={input}
-                    onChangeText={setInput}
+                    onChangeText={handleInputChange}
                     //   onSubmitEditing={sendMessage}
                     //   returnKeyType="send"
                     ref={textInputRef}
@@ -1216,6 +1233,36 @@ style={styles.icon}
             setVisible={setVisible}
             menuItems={menuItems}
           /> */}
+          {showMentions && mentionList.length > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 60,
+                backgroundColor: 'white',
+                borderRadius: 5,
+                padding: 5,
+              }}>
+              {mentionList.map(user => (
+                <TouchableOpacity
+                  key={user.id}
+                  onPress={() => {
+                    const words = input.split(' ');
+                    words[words.length - 1] = `@${user.username} `; // Replace with full username
+                    setInput(words.join(' '));
+                    setShowMentions(false);
+                  }}
+                  style={{
+                    padding: 10,
+                    borderBottomWidth: 1,
+                    borderColor: '#ccc',
+                  }}>
+                  <Text variant="medium12" color={COLORS.grey999999}>
+                    @{user.username}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <MessageModal
             isVisible={visible}
             onClose={() => {
