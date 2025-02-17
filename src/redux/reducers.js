@@ -4,6 +4,7 @@ const initialState = {
   // Initial state properties
   userData: {},
   groupData: {},
+  innerCircle: {},
 };
 
 const mySlice = createSlice({
@@ -16,6 +17,9 @@ const mySlice = createSlice({
     },
     setGroupData(state, action) {
       state.groupData = action.payload;
+    },
+    setInnerCircle(state, action) {
+      state.innerCircle = action.payload;
     },
     logout(state) {
       return initialState;

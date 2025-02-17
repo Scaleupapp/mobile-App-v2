@@ -1,4 +1,4 @@
-import React, {forwardRef, useEffect, useMemo, useState} from 'react';
+import React, {forwardRef, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -23,22 +23,38 @@ import Button from '../../components/Button';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {CheckBox} from 'react-native-elements';
+import {useDispatch} from 'react-redux';
+import {actions} from '../../redux/reducers';
 
 const ChatModal = forwardRef(
   ({group, edit = false, grpMembers = [], setGrpMembers}, ref) => {
+    const dispatch = useDispatch();
     const [loading, setLoading] = useState(false);
     const [myInnerCircle, setMyInnerCircle] = useState([]);
-    const [selectedMembers, setSelectedMembers] = useState(grpMembers || []);
+    const [selectedMembers, setSelectedMembers] = useState([]);
+    const page = useRef(1);
+    const [allFetched, setAllFetched] = useState(false); // Indicates if all messages are loaded
 
     useEffect(() => {
-      getMyInnerCircleList();
+      if (edit) setMyInnerCircle(grpMembers);
+    }, [grpMembers]);
+
+    useEffect(() => {
+      if (!edit) getMyInnerCircleList();
     }, []);
 
     const getMyInnerCircleList = async () => {
       try {
+        if (loading || allFetched) return;
         setLoading(true);
-        let resp = await myInnerCircleAPI();
-        setMyInnerCircle(resp?.data || []);
+        let resp = await myInnerCircleAPI(page?.current);
+        const myArray = [...myInnerCircle, ...resp?.data?.users];
+        dispatch(actions.setInnerCircle(myArray));
+        setMyInnerCircle(myArray);
+        if (page?.current == resp?.data?.totalPages) {
+          setAllFetched(true);
+        }
+        page.current += 1;
       } catch (error) {
         console.log(error, 'error fetching inner circle');
       } finally {
@@ -76,7 +92,7 @@ const ChatModal = forwardRef(
         handleComponent={null}
         animateOnMount={false}
         containerStyle={{borderTopLeftRadius: 24}}
-        onDismiss={() => setSelectedMembers(grpMembers || [])}
+        onDismiss={() => setSelectedMembers([])}
         style={styles.modalContainer}>
         <BottomSheetView style={styles.bottomSheetView}>
           <Icon
@@ -106,8 +122,9 @@ const ChatModal = forwardRef(
                   </Text>
                 )}
                 ListFooterComponent={() => <View style={{height: nh(80)}} />}
-                renderItem={({item}) => (
+                renderItem={({item, index}) => (
                   <Pressable
+                    key={index}
                     onPress={() => {
                       if (group) toggleSelection(item.userId);
                       else createConvo(item.userId, item);
@@ -176,8 +193,7 @@ const ChatModal = forwardRef(
                     text="Next"
                     onPress={() => {
                       let members = [];
-                      const uniqueUsers = [...new Set(selectedMembers)];
-                      uniqueUsers.map(u => {
+                      selectedMembers.map(u => {
                         const member = myInnerCircle.filter(f => f.userId == u);
                         if (member?.length > 0) members.push(member[0]);
                       });

@@ -37,6 +37,7 @@ const options = ['Public', 'Private'];
 const EditGroupProfile = ({route, navigation}) => {
   const {groupMembersDetails = [], groupData = {}, edit = false} = route.params;
   const userData = useSelector(state => state?.userData);
+  const innerCircle = useSelector(state => state?.innerCircle);
   const dispatch = useDispatch();
   const chatmodelRef = useRef(null);
   const [selectedMembers, setSelectedMembers] = useState(
@@ -467,12 +468,16 @@ const EditGroupProfile = ({route, navigation}) => {
       <ChatModal
         group={true}
         ref={chatmodelRef}
-        grpMembers={memberDetails.map(user => user?._id || user?.userId)}
+        grpMembers={innerCircle.filter(
+          inner =>
+            !memberDetails.some(
+              grpMember =>
+                grpMember?._id == inner?.userId ||
+                grpMember?.userId == inner?.userId,
+            ),
+        )}
         setGrpMembers={mem => {
-          const me = groupData?.members?.filter(
-            f => f?._id == userData?.id || f?.userId == userData?.id,
-          );
-          setMemberDetails([...me, ...mem]);
+          setMemberDetails(prev => [...prev, ...mem]);
         }}
         edit={true}
       />
