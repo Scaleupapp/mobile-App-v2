@@ -30,9 +30,7 @@ const UpdatePopup = () => {
         country: 'IN',
       });
       const latest = versionInfo?.version;
-      const current = isAndroid
-        ? DeviceInfo.getVersion() || packageDetail.version
-        : packageDetail?.['IOS-version'];
+      const current = packageDetail.version;
       const needsUpdate = isVersionLess(current, latest);
       if (latest && needsUpdate) {
         setLatestVersion(latest);

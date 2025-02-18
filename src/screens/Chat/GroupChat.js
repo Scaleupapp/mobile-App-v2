@@ -489,7 +489,7 @@ const GroupChat = ({navigation, route}) => {
 
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
-    console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages);
+    // console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages);
     setLoading(false);
     if (page.current == 1) {
       const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {

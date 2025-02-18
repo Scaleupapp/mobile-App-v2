@@ -30,7 +30,6 @@ import {navigationRef} from '../../../App';
 import ProgressCircle from '../../components/ProgressCircle';
 import PlaylistCommentsModal from './PlaylistCommentsModal';
 import VideoPlayerModal from './VideoPlayerModal';
-import DraggableFlatList from 'react-native-draggable-flatlist';
 import PlaylistSearch from './PlaylistSearch';
 import PlaylistInfoModal from './PlaylistInfoModal';
 import PlaylistCreateModal from './PlaylistCreateModal';

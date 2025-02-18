@@ -146,7 +146,7 @@ const Conversation = ({navigation, route}) => {
         setAllconversationfetched(true);
       }
       page.current += 1;
-      console.log('🚀 ~ fetchConversations ~ data:', data);
+      // console.log('🚀 ~ fetchConversations ~ data:', data);
     } catch (error) {
       console.log('🚀 ~ fetchConversations ~ error..:', error);
     } finally {
@@ -170,7 +170,7 @@ const Conversation = ({navigation, route}) => {
   const GroupCard = ({item, index}) => {
     // console.log('item?.unreadMessageCount ', item?.unreadMessageCount);
     let lastMessage = item?.lastMessage;
-    console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
+    // console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
     return (
       <Pressable
         key={index}
