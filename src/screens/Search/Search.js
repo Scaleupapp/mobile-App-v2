@@ -40,7 +40,6 @@ const Search = () => {
   useEffect(() => {
     if (text.length > 1) {
       const data = {query: text};
-      console.log('🚀 ~ useEffect ~ data:', data);
       globalSearch(data)
         .then(res => {
           setData(res?.data);

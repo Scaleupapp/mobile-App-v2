@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,29 +11,26 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  FlatList,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import Video from 'react-native-video';
 import {COLORS} from '../../helper/colors';
-import {nh} from '../../helper/scales';
+import {nh, nw} from '../../helper/scales';
 
 const MediaModal = ({
   isVisible,
   onClose,
-  file,
+  file, // Now an array if multi=true
   onSend,
   input,
   setInput,
   loadingsmall,
   reply,
+  multi = false,
 }) => {
-  //   console.log('🚀 ~ MediaModal ~ isVisible:', isVisible);
-  // const [selectedMedia, setSelectedMedia] = useState(null); // { type: 'image' | 'video', uri: string }
-
   const handleSend = () => {
-    console.log('herr');
-    if (file?.fileName) {
-      console.log('her1');
+    if (file?.length > 0) {
       onSend();
     }
   };
@@ -45,29 +42,56 @@ const MediaModal = ({
       onBackButtonPress={onClose}
       backdropOpacity={0.1}
       style={styles.modal}>
-      {/* <View style={styles.container}> */}
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.container}>
           <Text style={styles.title}>Preview Media</Text>
-          <View style={styles.mediaContainer}>
-            {file?.type?.includes('image') && (
+
+          <View style={[styles.mediaContainer, multi ? {} : {height: nh(200)}]}>
+            {multi ? (
+              <FlatList
+                data={file} // Expecting an array
+                // horizontal
+                numColumns={2}
+                columnWrapperStyle={{justifyContent: 'space-between'}}
+                keyExtractor={(_, index) => index.toString()}
+                renderItem={({item, index}) => (
+                  <View key={index} style={styles.mediaItem}>
+                    {item?.type?.includes('image') && (
+                      <Image
+                        source={{uri: item.uri}}
+                        style={styles.mediaPreview}
+                        resizeMode="cover"
+                      />
+                    )}
+                    {item?.type?.includes('video') && (
+                      <Video
+                        source={{uri: item.uri}}
+                        style={styles.mediaPreview}
+                        resizeMode="contain"
+                        controls
+                      />
+                    )}
+                  </View>
+                )}
+              />
+            ) : file?.type?.includes('image') ? (
               <Image
                 source={{uri: file.uri}}
                 style={styles.mediaPreview}
                 resizeMode="cover"
               />
-            )}
-            {file?.type?.includes('video') && (
+            ) : file?.type?.includes('video') ? (
               <Video
-                source={{uri: file?.uri}}
+                source={{uri: file.uri}}
                 style={styles.mediaPreview}
                 resizeMode="contain"
                 controls
               />
-            )}
+            ) : null}
           </View>
+
           <TextInput
             style={styles.input}
             placeholder="Type your message..."
@@ -75,6 +99,7 @@ const MediaModal = ({
             onChangeText={setInput}
             multiline
           />
+
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.button} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
@@ -93,7 +118,6 @@ const MediaModal = ({
           </View>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
-      {/* </View> */}
     </Modal>
   );
 };
@@ -122,7 +146,7 @@ const styles = StyleSheet.create({
   },
   mediaContainer: {
     width: '100%',
-    height: 200,
+    // height: 200,
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 10,
@@ -131,12 +155,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
+  mediaItem: {
+    width: nw(170), // Set width for each media item
+    height: nh(180),
+  },
   mediaPreview: {
     width: '100%',
     height: '100%',
-  },
-  placeholderText: {
-    color: '#888',
+    borderRadius: 10,
   },
   input: {
     width: '100%',

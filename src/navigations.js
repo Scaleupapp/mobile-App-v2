@@ -67,6 +67,9 @@ import Chat from './screens/Chat/Chat';
 import MyBadge from './screens/MyBadge/MyBadge';
 import QuizScreen from './screens/Quiz/QuizScreen';
 import QuizListScreen from './screens/Quiz/QuizListScreen';
+import EditGroupProfile from './screens/Chat/EditGroupProfile';
+import GroupChat from './screens/Chat/GroupChat';
+import GroupProfile from './screens/Chat/GroupProfile';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -536,6 +539,21 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.QuizList}
         component={QuizListScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditGroupProfile}
+        component={EditGroupProfile}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.GroupChat}
+        component={GroupChat}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.GroupProfile}
+        component={GroupProfile}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

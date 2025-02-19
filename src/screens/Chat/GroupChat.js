@@ -10,36 +10,26 @@ import {
   TouchableWithoutFeedback,
   ActivityIndicator,
   Pressable,
+  Platform,
+  FlatList,
+  TextInput,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import Header from '../../components/Header';
 import io from 'socket.io-client';
-import axiosInstance from '../../services/axiosinstance';
-import {FlatList} from 'react-native';
-import {TextInput} from 'react-native';
-import Button from '../../components/Button';
 import {
-  clearChat,
-  deleteChatMessage,
-  deletemultipleChatMessage,
-  editChatMessage,
-  getconversation,
-  getconversationbyID,
-  markReadAPI,
-  reactChatMessage,
-  sendChat,
-  sendChatReply,
+  deleteGroupMsg,
+  editGroupMsg,
+  getStudyGroupMsg,
+  markReadGrpMsg,
+  reactGroupMsg,
 } from '../../services/apiService';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import Text from '../../components/Text';
-import {images} from '../../assets/images';
 import {Image} from 'react-native';
-import {MenuModal} from '../../components/MenuModal';
 import {icons} from '../../assets/icons';
 import {
   checkDate,
-  checkIfTenMinutesPassed,
   compressImage,
   compressVideo,
   formatAMPM,
@@ -52,8 +42,13 @@ import Video from 'react-native-video';
 import ImageModal from '../Post/ImageModal';
 import MediaModal from './ImageSendModal';
 import MessageModal from './MessageactionsModal';
+import Routes from '../../helper/routes';
+import moment from 'moment';
+import {actions} from '../../redux/reducers';
 
-const Chat = ({navigation, route}) => {
+const GroupChat = ({navigation, route}) => {
+  const {groupId, data} = route?.params;
+  const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -68,18 +63,17 @@ const Chat = ({navigation, route}) => {
   const imageModalRef = useRef(null);
   const [modalvisible, setModalVisible] = useState(false);
   const [itemclicked, setItemcliked] = useState({});
-  const [file, setFile] = useState({});
+  const [file, setFile] = useState([]);
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
-  const [deleteMessages, setdeletemessages] = useState([]);
-  //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
-
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
   const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
   const page = useRef(1); //
   const [userHasScrolled, setUserHasScrolled] = useState(false);
-  const [threedotmodal, setThreeDotmodal] = useState(false);
+  const [mentionList, setMentionList] = useState([]); // List of users to show
+  const [showMentions, setShowMentions] = useState(false);
+
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club', {
@@ -91,15 +85,18 @@ const Chat = ({navigation, route}) => {
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
-      console.log('joinRoom');
-      socketInstance.emit('joinRoom', route?.params?.chatId);
+      console.log('group opened ', groupId);
+      socketInstance.emit('joinGroup', groupId);
     });
 
     socketInstance.on('receiveMessage', data => {
-      if (data.conversationId === route?.params?.chatId) {
-        // markasRead(data?._id);
-        setMessages(prevMessages => [...prevMessages, data]);
-      }
+      console.log('receiveMessage ', data);
+      data = {...data, createdAt: moment()};
+
+      // if (data.conversationId === groupId) {
+      // markasRead(data?._id);
+      setMessages(prevMessages => [...prevMessages, data]);
+      // }
     });
     socketInstance.on('messageEdited', data => {
       const updatedData = {
@@ -119,8 +116,6 @@ const Chat = ({navigation, route}) => {
     });
 
     socketInstance.on('messageDeleted', data => {
-      // console.log('🚀 ~ useEffect ~ messageDeleted:', data);
-
       const updatedData = {
         _id: data?.messageId,
         deleted: true,
@@ -137,8 +132,6 @@ const Chat = ({navigation, route}) => {
     });
 
     socketInstance.on('reactionAdded', data => {
-      // console.log('🚀 ~ useEffect ~ reactionAdded:', data);
-
       const updatedMessages = messages.map(
         msg =>
           msg._id === data?.messageId
@@ -156,12 +149,13 @@ const Chat = ({navigation, route}) => {
     return () => {
       if (socketInstance) {
         console.log('leaveRoom');
-        socketInstance.emit('leaveRoom', route?.params?.chatId); // Ensure to leave the room on cleanup
+        socketInstance.emit('leaveRoom', groupId); // Ensure to leave the room on cleanup
         socketInstance.disconnect();
       }
     };
-  }, [route?.params?.chatId, messages]); // Ensure that the effect runs when the conversationId changes
+  }, [groupId, messages]); // Ensure that the effect runs when the conversationId changes
   useEffect(() => {
+    dispatch(actions.setGroupData(data));
     loadMoreMessages();
   }, []);
 
@@ -190,45 +184,52 @@ const Chat = ({navigation, route}) => {
   }, []);
 
   const sendMessage = async () => {
-    setLoadingsmal(true);
-    // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
-      const formData = new FormData();
+      setLoadingsmal(true);
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${userData?.token}`);
 
-      formData.append('conversationId', route?.params?.chatId);
-      // Format topics and hashtags as arrays
-
-      formData.append('message', input);
-
-      // Format topics and hashtags as arrays
-
-      // formData.append('message', 'heheh');
-
-      if (file?.fileName) {
-        formData.append('media', {
-          uri: file.uri,
-          name: file.fileName,
-          type: file.type,
+      const formdata = new FormData();
+      formdata.append('groupId', groupId);
+      formdata.append('message', input);
+      if (file.length > 0) {
+        file.forEach(f => {
+          formdata.append('attachments', {
+            uri: f.uri,
+            name: f.fileName,
+            type: f.type,
+          });
         });
       }
 
-      let conversationId = route?.params?.chatId;
-      const {data} = await sendChat(formData);
-      // markasRead(data?._id);
-      // console.log('🚀 ~ sendMessage ~ data:', data);
-      // setMessages(prevMessages => [...prevMessages, data]);
-      setUserHasScrolled(false);
-      setIsread(true);
-      if (socket) {
-        socket.emit('sendMessage', {
-          conversationId,
-          data,
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow',
+      };
+
+      fetch('https://api.scaleupapp.club/api/chat/group/send', requestOptions)
+        .then(response => response.text())
+        .then(data => {
+          console.log('🚀 ~ sendMessage ~ data:', data);
+          if (socket) {
+            socket.emit('sendMessage', {
+              groupId,
+              message: data?.newMessage,
+              sender: data?.newMessage?.sender,
+            });
+          }
+        })
+        .catch(error => console.error(error))
+        .finally(() => {
+          setUserHasScrolled(false);
+          setIsread(true);
+          setLoadingsmal(false);
+          setModalVisible(false);
+          setInput('');
+          setFile({});
         });
-      }
-      setLoadingsmal(false);
-      setModalVisible(false);
-      setInput('');
-      setFile({});
     }
   };
 
@@ -239,14 +240,10 @@ const Chat = ({navigation, route}) => {
         content: input,
       };
       try {
-        const {data} = await editChatMessage(
-          selected?.conversationId,
-          selected?._id,
-          payload,
-        );
+        const {data} = await editGroupMsg(groupId, selected?._id, payload);
         const updatedData = {
           _id: selected?._id,
-          message: input,
+          content: input,
           edited: true,
         };
         // console.log('🚀 ~ editMessage ~ updatedData:', updatedData);
@@ -279,11 +276,7 @@ const Chat = ({navigation, route}) => {
     };
     // console.log('🚀 ~ Chat ~ payload:', payload);
     try {
-      const {data} = await reactChatMessage(
-        selected?.conversationId,
-        selected?._id,
-        payload,
-      );
+      const {data} = await reactGroupMsg(groupId, selected?._id, payload);
 
       const updatedData = {
         _id: selected?._id,
@@ -310,11 +303,7 @@ const Chat = ({navigation, route}) => {
 
   const deleteMessage = async () => {
     try {
-      const {data} = await deleteChatMessage(
-        selected?.conversationId,
-        selected?._id,
-      );
-      setVisible(false);
+      const {data} = await deleteGroupMsg(groupId, selected?._id);
       const updatedData = {
         _id: selected?._id,
         deleted: true,
@@ -328,39 +317,14 @@ const Chat = ({navigation, route}) => {
       );
       setMessages(updatedMessages);
       setVisible(false);
-      setSelected(null);
-      showToast({type: 'success', title: data?.message});
     } catch (error) {
-      console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
-    }
-  };
-
-  const deletemultipleMessage = async () => {
-    console.log(deleteMessages, 'deleteMessages');
-    try {
-      const {data} = await deletemultipleChatMessage(route?.params?.chatId, {
-        messageIds: deleteMessages,
-      });
-      // console.log('🚀 ~ deletemultipleMessage ~ data:', data);
-
-      const updatedMessages = messages.map(
-        msg =>
-          deleteMessages.includes(msg._id) // ✅ Check if msg._id exists in messageIds array
-            ? {...msg, deleted: true} // ✅ Set deleted to true
-            : msg, // ✅ Keep others unchanged
-      );
-
-      setMessages(updatedMessages);
-      setdeletemessages([]);
-      setThreeDotmodal(false);
-    } catch (error) {
-      console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
+      console.log('🚀 ~ deleteMessage ~ error:', error?.response?.data);
     }
   };
 
   const onEditClick = () => {
     setEdit(true);
-    setInput(selected?.message);
+    setInput(selected?.message || selected?.content);
     setVisible(false);
     if (textInputRef.current) {
       textInputRef.current.focus();
@@ -375,104 +339,103 @@ const Chat = ({navigation, route}) => {
     }
   };
   const replyMessage = async () => {
-    setLoadingsmal(true);
-    // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
-      const formData = new FormData();
+      setLoadingsmal(true);
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${userData?.token}`);
 
-      formData.append('conversationId', route?.params?.chatId);
-      // Format topics and hashtags as arrays
-
-      formData.append('message', input);
-      formData.append('parentMessageId', selected?._id);
-      // Format topics and hashtags as arrays
-
-      // formData.append('message', 'heheh');
-
-      if (file?.fileName) {
-        formData.append('media', {
-          uri: file.uri,
-          name: file.fileName,
-          type: file.type,
+      const formdata = new FormData();
+      formdata.append('groupId', groupId);
+      formdata.append('message', input);
+      if (file.length > 0) {
+        file.forEach(f => {
+          formdata.append('attachments', {
+            uri: f.uri,
+            name: f.fileName,
+            type: f.type,
+          });
         });
       }
+      formdata.append('parentMessageId', selected?._id);
 
-      let conversationId = route?.params?.chatId;
-      const {data} = await sendChatReply(formData);
-      // markasRead(data?._id);
-      // setMessages(prevMessages => [...prevMessages, data]);
-      console.log('🚀 ~ sendMesendChatReplyssage ~ data:', data);
-      setUserHasScrolled(false);
-      setReply(false);
-      setSelected();
-      setIsread(true);
-      if (socket) {
-        socket.emit('sendMessage', {
-          conversationId,
-          data,
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formdata,
+        redirect: 'follow',
+      };
+
+      fetch('https://api.scaleupapp.club/api/chat/group/reply', requestOptions)
+        .then(response => response.text())
+        .then(data => {
+          console.log('🚀 ~ replyMessage ~ data:', data);
+          if (socket) {
+            socket.emit('sendMessage', {
+              groupId,
+              message: data?.newMessage,
+              sender: data?.newMessage?.sender,
+            });
+          }
+        })
+        .catch(error => console.error(error))
+        .finally(() => {
+          setUserHasScrolled(false);
+          setReply(false);
+          setSelected();
+          setIsread(true);
+          setLoadingsmal(false);
+          setModalVisible(false);
+          setInput('');
+          setFile({});
         });
-      }
-      setLoadingsmal(false);
-      setModalVisible(false);
-      setInput('');
-      setFile({});
     }
   };
   const openGallery = async () => {
     try {
       const result = await launchImageLibrary({
-        mediaType: 'mixed', // allows both image & video
+        mediaType: 'mixed', // Allows both image & video
+        selectionLimit: 4,
       });
 
-      // Always close modal so we can re-open it next time
-
       if (result.assets && result.assets.length > 0) {
-        await handleFileSelection(result.assets[0]);
+        await handleMultipleFileSelection(result.assets);
       }
     } catch (err) {
       console.error('Error selecting file:', err);
       showToast({
-        title: 'Failed to select file',
+        title: 'Failed to select files',
         type: 'error',
       });
-      // Close modal in case of error
     }
   };
-  const handleFileSelection = async asset => {
-    // console.log('🚀 ~ Chat ~ asset:', asset);
 
+  const handleMultipleFileSelection = async assets => {
     try {
-      if (asset.type && asset.type.toLowerCase().includes('gif')) {
-        setFile({...asset});
-      } else if (asset.type && asset.type.toLowerCase().includes('video')) {
-        let compress_video = await compressVideo(asset?.uri);
-        setFile({...asset, uri: compress_video});
-      } else {
-        let compress_image = await compressImage(asset?.uri);
-        setFile({...asset, uri: compress_image});
-      }
+      const processedFiles = await Promise.all(
+        assets.map(async asset => {
+          if (asset.type && asset.type.toLowerCase().includes('gif')) {
+            return {...asset};
+          } else if (asset.type && asset.type.toLowerCase().includes('video')) {
+            let compress_video = await compressVideo(asset?.uri);
+            return {...asset, uri: compress_video};
+          } else {
+            let compress_image = await compressImage(asset?.uri);
+            return {...asset, uri: compress_image};
+          }
+        }),
+      );
+
+      setFile(processedFiles); // Assuming you have a state like setFiles([])
+
       setTimeout(() => {
         setModalVisible(true);
       }, 500);
-      // let conversationId = route?.params?.chatId;
-      // const {data} = await sendChat(formData);
-      // setInput('');
-      // console.log('🚀 ~ sendMessage ~ data:.....', data);
-      // setUserHasScrolled(false);
-      // //   setMessages(prevMessages => [...prevMessages, data]);
-      // if (socket) {
-      //   socket.emit('sendMessage', {
-      //     conversationId,
-      //     data,
-      //   });
-      // }
     } catch (error) {
-      console.error('Error processing file:', error);
+      console.error('Error processing files:', error);
       showToast({
-        title: 'Failed to process file',
+        title: 'Failed to process files',
         type: 'error',
       });
-    } finally {
     }
   };
 
@@ -489,7 +452,7 @@ const Chat = ({navigation, route}) => {
       let section = [{type: 'header', date: group.date}];
 
       const messageSection = group.messages.flatMap(msg => {
-        const isUnread = !msg.readAt && msg.sender._id !== userData?.id; // Ensure message is unread & not sent by me
+        const isUnread = !msg.readAt && msg.sender?._id !== userData?.id; // Ensure message is unread & not sent by me
 
         if (isUnread && !unreadInserted) {
           unreadInserted = true;
@@ -507,9 +470,8 @@ const Chat = ({navigation, route}) => {
   };
 
   const markasRead = async id => {
-    console.log('🚀 ~ markasRead ~ id:', id);
     try {
-      let res = await markReadAPI({
+      let res = await markReadGrpMsg({
         messageId: id,
       });
       console.log('🚀 ~ markasRead ~ res:', res?.data);
@@ -519,9 +481,7 @@ const Chat = ({navigation, route}) => {
   };
 
   const fetchMessages = async page => {
-    const {data} = await getconversationbyID(route?.params?.chatId, page);
-
-    // setApiData(data);
+    const {data} = await getStudyGroupMsg(groupId, page);
     return data?.messages;
   };
   const loadMoreMessages = async () => {
@@ -529,13 +489,16 @@ const Chat = ({navigation, route}) => {
 
     setLoading(true);
     const newMessages = await fetchMessages(page.current);
+    // console.log('🚀 ~ loadMoreMessages ~ newMessages:', newMessages);
+    setLoading(false);
     if (page.current == 1) {
       const lastUnreadMessage = newMessages.reduce((lastUnread, msg) => {
-        if (msg.sender._id !== userData?.id && !msg.readAt) {
+        if (msg?.sender?._id !== userData?.id && !msg?.readAt) {
           return msg; // Keep updating with the latest unread message
         }
         return lastUnread;
       }, null);
+      console.log({lastUnreadMessage});
       if (lastUnreadMessage) {
         markasRead(lastUnreadMessage?._id);
       }
@@ -546,7 +509,6 @@ const Chat = ({navigation, route}) => {
       setMessages(prevMessages => [...newMessages, ...prevMessages]);
       page.current += 1;
     }
-    setLoading(false);
   };
 
   // Handle when the user scrolls to the top
@@ -559,36 +521,7 @@ const Chat = ({navigation, route}) => {
       loadMoreMessages();
     }
   };
-  const menuItems = [
-    {
-      name: 'Clear Chat',
-      image: icons.crosspageoutline,
 
-      onPress: () => clearChatAPI(), // Edit action
-    },
-    ...(deleteMessages.length > 0
-      ? [
-          {
-            name: 'Delete Messages',
-            image: icons.delete,
-            onPress: () => deletemultipleMessage(), // Delete action (this should be onDeleteClick, not onEditClick)
-          },
-        ]
-      : []),
-  ];
-
-  const clearChatAPI = async () => {
-    try {
-      let res = await clearChat(route?.params?.chatId);
-      console.log('🚀 ~ clearChatAPI ~ res:', res?.data);
-
-      setThreeDotmodal(false);
-      setMessages([]);
-      // showToast({type: 'success', title: res?.data?.message});
-    } catch (error) {
-      console.log('🚀 ~ clearChatAPI ~ error:', error);
-    }
-  };
   const renderMessage = ({item}) => {
     // console.log('🚀 ~ renderMessage ~ item:', item);
     if (item.type === 'header') {
@@ -678,7 +611,6 @@ const Chat = ({navigation, route}) => {
                 : item.sender?.username}
             </Text>
             <TouchableOpacity
-              onPress={() => setdeletemessages(val => [...val, ...[item?._id]])}
               onLongPress={() => {
                 // if (item?.sender?._id == userData?.id && isEditable) {
                 setSelected(item);
@@ -691,9 +623,9 @@ const Chat = ({navigation, route}) => {
                 item?.sender == userData?.id
                   ? styles.sent
                   : styles.received,
-                deleteMessages?.includes(item._id) && {
-                  backgroundColor: COLORS.blue043142 + 60,
-                },
+                // item?._id == selected?._id && {
+                //   backgroundColor: COLORS.blue043142 + 60,
+                // },
                 item?.edited && {
                   paddingBottom: 18,
                 },
@@ -719,30 +651,29 @@ const Chat = ({navigation, route}) => {
                       flexDirection: 'row',
                       alignItems: 'center',
                     }}>
-                    {item?.parentMessageId?.message &&
-                      !item?.parentMessageId?.mediaType && (
+                    {item?.parentMessageId?.content &&
+                      !item?.parentMessageId?.attachments && (
                         <Text
                           variant="medium12"
                           color={COLORS.black333333}
                           numberOfLines={1}
                           ellipsizeMode="tail">
-                          {item?.parentMessageId?.message}
+                          {item?.parentMessageId?.content}
                         </Text>
                       )}
 
-                    {item?.parentMessageId?.media &&
-                      (item?.parentMessageId?.mediaType == 'Image' ||
-                        item?.parentMessageId?.mediaType?.includes(
+                    {item?.parentMessageId?.attachments?.length > 0 &&
+                      (item?.parentMessageId?.attachments[0]?.mediaType ==
+                        'Image' ||
+                        item?.parentMessageId?.attachments[0]?.mediaType?.includes(
                           'image',
                         )) && (
-                        <Pressable
-                        // onPress={() => {
-                        //   setItemcliked(item);
-                        //   imageModalRef.current?.present();
-                        // }}
-                        >
+                        <Pressable>
                           <Image
-                            source={{uri: item?.parentMessageId?.media}}
+                            source={{
+                              uri: item?.parentMessageId?.attachments[0]
+                                ?.mediaUrl,
+                            }}
                             style={{
                               width: 30,
                               height: 30,
@@ -753,16 +684,16 @@ const Chat = ({navigation, route}) => {
                         </Pressable>
                       )}
 
-                    {item?.parentMessageId?.media &&
-                      item?.parentMessageId?.mediaType?.includes('video') && (
-                        <Pressable
-                        // onPress={() => {
-                        //   setItemcliked(item);
-                        //   imageModalRef.current?.present();
-                        // }}
-                        >
+                    {item?.parentMessageId?.attachments?.length > 0 &&
+                      item?.parentMessageId?.attachments[0]?.mediaType?.includes(
+                        'video',
+                      ) && (
+                        <Pressable>
                           <Video
-                            source={{uri: item?.parentMessageId?.media}}
+                            source={{
+                              uri: item?.parentMessageId?.attachments[0]
+                                ?.mediaUrl,
+                            }}
                             style={{
                               width: 30,
                               height: 30,
@@ -773,71 +704,114 @@ const Chat = ({navigation, route}) => {
                           />
                         </Pressable>
                       )}
-                    {item?.parentMessageId?.message &&
-                      item?.parentMessageId?.mediaType && (
+                    {item?.parentMessageId?.content &&
+                      item?.parentMessageId?.attachments && (
                         <Text
                           style={[styles.messageText, {marginLeft: 10}]}
                           variant="medium14"
                           color={COLORS.black333333}>
-                          {item?.parentMessageId?.message}
+                          {item?.parentMessageId?.content}
                         </Text>
                       )}
                   </View>
                 </View>
               )}
               <View>
-                {item?.message && !item?.mediaType && (
+                {(item?.content || item?.message) && !item?.attachments && (
                   <Text
                     // style={styles.messageText}
                     variant="medium14"
                     color={COLORS.black333333}>
-                    {item.message}
+                    {item?.content || item?.message}
                   </Text>
                 )}
-                {item?.media &&
-                  (item?.mediaType == 'Image' ||
-                    item?.mediaType?.includes('image')) && (
-                    <Pressable
-                      onPress={() => {
-                        setItemcliked(item);
-                        imageModalRef.current?.present();
-                      }}>
-                      <Image
-                        source={{uri: item.media}}
-                        style={{
-                          width: 200,
-                          height: 200,
-                          borderRadius: 10,
-                        }}
-                        resizeMode="cover"
-                      />
-                    </Pressable>
-                  )}
 
-                {item?.media && item?.mediaType?.includes('video') && (
-                  <Pressable
-                    onPress={() => {
-                      setItemcliked(item);
-                      imageModalRef.current?.present();
-                    }}>
-                    <Video
-                      source={{uri: item.media}}
-                      style={{
-                        width: 200,
-                        height: 200,
-                        borderRadius: 10,
-                      }}
-                      resizeMode="cover"
-                      controls
+                {item?.attachments?.length > 0 &&
+                  (item.attachments.length === 1 ? (
+                    // Single attachment: Use View
+                    <View style={{alignItems: 'center'}}>
+                      <Pressable
+                        onPress={() => {
+                          setItemcliked(item.attachments[0]);
+                          imageModalRef.current?.present();
+                        }}
+                        style={{margin: 5}}>
+                        {item.attachments[0]?.mediaType?.includes('image') ? (
+                          <Image
+                            source={{uri: item.attachments[0]?.mediaUrl}}
+                            style={{
+                              width: 200,
+                              height: 200,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                          />
+                        ) : item.attachments[0]?.mediaType?.includes(
+                            'video',
+                          ) ? (
+                          <Video
+                            source={{uri: item.attachments[0]?.mediaUrl}}
+                            style={{
+                              width: 200,
+                              height: 200,
+                              borderRadius: 10,
+                            }}
+                            resizeMode="cover"
+                            controls
+                          />
+                        ) : null}
+                      </Pressable>
+                    </View>
+                  ) : (
+                    // Multiple attachments: Use FlatList with 2 columns
+                    <FlatList
+                      data={item.attachments}
+                      keyExtractor={(attachment, index) => index.toString()}
+                      numColumns={2} // Grid layout for multiple attachments
+                      columnWrapperStyle={{justifyContent: 'space-between'}}
+                      renderItem={({item: attachment, index}) => (
+                        <Pressable
+                          key={index}
+                          onPress={() => {
+                            setItemcliked(attachment);
+                            imageModalRef.current?.present();
+                          }}
+                          style={{
+                            margin: 5,
+                            width: '48%', // Adjust width for grid layout
+                          }}>
+                          {attachment?.mediaType?.includes('image') ? (
+                            <Image
+                              source={{uri: attachment?.mediaUrl}}
+                              style={{
+                                width: '100%',
+                                height: 160,
+                                borderRadius: 10,
+                              }}
+                              resizeMode="cover"
+                            />
+                          ) : attachment?.mediaType?.includes('video') ? (
+                            <Video
+                              source={{uri: attachment?.mediaUrl}}
+                              style={{
+                                width: '100%',
+                                height: 160,
+                                borderRadius: 10,
+                              }}
+                              resizeMode="cover"
+                              controls
+                            />
+                          ) : null}
+                        </Pressable>
+                      )}
                     />
-                  </Pressable>
-                )}
-                {item?.message && item?.mediaType && (
+                  ))}
+                {(item?.content || item?.message) && item?.attachments && (
                   <Text
                     style={[styles.messageText, {marginTop: 10}]}
                     variant="medium14"
                     color={COLORS.black333333}>
-                    {item.message}
+                    {item?.content || item?.message}
                   </Text>
                 )}
                 {/* {item.contentType === 'gif' && (
@@ -857,7 +831,7 @@ const Chat = ({navigation, route}) => {
                     alignSelf: 'flex-end',
                     color: COLORS.grey777777,
                   }}>
-                  {formatAMPM(item?.updatedAt)}
+                  {formatAMPM(item?.updatedAt || item?.timestamp)}
                 </Text>
                 {item?.edited && (
                   <Text
@@ -934,12 +908,28 @@ const Chat = ({navigation, route}) => {
     }
   };
 
+  // Function to detect '@' and filter user list
+  const handleInputChange = text => {
+    setInput(text);
+    const lastWord = text.split(' ').pop(); // Get the last word being typed
+
+    if (lastWord.startsWith('@')) {
+      const query = lastWord.slice(1).toLowerCase();
+      const filteredUsers = data?.members?.filter(user =>
+        user.username.toLowerCase().includes(query),
+      );
+      setMentionList(filteredUsers);
+      setShowMentions(true);
+    } else {
+      setShowMentions(false);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback
       onPress={() => {
         setInput('');
         setSelected('');
-        setdeletemessages([]);
       }}>
       <SafeAreaView style={styles.container}>
         {/* StatusBar */}
@@ -950,13 +940,122 @@ const Chat = ({navigation, route}) => {
             barStyle="dark-content"
             backgroundColor={COLORS.yellowF5BE00}
           />
-          <Header
-            title={route?.params?.data}
-            // backIcon={icons.backArrow} // Provide your back arrow icon
-            rightIcon={true} // Provide your right icon
-            // onBackPress={handleBackPress}
-            onRightIconPress={() => setThreeDotmodal(true)}
-          />
+          <View
+            style={{
+              flexDirection: 'row',
+
+              alignItems: 'center',
+
+              justifyContent: 'space-between',
+
+              paddingHorizontal: nw(16), // Add horizontal padding
+
+              paddingTop: nh(2),
+
+              backgroundColor: COLORS.yellowF5BE00, // Set background color
+
+              backgroundColor: COLORS.yellowF5BE00,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+
+                alignItems: 'center',
+              }}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={{
+                  width: 40, // Fixed width for icon touchable area
+
+                  alignItems: 'center',
+
+                  justifyContent: 'center',
+                }}>
+                <Image
+                  source={icons.backarrow}
+                  style={{
+                    width: nw(30),
+
+                    height: nh(30),
+
+                    resizeMode: 'contain',
+
+                    marginTop: 5,
+                  }}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate(Routes.GroupProfile, {canGoBack: true});
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginLeft: 10,
+                }}>
+                {data?.profilePicture ? (
+                  <Image
+                    // source={{uri: data?.profilePicture}}
+                    source={{
+                      uri: `${
+                        data?.profilePicture
+                      }?timestamp=${new Date().getTime()}`,
+                    }}
+                    style={styles.image}
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.image,
+                      {
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: COLORS.greyD6D6D6,
+                      },
+                    ]}>
+                    <Icon
+                      type="material-community"
+                      name="account-group"
+                      style={{marginLeft: 0.5}}
+                      size={nh(30)}
+                    />
+                  </View>
+                )}
+
+                {/* Title */}
+
+                <Text
+                  variant="semibold18"
+                  style={styles.title}
+                  color={COLORS.whiteFFFFFF}>
+                  {data?.name}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Right Icon */}
+
+            {/* <TouchableOpacity onPress={onRightIconPress} style={styles.iconContainer}>
+
+{rightIcon && (
+
+<Entypo
+
+name="dots-three-vertical"
+
+size={nh(20)}
+
+color={COLORS.whiteFFFFFF}
+
+style={styles.icon}
+
+/>
+)}
+
+      </TouchableOpacity> */}
+          </View>
+
           <View style={styles.layer1}>
             <View style={styles.layer2}>
               <View style={styles.container1}>
@@ -965,7 +1064,7 @@ const Chat = ({navigation, route}) => {
                   data={formatGroupedMessages()}
                   renderItem={renderMessage}
                   initialNumToRender={100}
-                  keyExtractor={item => item.id || item?.date}
+                  keyExtractor={(_, index) => index.toString()}
                   //   contentContainerStyle={styles.messagesList}
                   keyboardShouldPersistTaps="handled"
                   showsVerticalScrollIndicator={false}
@@ -1014,11 +1113,13 @@ const Chat = ({navigation, route}) => {
                         : selected?.sender?.username}
                     </Text>
                     <View style={{flexDirection: 'row'}}>
-                      {selected?.media && (
+                      {selected?.attachments?.length > 0 && (
                         <Icon
                           type="material-community"
                           name={
-                            selected?.mediaType?.includes('image')
+                            selected?.attachments[0]?.mediaType?.includes(
+                              'image',
+                            )
                               ? 'image'
                               : 'video-outline'
                           }
@@ -1030,20 +1131,22 @@ const Chat = ({navigation, route}) => {
                           // }}
                         />
                       )}
-                      {!selected?.message && (
+                      {selected?.attachments?.length > 0 && (
                         <Text variant="medium12" style={{marginLeft: 10}}>
-                          {selected?.mediaType?.includes('image')
+                          {selected?.attachments[0]?.mediaType?.includes(
+                            'image',
+                          )
                             ? 'Image'
                             : 'Video'}
                         </Text>
                       )}
-                      {selected?.message && (
+                      {(selected?.message || selected?.content) && (
                         <Text
                           variant="medium12"
                           style={{marginHorizontal: 10}}
                           numberOfLines={1}
                           ellipsizeMode="tail">
-                          {selected?.message}
+                          {selected?.message || selected?.content}
                         </Text>
                       )}
                     </View>
@@ -1065,7 +1168,7 @@ const Chat = ({navigation, route}) => {
                     style={styles.textInput}
                     placeholder="Type a message..."
                     value={input}
-                    onChangeText={setInput}
+                    onChangeText={handleInputChange}
                     //   onSubmitEditing={sendMessage}
                     //   returnKeyType="send"
                     ref={textInputRef}
@@ -1077,21 +1180,21 @@ const Chat = ({navigation, route}) => {
                         ? 'Video'
                         : 'Image'
                     }
-                    URL={itemclicked?.media}
+                    URL={
+                      Object.keys(itemclicked)?.length > 0
+                        ? itemclicked?.mediaUrl
+                        : ''
+                    }
                   />
-                  <MenuModal
-                    visible={threedotmodal}
-                    setVisible={setThreeDotmodal}
-                    menuItems={menuItems}
-                  />
+
                   <MediaModal
                     isVisible={modalvisible}
                     onClose={() => {
-                      setFile({});
+                      setFile([]);
                       setInput('');
-
                       setModalVisible(false);
                     }}
+                    multi={true}
                     file={file}
                     onSend={reply ? replyMessage : sendMessage}
                     input={input}
@@ -1130,6 +1233,36 @@ const Chat = ({navigation, route}) => {
             setVisible={setVisible}
             menuItems={menuItems}
           /> */}
+          {showMentions && mentionList.length > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 60,
+                backgroundColor: 'white',
+                borderRadius: 5,
+                padding: 5,
+              }}>
+              {mentionList.map(user => (
+                <TouchableOpacity
+                  key={user.id}
+                  onPress={() => {
+                    const words = input.split(' ');
+                    words[words.length - 1] = `@${user.username} `; // Replace with full username
+                    setInput(words.join(' '));
+                    setShowMentions(false);
+                  }}
+                  style={{
+                    padding: 10,
+                    borderBottomWidth: 1,
+                    borderColor: '#ccc',
+                  }}>
+                  <Text variant="medium12" color={COLORS.grey999999}>
+                    @{user.username}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           <MessageModal
             isVisible={visible}
             onClose={() => {
@@ -1148,7 +1281,7 @@ const Chat = ({navigation, route}) => {
   );
 };
 
-export default Chat;
+export default GroupChat;
 
 const styles = StyleSheet.create({
   container: {
@@ -1249,5 +1382,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#555',
+  },
+  image: {
+    height: nh(40),
+    width: nh(40),
+    borderRadius: nh(20),
+    marginRight: 10,
+    borderColor: COLORS.grey777777,
+    borderWidth: 1,
   },
 });
