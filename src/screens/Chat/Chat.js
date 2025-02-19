@@ -20,7 +20,9 @@ import {FlatList} from 'react-native';
 import {TextInput} from 'react-native';
 import Button from '../../components/Button';
 import {
+  clearChat,
   deleteChatMessage,
+  deletemultipleChatMessage,
   editChatMessage,
   getconversation,
   getconversationbyID,
@@ -69,6 +71,7 @@ const Chat = ({navigation, route}) => {
   const [file, setFile] = useState({});
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
+  const [deleteMessages, setdeletemessages] = useState([]);
   //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
@@ -76,7 +79,7 @@ const Chat = ({navigation, route}) => {
   const [allMessagesFetched, setAllMessagesFetched] = useState(false); // Indicates if all messages are loaded
   const page = useRef(1); //
   const [userHasScrolled, setUserHasScrolled] = useState(false);
-
+  const [threedotmodal, setThreeDotmodal] = useState(false);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club', {
@@ -332,6 +335,29 @@ const Chat = ({navigation, route}) => {
     }
   };
 
+  const deletemultipleMessage = async () => {
+    console.log(deleteMessages, 'deleteMessages');
+    try {
+      const {data} = await deletemultipleChatMessage(route?.params?.chatId, {
+        messageIds: deleteMessages,
+      });
+      // console.log('🚀 ~ deletemultipleMessage ~ data:', data);
+
+      const updatedMessages = messages.map(
+        msg =>
+          deleteMessages.includes(msg._id) // ✅ Check if msg._id exists in messageIds array
+            ? {...msg, deleted: true} // ✅ Set deleted to true
+            : msg, // ✅ Keep others unchanged
+      );
+
+      setMessages(updatedMessages);
+      setdeletemessages([]);
+      setThreeDotmodal(false);
+    } catch (error) {
+      console.log('🚀 ~ editMessage ~ error:', error?.response?.data);
+    }
+  };
+
   const onEditClick = () => {
     setEdit(true);
     setInput(selected?.message);
@@ -533,7 +559,36 @@ const Chat = ({navigation, route}) => {
       loadMoreMessages();
     }
   };
+  const menuItems = [
+    {
+      name: 'Clear Chat',
+      image: icons.crosspageoutline,
 
+      onPress: () => clearChatAPI(), // Edit action
+    },
+    ...(deleteMessages.length > 0
+      ? [
+          {
+            name: 'Delete Messages',
+            image: icons.delete,
+            onPress: () => deletemultipleMessage(), // Delete action (this should be onDeleteClick, not onEditClick)
+          },
+        ]
+      : []),
+  ];
+
+  const clearChatAPI = async () => {
+    try {
+      let res = await clearChat(route?.params?.chatId);
+      console.log('🚀 ~ clearChatAPI ~ res:', res?.data);
+
+      setThreeDotmodal(false);
+      setMessages([]);
+      // showToast({type: 'success', title: res?.data?.message});
+    } catch (error) {
+      console.log('🚀 ~ clearChatAPI ~ error:', error);
+    }
+  };
   const renderMessage = ({item}) => {
     // console.log('🚀 ~ renderMessage ~ item:', item);
     if (item.type === 'header') {
@@ -606,6 +661,7 @@ const Chat = ({navigation, route}) => {
                 : item.sender?.username}
             </Text>
             <TouchableOpacity
+              onPress={() => setdeletemessages(val => [...val, ...[item?._id]])}
               onLongPress={() => {
                 // if (item?.sender?._id == userData?.id && isEditable) {
                 setSelected(item);
@@ -618,9 +674,9 @@ const Chat = ({navigation, route}) => {
                 item?.sender == userData?.id
                   ? styles.sent
                   : styles.received,
-                // item?._id == selected?._id && {
-                //   backgroundColor: COLORS.blue043142 + 60,
-                // },
+                deleteMessages?.includes(item._id) && {
+                  backgroundColor: COLORS.blue043142 + 60,
+                },
                 item?.edited && {
                   paddingBottom: 18,
                 },
@@ -844,6 +900,7 @@ const Chat = ({navigation, route}) => {
       onPress={() => {
         setInput('');
         setSelected('');
+        setdeletemessages([]);
       }}>
       <SafeAreaView style={styles.container}>
         {/* StatusBar */}
@@ -857,9 +914,9 @@ const Chat = ({navigation, route}) => {
           <Header
             title={route?.params?.data}
             // backIcon={icons.backArrow} // Provide your back arrow icon
-            // rightIcon={selected ? true : false} // Provide your right icon
+            rightIcon={true} // Provide your right icon
             // onBackPress={handleBackPress}
-            // onRightIconPress={() => setVisible(true)}
+            onRightIconPress={() => setThreeDotmodal(true)}
           />
           <View style={styles.layer1}>
             <View style={styles.layer2}>
@@ -983,7 +1040,11 @@ const Chat = ({navigation, route}) => {
                     }
                     URL={itemclicked?.media}
                   />
-
+                  <MenuModal
+                    visible={threedotmodal}
+                    setVisible={setThreeDotmodal}
+                    menuItems={menuItems}
+                  />
                   <MediaModal
                     isVisible={modalvisible}
                     onClose={() => {

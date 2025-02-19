@@ -24,4 +24,5 @@ export const icons = {
   innercircle: require('../icons/sendinner.png'),
   friend: require('../icons/friend.png'),
   editsolid: require('../icons/editsolid.png'),
+  crosspageoutline: require('../icons/crosspageoutline.png'),
 };

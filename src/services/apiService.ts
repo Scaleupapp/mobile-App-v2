@@ -1,5 +1,7 @@
+import axios from 'axios';
 import {API} from './apiConstent';
 import axiosInstance from './axiosinstance';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const loginApi = (payload: any) => {
   return axiosInstance.post(API.SIGNIN, payload);
@@ -260,6 +262,33 @@ export const deleteChatMessage = (convid: any, messageid: any) => {
     `${API.CHAT}/${convid}/messages/${messageid}/delete`,
   );
 };
+
+export const deletemultipleChatMessage = (convid: any, payload: any) => {
+  console.log("🚀 ~ deletemultipleChatMessage ~ payload:", payload)
+  
+  return axiosInstance.post(
+    `${API.CHAT}/${convid}/messages/delete-for-me`, payload
+  );
+};
+
+// export const deletemultipleChatMessage = async (convid: any, payload: any) => {
+//   try {
+//     const user = await AsyncStorage.getItem('userData');
+//     const parsedUser = JSON.parse(user);
+//     const response = await axios.delete(`https://api.scaleupapp.club/api/${API.CHAT}/${convid}/messages/delete-for-me`, {
+//       data:{payload}, // Payload for DELETE request
+//       headers: {
+//         'Content-Type': 'application/json',
+//         Authorization: `Bearer ${parsedUser?.token}`,
+//       },
+//     });
+
+//     console.log('Message deleted:', response.data);
+//   } catch (error) {
+//     console.error('Error deleting message:', error.response?.data || error);
+//   }
+// };
+
 export const markReadAPI = (payload: any) => {
   return axiosInstance.post(
     `${API.CHAT}/mark-read`,
@@ -357,4 +386,9 @@ export const deleteContent = (contentId: any) => {
 
 export const deleteStory = (payload: any) => {
   return axiosInstance.delete(`stories`, payload);
+};
+
+
+export const clearChat = (id: any) => {
+  return axiosInstance.delete(`${API.CHAT}/${id}/messages/clear-chat`);
 };
