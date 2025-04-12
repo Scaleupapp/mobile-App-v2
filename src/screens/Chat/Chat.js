@@ -69,7 +69,7 @@ const Chat = ({navigation, route}) => {
   const [file, setFile] = useState({});
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
-  //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
+  //   const socket = io('http://192.168.68.240:3000'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
@@ -79,7 +79,7 @@ const Chat = ({navigation, route}) => {
 
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('http://192.168.136.240:3000'); // Replace with your server URL
+    const socketInstance = io('http://192.168.68.240:3000'); // Replace with your server URL
     setSocket(socketInstance);
 
     socketInstance.on('connect', () => {

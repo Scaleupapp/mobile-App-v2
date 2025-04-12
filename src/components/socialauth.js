@@ -212,9 +212,9 @@ const SocialLogin = ({signup = false}) => {
         variant="medium12"
         color={COLORS.grey333333}
         style={{textAlign: 'center', marginVertical: nh(15)}}>
-        {signup ? 'Connect to your social media handles' : 'Or continue with'}
+        {signup}
       </Text>
-      <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+      {/* <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
         <Button
           variant="outline"
           text="Google"
@@ -226,7 +226,7 @@ const SocialLogin = ({signup = false}) => {
           leftimage={icons.google}
           onPress={handleGoogleAuth}
         />
-      </View>
+      </View> */}
     </View>
   );
 };

@@ -30,6 +30,13 @@ import {
   fetchUserQuizAttemptsApi,
   fetchUserRegisteredQuizzesApi, // New API call to get user's registered quizzes
 } from '../../services/apiService';
+import RefundModal from './RefundModal';
+import KYCModal from './KYCModal';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Make sure this package is installed
+
+
+import axios from 'axios';
+import axiosInstance from '../../services/axiosinstance';
 
 const TABS = {
   UPCOMING: 'UPCOMING',
@@ -54,6 +61,7 @@ const EmptyStateMessages = {
 
 const QuizList = ({navigation}) => {
   const [quizzes, setQuizzes] = useState([]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(TABS.UPCOMING);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,12 +87,14 @@ const QuizList = ({navigation}) => {
         setCurrentUserId(decodedToken.userId);
       }
 
+      
       // Fetch registered quizzes from the server
       const registeredResponse = await fetchUserRegisteredQuizzesApi();
       setRegisteredQuizIds(registeredResponse.data.registeredQuizIds || []);
 
       // Fetch user quiz attempts
       const attemptsResponse = await fetchUserQuizAttemptsApi();
+      const attempts = attemptsResponse.data.attempts || [];
       setUserQuizAttempts(attemptsResponse.data.attempts);
 
       // Fetch quizzes
@@ -98,6 +108,30 @@ const QuizList = ({navigation}) => {
     }
   }, []); // Empty dependency array since this function doesn't depend on any props or state
 
+  const [kycModal, setKycModal] = useState({
+    visible: false,
+    onComplete: null
+  });
+
+
+  const handleKycRequired = (quiz) => {
+    setKycModal({
+      visible: true,
+      onComplete: () => {
+        setKycModal({ visible: false, onComplete: null });
+        // Show payment modal after KYC completion
+        setPaymentModal({
+          visible: true,
+          selectedQuiz: quiz
+        });
+      }
+    });
+  };
+
+
+
+
+
   // Update the useEffect to use the callback
   useEffect(() => {
     fetchUserData();
@@ -106,6 +140,14 @@ const QuizList = ({navigation}) => {
   // Now handlePaymentSuccess can safely use fetchUserData
   const handlePaymentSuccess = () => {
     fetchUserData(); // This will work now
+  };
+
+  const [refundModal, setRefundModal] = useState({
+    visible: false,
+    selectedQuiz: null
+  });
+  const handleRefundSuccess = () => {
+    fetchUserData(); // Refresh the user data to show updated registration status
   };
 
   useEffect(() => {
@@ -195,6 +237,42 @@ const QuizList = ({navigation}) => {
     setCountdowns(updatedCountdowns);
   };
 
+  // Add this function after your existing state declarations
+  const handlePaidQuizRegistration = async (quiz) => {
+    try {
+      // Get user data from AsyncStorage
+      const userData = await AsyncStorage.getItem('userData');
+      if (!userData) {
+        Alert.alert('Error', 'You need to be logged in');
+        return;
+      }
+      
+      const parsedUser = JSON.parse(userData);      
+      const response = await axios.get(
+        'http://192.168.68.240:3000/api/rapidfire-quiz/kyc/status',
+        {
+          headers: {
+            Authorization: `Bearer ${parsedUser.token}`,
+          },
+        }
+      );
+  
+      if (!response.data.isKycComplete) {
+        handleKycRequired(quiz);
+        return;
+      }
+  
+      // If KYC is complete, show payment modal directly
+      setPaymentModal({
+        visible: true,
+        selectedQuiz: quiz
+      });
+    } catch (error) {
+      console.error('Error checking KYC status:', error);
+      Alert.alert('Error', 'Failed to process registration');
+    }
+  };
+
   const handleRegister = async quizId => {
     Alert.alert(
       'Register',
@@ -253,41 +331,43 @@ const QuizList = ({navigation}) => {
     }
   };
 
-  const filteredQuizzes = quizzes.filter(quiz => {
-    const matchesSearch = quiz.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const currentTime = new Date().getTime();
-    const startTime = new Date(quiz.startTime).getTime();
-    const endTime = new Date(quiz.endTime).getTime();
+  
+const filteredQuizzes = quizzes.filter(quiz => {
+  const matchesSearch = quiz.title
+    .toLowerCase()
+    .includes(searchQuery.toLowerCase());
+  const currentTime = new Date().getTime();
+  const startTime = new Date(quiz.startTime).getTime();
+  const endTime = new Date(quiz.endTime).getTime();
 
-    // Check if user has already attempted this quiz
-    const hasAttempted = userQuizAttempts.some(
-      attempt => attempt.quiz === quiz._id,
-    );
+  // Check if user has already attempted this quiz
+  const hasAttempted = userQuizAttempts.some(
+    attempt => attempt.quiz === quiz._id,
+  );
 
-    const isRegistered = registeredQuizIds.includes(quiz._id);
+  const isRegistered = registeredQuizIds.includes(quiz._id);
 
-    switch (activeTab) {
-      case TABS.UPCOMING:
-        return matchesSearch && startTime > currentTime && !hasAttempted;
+  switch (activeTab) {
+    case TABS.UPCOMING:
+      return matchesSearch && startTime > currentTime && !hasAttempted;
 
-      case TABS.ACTIVE:
-        return (
-          matchesSearch &&
-          startTime <= currentTime &&
-          endTime >= currentTime &&
-          !hasAttempted &&
-          isRegistered
-        );
+    case TABS.ACTIVE:
+      return (
+        matchesSearch &&
+        startTime <= currentTime &&
+        endTime >= currentTime &&
+        !hasAttempted &&
+        isRegistered
+      );
 
-      case TABS.COMPLETED:
-        return matchesSearch && (endTime < currentTime || hasAttempted);
+    case TABS.COMPLETED:
+      // Modified logic: Show in completed if user has attempted, regardless of end time
+      return matchesSearch && (hasAttempted || (isRegistered && endTime < currentTime));
 
-      default:
-        return false;
-    }
-  });
+    default:
+      return false;
+  }
+});
 
   const handleViewLeaderboard = quizId => {
     setSelectedQuizId(quizId);
@@ -313,7 +393,9 @@ const QuizList = ({navigation}) => {
     const hasPaid = item.participants?.some(
       p => p.userId === currentUserId && p.hasPaid
     );
-
+  
+    const showRefundOption = item.isPaid && hasPaid && !hasStarted;
+  
     return (
       <TouchableOpacity
         style={styles.quizCard}
@@ -323,14 +405,49 @@ const QuizList = ({navigation}) => {
             source={require('../../assets/images/image.png')}
             style={styles.quizIcon}
           />
+          {isRegistered && (
+          <View style={styles.tickMarkContainer}>
+            <MaterialIcons name="check-circle" size={16} color={COLORS.yellowF5BE00} />
+          </View>
+        )}
         </View>
         <View style={styles.quizInfo}>
-          <Text
-            variant="semibold16"
-            color={COLORS.blue043142}
-            style={styles.quizTitle}>
-            {item.title}
-          </Text>
+          <View style={styles.titleContainer}>
+            <Text
+              variant="semibold16"
+              color={COLORS.blue043142}
+              style={styles.quizTitle}>
+              {item.title}
+            </Text>
+            
+            {showRefundOption && (
+              <TouchableOpacity 
+                style={styles.optionsButton}
+                onPress={() => {
+                  Alert.alert(
+                    'Options',
+                    'Choose an option',
+                    [
+                      {
+                        text: 'Request Refund',
+                        onPress: () => setRefundModal({
+                          visible: true,
+                          selectedQuiz: item
+                        })
+                      },
+                      {
+                        text: 'Cancel',
+                        style: 'cancel'
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text variant="semibold16" style={styles.optionsIcon}>⋮</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
           <Text
             variant="regular16"
             color={COLORS.blue043142}
@@ -348,7 +465,7 @@ const QuizList = ({navigation}) => {
               {formattedTime}
             </Text>
           </View>
-
+    
           {activeTab === TABS.COMPLETED ? (
             <TouchableOpacity
               style={styles.leaderboardButton}
@@ -357,44 +474,56 @@ const QuizList = ({navigation}) => {
                 View Leaderboard
               </Text>
             </TouchableOpacity>
-          ): item.isPaid && !hasPaid ? (
-            <TouchableOpacity
-              style={styles.registerButton}
-              onPress={() => setPaymentModal({
-                visible: true,
-                selectedQuiz: item
-              })}>
-              <Text variant="regular14" color={COLORS.whiteFFFFFF}>
-                Pay ₹{item.entryFee}
-              </Text>
-            </TouchableOpacity>
-          )
-           : isRegistered && !hasAttempted ? (
+          ) : activeTab === TABS.UPCOMING ? (
             <>
-              <View style={styles.registeredBadge}>
-                <Text variant="regular14" color={COLORS.whiteFFFFFF}>
-                  {countdown}
-                </Text>
-              </View>
-              {hasStarted && (
-                <TouchableOpacity
-                  style={styles.startQuizButton}
-                  onPress={() => handleStartQuiz(item._id)}>
+              {isRegistered && (
+                <View style={styles.registeredBadge}>
                   <Text variant="regular14" color={COLORS.whiteFFFFFF}>
-                    Start Quiz
+                    {countdown || ''}
+                  </Text>
+                </View>
+              )}
+              
+              {item.isPaid && !hasPaid ? (
+                <TouchableOpacity
+                  style={styles.registerButton}
+                  onPress={() => handlePaidQuizRegistration(item)}>
+                  <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                    Pay ₹{item.entryFee}
                   </Text>
                 </TouchableOpacity>
+              ) : !isRegistered && !hasAttempted ? (
+                <TouchableOpacity
+                  style={styles.registerButton}
+                  onPress={() => handleRegister(item._id)}>
+                  <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                    Register
+                  </Text>
+                </TouchableOpacity>
+              ) : null}
+            </>
+          ) : activeTab === TABS.ACTIVE ? (
+            <>
+              {isRegistered && !hasAttempted && (
+                <>
+                  <View style={styles.registeredBadge}>
+                    <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                      {countdown || ''}
+                    </Text>
+                  </View>
+                  {hasStarted && (
+                    <TouchableOpacity
+                      style={styles.startQuizButton}
+                      onPress={() => handleStartQuiz(item._id)}>
+                      <Text variant="regular14" color={COLORS.whiteFFFFFF}>
+                        Start Quiz
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </>
-          ) : isQuizEnded || hasAttempted ? null : (
-            <TouchableOpacity
-              style={styles.registerButton}
-              onPress={() => handleRegister(item._id)}>
-              <Text variant="regular14" color={COLORS.whiteFFFFFF}>
-                Register
-              </Text>
-            </TouchableOpacity>
-          )}
+          ) : null}
         </View>
       </TouchableOpacity>
     );
@@ -503,12 +632,26 @@ const QuizList = ({navigation}) => {
         quizId={selectedQuizId}
       />
 
+<KYCModal
+  visible={kycModal.visible}
+  onClose={() => setKycModal({ visible: false, onComplete: null })}
+  onComplete={kycModal.onComplete}
+/>
+
       <PaymentModal
             visible={paymentModal.visible}
             onClose={() => setPaymentModal({ visible: false, selectedQuiz: null })}
             quiz={paymentModal.selectedQuiz}
             onPaymentSuccess={handlePaymentSuccess}
           />
+
+<RefundModal
+  visible={refundModal.visible}
+  onClose={() => setRefundModal({ visible: false, selectedQuiz: null })}
+  quiz={refundModal.selectedQuiz}
+  onRefundSuccess={handleRefundSuccess}
+/>    
+
     </SafeAreaView>
   );
 };
@@ -563,6 +706,32 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(16),
     marginTop: nh(10),
   },
+  refundButton: {
+    backgroundColor: COLORS.red || '#E53935',
+    paddingVertical: nh(8),
+    paddingHorizontal: nw(16),
+    borderRadius: nw(8),
+    alignItems: 'center',
+    marginTop: nh(10),
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
+  
+  optionsButton: {
+    padding: nw(5),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  optionsIcon: {
+    fontSize: 20,
+    color: COLORS.blue043142,
+    fontWeight: 'bold',
+  },
   emptyStateImage: {
     width: nw(200),
     height: nh(200),
@@ -605,6 +774,7 @@ const styles = StyleSheet.create({
   },
   quizTitle: {
     marginBottom: nh(4),
+    flex: 1, // Let title take available space
   },
   quizSubtitle: {
     marginBottom: nh(8),
@@ -624,6 +794,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(8),
     paddingVertical: nh(6),
     borderRadius: 8,
+    maxWidth: '80%', // Ensure it doesn't take too much space
   },
   registerButton: {
     backgroundColor: COLORS.blue043142,
@@ -653,6 +824,37 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     marginBottom: nh(8),
     textAlign: 'center',
+  },
+  kycRequiredContainer: {
+    backgroundColor: COLORS.yellowF5BE00,
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  kycRequiredText: {
+    color: COLORS.whiteFFFFFF,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  kycButton: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: 8,
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  kycButtonText: {
+    color: COLORS.yellowF5BE00,
+    fontWeight: 'bold',
+  },
+  tickMarkContainer: {
+    position: 'absolute',
+    bottom: 55,
+    right: 10,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 20,
+  },
+  titleTickMark: {
+    marginLeft: 5,
   },
 });
 

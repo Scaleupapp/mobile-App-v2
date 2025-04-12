@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -12,53 +12,97 @@ import { COLORS } from '../../helper/colors';
 import { DEVICE_WIDTH, nh, nw } from '../../helper/scales';
 import RazorpayCheckout from 'react-native-razorpay';
 import axiosInstance from '../../services/axiosinstance';
+import {
+  getProfile
+} from '../../services/apiService';
 
 const PaymentModal = ({ visible, onClose, quiz, onPaymentSuccess }) => {
 
     //console.log('quizzzzzz',quiz)
   const [isLoading, setIsLoading] = useState(false);
+    const [profileData, setProfileData] = useState(null);
+  
+
+  useEffect(() => {
+      getProfileData();
+    }, []);
+  
+    // Function to get user profile data from AsyncStorage and API
+    const getProfileData = async () => {
+      try {
+        // Fetch profile information using the API
+        let res = await getProfile('');
+        console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+        setProfileData(res?.data?.userProfileInfo);
+      } catch (error) {
+        console.log('Profile data fetch error:', error?.response?.data?.message);
+      }
+    };
+
 
   const handlePayment = async () => {
     if (!quiz?._id) {
       Alert.alert('Error', 'Quiz information is missing');
       return;
     }
-
+  
     setIsLoading(true);
     try {
+      const kycResponse = await axiosInstance.get(
+        'http://192.168.68.240:3000/api/quiz/kyc/status'
+      );
+
+      if (!kycResponse.data.isKycComplete) {
+        setIsLoading(false);
+        onClose(); // Close payment modal
+        // Notify parent component to show KYC modal
+        Alert.alert(
+          'KYC Required',
+          'You need to complete KYC verification before participating in paid quizzes.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Complete KYC', 
+              onPress: () => onKycRequired() 
+            }
+          ]
+        );
+        return;
+      }
+      
       // Step 1: Create order
       const orderResponse = await axiosInstance.post(
-        'http://192.168.165.240:3000/api/rapidfire-quiz/create-order',
+        'http://192.168.68.240:3000/api/rapidfire-quiz/create-order',
         { 
           quizId: quiz._id,
           currency: 'INR',
           type: 'Quiz Entry Fee'
         }
       );
-
+  
       const { orderId, amount, currency } = orderResponse.data;
-
+  
       // Step 2: Initialize Razorpay payment
       const options = {
-        key: 'rzp_test_UBry6wpYMwTfo6', // Replace with your actual key
+        key: 'rzp_live_nhqapP6BCrwzri', // Replace with your actual key
         amount: amount, // Amount from backend in paisa
         currency: currency,
         name: 'Quiz App',
         description: `Entry fee for ${quiz.title}`,
         order_id: orderId,
         prefill: {
-          email: 'user@example.com', // You can pass user's email here
-          contact: '9999999999', // You can pass user's phone here
+          email: profileData?.email || 'gulshan.iitb@gmail.com', 
+          contact: profileData?.phoneNumber || '6202712403', 
         },
         theme: { color: COLORS.yellowF5BE00 }
       };
-
+  
       // Step 3: Open Razorpay and handle payment
       const paymentResponse = await RazorpayCheckout.open(options);
       
       // Step 4: Verify payment with backend
       const verificationResponse = await axiosInstance.post(
-        'http://192.168.165.240:3000/api/rapidfire-quiz/verify-payment',
+        'http://192.168.68.240:3000/api/rapidfire-quiz/verify-payment',
         {
           orderId: orderId,
           paymentId: paymentResponse.razorpay_payment_id,
@@ -66,8 +110,8 @@ const PaymentModal = ({ visible, onClose, quiz, onPaymentSuccess }) => {
           quizId: quiz._id
         }
       );
-
-      if (verificationResponse.data.success) {
+  
+      if (verificationResponse?.data?.success) {
         Alert.alert(
           'Success',
           'Payment successful! You have been registered for the quiz.',
@@ -82,19 +126,25 @@ const PaymentModal = ({ visible, onClose, quiz, onPaymentSuccess }) => {
           ]
         );
       } else {
-        throw new Error('Payment verification failed');
+        throw new Error(verificationResponse.data.message || 'Payment verification failed');
       }
       
     } catch (error) {
       console.error('Payment process failed:', error);
       let errorMessage = 'Payment failed. Please try again.';
       
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+      if (error.response?.data?.message === 'KYC_NOT_COMPLETE') {
+        errorMessage = 'Please complete your KYC verification first.';
+      } else if (error.response) {
+        errorMessage = error.response.data.message || 
+                      error.response.data.error || 
+                      'Server error occurred';
+      } else if (error.request) {
+        errorMessage = 'No response received from server';
       } else if (error.message) {
         errorMessage = error.message;
       }
-
+  
       Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);

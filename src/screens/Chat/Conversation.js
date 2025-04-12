@@ -29,7 +29,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-const socketInstance = io("http://192.168.136.240:3000"); // Replace with your actual socket URL
+const socketInstance = io("http://192.168.68.240:3000"); // Replace with your actual socket URL
 
 
 const Conversation = ({navigation, route}) => {

@@ -27,7 +27,7 @@ const MainHeader = () => {
   const [count, setCount] = useState(0);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('https://api.scaleupapp.club', {
+    const socketInstance = io('http://192.168.68.240:3000', {
       // Your server URL
       auth: {
         token: userdata?.token, // If you have authentication

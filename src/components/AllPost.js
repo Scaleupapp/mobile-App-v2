@@ -276,7 +276,7 @@ export const AllPost = ({
     try {
       // Updated to use the correct endpoint
       const response = await axios.get(
-        `https://api.scaleupapp.club/api/playlists/check?userId=${profileData.id}&postId=${postId}`,
+        `http://192.168.68.240:3000/api/playlists/check?userId=${profileData.id}&postId=${postId}`,
       );
 
       //console.log('Check playlist response:', response.data);
@@ -350,13 +350,13 @@ export const AllPost = ({
       try {
         // First attempt without token
         response = await axios.get(
-          `https://api.scaleupapp.club/api/content/post/${postId}`,
+          `http://192.168.68.240:3000/api/content/post/${postId}`,
         );
       } catch (err) {
         // If that fails and we have a token, try with authentication
         if (currentToken) {
           response = await axios.get(
-            `https://api.scaleupapp.club/api/content/post/${postId}`,
+            `http://192.168.68.240:3000/api/content/post/${postId}`,
             {
               headers: {
                 Authorization: `Bearer ${currentToken}`,

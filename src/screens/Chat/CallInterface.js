@@ -13,7 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Text from '../../components/Text';
 import Sound from 'react-native-sound';
 
-const API_URL = 'http://192.168.136.240:3000';
+const API_URL = 'http://192.168.68.240:3000';
 
 const CallInterface = ({ userId, socket, onClose }) => {
   const [localStream, setLocalStream] = useState(null);

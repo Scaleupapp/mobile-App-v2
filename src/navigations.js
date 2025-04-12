@@ -522,20 +522,20 @@ export const RootNavigator = () => {
         component={QuizList}
         options={{title: 'Available Quizzes'}}
       /> */}
-      <Stack.Screen
+      {/* <Stack.Screen
         name="QuizDetails"
         component={QuizDetails}
         options={{title: 'Quiz Details'}}
-      />
-      <Stack.Screen
+      /> */}
+      {/* <Stack.Screen
         name="QuizWaitingRoom"
         component={QuizWaitingRoom}
         options={{
           title: 'Waiting Room',
           headerLeft: null, // Prevent going back once in waiting room
         }}
-      />
-      <Stack.Screen
+      /> */}
+      {/* <Stack.Screen
         name="QuizGame"
         component={QuizGame}
         options={{
@@ -543,15 +543,15 @@ export const RootNavigator = () => {
           headerLeft: null, // Prevent going back during quiz
           gestureEnabled: false, // Disable gesture-based navigation
         }}
-      />
-      <Stack.Screen
+      /> */}
+      {/* <Stack.Screen
         name="QuizResults"
         component={QuizResults}
         options={{
           title: 'Results',
           headerLeft: null, // Prevent going back from results
         }}
-      />
+      /> */}
       <Stack.Screen
         name={Routes.UserAnalyticsPerf}
         component={UserAnalyticsPerf}

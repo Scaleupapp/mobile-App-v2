@@ -35,7 +35,7 @@ export const AddStory = ({onStoryAdded}) => {
     try {
       // Fetch profile information using the API
       let res = await getProfile('');
-      console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
+      // console.log('🚀 ~ getProfileData ~ res:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message);
@@ -149,7 +149,7 @@ export const AddStory = ({onStoryAdded}) => {
 
         // Make the API request with authentication header and progress tracking
         const response = await axios.post(
-          'https://api.scaleupapp.club/api/stories',
+          'http://192.168.68.240:3000/api/stories',
           formData,
           {
             headers: {
