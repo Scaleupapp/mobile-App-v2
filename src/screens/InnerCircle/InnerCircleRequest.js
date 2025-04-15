@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Platform,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -24,6 +25,7 @@ import {
   acceptInnerCircleRequestAPI,
   createConversation,
   declineInnerCircleRequestAPI,
+  getStudyGroups,
   myInnerCircleAPI,
   myInnerCircleRequestAPI,
   myInnerCirclerecievedAPI,
@@ -34,6 +36,7 @@ import Routes from '../../helper/routes';
 import {formatDateforchat, getTimeAgo} from '../../helper/commonFunctions';
 import moment from 'moment';
 import {navigationRef} from '../../../App';
+import ChatModal from '../Chat/ChatModal';
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
@@ -44,13 +47,19 @@ const InnerCircleRequest = ({navigation, route}) => {
   const [allFetched, setAllFetched] = useState(false); // Indicates if all messages are loaded
   const [allsentFetched, setAllsentFetched] = useState(false);
   const [allrecivedFetched, setAllrecievedFetched] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedTerm, setDebouncedTerm] = useState('');
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [studyGroups, setStudyGroups] = useState([]);
   const page = useRef(1);
   const page1 = useRef(1);
   const page2 = useRef(1);
+  const chatmodelRef = useRef(null);
   useEffect(() => {
     getInnerCircleList();
     getmyInnerCircleList();
     getInnerCirclerecivedList();
+    fetchStudyGroups();
   }, []);
 
   let getmyInnerCircleList = async () => {
@@ -93,6 +102,15 @@ const InnerCircleRequest = ({navigation, route}) => {
     }
   };
 
+  const fetchStudyGroups = async () => {
+    try {
+      const {data} = await getStudyGroups();
+      // console.log('🚀 ~ fetchStudyGroups ~ data:', JSON.stringify(data));
+      setStudyGroups(data);
+    } catch (error) {
+      console.error('Error fetching study groups:', error);
+    }
+  };
   let getInnerCirclerecivedList = async () => {
     try {
       if (loading || allrecivedFetched) return;
@@ -112,10 +130,6 @@ const InnerCircleRequest = ({navigation, route}) => {
       setLoading(false);
     }
   };
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedTerm, setDebouncedTerm] = useState('');
-  const [filteredUsers, setFilteredUsers] = useState([]);
 
   // Debounce logic: Update `debouncedTerm` after a delay
   useEffect(() => {
@@ -201,7 +215,85 @@ const InnerCircleRequest = ({navigation, route}) => {
     } finally {
     }
   };
-
+  const truncateString = (str, maxLength = 130) => {
+    return str?.length > maxLength ? str?.slice(0, maxLength) + '...' : str;
+  };
+  const GroupCard = ({item, index}) => {
+    // console.log('item?.unreadMessageCount ', item?.unreadMessageCount);
+    let lastMessage = item?.lastMessage;
+    // console.log('🚀 ~ GroupCard ~ item:', JSON.stringify(item));
+    return (
+      <Pressable
+        key={index}
+        style={styles.card}
+        onPress={() =>
+          navigation.navigate(Routes.GroupChat, {
+            groupId: item?._id,
+            data: item,
+          })
+        }>
+        {item?.profilePicture ? (
+          <Image
+            source={{
+              uri: `${item?.profilePicture}?timestamp=${new Date().getTime()}`,
+            }}
+            // source={{uri: item?.profilePicture}}
+            style={styles.image}
+          />
+        ) : (
+          <View
+            style={[
+              styles.image,
+              {
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: COLORS.greyD6D6D6,
+              },
+            ]}>
+            <Icon
+              type="material-community"
+              name="account-group"
+              style={{marginLeft: 0.5}}
+              size={nh(30)}
+            />
+          </View>
+        )}
+        <View style={{flex: 9}}>
+          <Text variant="medium12" color={COLORS.blue043142}>
+            {item?.name}
+          </Text>
+          {lastMessage ? (
+            <Text variant="medium12" color={COLORS.grey999999}>
+              {lastMessage?.sender?.username +
+                ': ' +
+                truncateString(lastMessage?.content, 30)}
+            </Text>
+          ) : null}
+        </View>
+        <View style={{flex: 4, alignItems: 'center'}}>
+          <Text variant="medium12" color={COLORS.blue043142}>
+            {formatDateforchat(lastMessage?.timestamp || item?.createdDate)}
+          </Text>
+          {item?.unreadMessageCount > 0 && (
+            <View
+              style={{
+                height: nh(20),
+                minWidth: nh(20),
+                borderRadius: nh(10),
+                backgroundColor: '#34A853',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingHorizontal: nw(5),
+              }}>
+              <Text variant="medium12" color={COLORS.whiteFFFFFF}>
+                {item?.unreadMessageCount}
+              </Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    );
+  };
   const RequestView = ({item}) => {
     return (
       <View>
@@ -289,7 +381,7 @@ const InnerCircleRequest = ({navigation, route}) => {
       <View>
         <View style={{marginHorizontal: nw(16), marginBottom: nh(8)}}>
           <ToggleWithUnderline
-            options={['MY CIRCLE', 'RECEIVED', 'SENT']}
+            options={['MY CIRCLE', 'RECEIVED', 'SENT', 'GROUPS']}
             onToggle={number => onSelect(number)}
           />
         </View>
@@ -541,6 +633,70 @@ const InnerCircleRequest = ({navigation, route}) => {
           </View>
         )
       )}
+      <ChatModal group={1} ref={chatmodelRef} />
+      {selected == 3 && (
+        <FlatList
+          data={studyGroups}
+          renderItem={({item, index}) => (
+            <GroupCard item={item} index={index} />
+          )}
+          // onEndReached={fetchConversations}
+          // ListFooterComponent={
+          //   loading && !fetchconversation ? (
+          //     <ActivityIndicator size="small" color="#0000ff" />
+          //   ) : null
+          // }
+          // extraData={conversation}
+          ListEmptyComponent={() => {
+            return (
+              <View>
+                <Image
+                  source={images.nochat}
+                  resizeMode="contain"
+                  style={styles.notimage}
+                />
+
+                <Text
+                  variant="semibold20"
+                  color={COLORS.blue043142}
+                  style={{textAlign: 'center', marginTop: nh(30)}}>
+                  {'No Study Groups Yet'}
+                </Text>
+                <Text
+                  variant="medium14"
+                  color={COLORS.grey999999}
+                  style={{
+                    textAlign: 'center',
+                    marginTop: nh(5),
+                    marginBottom: nh(20),
+                  }}>
+                  {selected
+                    ? 'Join or create a study group to collaborate with others. Learning is better together!'
+                    : 'Start a conversation and connect with fellow learners. It’s more fun learning together!'}
+                </Text>
+                <Button
+                  text={'Create a Study Group'}
+                  onPress={() => chatmodelRef.current?.present()}
+                />
+              </View>
+            );
+          }}
+        />
+      )}
+      {studyGroups?.length > 0 && selected == 3 ? (
+        <View style={{position: 'absolute', bottom: nh(40), right: nw(40)}}>
+          <Icon
+            type="antdesign"
+            name="pluscircle"
+            color={COLORS.blue043142}
+            style={{marginLeft: 0.5}}
+            size={nh(45)}
+            onPress={() =>
+              navigation.navigate(Routes.Conversation, {from: 'innerCircle'})
+            }
+          />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 };

@@ -194,6 +194,8 @@ const Chat = ({navigation, route}) => {
     // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
       const formData = new FormData();
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${userData?.token}`);
 
       formData.append('conversationId', route?.params?.chatId);
       // Format topics and hashtags as arrays
@@ -211,24 +213,34 @@ const Chat = ({navigation, route}) => {
           type: file.type,
         });
       }
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formData,
+        redirect: 'follow',
+      };
 
-      let conversationId = route?.params?.chatId;
-      const {data} = await sendChat(formData);
-      // markasRead(data?._id);
-      // console.log('🚀 ~ sendMessage ~ data:', data);
-      // setMessages(prevMessages => [...prevMessages, data]);
-      setUserHasScrolled(false);
-      setIsread(true);
-      if (socket) {
-        socket.emit('sendMessage', {
-          conversationId,
-          data,
+      fetch('https://api.scaleupapp.club/api/chat/send', requestOptions)
+        .then(response => response.text())
+        .then(data => {
+          console.log('🚀 ~ sendMessage ~ data:', data);
+          let conversationId = route?.params?.chatId;
+          setUserHasScrolled(false);
+          setIsread(true);
+          if (socket) {
+            socket.emit('sendMessage', {
+              conversationId,
+              data,
+            });
+          }
+        })
+        .catch(error => console.error(error))
+        .finally(() => {
+          setLoadingsmal(false);
+          setModalVisible(false);
+          setInput('');
+          setFile({});
         });
-      }
-      setLoadingsmal(false);
-      setModalVisible(false);
-      setInput('');
-      setFile({});
     }
   };
 
@@ -379,7 +391,8 @@ const Chat = ({navigation, route}) => {
     // if (!newMessage.trim()) return;
     if (input.trim() || file?.fileName) {
       const formData = new FormData();
-
+      const myHeaders = new Headers();
+      myHeaders.append('Authorization', `Bearer ${userData?.token}`);
       formData.append('conversationId', route?.params?.chatId);
       // Format topics and hashtags as arrays
 
@@ -398,24 +411,37 @@ const Chat = ({navigation, route}) => {
       }
 
       let conversationId = route?.params?.chatId;
-      const {data} = await sendChatReply(formData);
-      // markasRead(data?._id);
-      // setMessages(prevMessages => [...prevMessages, data]);
-      console.log('🚀 ~ sendMesendChatReplyssage ~ data:', data);
-      setUserHasScrolled(false);
-      setReply(false);
-      setSelected();
-      setIsread(true);
-      if (socket) {
-        socket.emit('sendMessage', {
-          conversationId,
-          data,
+      const requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: formData,
+        redirect: 'follow',
+      };
+
+      fetch('https://api.scaleupapp.club/api/chat/reply', requestOptions)
+        .then(response => response.text())
+        .then(data => {
+          console.log('🚀 ~ replyMessage ~ data:', data);
+
+          setUserHasScrolled(false);
+          setReply(false);
+          setSelected();
+          setIsread(true);
+
+          if (socket) {
+            socket.emit('sendMessage', {
+              conversationId,
+              data,
+            });
+          }
+        })
+        .catch(error => console.error(error))
+        .finally(() => {
+          setLoadingsmal(false);
+          setModalVisible(false);
+          setInput('');
+          setFile({});
         });
-      }
-      setLoadingsmal(false);
-      setModalVisible(false);
-      setInput('');
-      setFile({});
     }
   };
   const openGallery = async () => {

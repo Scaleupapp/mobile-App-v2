@@ -56,7 +56,9 @@ const EditGroupProfile = ({route, navigation}) => {
   );
   const [loading, setLoading] = useState(false);
   const [image, setImage] = useState(null);
-  const [imageUrl, setImageUrl] = useState(groupData?.profilePicture || null);
+  const [imageUrl, setImageUrl] = useState(
+    `${groupData?.profilePicture}?timestamp=${new Date().getTime()}` || null,
+  );
 
   const handleAddWord = () => {
     if (input.trim()) {
@@ -96,11 +98,11 @@ const EditGroupProfile = ({route, navigation}) => {
 
   const handleSave = async () => {
     const name = groupName.trim();
+
     if (!name || name?.length == 0) {
       setGroupNameErr('Please enter group name');
       return;
     }
-    console.log('anskansknaksnkansknkasnkansknaks');
     setLoading(true);
     const getMemberIds = memberDetails?.map(
       member => member?._id || member?.userId,
@@ -124,6 +126,7 @@ const EditGroupProfile = ({route, navigation}) => {
         type: image.type,
       });
     }
+    console.log(formData);
     if (edit) editGroupApi(formData);
     else createGroupApi(formData);
   };
@@ -160,6 +163,7 @@ const EditGroupProfile = ({route, navigation}) => {
           },
         },
       );
+      console.log('🚀 ~ EditGroupProfile ~ data:', data);
       const newdata = {
         ...data,
         members: memberDetails,
@@ -357,7 +361,7 @@ const EditGroupProfile = ({route, navigation}) => {
                     variant="outline"
                     width={nw(90)}
                     height={nh(30)}
-                    textStyle={{fontSize: 14}}
+                    textStyle={{fontSize: nh(12)}}
                   />
                   <Icon
                     type="entypo"
@@ -414,7 +418,7 @@ const EditGroupProfile = ({route, navigation}) => {
                           variant="outline"
                           width={nw(90)}
                           height={nh(30)}
-                          textStyle={{fontSize: 14}}
+                          textStyle={{fontSize: nh(12)}}
                         />
                         <Icon
                           type="entypo"
@@ -438,7 +442,7 @@ const EditGroupProfile = ({route, navigation}) => {
                         variant="outline"
                         width={nw(90)}
                         height={nh(30)}
-                        textStyle={{fontSize: 14}}
+                        textStyle={{fontSize: nh(12)}}
                       />
                     )}
                   </View>

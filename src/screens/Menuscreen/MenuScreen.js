@@ -23,8 +23,8 @@ const MenuScreen = ({navigation, route}) => {
       nav: Routes.MyBadge,
     },
     {
-      title: 'Quiz',
-      nav: Routes.QuizList,
+      title: 'My Profile',
+      nav: Routes.MyProfile,
     },
     {
       title: 'My Inner Circle',

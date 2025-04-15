@@ -25,4 +25,6 @@ export const icons = {
   friend: require('../icons/friend.png'),
   editsolid: require('../icons/editsolid.png'),
   crosspageoutline: require('../icons/crosspageoutline.png'),
+  quizInactive: require('../icons/quiz.png'),
+  quizActive: require('../icons/quizsolid.png'),
 };

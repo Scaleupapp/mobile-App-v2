@@ -11,8 +11,9 @@ const ToggleWithUnderline = ({
   selectedUnderlineHeight = 4, // Thickness of selected underline
   unselectedUnderlineHeight = 1, // Thickness of unselected underline
   onToggle = () => {}, // Callback for toggle change
+  select = 0,
 }) => {
-  const [selected, setSelected] = useState(0);
+  const [selected, setSelected] = useState(select);
 
   const handleToggle = index => {
     setSelected(index);
