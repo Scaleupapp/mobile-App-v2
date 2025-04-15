@@ -45,6 +45,15 @@ const Conversation = ({navigation, route}) => {
   );
 
   useEffect(() => {
+    console.log(route?.params?.from, 'route?.params?.from ');
+    if (route?.params?.from == 'innerCircle') {
+      setSelected(1);
+      setTimeout(() => {
+        chatmodelRef.current?.present();
+      }, 1000);
+    }
+  }, [route?.params?.from]);
+  useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club', {
       // Your server URL
@@ -336,6 +345,7 @@ const Conversation = ({navigation, route}) => {
           <ToggleWithUnderline
             options={['CHATS', 'STUDY GROUPS']}
             onToggle={setSelected}
+            select={selected}
           />
           <ChatModal group={selected} ref={chatmodelRef} />
           <FlatList

@@ -161,7 +161,11 @@ const TabNavigator = props => {
       );
     return (
       <View style={{marginTop: nh(isAndroid ? 10 : 15)}}>
-        <Image source={img} style={{height: nw(30), width: nw(30)}} />
+        <Image
+          source={img}
+          style={{height: nw(30), width: nw(30)}}
+          tintColor={'white'}
+        />
       </View>
     );
   };
@@ -240,7 +244,7 @@ const TabNavigator = props => {
             setBottomIcon(focused ? icons.book1 : icons.book2, focused),
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name={Routes.MyProfile}
         component={MyProfile}
         options={{
@@ -249,8 +253,8 @@ const TabNavigator = props => {
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.account1 : icons.account2, focused),
         }}
-      />
-      {/* <Tab.Screen
+      /> */}
+      <Tab.Screen
         name={Routes.QuizList}
         component={QuizListScreen}
         options={{
@@ -261,7 +265,7 @@ const TabNavigator = props => {
               focused,
             ),
         }}
-      /> */}
+      />
     </Tab.Navigator>
   );
 };
@@ -536,6 +540,12 @@ export const RootNavigator = () => {
         component={QuizScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={Routes.MyProfile}
+        component={MyProfile}
+        options={{headerShown: false}}
+      />
+
       <Stack.Screen
         name={Routes.QuizList}
         component={QuizListScreen}
