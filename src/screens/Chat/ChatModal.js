@@ -8,7 +8,11 @@ import {
   Pressable,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
-import {BottomSheetModal, BottomSheetView} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetFlatList,
+  BottomSheetModal,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
 import Icon from '../../helper/icon';
 import {
   DEVICE_HEIGHT,
@@ -94,7 +98,7 @@ const ChatModal = forwardRef(
         containerStyle={{borderTopLeftRadius: 24}}
         onDismiss={() => setSelectedMembers([])}
         style={styles.modalContainer}>
-        <BottomSheetView style={styles.bottomSheetView}>
+        <View style={styles.bottomSheetView}>
           <Icon
             type={'antdesign'}
             color={COLORS.black333333}
@@ -108,8 +112,8 @@ const ChatModal = forwardRef(
               <ActivityIndicator size="large" color={COLORS.black333333} />
             </View>
           ) : (
-            <BottomSheetView>
-              <FlatList
+            <View style={{flex: 1}}>
+              <BottomSheetFlatList
                 scrollEnabled
                 data={myInnerCircle}
                 contentContainerStyle={{marginTop: nh(30)}}
@@ -214,9 +218,9 @@ const ChatModal = forwardRef(
                   />
                 </View>
               ) : null}
-            </BottomSheetView>
+            </View>
           )}
-        </BottomSheetView>
+        </View>
       </BottomSheetModal>
     );
   },
@@ -235,8 +239,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.whiteFFFFFF,
     alignItems: 'center',
     justifyContent: 'center',
-    height: DEVICE_HEIGHT,
-    width: DEVICE_WIDTH,
+    // height: DEVICE_HEIGHT,
+    // width: DEVICE_WIDTH,
   },
   closeIcon: {
     position: 'absolute',
