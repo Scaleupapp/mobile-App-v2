@@ -29,6 +29,9 @@ import {
   fetchUserRegisteredQuizzesApi, // New API call to get user's registered quizzes
 } from '../../services/apiService';
 
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+
 const TABS = {
   UPCOMING: 'UPCOMING',
   ACTIVE: 'ACTIVE',
@@ -111,11 +114,12 @@ const QuizList = ({navigation}) => {
   const fetchQuizzes = async () => {
     setIsLoading(true);
     try {
-      const response = await listAllQuizEventsApi(1, 10);
+      const response = await listAllQuizEventsApi(1, 50, true);
       const sortedQuizzes = response.data.quizzes.sort(
         (a, b) => new Date(a.startTime) - new Date(b.startTime),
       );
       setQuizzes(sortedQuizzes);
+
     } catch (error) {
       console.error('Error fetching quizzes:', error);
     } finally {
@@ -258,11 +262,14 @@ const QuizList = ({navigation}) => {
           startTime <= currentTime &&
           endTime >= currentTime &&
           !hasAttempted &&
-          isRegistered
+          registeredQuizIds.includes(quiz._id)
+
         );
 
-      case TABS.COMPLETED:
-        return matchesSearch && (endTime < currentTime || hasAttempted);
+        case TABS.COMPLETED:
+          return matchesSearch && (
+            hasAttempted 
+          );
 
       default:
         return false;
@@ -308,6 +315,14 @@ const QuizList = ({navigation}) => {
             style={styles.quizTitle}>
             {item.title}
           </Text>
+          {isRegistered && (
+            <Ionicons
+              name="checkmark-circle"
+              size={20}
+              color={COLORS.yellowF5BE00}
+              style={styles.tickIcon}
+            />
+          )}
           <Text
             variant="regular16"
             color={COLORS.blue043142}
@@ -482,6 +497,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.whiteFFFFFF,
   },
+  tickIcon: {
+    position: 'absolute',
+    top: 40,
+    left: -43,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 20,  },
   semicircle: {
     width: DEVICE_WIDTH,
     height: nh(120),

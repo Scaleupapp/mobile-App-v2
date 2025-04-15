@@ -72,7 +72,7 @@ const Chat = ({navigation, route}) => {
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
   const [deleteMessages, setdeletemessages] = useState([]);
-  //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
+  //   const socket = io('http://192.168.28.240:3000'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
@@ -82,7 +82,7 @@ const Chat = ({navigation, route}) => {
   const [threedotmodal, setThreeDotmodal] = useState(false);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('https://api.scaleupapp.club', {
+    const socketInstance = io('http://192.168.28.240:3000', {
       // Your server URL
       auth: {
         token: userData?.token, // If you have authentication

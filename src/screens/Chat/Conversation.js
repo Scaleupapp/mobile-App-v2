@@ -46,7 +46,7 @@ const Conversation = ({navigation, route}) => {
 
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('https://api.scaleupapp.club', {
+    const socketInstance = io('http://192.168.28.240:3000', {
       // Your server URL
       auth: {
         token: userData?.token, // If you have authentication

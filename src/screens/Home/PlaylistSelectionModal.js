@@ -52,7 +52,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   const fetchUserPlaylists = async () => {
     try {
       const response = await axios.get(
-        `https://api.scaleupapp.club/api/playlists?userId=${profileData.id}`,
+        `http://192.168.28.240:3000/api/playlists?userId=${profileData.id}`,
       );
       setPlaylists(response.data);
       setLoading(false);
@@ -67,7 +67,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   
     try {
       const response = await axios.post(
-        'https://api.scaleupapp.club/api/playlists/create',
+        'http://192.168.28.240:3000/api/playlists/create',
         {
           userId: profileData.id,
           playlistName: newPlaylist.playlistName,
@@ -105,7 +105,7 @@ const PlaylistSelectionModal = ({visible, onClose, postId, onPostAdded}) => {
   
     try {
       await axios.post(
-        'https://api.scaleupapp.club/api/playlists/add-to-playlist',
+        'http://192.168.28.240:3000/api/playlists/add-to-playlist',
         {
           userId: profileData.id,
           playlistId,

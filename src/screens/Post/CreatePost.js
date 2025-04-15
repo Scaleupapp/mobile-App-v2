@@ -249,7 +249,7 @@ const CreatePost = ({navigation}) => {
         if (isDraft) {
           // Update the existing draft
           response = await axios.put(
-            `https://api.scaleupapp.club/api/content/${draftData.id}`,
+            `http://192.168.28.240:3000/api/content/${draftData.id}`,
             formData,
             config,
           );
@@ -262,7 +262,7 @@ const CreatePost = ({navigation}) => {
         } else {
           // Publishing existing draft
           response = await axios.put(
-            `https://api.scaleupapp.club/api/content/publish/${draftData.id}`,
+            `http://192.168.28.240:3000/api/content/publish/${draftData.id}`,
             formData,
             config,
           );
@@ -276,7 +276,7 @@ const CreatePost = ({navigation}) => {
       } else {
         // Creating a new post or draft
         response = await axios.post(
-          'https://api.scaleupapp.club/api/content/create',
+          'http://192.168.28.240:3000/api/content/create',
           formData,
           config,
         );
