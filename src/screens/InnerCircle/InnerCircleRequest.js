@@ -479,6 +479,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                 textAlign: 'center',
                 marginTop: nh(5),
                 marginBottom: nh(20),
+                paddingHorizontal: 16,
               }}>
               It’s quiet here. Why not create your first post and share your
               thoughts with the community?
@@ -524,6 +525,7 @@ const InnerCircleRequest = ({navigation, route}) => {
                 textAlign: 'center',
                 marginTop: nh(5),
                 marginBottom: nh(20),
+                marginHorizontal: nw(16),
               }}>
               It’s quiet here. Why not create your first post and share your
               thoughts with the community?
@@ -691,9 +693,7 @@ const InnerCircleRequest = ({navigation, route}) => {
             color={COLORS.blue043142}
             style={{marginLeft: 0.5}}
             size={nh(45)}
-            onPress={() =>
-              navigation.navigate(Routes.Conversation, {from: 'innerCircle'})
-            }
+            onPress={() => chatmodelRef.current?.present()}
           />
         </View>
       ) : null}
