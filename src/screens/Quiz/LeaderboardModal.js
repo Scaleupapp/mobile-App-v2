@@ -101,7 +101,7 @@ const LeaderboardModal = ({
         </View>
       )}
       
-      {leaders.slice(0, 10).map((leader, index) => (
+      {leaders.map((leader, index) => (
         <TouchableOpacity 
           key={leader.userId} 
           style={[
@@ -124,7 +124,7 @@ const LeaderboardModal = ({
       ))}
 
       {/* Last Place User */}
-      {leaders.length > 10 && (
+      {/* {leaders.length > 10 && (
         <TouchableOpacity 
           style={styles.lastPlaceContainer}
           onPress={() => setUserData(leaders[leaders.length - 1].userId)}
@@ -145,7 +145,7 @@ const LeaderboardModal = ({
             {leaders[leaders.length - 1].score.toFixed(2)} pts
           </Text>
         </TouchableOpacity>
-      )}
+      )} */}
 
       {userRanking && (
         <Text variant="regular14" style={styles.userRankText}>

@@ -306,9 +306,10 @@ export const editQuizEventApi = (payload: any) => {
 export const listAllQuizEventsApi = (
   page: number = 1,
   pageSize: number = 10,
+  includeCompleted = false
 ) => {
   return axiosInstance.get(
-    `${API.RAPIDFIRE_LIST}?page=${page}&pageSize=${pageSize}`,
+    `${API.RAPIDFIRE_LIST}?page=${page}&pageSize=${pageSize}&includeCompleted=${includeCompleted}`,
   );
 };
 
@@ -356,8 +357,8 @@ export const submitAnswerApi = (
 };
 
 // Get current leaderboard and user's ranking for a quiz
-export const getUserRankingApi = (quizId: string, limit: number = 10) => {
-  return axiosInstance.get(`rapidfire-quiz/${quizId}/ranking?limit=${limit}`);
+export const getUserRankingApi = (quizId: string) => {
+  return axiosInstance.get(`rapidfire-quiz/${quizId}/ranking`);
 };
 
 // Get detailed results for a user's quiz attempt

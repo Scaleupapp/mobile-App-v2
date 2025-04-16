@@ -27,7 +27,7 @@ const QuizScreen = ({ navigation, route }) => {
 
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [loadingQuestion, setLoadingQuestion] = useState(true);
-  const [timer, setTimer] = useState(10);
+  const [timer, setTimer] = useState(15);
   const [selectedOption, setSelectedOption] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCountdownVisible, setCountdownVisible] = useState(true);
@@ -96,7 +96,7 @@ const QuizScreen = ({ navigation, route }) => {
       setSeenQuestions((prev) => [...prev, question.questionId]);
       setCurrentQuestion(question);
       setSelectedOption(null);
-      setTimer(10);
+      setTimer(15);
       startQuestionTimer();
       fadeInQuestion();
   
@@ -131,7 +131,7 @@ const QuizScreen = ({ navigation, route }) => {
       await submitAnswerApi(quizId, attemptId, {
         questionId: currentQuestion.questionId,
         selectedOption: 'skip',
-        timeTaken: 10
+        timeTaken: 15
       });
   
       setIsSubmitting(false);
@@ -155,10 +155,10 @@ const QuizScreen = ({ navigation, route }) => {
   const startQuestionTimer = () => {
     clearInterval(intervalRef.current);
     const startTime = Date.now();
-    setTimer(10);
+    setTimer(15);
     intervalRef.current = setInterval(() => {
       const elapsedTime = (Date.now() - startTime) / 1000;
-      const remainingTime = Math.max(10 - elapsedTime, 0);
+      const remainingTime = Math.max(15 - elapsedTime, 0);
       
       setTimer(parseFloat(remainingTime.toFixed(2)));
       
@@ -184,7 +184,7 @@ const QuizScreen = ({ navigation, route }) => {
         ? getOptionLetter(currentQuestion.options, selectedOption) 
         : 'skip';
       
-      const timeTaken = parseFloat((10 - timer).toFixed(2));
+      const timeTaken = parseFloat((15 - timer).toFixed(2));
       
       const response = await submitAnswerApi(quizId, attemptId, {
         questionId: currentQuestion.questionId,

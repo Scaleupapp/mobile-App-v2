@@ -29,6 +29,9 @@ import {
   fetchUserRegisteredQuizzesApi, // New API call to get user's registered quizzes
 } from '../../services/apiService';
 
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
+
 const TABS = {
   UPCOMING: 'UPCOMING',
   ACTIVE: 'ACTIVE',
@@ -111,11 +114,12 @@ const QuizList = ({navigation}) => {
   const fetchQuizzes = async () => {
     setIsLoading(true);
     try {
-      const response = await listAllQuizEventsApi(1, 10);
+      const response = await listAllQuizEventsApi(1, 50, true);
       const sortedQuizzes = response.data.quizzes.sort(
         (a, b) => new Date(a.startTime) - new Date(b.startTime),
       );
       setQuizzes(sortedQuizzes);
+
     } catch (error) {
       console.error('Error fetching quizzes:', error);
     } finally {
@@ -258,11 +262,14 @@ const QuizList = ({navigation}) => {
           startTime <= currentTime &&
           endTime >= currentTime &&
           !hasAttempted &&
-          isRegistered
+          registeredQuizIds.includes(quiz._id)
+
         );
 
-      case TABS.COMPLETED:
-        return matchesSearch && (endTime < currentTime || hasAttempted);
+        case TABS.COMPLETED:
+          return matchesSearch && (
+            hasAttempted 
+          );
 
       default:
         return false;
@@ -308,6 +315,36 @@ const QuizList = ({navigation}) => {
             style={styles.quizTitle}>
             {item.title}
           </Text>
+
+          <View style={[
+          styles.quizTypeMarker, 
+          {backgroundColor: item.isPaid ? COLORS.yellowF5BE00 : COLORS.greenSuccess}
+        ]}>
+          <Text 
+            variant="regular12" 
+            color={COLORS.whiteFFFFFF}
+            style={styles.quizTypeText}>
+            {item.isPaid ? 'Paid' : ''}
+          </Text>
+        </View>
+
+        
+        {isRegistered && (
+  <View style={styles.registeredContainer}>
+    <Ionicons
+      name="checkmark-circle"
+      size={20}
+      color={COLORS.yellowF5BE00}
+      style={styles.tickIcon}
+    />
+    <Text
+      variant="regular10"
+      color={COLORS.yellowF5BE00}
+      style={styles.registeredText}>
+      Registered
+    </Text>
+  </View>
+)}
           <Text
             variant="regular16"
             color={COLORS.blue043142}
@@ -481,6 +518,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.whiteFFFFFF,
+  },
+  quizTypeMarker: {
+    position: 'absolute',
+    bottom: 0,
+    left: -60,
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(4),
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  quizTypeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  
+  // Make sure to adjust the tickIcon style to avoid overlap
+  registeredContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    top: -17,
+    right: -10,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 10,
+    paddingHorizontal: 2,
+  },
+  tickIcon: {
+    marginRight: 4,
+  },
+  registeredText: {
+    fontWeight: '100',
+    fontSize: 10,
+
   },
   semicircle: {
     width: DEVICE_WIDTH,
