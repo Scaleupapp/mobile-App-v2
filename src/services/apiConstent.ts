@@ -1,5 +1,5 @@
 export const API = {
-  BASE_URL: 'http://192.168.28.240:3000/api/',
+  BASE_URL: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
   APPLY_REFERRAL_CODE: 'auth/applyReferralCode',

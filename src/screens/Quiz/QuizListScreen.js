@@ -315,14 +315,36 @@ const QuizList = ({navigation}) => {
             style={styles.quizTitle}>
             {item.title}
           </Text>
-          {isRegistered && (
-            <Ionicons
-              name="checkmark-circle"
-              size={20}
-              color={COLORS.yellowF5BE00}
-              style={styles.tickIcon}
-            />
-          )}
+
+          <View style={[
+          styles.quizTypeMarker, 
+          {backgroundColor: item.isPaid ? COLORS.yellowF5BE00 : COLORS.greenSuccess}
+        ]}>
+          <Text 
+            variant="regular12" 
+            color={COLORS.whiteFFFFFF}
+            style={styles.quizTypeText}>
+            {item.isPaid ? 'Paid' : ''}
+          </Text>
+        </View>
+
+        
+        {isRegistered && (
+  <View style={styles.registeredContainer}>
+    <Ionicons
+      name="checkmark-circle"
+      size={20}
+      color={COLORS.yellowF5BE00}
+      style={styles.tickIcon}
+    />
+    <Text
+      variant="regular10"
+      color={COLORS.yellowF5BE00}
+      style={styles.registeredText}>
+      Registered
+    </Text>
+  </View>
+)}
           <Text
             variant="regular16"
             color={COLORS.blue043142}
@@ -497,12 +519,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.whiteFFFFFF,
   },
-  tickIcon: {
+  quizTypeMarker: {
     position: 'absolute',
-    top: 40,
-    left: -43,
+    bottom: 0,
+    left: -60,
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(4),
+    borderRadius: 4,
+    zIndex: 1,
+  },
+  quizTypeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  
+  // Make sure to adjust the tickIcon style to avoid overlap
+  registeredContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    top: -17,
+    right: -10,
     backgroundColor: COLORS.whiteFFFFFF,
-    borderRadius: 20,  },
+    borderRadius: 10,
+    paddingHorizontal: 2,
+  },
+  tickIcon: {
+    marginRight: 4,
+  },
+  registeredText: {
+    fontWeight: '100',
+    fontSize: 10,
+
+  },
   semicircle: {
     width: DEVICE_WIDTH,
     height: nh(120),
