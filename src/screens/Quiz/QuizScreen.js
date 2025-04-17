@@ -176,6 +176,8 @@ const QuizScreen = ({ navigation, route }) => {
   };
   
   const handleSubmitAnswer = async () => {
+    if (!selectedOption || isSubmitting) return; // Add this guard clause
+
     clearInterval(intervalRef.current);
     setIsSubmitting(true);
     
