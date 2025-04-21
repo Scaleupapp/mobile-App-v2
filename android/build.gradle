@@ -10,12 +10,22 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url "https://jitpack.io" }
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+        classpath 'com.google.gms:google-services:4.4.2'
     }
 }
-
+allprojects {  // <- you should have added this
+    repositories {
+        maven {
+            url "$rootDir/../node_modules/react-native-video-cache/android/libs" // <- build files for AndroidVideoCache
+        }
+      maven { url 'https://maven.google.com' }
+      maven { url "https://www.jitpack.io" }
+    }
+}
 apply plugin: "com.facebook.react.rootproject"
