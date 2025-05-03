@@ -31,7 +31,6 @@ import {
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-
 const TABS = {
   UPCOMING: 'UPCOMING',
   ACTIVE: 'ACTIVE',
@@ -53,10 +52,12 @@ const EmptyStateMessages = {
     "It looks like you haven't completed any quizzes. Start one today and track your progress!",
 };
 
-const QuizList = ({navigation}) => {
+const QuizList = ({navigation, route}) => {
   const [quizzes, setQuizzes] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState(TABS.UPCOMING);
+  const [activeTab, setActiveTab] = useState(
+    route?.params?.from == 'popup' ? TABS.ACTIVE : TABS.UPCOMING,
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [registeredQuizIds, setRegisteredQuizIds] = useState({});
@@ -119,7 +120,6 @@ const QuizList = ({navigation}) => {
         (a, b) => new Date(a.startTime) - new Date(b.startTime),
       );
       setQuizzes(sortedQuizzes);
-
     } catch (error) {
       console.error('Error fetching quizzes:', error);
     } finally {
@@ -263,13 +263,10 @@ const QuizList = ({navigation}) => {
           endTime >= currentTime &&
           !hasAttempted &&
           registeredQuizIds.includes(quiz._id)
-
         );
 
-        case TABS.COMPLETED:
-          return matchesSearch && (
-            hasAttempted 
-          );
+      case TABS.COMPLETED:
+        return matchesSearch && hasAttempted;
 
       default:
         return false;
@@ -316,35 +313,39 @@ const QuizList = ({navigation}) => {
             {item.title}
           </Text>
 
-          <View style={[
-          styles.quizTypeMarker, 
-          {backgroundColor: item.isPaid ? COLORS.yellowF5BE00 : COLORS.greenSuccess}
-        ]}>
-          <Text 
-            variant="regular12" 
-            color={COLORS.whiteFFFFFF}
-            style={styles.quizTypeText}>
-            {item.isPaid ? 'Paid' : ''}
-          </Text>
-        </View>
+          <View
+            style={[
+              styles.quizTypeMarker,
+              {
+                backgroundColor: item.isPaid
+                  ? COLORS.yellowF5BE00
+                  : COLORS.greenSuccess,
+              },
+            ]}>
+            <Text
+              variant="regular12"
+              color={COLORS.whiteFFFFFF}
+              style={styles.quizTypeText}>
+              {item.isPaid ? 'Paid' : ''}
+            </Text>
+          </View>
 
-        
-        {isRegistered && (
-  <View style={styles.registeredContainer}>
-    <Ionicons
-      name="checkmark-circle"
-      size={20}
-      color={COLORS.yellowF5BE00}
-      style={styles.tickIcon}
-    />
-    <Text
-      variant="regular10"
-      color={COLORS.yellowF5BE00}
-      style={styles.registeredText}>
-      Registered
-    </Text>
-  </View>
-)}
+          {isRegistered && (
+            <View style={styles.registeredContainer}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={COLORS.yellowF5BE00}
+                style={styles.tickIcon}
+              />
+              <Text
+                variant="regular10"
+                color={COLORS.yellowF5BE00}
+                style={styles.registeredText}>
+                Registered
+              </Text>
+            </View>
+          )}
           <Text
             variant="regular16"
             color={COLORS.blue043142}
@@ -532,7 +533,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  
+
   // Make sure to adjust the tickIcon style to avoid overlap
   registeredContainer: {
     position: 'absolute',
@@ -550,7 +551,6 @@ const styles = StyleSheet.create({
   registeredText: {
     fontWeight: '100',
     fontSize: 10,
-
   },
   semicircle: {
     width: DEVICE_WIDTH,

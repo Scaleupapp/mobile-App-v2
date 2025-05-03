@@ -17,6 +17,7 @@ import {
   getHomePageData,
   getRecommendedContent,
   getProfile,
+  getActiveQuiz,
 } from '../../services/apiService';
 import PostView from './Post';
 import {Story} from './Story';
@@ -24,6 +25,7 @@ import {throttle} from '../../helper/commonFunctions';
 import {useDispatch, useSelector} from 'react-redux';
 import {actions} from '../../redux/reducers';
 import UpdatePopup from '../../components/UpdatePopup';
+import QuizstartedPopup from '../../components/QuizstartedPopup';
 
 // ----------------------
 // Data transformation functions
@@ -72,6 +74,7 @@ const Home = ({navigation, route}) => {
   // Toggle state: if true, show recommended posts; otherwise, show normal homepage posts
   const [showRecommended, setShowRecommended] = useState(false);
   const [visibleItems, setVisibleItems] = useState([]);
+  const [activeQuiz, setActiveQuiz] = useState([]);
 
   // Configure viewability for FlatList
   const viewabilityConfig = useRef({
@@ -92,8 +95,18 @@ const Home = ({navigation, route}) => {
   // On mount, fetch user profile
   useEffect(() => {
     getProfileData();
+    getquizData();
   }, []);
 
+  const getquizData = async () => {
+    try {
+      const res = await getActiveQuiz();
+      console.log('🚀 ~ getquizData ~ res:', res?.data);
+      setActiveQuiz(res?.data);
+    } catch (error) {
+      console.log(error?.response?.data?.message, 'errormsg');
+    }
+  };
   const getProfileData = async () => {
     try {
       const res = await getProfile('');
@@ -299,7 +312,10 @@ const Home = ({navigation, route}) => {
           />
         </View>
       </View>
-      <UpdatePopup />
+      <UpdatePopup activeQuiz={activeQuiz.length > 0 ? true : false} />
+      {activeQuiz.length > 0 ? (
+        <QuizstartedPopup activeQuiz={activeQuiz[0]} />
+      ) : null}
     </SafeAreaView>
   );
 };

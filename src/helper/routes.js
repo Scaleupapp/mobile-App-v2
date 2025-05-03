@@ -68,6 +68,7 @@ const Routes = {
   EditGroupProfile: 'EditGroupProfile',
   GroupChat: 'GroupChat',
   GroupProfile: 'GroupProfile',
+  groupRequest: 'groupRequest',
 };
 
 export default Routes;

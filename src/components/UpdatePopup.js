@@ -15,13 +15,15 @@ import {isAndroid} from '../helper/scales';
 import {COLORS} from '../helper/colors';
 import {isVersionLess} from '../helper/commonFunctions';
 
-const UpdatePopup = () => {
+const UpdatePopup = activeQuiz => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [latestVersion, setLatestVersion] = useState('');
   const [updateUrl, setUpdateUrl] = useState('');
 
   useEffect(() => {
-    checkForUpdate();
+    if (!activeQuiz) {
+      checkForUpdate();
+    }
   }, []);
 
   const checkForUpdate = async () => {

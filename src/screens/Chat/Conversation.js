@@ -7,6 +7,7 @@ import {
   Pressable,
   FlatList,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
@@ -14,7 +15,11 @@ import Header from '../../components/Header';
 import {Image} from 'react-native';
 import Text from '../../components/Text';
 import Routes from '../../helper/routes';
-import {getconversation, getStudyGroups} from '../../services/apiService';
+import {
+  getconversation,
+  getGrouprequest,
+  getStudyGroups,
+} from '../../services/apiService';
 import {useSelector} from 'react-redux';
 import Button from '../../components/Button';
 import {images} from '../../assets/images';
@@ -35,6 +40,7 @@ const Conversation = ({navigation, route}) => {
   const DataArray = selected ? studyGroups : conversation;
   const [fetchconversation, setAllconversationfetched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [grouprequest, setgroupRequest] = useState([]);
   const page = useRef(1);
 
   useFocusEffect(
@@ -53,6 +59,20 @@ const Conversation = ({navigation, route}) => {
       }, 1000);
     }
   }, [route?.params?.from]);
+
+  useEffect(() => {
+    loadgroupRequest();
+  }, []);
+
+  const loadgroupRequest = async () => {
+    try {
+      let res = await getGrouprequest();
+
+      setgroupRequest(res?.data?.requests);
+    } catch (error) {
+      console.log('🚀 ~ loadgroupRequest ~ error:', error);
+    }
+  };
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
     const socketInstance = io('https://api.scaleupapp.club', {
@@ -348,6 +368,33 @@ const Conversation = ({navigation, route}) => {
             select={selected}
           />
           <ChatModal group={selected} ref={chatmodelRef} />
+          {grouprequest?.length > 0 && selected ? (
+            <TouchableOpacity
+              style={{
+                height: nh(40),
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                borderWidth: 1,
+                borderColor: COLORS.grey777777,
+                paddingLeft: 10,
+                borderRadius: 10,
+                marginBottom: 20,
+              }}
+              onPress={() =>
+                navigation.navigate(Routes.groupRequest, {data: grouprequest})
+              }>
+              <Text variant="medium12" color={COLORS.grey999999}>
+                You have study group request pending
+              </Text>
+              <Icon
+                type="material"
+                name="keyboard-arrow-right"
+                color={COLORS.grey777777}
+                style={{marginRight: nw(10)}}
+              />
+            </TouchableOpacity>
+          ) : null}
           <FlatList
             data={DataArray}
             renderItem={({item, index}) =>

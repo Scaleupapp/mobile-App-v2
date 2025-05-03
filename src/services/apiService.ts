@@ -431,3 +431,21 @@ export const markReadGrpMsg = (payload: any) => {
 export const leaveStudyGroup = (groupId: any) => {
   return axiosInstance.post(`${API.CHAT}/group/${groupId}/leave`);
 };
+
+
+export const getGrouprequest = (groupId: any) => {
+  return axiosInstance.get(`${API.CHAT}/group/all-requests`);
+};
+
+
+export const acceptgroupRequest = (payload: any) => {
+  return axiosInstance.post(`${API.CHAT}/group/handle-requests`,payload);
+};
+
+export const getActiveQuiz = (groupId: any) => {
+  return axiosInstance.get(`rapidfire-quiz/unattempted-live`);
+};
+
+
+
+
