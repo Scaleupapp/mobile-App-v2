@@ -72,7 +72,7 @@ const Chat = ({navigation, route}) => {
   const [loadingsmall, setLoadingsmal] = useState(false);
   const [reply, setReply] = useState(false);
   const [deleteMessages, setdeletemessages] = useState([]);
-  //   const socket = io('https://api.scaleupapp.club'); // Replace with your server URL
+  //   const socket = io('http://192.168.84.240:3000/api/'); // Replace with your server URL
 
   const [socket, setSocket] = useState(null);
   const [loading, setLoading] = useState(false); // Loading state
@@ -82,7 +82,7 @@ const Chat = ({navigation, route}) => {
   const [threedotmodal, setThreeDotmodal] = useState(false);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('https://api.scaleupapp.club', {
+    const socketInstance = io('http://192.168.84.240:3000/api/', {
       // Your server URL
       auth: {
         token: userData?.token, // If you have authentication
@@ -220,7 +220,7 @@ const Chat = ({navigation, route}) => {
         redirect: 'follow',
       };
 
-      fetch('https://api.scaleupapp.club/api/chat/send', requestOptions)
+      fetch('http://192.168.84.240:3000/api/chat/send', requestOptions)
         .then(response => response.text())
         .then(data => {
           console.log('🚀 ~ sendMessage ~ data:', data);
@@ -418,7 +418,7 @@ const Chat = ({navigation, route}) => {
         redirect: 'follow',
       };
 
-      fetch('https://api.scaleupapp.club/api/chat/reply', requestOptions)
+      fetch('http://192.168.84.240:3000/api/chat/reply', requestOptions)
         .then(response => response.text())
         .then(data => {
           console.log('🚀 ~ replyMessage ~ data:', data);

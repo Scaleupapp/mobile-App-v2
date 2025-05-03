@@ -24,7 +24,7 @@ import {useSelector} from 'react-redux';
 
 const {width, height} = Dimensions.get('window');
 const STORY_DURATION = 30000;
-const API_BASE_URL = 'https://api.scaleupapp.club/api';
+const API_BASE_URL = 'http://192.168.84.240:3000/api//api';
 
 export const Story = () => {
   const [modalVisible, setModalVisible] = useState(false);

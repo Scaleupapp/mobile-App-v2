@@ -130,7 +130,7 @@ const MyPlaylists = ({route, navigation}) => {
   const fetchUsername = async userId => {
     try {
       const response = await fetch(
-        `https://api.scaleupapp.club/api/user/${userId}`,
+        `http://192.168.84.240:3000/api/user/${userId}`,
       );
 
       if (!response.ok) {
@@ -156,7 +156,7 @@ const MyPlaylists = ({route, navigation}) => {
   const markPostAsViewed = async (playlistId, postId) => {
     try {
       await axios.post(
-        'https://api.scaleupapp.club/api/playlists/mark-viewed',
+        'http://192.168.84.240:3000/api/playlists/mark-viewed',
         {
           userId,
           playlistId,
@@ -192,13 +192,13 @@ const MyPlaylists = ({route, navigation}) => {
       let response;
       try {
         response = await axios.get(
-          `https://api.scaleupapp.club/api/content/post/${postId}`,
+          `http://192.168.84.240:3000/api/content/post/${postId}`,
         );
       } catch (err) {
         // If that fails and we have a token, try with authentication
         if (currentToken) {
           response = await axios.get(
-            `https://api.scaleupapp.club/api/content/post/${postId}`,
+            `http://192.168.84.240:3000/api/content/post/${postId}`,
             {
               headers: {
                 Authorization: `Bearer ${currentToken}`,
@@ -234,7 +234,7 @@ const MyPlaylists = ({route, navigation}) => {
 
         // Fetch playlists for the specific user
         const response = await axios.get(
-          `https://api.scaleupapp.club/api/playlists?userId=${userId}`,
+          `http://192.168.84.240:3000/api/playlists?userId=${userId}`,
           {
             headers: {
               Authorization: `Bearer ${currentToken}`,
@@ -303,7 +303,7 @@ const MyPlaylists = ({route, navigation}) => {
       if (selectedVideo.isPublic && expandedPublicPlaylist) {
         // Update progress for public playlist
         const response = await axios.get(
-          `https://api.scaleupapp.club/api/playlists/public/${selectedVideo.playlistId}/progress`,
+          `http://192.168.84.240:3000/api/playlists/public/${selectedVideo.playlistId}/progress`,
           {
             params: {userId},
             headers: {
@@ -327,7 +327,7 @@ const MyPlaylists = ({route, navigation}) => {
   const togglePlaylistStatus = async playlistId => {
     try {
       const response = await axios.put(
-        'https://api.scaleupapp.club/api/playlists/toggle-status',
+        'http://192.168.84.240:3000/api/playlists/toggle-status',
         {
           userId,
           playlistId,
@@ -353,7 +353,7 @@ const MyPlaylists = ({route, navigation}) => {
   const fetchPublicPlaylists = async () => {
     try {
       const response = await axios.get(
-        'https://api.scaleupapp.club/api/playlists/public',
+        'http://192.168.84.240:3000/api/playlists/public',
       );
       const fetchedPlaylists = Array.isArray(response?.data)
         ? response?.data
@@ -401,7 +401,7 @@ const MyPlaylists = ({route, navigation}) => {
 
       // Include token in the playlist request
       const response = await axios.get(
-        `https://api.scaleupapp.club/api/playlists/public/${playlistId}`,
+        `http://192.168.84.240:3000/api/playlists/public/${playlistId}`,
         {
           headers: {
             Authorization: `Bearer ${currentToken}`,
@@ -451,7 +451,7 @@ const MyPlaylists = ({route, navigation}) => {
   const handleCreatePlaylist = async playlistData => {
     try {
       const response = await axios.post(
-        'https://api.scaleupapp.club/api/playlists/create',
+        'http://192.168.84.240:3000/api/playlists/create',
         {
           userId,
           ...playlistData,
@@ -476,7 +476,7 @@ const MyPlaylists = ({route, navigation}) => {
 
     try {
       const response = await axios.post(
-        'https://api.scaleupapp.club/api/playlists/create',
+        'http://192.168.84.240:3000/api/playlists/create',
         {
           userId,
           playlistName: newPlaylistName,
@@ -507,7 +507,7 @@ const MyPlaylists = ({route, navigation}) => {
 
     try {
       const response = await axios.put(
-        'https://api.scaleupapp.club/api/playlists/rename',
+        'http://192.168.84.240:3000/api/playlists/rename',
         {
           userId,
           playlistId: playlistToEdit._id,
@@ -539,7 +539,7 @@ const MyPlaylists = ({route, navigation}) => {
   // Delete a playlist
   const deletePlaylist = async playlistId => {
     try {
-      await axios.delete('https://api.scaleupapp.club/api/playlists/delete', {
+      await axios.delete('http://192.168.84.240:3000/api/playlists/delete', {
         data: {userId, playlistId},
       });
 
@@ -744,7 +744,7 @@ const MyPlaylists = ({route, navigation}) => {
   const removePostFromPlaylist = async (playlistId, postId) => {
     try {
       const response = await axios.delete(
-        'https://api.scaleupapp.club/api/playlists/remove-from-playlist',
+        'http://192.168.84.240:3000/api/playlists/remove-from-playlist',
         {
           data: {
             userId,
@@ -802,7 +802,7 @@ const MyPlaylists = ({route, navigation}) => {
 
     try {
       await axios.put(
-        'https://api.scaleupapp.club/api/playlists/update-order',
+        'http://192.168.84.240:3000/api/playlists/update-order',
         {
           playlistId,
           items: updatedPlaylist.items,
@@ -1026,7 +1026,7 @@ const MyPlaylists = ({route, navigation}) => {
   const getUsernameById = async userId => {
     try {
       const response = await fetch(
-        `https://api.scaleupapp.club/api/user/${userId}`,
+        `http://192.168.84.240:3000/api/user/${userId}`,
       );
       const userData = await response.json();
       return userData.username;
@@ -1079,7 +1079,7 @@ const MyPlaylists = ({route, navigation}) => {
       try {
         setError(null);
         const response = await axios.get(
-          `https://api.scaleupapp.club/api/playlists/public/${playlist._id}/progress`,
+          `http://192.168.84.240:3000/api/playlists/public/${playlist._id}/progress`,
           {
             params: {userId},
             headers: {
