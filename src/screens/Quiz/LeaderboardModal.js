@@ -158,6 +158,25 @@ const LeaderboardModal = ({
 const renderDetailedQuizResults = () => {
   if (!detailedResults) return null;
 
+  const quizEndTime = new Date(detailedResults.quizEndTime);
+  const currentTime = new Date();
+
+
+  if (currentTime < quizEndTime) {
+    return (
+      <View style={styles.waitMessageContainer}>
+        <Text variant="semibold16" style={styles.waitMessage}>
+          Quiz details will be available after the quiz ends.
+        </Text>
+        <Text variant="regular14" style={styles.waitTimeText}>
+          Please check back after {quizEndTime.toLocaleString()}
+        </Text>
+      </View>
+    );
+  }
+
+
+
   return (
     <View style={styles.detailsContainer}>
       <Text variant="semibold16" style={styles.sectionTitle}>
@@ -274,6 +293,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: COLORS.greyF5F5F5
   },
+  waitMessageContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    marginTop: 20,
+  },
+  waitMessage: {
+    color: COLORS.yellowF5BE00,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  waitTimeText: {
+    color: COLORS.grey999999,
+    textAlign: 'center',
+  },
+  
   tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 2,

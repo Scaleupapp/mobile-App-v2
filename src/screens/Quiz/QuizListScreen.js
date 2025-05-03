@@ -28,6 +28,8 @@ import {
   fetchUserQuizAttemptsApi,
   fetchUserRegisteredQuizzesApi, // New API call to get user's registered quizzes
 } from '../../services/apiService';
+import QuizInfoModal from './QuizInfoModal';
+
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -66,6 +68,16 @@ const QuizList = ({navigation, route}) => {
   const [countdowns, setCountdowns] = useState({});
   const [userQuizAttempts, setUserQuizAttempts] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  const [isQuizInfoVisible, setIsQuizInfoVisible] = useState(false);
+  const [selectedQuizInfo, setSelectedQuizInfo] = useState(null);
+
+  const handleInfoPress = (quiz) => {
+    setSelectedQuizInfo(quiz.quizInfo || { rules: [], rankWisePrizes: [] });
+    setIsQuizInfoVisible(true);
+  };
+
+
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -306,12 +318,26 @@ const QuizList = ({navigation, route}) => {
           />
         </View>
         <View style={styles.quizInfo}>
-          <Text
-            variant="semibold16"
-            color={COLORS.blue043142}
-            style={styles.quizTitle}>
-            {item.title}
-          </Text>
+        
+            <Text
+              variant="semibold16"
+              color={COLORS.blue043142}
+              style={styles.quizTitle}>
+              {item.title}
+            </Text>
+            
+            {/* Add Info Button */}
+            <TouchableOpacity 
+              style={styles.infoButton}
+              onPress={(e) => {
+                e.stopPropagation();  // Prevent card click
+                handleInfoPress(item);
+              }}>
+              <Ionicons name="information-circle" size={22} color={COLORS.yellowF5BE00} />
+            </TouchableOpacity>
+         
+
+          
 
           <View
             style={[
@@ -505,6 +531,13 @@ const QuizList = ({navigation, route}) => {
         onClose={() => setIsLeaderboardVisible(false)}
         quizId={selectedQuizId}
       />
+
+<QuizInfoModal
+        visible={isQuizInfoVisible}
+        onClose={() => setIsQuizInfoVisible(false)}
+        quizInfo={selectedQuizInfo}
+      />
+
     </SafeAreaView>
   );
 };
@@ -552,6 +585,18 @@ const styles = StyleSheet.create({
     fontWeight: '100',
     fontSize: 10,
   },
+  
+  
+  infoButton: {
+    position: 'absolute',
+    top: -20,
+    left: -82,
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(4),
+    borderRadius: 4,
+    zIndex: 1,
+  },
+
   semicircle: {
     width: DEVICE_WIDTH,
     height: nh(120),

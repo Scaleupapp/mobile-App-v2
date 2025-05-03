@@ -148,7 +148,7 @@ export const AddStory = ({onStoryAdded}) => {
 
         // Make the API request with authentication header and progress tracking
         const response = await axios.post(
-          'https://api.scaleupapp.club/api/stories',
+          'http://192.168.84.240:3000/api/stories',
           formData,
           {
             headers: {
