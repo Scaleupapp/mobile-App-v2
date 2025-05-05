@@ -1,31 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Modal, 
-  View, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import React, {useState, useEffect} from 'react';
+import {
+  Modal,
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
   Dimensions,
-  Image
+  Image,
 } from 'react-native';
 import Text from '../../components/Text';
-import { COLORS } from '../../helper/colors';
-import { navigationRef } from '../../../App';
+import {COLORS} from '../../helper/colors';
+import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
-import { getUserRankingApi, getDetailedResultsApi, getLatestQuizAttemptIdApi } from '../../services/apiService';
+import {
+  getUserRankingApi,
+  getDetailedResultsApi,
+  getLatestQuizAttemptIdApi,
+} from '../../services/apiService';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 const TABS = {
   VIEW_RANK: 'View Rank',
-  QUIZ_DETAILS: 'Quiz Details'
+  QUIZ_DETAILS: 'Quiz Details',
 };
 
-const LeaderboardModal = ({ 
-  visible, 
-  onClose, 
-  quizId,  
-}) => {
+const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [leaders, setLeaders] = useState([]);
   const [userRanking, setUserRanking] = useState(null);
   const [detailedResults, setDetailedResults] = useState(null);
@@ -73,7 +73,7 @@ const LeaderboardModal = ({
     }
   };
 
-  const setUserData = (userId) => {
+  const setUserData = userId => {
     onClose(); // Close the modal first
     navigationRef.navigate(Routes.OtherProfile, {
       id: userId,
@@ -82,44 +82,51 @@ const LeaderboardModal = ({
 
   const renderLeaderboard = () => (
     <View style={styles.leaderboardContainer}>
-      <Text variant="semibold16" style={styles.sectionTitle}>Leaderboard</Text>
-      
+      <Text variant="semibold16" style={styles.sectionTitle}>
+        Leaderboard
+      </Text>
+
       {detailedResults && (
         <View style={styles.scoreContainer}>
           <View style={styles.scoreBox}>
-            <Text variant="semibold16" style={styles.scoreLabel}>Total Score</Text>
+            <Text variant="semibold16" style={styles.scoreLabel}>
+              Total Score
+            </Text>
             <Text variant="bold18" style={styles.scoreValue}>
               {detailedResults.totalScore.toFixed(2)} pts
             </Text>
           </View>
           <View style={styles.rankBox}>
-            <Text variant="semibold16" style={styles.rankLabel}>Final Rank</Text>
+            <Text variant="semibold16" style={styles.rankLabel}>
+              Final Rank
+            </Text>
             <Text variant="bold18" style={styles.rankValue}>
               {detailedResults.finalRank}
             </Text>
           </View>
         </View>
       )}
-      
+
       {leaders.map((leader, index) => (
-        <TouchableOpacity 
-          key={leader.userId} 
+        <TouchableOpacity
+          key={leader.userId}
           style={[
-            styles.leaderRow, 
-            userRanking === leader.rank && styles.userRankHighlight
+            styles.leaderRow,
+            userRanking === leader.rank && styles.userRankHighlight,
           ]}
-          onPress={() => setUserData(leader.userId)}
-        >
+          onPress={() => setUserData(leader.userId)}>
           <View style={styles.leaderProfile}>
-            <Image 
-              source={{ uri: leader.profilePicture }} 
-              style={styles.profilePicture} 
+            <Image
+              source={{uri: leader.profilePicture}}
+              style={styles.profilePicture}
             />
-            <Text variant="regular14" style={{ color: 'black' }}>
+            <Text variant="regular14" style={{color: 'black'}}>
               {leader.rank}. {leader.username}
             </Text>
           </View>
-          <Text variant="semibold14" style={{ color: 'black' }}>{leader.score.toFixed(2)} pts</Text>
+          <Text variant="semibold14" style={{color: 'black'}}>
+            {leader.score.toFixed(2)} pts
+          </Text>
         </TouchableOpacity>
       ))}
 
@@ -155,65 +162,96 @@ const LeaderboardModal = ({
     </View>
   );
 
-const renderDetailedQuizResults = () => {
-  if (!detailedResults) return null;
+  const renderDetailedQuizResults = () => {
+    if (!detailedResults) return null;
 
-  return (
-    <View style={styles.detailsContainer}>
-      <Text variant="semibold16" style={styles.sectionTitle}>
-        Quiz Details
-      </Text>
-      {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => (
-        <View key={`${answer.questionId}-${index}`} style={styles.questionCard}>
-          <Text variant="semibold14" style={styles.questionText}>
-            {index + 1}. {answer.questionText}
-          </Text>
-          <View style={styles.optionsContainer}>
-            {answer.options.map((option) => (
-              <Text 
-                key={`${answer.questionId}-${option}`} 
-                variant="regular14"
-                style={[
-                  styles.optionText,
-                  option === answer.selectedOption && styles.selectedOptionStyle,
-                  option === answer.correctAnswer && styles.correctAnswerStyle
-                ]}
-              >
-                {option}
+    return (
+      <View style={styles.detailsContainer}>
+        <Text variant="semibold16" style={styles.sectionTitle}>
+          Quiz Details
+        </Text>
+        {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => {
+          return (
+            <View
+              key={`${answer.questionId}-${index}`}
+              style={styles.questionCard}>
+              <Text variant="semibold14" style={styles.questionText}>
+                {index + 1}. {answer.questionText}
               </Text>
-            ))}
-          </View>
-          <View style={styles.metadataContainer}>
-            <Text variant="regular12" style={{ color: 'black' }}>
-              Time Taken: {answer.timeTaken} seconds
-            </Text>
-            <Text variant="regular12" style={answer.isCorrect ? styles.correctText : styles.incorrectText}>
-              {answer.isCorrect ? 'Correct' : 'Incorrect'}
-            </Text>
-          </View>
-          {answer.relatedTopics && (
-            <View style={styles.tagsContainer}>
-              <Text variant="regular12" style={styles.tagTitle}>Related Topics:</Text>
-              {answer.relatedTopics.map(topic => (
-                <Text key={`${answer.questionId}-${topic}`} variant="regular12" style={styles.tagText}>
-                  {topic}
+              <View style={styles.optionsContainer}>
+                {answer.options.map((option, i) => {
+                  return (
+                    <Text
+                      key={`${answer.questionId}-${option}`}
+                      variant="regular14"
+                      style={[
+                        styles.optionText,
+
+                        ((i == 0 && answer.selectedOption == 'A') ||
+                          (i == 1 && answer.selectedOption == 'B') ||
+                          (i == 2 && answer.selectedOption == 'C') ||
+                          (i == 3 && answer.selectedOption == 'D')) &&
+                          styles.correctAnswerStyle,
+                      ]}>
+                      {option}{' '}
+                      {(i == 0 && answer.selectedOption == 'A') ||
+                      (i == 1 && answer.selectedOption == 'B') ||
+                      (i == 2 && answer.selectedOption == 'C') ||
+                      (i == 3 && answer.selectedOption == 'D')
+                        ? answer?.correctAnswer == option
+                          ? '✅'
+                          : '❌'
+                        : null}
+                    </Text>
+                  );
+                })}
+              </View>
+              <Text variant="regular12" color={COLORS.blue043142}>
+                {'Correct Answer'}{' '}
+                <Text variant="regular12" color={COLORS.black333333}>
+                  - {answer.correctAnswer}
                 </Text>
-              ))}
+              </Text>
+              <View style={styles.metadataContainer}>
+                <Text variant="regular12" style={{color: 'black'}}>
+                  Time Taken: {answer.timeTaken} seconds
+                </Text>
+                <Text
+                  variant="regular12"
+                  style={
+                    answer.isCorrect ? styles.correctText : styles.incorrectText
+                  }>
+                  {answer?.selectedOption == 'skip' ? 'Not attempted' : null}
+                </Text>
+              </View>
+              {answer.relatedTopics && (
+                <View style={styles.tagsContainer}>
+                  <Text variant="regular12" style={styles.tagTitle}>
+                    Related Topics:
+                  </Text>
+                  {answer.relatedTopics.map(topic => (
+                    <Text
+                      key={`${answer.questionId}-${topic}`}
+                      variant="regular12"
+                      style={styles.tagText}>
+                      {topic}
+                    </Text>
+                  ))}
+                </View>
+              )}
             </View>
-          )}
-        </View>
-      ))}
-    </View>
-  );
-};
+          );
+        })}
+      </View>
+    );
+  };
 
   return (
     <Modal
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -221,7 +259,7 @@ const renderDetailedQuizResults = () => {
               Close
             </Text>
           </TouchableOpacity>
-          
+
           <View style={styles.tabContainer}>
             {Object.values(TABS).map(tab => (
               <TouchableOpacity
@@ -238,9 +276,11 @@ const renderDetailedQuizResults = () => {
               </TouchableOpacity>
             ))}
           </View>
-          
+
           <ScrollView>
-            {activeTab === TABS.VIEW_RANK ? renderLeaderboard() : renderDetailedQuizResults()}
+            {activeTab === TABS.VIEW_RANK
+              ? renderLeaderboard()
+              : renderDetailedQuizResults()}
           </ScrollView>
         </View>
       </View>
@@ -252,7 +292,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.6)'
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   modalContent: {
     backgroundColor: COLORS.whiteFFFFFF,
@@ -261,10 +301,10 @@ const styles = StyleSheet.create({
     maxHeight: height * 0.9,
     padding: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
+    shadowOffset: {width: 0, height: -4},
     shadowOpacity: 0.15,
     shadowRadius: 10,
-    elevation: 20
+    elevation: 20,
   },
   closeButton: {
     alignSelf: 'flex-end',
@@ -272,7 +312,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: COLORS.greyF5F5F5
+    backgroundColor: COLORS.greyF5F5F5,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -298,8 +338,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    color: COLORS.blue043142
-
+    color: COLORS.blue043142,
   },
   summaryContainer: {
     backgroundColor: COLORS.whiteFFFFFF,
@@ -308,14 +347,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    color: COLORS.blue043142
-
+    color: COLORS.blue043142,
   },
   sectionTitle: {
     marginBottom: 16,
     textAlign: 'center',
     fontSize: 18,
-    color: COLORS.blue043142
+    color: COLORS.blue043142,
   },
   leaderRow: {
     flexDirection: 'row',
@@ -324,34 +362,31 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
     alignItems: 'center',
-    color: COLORS.blue043142
-
+    color: COLORS.blue043142,
   },
   userRankHighlight: {
     backgroundColor: COLORS.greyEEEEEE,
     borderRadius: 8,
-    color: COLORS.blue043142
-
+    color: COLORS.blue043142,
   },
   userRankText: {
     textAlign: 'center',
     marginTop: 12,
     fontWeight: '600',
-    color: 'black'
+    color: 'black',
   },
   leaderboardContainer: {
     backgroundColor: COLORS.greyF5F5F5, // Light background
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    color: 'black'
-
+    color: 'black',
   },
   sectionTitle: {
     marginBottom: 16,
     textAlign: 'center',
     fontSize: 18,
-    color: COLORS.blue043142
+    color: COLORS.blue043142,
   },
   leaderRow: {
     flexDirection: 'row',
@@ -360,20 +395,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
     alignItems: 'center',
-    color: 'black'
-
+    color: 'black',
   },
   userRankHighlight: {
     backgroundColor: COLORS.greyEEEEEE, // Soft highlight
     borderRadius: 8,
-    color: 'black'
-
+    color: 'black',
   },
   userRankText: {
     textAlign: 'center',
     marginTop: 12,
     fontWeight: '600',
-    color: 'black'
+    color: 'black',
   },
   questionCard: {
     backgroundColor: COLORS.whiteFFFFFF, // White background
@@ -381,62 +414,57 @@ const styles = StyleSheet.create({
     padding: 16,
     marginVertical: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
   },
   questionText: {
     marginBottom: 12,
-    color: COLORS.blue043142
+    color: COLORS.blue043142,
   },
   optionsContainer: {
     marginBottom: 12,
     backgroundColor: COLORS.greyF5F5F5,
     borderRadius: 8,
-    padding: 8
+    padding: 8,
   },
   optionText: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
-    color: 'black'
-
+    color: 'black',
   },
   selectedOptionStyle: {
     backgroundColor: 'rgba(0, 122, 255, 0.1)', // Soft blue
-    color: COLORS.blue043142
+    color: COLORS.blue043142,
   },
   correctAnswerStyle: {
     color: COLORS.greenSuccess,
     fontWeight: '600',
-    color: 'black'
-
+    color: COLORS.blue043142,
   },
   metadataContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    
   },
   correctText: {
-    color: 'green'
-    
+    color: 'green',
   },
   incorrectText: {
-    color: 'red'
+    color: 'red',
   },
   tagsContainer: {
-    marginTop: 8
+    marginTop: 8,
   },
   tagTitle: {
     fontWeight: 'bold',
     marginBottom: 4,
-    color: 'black'
-
+    color: 'black',
   },
   tagText: {
     marginRight: 8,
-    color: COLORS.blue043142
+    color: COLORS.blue043142,
   },
   leaderProfile: {
     flexDirection: 'row',
@@ -454,8 +482,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.greyEEEEEE,
     alignItems: 'center',
-    color: 'black'
-
+    color: 'black',
   },
   scoreContainer: {
     flexDirection: 'row',
@@ -490,7 +517,7 @@ const styles = StyleSheet.create({
   },
   rankValue: {
     color: COLORS.blue043142,
-  }
+  },
 });
 
 export default LeaderboardModal;

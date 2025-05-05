@@ -305,6 +305,22 @@ const QuizList = ({navigation, route}) => {
             style={styles.quizIcon}
           />
         </View>
+        <View
+          style={[
+            styles.quizTypeMarker,
+            {
+              backgroundColor: item.isPaid
+                ? COLORS.yellowF5BE00
+                : COLORS.greenSuccess,
+            },
+          ]}>
+          <Text
+            variant="regular12"
+            color={COLORS.whiteFFFFFF}
+            style={styles.quizTypeText}>
+            {item.isPaid ? 'Cash Prize' : ''}
+          </Text>
+        </View>
         <View style={styles.quizInfo}>
           <Text
             variant="semibold16"
@@ -312,23 +328,6 @@ const QuizList = ({navigation, route}) => {
             style={styles.quizTitle}>
             {item.title}
           </Text>
-
-          <View
-            style={[
-              styles.quizTypeMarker,
-              {
-                backgroundColor: item.isPaid
-                  ? COLORS.yellowF5BE00
-                  : COLORS.greenSuccess,
-              },
-            ]}>
-            <Text
-              variant="regular12"
-              color={COLORS.whiteFFFFFF}
-              style={styles.quizTypeText}>
-              {item.isPaid ? 'Paid' : ''}
-            </Text>
-          </View>
 
           {isRegistered && (
             <View style={styles.registeredContainer}>
@@ -522,11 +521,13 @@ const styles = StyleSheet.create({
   },
   quizTypeMarker: {
     position: 'absolute',
-    bottom: 0,
-    left: -60,
-    paddingHorizontal: nw(8),
-    paddingVertical: nh(4),
-    borderRadius: 4,
+    // bottom: 0,
+    top: 0,
+    left: 0,
+    paddingHorizontal: nw(4),
+    paddingVertical: nh(2),
+    borderBottomRightRadius: 8,
+    borderTopLeftRadius: 8,
     zIndex: 1,
   },
   quizTypeText: {
@@ -627,6 +628,7 @@ const styles = StyleSheet.create({
   quizIcon: {
     width: nw(40),
     height: nh(40),
+    top: 10,
   },
   quizInfo: {
     flex: 1,

@@ -82,7 +82,7 @@ const Conversation = ({navigation, route}) => {
       },
     });
     socketInstance.on('conversationDetailUpdate', data => {
-      console.log('🚀 ~ useEffect ~ data:', data);
+      // console.log('🚀 ~ useEffect ~ data conversationDetailUpdate:', data);
 
       const index = conversation.filter(
         conv => conv.conversationId === data?.conversationId,
