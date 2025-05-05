@@ -165,83 +165,64 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
   const renderDetailedQuizResults = () => {
     if (!detailedResults) return null;
 
+    const quizEndTime = new Date(detailedResults.quizEndTime);
+    const currentTime = new Date();
+
+    if (currentTime < quizEndTime) {
+      return (
+        <View style={styles.waitMessageContainer}>
+          <Text variant="semibold16" style={styles.waitMessage}>
+            Quiz details will be available after the quiz ends.
+          </Text>
+          <Text variant="regular14" style={styles.waitTimeText}>
+            Please check back after {quizEndTime.toLocaleString()}
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.detailsContainer}>
         <Text variant="semibold16" style={styles.sectionTitle}>
           Quiz Details
         </Text>
-        {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => {
-          return (
-            <View
-              key={`${answer.questionId}-${index}`}
-              style={styles.questionCard}>
-              <Text variant="semibold14" style={styles.questionText}>
-                {index + 1}. {answer.questionText}
-              </Text>
-              <View style={styles.optionsContainer}>
-                {answer.options.map((option, i) => {
-                  return (
-                    <Text
-                      key={`${answer.questionId}-${option}`}
-                      variant="regular14"
-                      style={[
-                        styles.optionText,
+        {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => (
+          <View
+            key={`${answer.questionId}-${index}`}
+            style={styles.questionCard}>
+            <Text variant="semibold14" style={styles.questionText}>
+              {index + 1}. {answer.questionText}
+            </Text>
+            <View style={styles.optionsContainer}>
+              {answer.options.map((option, i) => {
+                return (
+                  <Text
+                    key={`${answer.questionId}-${option}`}
+                    variant="regular14"
+                    style={[
+                      styles.optionText,
 
-                        ((i == 0 && answer.selectedOption == 'A') ||
-                          (i == 1 && answer.selectedOption == 'B') ||
-                          (i == 2 && answer.selectedOption == 'C') ||
-                          (i == 3 && answer.selectedOption == 'D')) &&
-                          styles.correctAnswerStyle,
-                      ]}>
-                      {option}{' '}
-                      {(i == 0 && answer.selectedOption == 'A') ||
-                      (i == 1 && answer.selectedOption == 'B') ||
-                      (i == 2 && answer.selectedOption == 'C') ||
-                      (i == 3 && answer.selectedOption == 'D')
-                        ? answer?.correctAnswer == option
-                          ? '✅'
-                          : '❌'
-                        : null}
-                    </Text>
-                  );
-                })}
-              </View>
-              <Text variant="regular12" color={COLORS.blue043142}>
-                {'Correct Answer'}{' '}
-                <Text variant="regular12" color={COLORS.black333333}>
-                  - {answer.correctAnswer}
-                </Text>
-              </Text>
-              <View style={styles.metadataContainer}>
-                <Text variant="regular12" style={{color: 'black'}}>
-                  Time Taken: {answer.timeTaken} seconds
-                </Text>
-                <Text
-                  variant="regular12"
-                  style={
-                    answer.isCorrect ? styles.correctText : styles.incorrectText
-                  }>
-                  {answer?.selectedOption == 'skip' ? 'Not attempted' : null}
-                </Text>
-              </View>
-              {answer.relatedTopics && (
-                <View style={styles.tagsContainer}>
-                  <Text variant="regular12" style={styles.tagTitle}>
-                    Related Topics:
+                      ((i == 0 && answer.selectedOption == 'A') ||
+                        (i == 1 && answer.selectedOption == 'B') ||
+                        (i == 2 && answer.selectedOption == 'C') ||
+                        (i == 3 && answer.selectedOption == 'D')) &&
+                        styles.correctAnswerStyle,
+                    ]}>
+                    {option}{' '}
+                    {(i == 0 && answer.selectedOption == 'A') ||
+                    (i == 1 && answer.selectedOption == 'B') ||
+                    (i == 2 && answer.selectedOption == 'C') ||
+                    (i == 3 && answer.selectedOption == 'D')
+                      ? answer?.correctAnswer == option
+                        ? '✅'
+                        : '❌'
+                      : null}
                   </Text>
-                  {answer.relatedTopics.map(topic => (
-                    <Text
-                      key={`${answer.questionId}-${topic}`}
-                      variant="regular12"
-                      style={styles.tagText}>
-                      {topic}
-                    </Text>
-                  ))}
-                </View>
-              )}
+                );
+              })}
             </View>
-          );
-        })}
+          </View>
+        ))}
       </View>
     );
   };
@@ -314,6 +295,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: COLORS.greyF5F5F5,
   },
+  waitMessageContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    marginTop: 20,
+  },
+  waitMessage: {
+    color: COLORS.yellowF5BE00,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  waitTimeText: {
+    color: COLORS.grey999999,
+    textAlign: 'center',
+  },
+
   tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 2,

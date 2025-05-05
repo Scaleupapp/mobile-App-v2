@@ -23,7 +23,7 @@ import Icon from '../../helper/icon';
 import {io} from 'socket.io-client';
 import {acceptgroupRequest} from '../../services/apiService';
 
-const groupRequest = ({navigation, route}) => {
+const GroupRequest = ({navigation, route}) => {
   const [request, setRequest] = useState(route?.params?.data);
   console.log('🚀 ~ groupRequest ~ request:', request);
 
@@ -155,7 +155,7 @@ const groupRequest = ({navigation, route}) => {
   );
 };
 
-export default groupRequest;
+export default GroupRequest;
 
 const styles = StyleSheet.create({
   container: {
