@@ -30,7 +30,6 @@ import {
 } from '../../services/apiService';
 import QuizInfoModal from './QuizInfoModal';
 
-
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const TABS = {
@@ -72,12 +71,10 @@ const QuizList = ({navigation, route}) => {
   const [isQuizInfoVisible, setIsQuizInfoVisible] = useState(false);
   const [selectedQuizInfo, setSelectedQuizInfo] = useState(null);
 
-  const handleInfoPress = (quiz) => {
-    setSelectedQuizInfo(quiz.quizInfo || { rules: [], rankWisePrizes: [] });
+  const handleInfoPress = quiz => {
+    setSelectedQuizInfo(quiz.quizInfo || {rules: [], rankWisePrizes: []});
     setIsQuizInfoVisible(true);
   };
-
-
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -334,26 +331,29 @@ const QuizList = ({navigation, route}) => {
           </Text>
         </View>
         <View style={styles.quizInfo}>
-        
-            <Text
-              variant="semibold16"
-              color={COLORS.blue043142}
-              style={styles.quizTitle}>
-              {item.title}
-            </Text>
-            
-            {/* Add Info Button */}
-            <TouchableOpacity 
-              style={styles.infoButton}
-              onPress={(e) => {
-                e.stopPropagation();  // Prevent card click
-                handleInfoPress(item);
-              }}>
-              <Ionicons name="information-circle" size={22} color={COLORS.yellowF5BE00} />
-            </TouchableOpacity>
-         
+          <Text
+            variant="semibold16"
+            color={COLORS.blue043142}
+            style={styles.quizTitle}>
+            {item.title}
+          </Text>
 
-          
+          {/* Add Info Button */}
+          <TouchableOpacity
+            style={[
+              styles.infoButton,
+              {left: item.isPaid ? -10 : -75, top: item.isPaid ? -23 : -20},
+            ]}
+            onPress={e => {
+              e.stopPropagation(); // Prevent card click
+              handleInfoPress(item);
+            }}>
+            <Ionicons
+              name="information-circle"
+              size={22}
+              color={COLORS.yellowF5BE00}
+            />
+          </TouchableOpacity>
 
           {isRegistered && (
             <View style={styles.registeredContainer}>
@@ -531,12 +531,11 @@ const QuizList = ({navigation, route}) => {
         quizId={selectedQuizId}
       />
 
-<QuizInfoModal
+      <QuizInfoModal
         visible={isQuizInfoVisible}
         onClose={() => setIsQuizInfoVisible(false)}
         quizInfo={selectedQuizInfo}
       />
-
     </SafeAreaView>
   );
 };
@@ -586,12 +585,11 @@ const styles = StyleSheet.create({
     fontWeight: '100',
     fontSize: 10,
   },
-  
-  
+
   infoButton: {
     position: 'absolute',
-    top: -20,
-    left: -82,
+    top: -23,
+
     paddingHorizontal: nw(8),
     paddingVertical: nh(4),
     borderRadius: 4,
