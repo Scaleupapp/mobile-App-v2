@@ -186,78 +186,79 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
         <Text variant="semibold16" style={styles.sectionTitle}>
           Quiz Details
         </Text>
-        {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => {
-          return (
-            <View
-              key={`${answer.questionId}-${index}`}
-              style={styles.questionCard}>
-              <Text variant="semibold14" style={styles.questionText}>
-                {index + 1}. {answer.questionText}
-              </Text>
-              <View style={styles.optionsContainer}>
-                {answer.options.map((option, i) => {
-                  return (
-                    <Text
-                      key={`${answer.questionId}-${option}`}
-                      variant="regular14"
-                      style={[
-                        styles.optionText,
+        {detailedResults.detailedAnswers.map((answer, index) => {
+  if (index >= 10) return null; // Limit to first 10 answers
 
-                        ((i == 0 && answer.selectedOption == 'A') ||
-                          (i == 1 && answer.selectedOption == 'B') ||
-                          (i == 2 && answer.selectedOption == 'C') ||
-                          (i == 3 && answer.selectedOption == 'D')) &&
-                          styles.correctAnswerStyle,
-                      ]}>
-                      {option}{' '}
-                      {(i == 0 && answer.selectedOption == 'A') ||
-                      (i == 1 && answer.selectedOption == 'B') ||
-                      (i == 2 && answer.selectedOption == 'C') ||
-                      (i == 3 && answer.selectedOption == 'D')
-                        ? answer?.correctAnswer == option
-                          ? '✅'
-                          : '❌'
-                        : null}
-                    </Text>
-                  );
-                })}
-              </View>
-              <Text variant="regular12" color={COLORS.blue043142}>
-                {'Correct Answer'}{' '}
-                <Text variant="regular12" color={COLORS.black333333}>
-                  - {answer.correctAnswer}
-                </Text>
-              </Text>
-              <View style={styles.metadataContainer}>
-                <Text variant="regular12" style={{color: 'black'}}>
-                  Time Taken: {answer.timeTaken} seconds
-                </Text>
-                <Text
-                  variant="regular12"
-                  style={
-                    answer.isCorrect ? styles.correctText : styles.incorrectText
-                  }>
-                  {answer?.selectedOption == 'skip' ? 'Not attempted' : null}
-                </Text>
-              </View>
-              {answer.relatedTopics && (
-                <View style={styles.tagsContainer}>
-                  <Text variant="regular12" style={styles.tagTitle}>
-                    Related Topics:
-                  </Text>
-                  {answer.relatedTopics.map(topic => (
-                    <Text
-                      key={`${answer.questionId}-${topic}`}
-                      variant="regular12"
-                      style={styles.tagText}>
-                      {topic}
-                    </Text>
-                  ))}
-                </View>
-              )}
-            </View>
+  return (
+    <View
+      key={`${answer.questionId}-${index}`}
+      style={styles.questionCard}>
+      <Text variant="semibold14" style={styles.questionText}>
+        {index + 1}. {answer.questionText}
+      </Text>
+      <View style={styles.optionsContainer}>
+        {answer.options.map((option, i) => {
+          const isSelected =
+            (i === 0 && answer.selectedOption === 'A') ||
+            (i === 1 && answer.selectedOption === 'B') ||
+            (i === 2 && answer.selectedOption === 'C') ||
+            (i === 3 && answer.selectedOption === 'D');
+
+          return (
+            <Text
+              key={`${answer.questionId}-${option}`}
+              variant="regular14"
+              style={[
+                styles.optionText,
+                isSelected && styles.correctAnswerStyle,
+              ]}>
+              {option}{' '}
+              {isSelected
+                ? answer?.correctAnswer === option
+                  ? '✅'
+                  : '❌'
+                : null}
+            </Text>
           );
         })}
+      </View>
+      <Text variant="regular12" color={COLORS.blue043142}>
+        Correct Answer{' '}
+        <Text variant="regular12" color={COLORS.black333333}>
+          - {answer.correctAnswer}
+        </Text>
+      </Text>
+      <View style={styles.metadataContainer}>
+        <Text variant="regular12" style={{ color: 'black' }}>
+          Time Taken: {answer.timeTaken} seconds
+        </Text>
+        <Text
+          variant="regular12"
+          style={
+            answer.isCorrect ? styles.correctText : styles.incorrectText
+          }>
+          {answer?.selectedOption === 'skip' ? 'Not attempted' : null}
+        </Text>
+      </View>
+      {answer.relatedTopics && (
+        <View style={styles.tagsContainer}>
+          <Text variant="regular12" style={styles.tagTitle}>
+            Related Topics:
+          </Text>
+          {answer.relatedTopics.map(topic => (
+            <Text
+              key={`${answer.questionId}-${topic}`}
+              variant="regular12"
+              style={styles.tagText}>
+              {topic}
+            </Text>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+})}
+
       </View>
     );
   };
