@@ -76,7 +76,7 @@ const GroupChat = ({navigation, route}) => {
 
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('http://192.168.84.240:3000/api/', {
+    const socketInstance = io('https://api.scaleupapp.club/api/', {
       // Your server URL
       auth: {
         token: userData?.token, // If you have authentication
@@ -209,7 +209,7 @@ const GroupChat = ({navigation, route}) => {
         redirect: 'follow',
       };
 
-      fetch('http://192.168.84.240:3000/api/chat/group/send', requestOptions)
+      fetch('https://api.scaleupapp.club/api/chat/group/send', requestOptions)
         .then(response => response.text())
         .then(data => {
           console.log('🚀 ~ sendMessage ~ data:', data);
@@ -365,7 +365,7 @@ const GroupChat = ({navigation, route}) => {
         redirect: 'follow',
       };
 
-      fetch('http://192.168.84.240:3000/api/chat/group/reply', requestOptions)
+      fetch('https://api.scaleupapp.club/api/chat/group/reply', requestOptions)
         .then(response => response.text())
         .then(data => {
           console.log('🚀 ~ replyMessage ~ data:', data);

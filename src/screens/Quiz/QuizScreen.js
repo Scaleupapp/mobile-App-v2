@@ -115,9 +115,14 @@ const QuizScreen = ({ navigation, route }) => {
   };
   
   const handleNextQuestion = () => {
-    // If no option was selected when time runs out, submit a 'skip' answer
-    if (selectedOption === null) {
-      submitSkippedAnswer();
+    // If timer is at 0, we need to handle the question whether an option was selected or not
+    if (timer === 0) {
+      if (selectedOption === null) {
+        submitSkippedAnswer();
+      } else {
+        // If option was selected but time ran out, still treat it as skipped
+        submitSkippedAnswer();
+      }
     } else {
       loadNextQuestion();
     }

@@ -38,7 +38,7 @@ const AllPostoption = ({type, data, apicall}) => {
       }
 
       const response = await axios.get(
-        'http://192.168.84.240:3000/api/content/drafts',
+        'https://api.scaleupapp.club/api/content/drafts',
         {
           headers: {
             Authorization: `Bearer ${token}`,
