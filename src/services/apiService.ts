@@ -274,7 +274,7 @@ export const deletemultipleChatMessage = (convid: any, payload: any) => {
 //   try {
 //     const user = await AsyncStorage.getItem('userData');
 //     const parsedUser = JSON.parse(user);
-//     const response = await axios.delete(`http://192.168.84.240:3000/api/${API.CHAT}/${convid}/messages/delete-for-me`, {
+//     const response = await axios.delete(`https://api.scaleupapp.club/api/${API.CHAT}/${convid}/messages/delete-for-me`, {
 //       data:{payload}, // Payload for DELETE request
 //       headers: {
 //         'Content-Type': 'application/json',

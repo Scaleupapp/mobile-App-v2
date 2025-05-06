@@ -44,7 +44,7 @@ const PlaylistCommentsModal = ({
   const checkPlaylistOwnership = async () => {
     try {
       const response = await axios.get(
-        `http://192.168.84.240:3000/api/playlists/${playlistId}/ownership`,
+        `https://api.scaleupapp.club/api/playlists/${playlistId}/ownership`,
         {
           params: {userId},
         },
@@ -58,7 +58,7 @@ const PlaylistCommentsModal = ({
   const fetchUsername = async userId => {
     try {
       const response = await fetch(
-        `http://192.168.84.240:3000/api/user/${userId}`,
+        `https://api.scaleupapp.club/api/user/${userId}`,
       );
 
       if (!response.ok) {
@@ -92,7 +92,7 @@ const PlaylistCommentsModal = ({
     try {
       setIsLoading(true);
       await axios.post(
-        'http://192.168.84.240:3000/api/playlists/comments/pin',
+        'https://api.scaleupapp.club/api/playlists/comments/pin',
         {
           userId,
           playlistId,
@@ -111,7 +111,7 @@ const PlaylistCommentsModal = ({
     setIsLoading(true);
     try {
       const response = await axios.get(
-        `http://192.168.84.240:3000/api/playlists/${playlistId}/comments`,
+        `https://api.scaleupapp.club/api/playlists/${playlistId}/comments`,
       );
 
       // Fetch usernames for comment userIds and reply userIds
@@ -153,7 +153,7 @@ const PlaylistCommentsModal = ({
     try {
       setIsLoading(true);
       await axios.post(
-        'http://192.168.84.240:3000/api/playlists/comments/add',
+        'https://api.scaleupapp.club/api/playlists/comments/add',
         {
           userId,
           playlistId,
@@ -177,7 +177,7 @@ const PlaylistCommentsModal = ({
     try {
       setIsLoading(true);
       await axios.post(
-        'http://192.168.84.240:3000/api/playlists/comments/reply',
+        'https://api.scaleupapp.club/api/playlists/comments/reply',
         {
           userId,
           playlistId,
@@ -201,7 +201,7 @@ const PlaylistCommentsModal = ({
     try {
       setIsLoading(true);
       await axios.post(
-        'http://192.168.84.240:3000/api/playlists/comments/like',
+        'https://api.scaleupapp.club/api/playlists/comments/like',
         {
           userId,
           playlistId,

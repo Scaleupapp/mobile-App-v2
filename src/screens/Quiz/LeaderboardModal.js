@@ -182,46 +182,51 @@ const renderDetailedQuizResults = () => {
       <Text variant="semibold16" style={styles.sectionTitle}>
         Quiz Details
       </Text>
-      {detailedResults.detailedAnswers.slice(0, -1).map((answer, index) => (
-        <View key={`${answer.questionId}-${index}`} style={styles.questionCard}>
-          <Text variant="semibold14" style={styles.questionText}>
-            {index + 1}. {answer.questionText}
+      {detailedResults.detailedAnswers.map((answer, index) => {
+  if (index >= 10) return null; // Only show first 10 answers
+
+  return (
+    <View key={`${answer.questionId}-${index}`} style={styles.questionCard}>
+      <Text variant="semibold14" style={styles.questionText}>
+        {index + 1}. {answer.questionText}
+      </Text>
+      <View style={styles.optionsContainer}>
+        {answer.options.map((option) => (
+          <Text 
+            key={`${answer.questionId}-${option}`} 
+            variant="regular14"
+            style={[
+              styles.optionText,
+              option === answer.selectedOption && styles.selectedOptionStyle,
+              option === answer.correctAnswer && styles.correctAnswerStyle
+            ]}
+          >
+            {option}
           </Text>
-          <View style={styles.optionsContainer}>
-            {answer.options.map((option) => (
-              <Text 
-                key={`${answer.questionId}-${option}`} 
-                variant="regular14"
-                style={[
-                  styles.optionText,
-                  option === answer.selectedOption && styles.selectedOptionStyle,
-                  option === answer.correctAnswer && styles.correctAnswerStyle
-                ]}
-              >
-                {option}
-              </Text>
-            ))}
-          </View>
-          <View style={styles.metadataContainer}>
-            <Text variant="regular12" style={{ color: 'black' }}>
-              Time Taken: {answer.timeTaken} seconds
+        ))}
+      </View>
+      <View style={styles.metadataContainer}>
+        <Text variant="regular12" style={{ color: 'black' }}>
+          Time Taken: {answer.timeTaken} seconds
+        </Text>
+        <Text variant="regular12" style={answer.isCorrect ? styles.correctText : styles.incorrectText}>
+          {answer.isCorrect ? 'Correct' : 'Incorrect'}
+        </Text>
+      </View>
+      {answer.relatedTopics && (
+        <View style={styles.tagsContainer}>
+          <Text variant="regular12" style={styles.tagTitle}>Related Topics:</Text>
+          {answer.relatedTopics.map(topic => (
+            <Text key={`${answer.questionId}-${topic}`} variant="regular12" style={styles.tagText}>
+              {topic}
             </Text>
-            <Text variant="regular12" style={answer.isCorrect ? styles.correctText : styles.incorrectText}>
-              {answer.isCorrect ? 'Correct' : 'Incorrect'}
-            </Text>
-          </View>
-          {answer.relatedTopics && (
-            <View style={styles.tagsContainer}>
-              <Text variant="regular12" style={styles.tagTitle}>Related Topics:</Text>
-              {answer.relatedTopics.map(topic => (
-                <Text key={`${answer.questionId}-${topic}`} variant="regular12" style={styles.tagText}>
-                  {topic}
-                </Text>
-              ))}
-            </View>
-          )}
+          ))}
         </View>
-      ))}
+      )}
+    </View>
+  );
+})}
+
     </View>
   );
 };
