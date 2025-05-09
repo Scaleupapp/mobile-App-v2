@@ -101,6 +101,29 @@ PODS:
     - CocoaAsyncSocket
   - KTVHTTPCache (2.0.1):
     - KTVCocoaHTTPServer
+  - lottie-ios (4.5.0)
+  - lottie-react-native (7.2.2):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - lottie-ios (= 4.5.0)
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - nanopb (3.30910.0):
     - nanopb/decode (= 3.30910.0)
     - nanopb/encode (= 3.30910.0)
@@ -1344,6 +1367,27 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-blur (4.4.1):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-compressor (1.10.3):
     - DoubleConversion
     - glog
@@ -2090,6 +2134,7 @@ DEPENDENCIES:
   - fmt (from `../node_modules/react-native/third-party-podspecs/fmt.podspec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
+  - lottie-react-native (from `../node_modules/lottie-react-native`)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCT-Folly/Fabric (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTDeprecation (from `../node_modules/react-native/ReactApple/Libraries/RCTFoundation/RCTDeprecation`)
@@ -2121,6 +2166,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - "react-native-blur (from `../node_modules/@react-native-community/blur`)"
   - react-native-compressor (from `../node_modules/react-native-compressor`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
   - react-native-document-picker (from `../node_modules/react-native-document-picker`)
@@ -2190,6 +2236,7 @@ SPEC REPOS:
     - GTMSessionFetcher
     - KTVCocoaHTTPServer
     - KTVHTTPCache
+    - lottie-ios
     - nanopb
     - PromisesObjC
     - PromisesSwift
@@ -2212,6 +2259,8 @@ EXTERNAL SOURCES:
   hermes-engine:
     :podspec: "../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec"
     :tag: hermes-2024-11-12-RNv0.76.2-5b4aa20c719830dcf5684832b89a6edb95ac3d64
+  lottie-react-native:
+    :path: "../node_modules/lottie-react-native"
   RCT-Folly:
     :podspec: "../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec"
   RCTDeprecation:
@@ -2270,6 +2319,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-blur:
+    :path: "../node_modules/@react-native-community/blur"
   react-native-compressor:
     :path: "../node_modules/react-native-compressor"
   react-native-date-picker:
@@ -2393,6 +2444,8 @@ SPEC CHECKSUMS:
   hermes-engine: 3852e37f6158a2fcfad23e31215ed495da3a6a40
   KTVCocoaHTTPServer: df8d7b861e603ff8037e9b2138aca2563a6b768d
   KTVHTTPCache: 588c3eb16f6bd1e6fde1e230dabfb7bd4e490a4d
+  lottie-ios: a881093fab623c467d3bce374367755c272bdd59
+  lottie-react-native: b07af01ccb04d9cfb0014cb14f1fcf2d82f87c50
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
@@ -2425,6 +2478,7 @@ SPEC CHECKSUMS:
   React-logger: addd140841248966c2547eb94836399cc1061f4d
   React-Mapbuffer: 1bc8e611871f4965dac0bc47a4561421a6e20f69
   React-microtasksnativemodule: cff02bc87f8a1d5b9985c1c92ea8e84e854229d9
+  react-native-blur: 173953e28d5c90e8632f7bc23fc888fdc1bef8ee
   react-native-compressor: bcfddf34b82b060c2b0ea5e9f359740812a82207
   react-native-date-picker: 7e678233a126da0e2521fd024f88cd7f00f29af4
   react-native-document-picker: 489aaeb15e9bc11cc31e577997867e93886eb565
