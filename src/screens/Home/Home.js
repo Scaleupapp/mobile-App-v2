@@ -7,8 +7,23 @@ import {
   RefreshControl,
   ActivityIndicator,
   FlatList,
-  Switch,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+  LayoutAnimation, // For simple list item animations
+  UIManager, // For LayoutAnimation on Android
 } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withRepeat,
+  interpolateColor,
+  Extrapolate,
+  interpolate,
+  Easing,
+  runOnJS, // To call JS functions from worklets
+} from 'react-native-reanimated'; // Import Reanimated
 import {COLORS} from '../../helper/colors';
 import {DEVICE_HEIGHT, nh, nw} from '../../helper/scales';
 import MainHeader from '../../components/MainHeader';
@@ -26,294 +41,391 @@ import {useDispatch, useSelector} from 'react-redux';
 import {actions} from '../../redux/reducers';
 import UpdatePopup from '../../components/UpdatePopup';
 import QuizstartedPopup from '../../components/QuizstartedPopup';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-// ----------------------
-// Data transformation functions
-// ----------------------
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
-// For normal homepage content, the data is already in the expected format.
-const transformNormalContent = content => {
-  return content;
-};
-
-// For recommended content, ensure that fields required by PostView exist.
-const transformRecommendedContent = content => {
-  console.log('Transforming recommended content:', content);
-  return {
-    ...content,
-    userId: content.userDetails, // Map userDetails to userId so PostView gets expected user info
-    contentURL: content.contentURL || content.media || '', // Ensure contentURL is present
-    contentType: content.contentType || 'Video', // Provide a default if missing
-    captions: content.captions || '',
-    heading: content.heading || '',
-    // Add more fields as needed based on what PostView expects
-  };
-};
-
-// Helper to transform an entire list of content based on content type.
-const processContentList = (contentList, isRecommended = false) => {
-  return contentList.map(item =>
+// ---------------
+// Data Transformation (No changes here)
+// ---------------
+const transformNormalContent = content => content;
+const transformRecommendedContent = content => ({
+  ...content,
+  userId: content.userDetails,
+  contentURL: content.contentURL || content.media || '',
+  contentType: content.contentType || 'Video',
+  captions: content.captions || '',
+  heading: content.heading || '',
+});
+const processContentList = (contentList, isRecommended = false) =>
+  contentList.map(item =>
     isRecommended
       ? transformRecommendedContent(item)
       : transformNormalContent(item),
   );
+
+// ---------------
+// Animated Skeleton Loader Component for Posts
+// ---------------
+const PostSkeleton = () => {
+  const shimmerTranslateX = useSharedValue(-Dimensions.get('window').width);
+
+  useEffect(() => {
+    shimmerTranslateX.value = withRepeat(
+      withTiming(Dimensions.get('window').width, {
+        duration: 1200,
+        easing: Easing.linear,
+      }),
+      -1, // Infinite repeat
+      false, // Don't reverse
+    );
+  }, [shimmerTranslateX]);
+
+  const animatedShimmerStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateX: shimmerTranslateX.value}],
+    };
+  });
+
+  return (
+    <View style={styles.skeletonContainer}>
+      <View style={styles.skeletonHeader}>
+        <View style={styles.skeletonAvatar} />
+        <View style={styles.skeletonUserInfo}>
+          <View style={styles.skeletonLineShort} />
+          <View style={styles.skeletonLineExtraShort} />
+        </View>
+      </View>
+      <View style={styles.skeletonMedia} />
+      <View style={styles.skeletonLineLong} />
+      <View style={styles.skeletonLineMedium} />
+      {/* Shimmer Overlay */}
+      <Animated.View
+        style={[
+          styles.shimmerOverlay,
+          animatedShimmerStyle,
+        ]}
+      />
+    </View>
+  );
 };
+
+// ---------------
+// Animated Custom Segmented Control Component
+// ---------------
+const CustomSegmentedControl = ({
+  segments,
+  currentIndex,
+  onChange,
+  activeColor = COLORS.blue043142,
+  inactiveColor = COLORS.greyF0F0F0, // Background of the whole control
+  activeTextColor = COLORS.whiteFFFFFF,
+  inactiveTextColor = COLORS.grey666666,
+}) => {
+  const itemWidth = Dimensions.get('window').width / segments.length - nw(16) / segments.length; // Adjust for margin/padding
+  const translateX = useSharedValue(currentIndex * itemWidth);
+
+  useEffect(() => {
+    translateX.value = withTiming(currentIndex * itemWidth, {duration: 250});
+  }, [currentIndex, itemWidth, translateX]);
+
+  const animatedIndicatorStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{translateX: translateX.value}],
+    };
+  });
+
+  return (
+    <View style={[styles.segmentedControlContainer, {backgroundColor: inactiveColor}]}>
+      <Animated.View
+        style={[
+          styles.activeSegmentIndicator,
+          {width: itemWidth, backgroundColor: activeColor},
+          animatedIndicatorStyle,
+        ]}
+      />
+      {segments.map((segment, index) => (
+        <TouchableOpacity
+          key={segment}
+          onPress={() => onChange(index)}
+          style={[styles.segmentButton, {width: itemWidth}]}>
+          <Text
+            variant={currentIndex === index ? 'bold14' : 'medium14'}
+            color={currentIndex === index ? activeTextColor : inactiveTextColor}>
+            {segment}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
+
+// ---------------
+// Animated Post Item Wrapper
+// ---------------
+const AnimatedPostItem = React.memo(({children, index}) => {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20); // Start 20px below
+
+  useEffect(() => {
+    // Animate in with a delay based on index for a staggered effect
+    const delay = index * 100; // Adjust delay as needed
+    opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad), delay });
+    translateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.quad), delay });
+  }, [opacity, translateY, index]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{translateY: translateY.value}],
+    };
+  });
+
+  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
+});
+
 
 const Home = ({navigation, route}) => {
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
 
-  // Home feed state variables
   const [home, setHome] = useState([]);
   const [hasMore, setHasMore] = useState(true);
-  const [refreshing, setRefreshing] = useState(true);
-  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+
   const [page, setPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
-
-  // Toggle state: if true, show recommended posts; otherwise, show normal homepage posts
   const [showRecommended, setShowRecommended] = useState(false);
   const [visibleItems, setVisibleItems] = useState([]);
   const [activeQuiz, setActiveQuiz] = useState([]);
 
-  // Configure viewability for FlatList
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-    minimumViewTime: 300,
+  const viewabilityConfig = useRef({itemVisiblePercentThreshold: 50, minimumViewTime: 300}).current;
+  
+  // onViewableItemsChanged to map item.id or item._id for visibleItems
+   const onViewableItemsChanged = useRef(({viewableItems}) => {
+    setVisibleItems(viewableItems.map(item => item.item._id || item.item.id || item.key));
   }).current;
 
-  const onViewableItemsChanged = useRef(({viewableItems}) => {
-    setVisibleItems(viewableItems.map(item => item.key));
-  }).current;
 
-  // On mount or when the toggle changes, refresh data and reset hasMore
   useEffect(() => {
-    refreshData();
+    setInitialLoading(true);
+    setHome([]);
+    setPage(1);
     setHasMore(true);
+    // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // Animate list changes
+    fetchData(1, true);
   }, [showRecommended]);
 
-  // On mount, fetch user profile
   useEffect(() => {
     getProfileData();
-    getquizData();
+    getQuizData();
   }, []);
 
-  const getquizData = async () => {
+  const getQuizData = async () => {
     try {
       const res = await getActiveQuiz();
-      console.log('🚀 ~ getquizData ~ res:', res?.data);
-      setActiveQuiz(res?.data);
+      setActiveQuiz(res?.data || []);
     } catch (error) {
-      console.log(error?.response?.data?.message, 'errormsg');
+      console.log(error?.response?.data?.message, 'getQuizData error');
     }
   };
+
   const getProfileData = async () => {
     try {
       const res = await getProfile('');
-      const newdata = {...userData, ...res?.data?.userProfileInfo};
-      dispatch(actions.setUserData(newdata));
-    } catch (error) {
-      console.log(error?.response?.data?.message, 'errormsg');
-    }
-  };
-
-  // Refresh data on pull-to-refresh or toggle change
-  const refreshData = async () => {
-    setPage(1);
-    setRefreshing(true);
-    if (showRecommended) {
-      console.log('Fetching recommended content, page 1');
-      try {
-        const {data} = await getRecommendedContent(1, 10);
-        console.log('Recommended content data:', data);
-        // Transform recommended content to match expected structure
-        const processedData = processContentList(
-          data?.recommendations || [],
-          true,
-        );
-        setHome(processedData);
-        setHasMore(processedData.length > 0);
-      } catch (error) {
-        console.log('Error fetching recommended content:', error);
+      if (res?.data?.userProfileInfo) {
+        const newdata = {...userData, ...res.data.userProfileInfo};
+        dispatch(actions.setUserData(newdata));
       }
-    } else {
-      console.log('Fetching homepage content, page 1');
-      await loadHomePageData(1, true);
+    } catch (error) {
+      console.log(error?.response?.data?.message, 'getProfileData error');
     }
-    setRefreshing(false);
   };
 
-  // Normal homepage data fetching (with pagination)
-  const loadHomePageData = async (pageNum, refresh = false) => {
-    try {
-      const {data} = await getHomePageData(pageNum, 10);
-      // console.log("Homepage data for page", pageNum, data);
-      if (data?.content.length > 0) {
-        setPage(prevPage => prevPage + 1);
-        const processedContent = processContentList(data.content, false);
-        if (refresh) {
-          setHome(processedContent);
-        } else {
-          setHome(prev => [...prev, ...processedContent]);
+  const fetchData = async (pageNum, isInitialOrRefresh = false) => {
+    if (!isInitialOrRefresh && (loadingMore || refreshing)) return; // Prevent multiple calls if already loading/refreshing
+    
+    if (isInitialOrRefresh) {
+        if (pageNum === 1) { // Only set initialLoading true for the very first fetch or full refresh
+            setInitialLoading(true);
         }
+        setRefreshing(true);
+    } else {
+        setLoadingMore(true);
+    }
+
+    try {
+      let responseData;
+      if (showRecommended) {
+        const {data} = await getRecommendedContent(pageNum, 10);
+        responseData = data?.recommendations || [];
+      } else {
+        const {data} = await getHomePageData(pageNum, 10);
+        responseData = data?.content || [];
+      }
+
+      const processedData = processContentList(responseData, showRecommended);
+      
+      // Configure LayoutAnimation before state update that changes list length
+      // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+
+      if (processedData.length > 0) {
+        setPage(prevPage => prevPage + 1);
+        setHome(prevHome => isInitialOrRefresh ? processedData : [...prevHome, ...processedData]);
+        setHasMore(true);
       } else {
         setHasMore(false);
+        if (isInitialOrRefresh && pageNum === 1) setHome([]);
       }
     } catch (error) {
-      console.log('homePageData error:', {refresh}, error);
+      console.error('Error fetching data:', error);
+      setHasMore(false);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  // Load more data when the end is reached
-  const loadMoreData = async () => {
-    if (showRecommended) {
-      try {
-        const {data} = await getRecommendedContent(page, 10);
-        console.log('Load more recommended content:', data);
-        if (data?.recommendations?.length > 0) {
-          setPage(prev => prev + 1);
-          const processedData = processContentList(data.recommendations, true);
-          setHome(prev => [...prev, ...processedData]);
-        } else {
-          setHasMore(false);
-        }
-      } catch (error) {
-        console.log('Error fetching recommended content:', error);
+      if (isInitialOrRefresh) {
+        setRefreshing(false);
+        setInitialLoading(false);
       }
-    } else {
-      await loadHomePageData(page);
+      setLoadingMore(false);
     }
   };
 
-  // Throttle onEndReached to avoid multiple calls
-  const handleOnReachEnd = useCallback(
+  const handleRefresh = () => {
+    setPage(1); // Reset page for refresh
+    fetchData(1, true);
+  };
+
+  const handleLoadMore = useCallback(
     throttle(() => {
-      if (hasMore) {
-        setLoading(true);
-        loadMoreData();
+      if (hasMore && !loadingMore && !initialLoading && !refreshing) {
+        fetchData(page, false);
       }
-      console.log('handleOnReachEnd triggered');
     }, 1000),
-    [hasMore, page, showRecommended],
+    [hasMore, loadingMore, initialLoading, refreshing, page, showRecommended],
   );
 
-  // Callback when a user taps a profile picture
-  const onProfilePress = profileUserId => {
-    console.log('Navigating to profile of:', profileUserId);
+  const onProfilePress = useCallback(profileUserId => {
     navigation.navigate('Profile', {userId: profileUserId});
-  };
+  }, [navigation]);
 
-  // Render each post item
-  const renderItem = ({item, index}) => {
-    const isVisible = visibleItems.includes(index.toString());
+  const renderItem = useCallback(({item, index}) => {
+    const itemKey = item._id || item.id || index.toString();
+    const isVisible = visibleItems.includes(itemKey);
+    
     return (
-      <PostView
-        item={item}
-        index={index}
-        selectedIndex={selectedIndex}
-        setSelectedIndex={setSelectedIndex}
-        isVideoVisible={isVisible}
-        onProfilePress={onProfilePress} // Pass the callback to PostView
-      />
+      <AnimatedPostItem index={index}>
+        <PostView
+          item={item}
+          index={index}
+          selectedIndex={selectedIndex}
+          setSelectedIndex={setSelectedIndex}
+          isVideoVisible={isVisible}
+          onProfilePress={onProfilePress}
+        />
+      </AnimatedPostItem>
     );
-  };
+  }, [visibleItems, selectedIndex, onProfilePress, setSelectedIndex]); // Added setSelectedIndex
 
-  // ListHeader with Story component and a right-aligned small toggle for Recommended Posts.
-  const ListHeader = () => (
+  const ListHeaderComponent = () => (
     <View style={styles.listHeaderContainer}>
       <Story />
-      <View style={styles.headerRow}>
-        <View style={styles.rightAlignedToggle}>
-          <Text variant="semibold12" color={COLORS.blue043142}>
-            Recommended Posts
-          </Text>
-          <Switch
-            value={showRecommended}
-            onValueChange={value => {
-              console.log('Toggle set to:', value);
-              setShowRecommended(value);
-            }}
-            trackColor={{false: '#ccc', true: COLORS.blue043142}}
-            thumbColor={showRecommended ? COLORS.whiteFFFFFF : '#f4f3f4'}
-            style={styles.smallSwitch}
-          />
-        </View>
-      </View>
-      <Text
-        variant="semibold12"
-        style={styles.feedHeading}
-        color={COLORS.blue043142}>
-        {/* Optionally add a heading here */}
+      <CustomSegmentedControl
+        segments={['Home', 'Recommended']}
+        currentIndex={showRecommended ? 1 : 0}
+        onChange={index => {
+          setShowRecommended(index === 1);
+        }}
+      />
+      <Text variant="medium12" color={COLORS.grey666666} style={styles.feedTypeTitle}>
+        {showRecommended ? 'Discover new content' : 'Latest from your network'}
       </Text>
     </View>
   );
 
+  const keyExtractor = useCallback((item, index) => item._id || item.id || index.toString(), []);
+
+  // Initial Skeleton Loading State
+  if (initialLoading && page === 1 && home.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+        <MainHeader />
+        <View style={styles.layer1}>
+          <View style={styles.layer2}>
+            <ListHeaderComponent />
+            <FlatList
+              data={[1, 2, 3]} // Dummy data for 3 skeleton items
+              renderItem={() => <PostSkeleton />}
+              keyExtractor={(item, idx) => `skeleton-${idx}`}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.yellowF5BE00}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
       <MainHeader />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
           <FlatList
             data={home}
-            keyExtractor={(_, index) => index.toString()}
+            keyExtractor={keyExtractor}
             showsVerticalScrollIndicator={false}
             onViewableItemsChanged={onViewableItemsChanged}
             viewabilityConfig={viewabilityConfig}
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={3}
-            windowSize={5}
-            initialNumToRender={2}
-            updateCellsBatchingPeriod={100}
+            // removeClippedSubviews={true} // Test carefully
+            maxToRenderPerBatch={5}
+            windowSize={11}
+            initialNumToRender={5}
+            updateCellsBatchingPeriod={50}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
-                onRefresh={() => {
-                  setPage(1);
-                  refreshData();
-                }}
+                onRefresh={handleRefresh}
                 tintColor={COLORS.blue043142}
+                colors={[COLORS.blue043142]}
               />
             }
-            ListHeaderComponent={ListHeader}
+            ListHeaderComponent={ListHeaderComponent}
             renderItem={renderItem}
             ListFooterComponent={() =>
-              loading && (
-                <View
-                  style={{
-                    height: page > 1 ? nh(40) : DEVICE_HEIGHT,
-                    paddingVertical: nh(20),
-                    backgroundColor: COLORS.whiteFFFFFF,
-                  }}>
-                  <ActivityIndicator size={'small'} color={COLORS.blue043142} />
+              loadingMore ? (
+                <View style={styles.footerLoadingContainer}>
+                  <PostSkeleton />
                 </View>
-              )
+              ) : null
             }
             ListEmptyComponent={
-              !loading && (
-                <View style={styles.emptyList}>
-                  <Text
-                    variant="semibold16"
-                    style={{width: '100%', textAlign: 'center'}}>
-                    Your Home Feed is empty right now. Start exploring and
-                    following users from the search page to see their content
-                    here!
+              !initialLoading && !refreshing && home.length === 0 ? (
+                <View style={styles.emptyListContainer}>
+                  <Icon name="compass-outline" size={nw(80)} color={COLORS.greyBBBBBB} />
+                  <Text variant="bold18" color={COLORS.blue043142} style={styles.emptyTitle}>
+                    Nothing to see here... yet!
+                  </Text>
+                  <Text variant="regular14" color={COLORS.grey666666} style={styles.emptySubtitle}>
+                    {showRecommended
+                      ? "We're looking for recommendations for you. Check back soon!"
+                      : 'Follow creators or explore topics to fill your feed.'}
                   </Text>
                 </View>
-              )
+              ) : null
             }
-            onEndReached={handleOnReachEnd}
-            onEndReachedThreshold={0.5}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.7}
           />
         </View>
       </View>
-      <UpdatePopup activeQuiz={activeQuiz.length > 0 ? true : false} />
-      {activeQuiz.length > 0 ? (
+      <UpdatePopup activeQuiz={activeQuiz.length > 0} />
+      {activeQuiz.length > 0 && activeQuiz[0] ? (
         <QuizstartedPopup activeQuiz={activeQuiz[0]} />
       ) : null}
     </SafeAreaView>
@@ -329,48 +441,119 @@ const styles = StyleSheet.create({
   },
   layer1: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    marginTop: nh(26),
-    marginHorizontal: nw(16),
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    marginTop: nh(10),
+    marginHorizontal: 0,
     borderTopLeftRadius: nh(25),
     borderTopRightRadius: nh(25),
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
   layer2: {
     flex: 1,
-    backgroundColor: COLORS.whiteFFFFFF,
-    marginTop: nh(15),
-    marginHorizontal: nw(-16),
+    backgroundColor: COLORS.whiteF9F9F9 || COLORS.whiteFFFFFF,
     borderTopLeftRadius: nh(25),
     borderTopRightRadius: nh(25),
-    paddingTop: nh(20),
+    paddingTop: nh(10),
   },
-  emptyList: {
+  // --- Skeleton Styles ---
+  skeletonContainer: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(16),
+    marginBottom: nh(12),
+    borderRadius: nh(12),
+    marginHorizontal: nw(16),
+    borderWidth: 1,
+    borderColor: COLORS.greyEEEEEE,
+    overflow: 'hidden', // Important for shimmer effect
+  },
+  skeletonHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: nh(12) },
+  skeletonAvatar: { width: nw(44), height: nw(44), borderRadius: nw(22), backgroundColor: COLORS.greyE0E0E0 },
+  skeletonUserInfo: { marginLeft: nw(10) },
+  skeletonLineShort: { width: nw(120), height: nh(12), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4), marginBottom: nh(6) },
+  skeletonLineExtraShort: { width: nw(80), height: nh(10), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4) },
+  skeletonMedia: { width: '100%', height: nh(220), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(8), marginBottom: nh(12) },
+  skeletonLineLong: { width: '90%', height: nh(10), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4), marginBottom: nh(6) },
+  skeletonLineMedium: { width: '70%', height: nh(10), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4) },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    width: '50%', // Width of the shimmer gradient
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Light color for shimmer
+    // For a more pronounced gradient shimmer:
+    // You might need a linear gradient component here if you want a true gradient
+    // For simplicity, a semi-transparent overlay is used.
+    // A true gradient would require a library like react-native-linear-gradient
+    // and applying it to this Animated.View.
+  },
+  // --- Segmented Control Styles ---
+  segmentedControlContainer: {
+    flexDirection: 'row',
+    borderRadius: nh(10), // Slightly more rounded
+    marginHorizontal: nw(16),
+    marginVertical: nh(15),
+    // Removed explicit backgroundColor, will be set by inactiveColor prop
+    // borderWidth: 1, // Can be removed if activeIndicator provides enough visual separation
+    // borderColor: COLORS.greyDDDDDD,
+    position: 'relative', // For absolute positioning of the indicator
+    height: nh(42), // Fixed height for consistency
+  },
+  activeSegmentIndicator: {
+    position: 'absolute',
+    top: nh(3), // Small margin from top
+    bottom: nh(3), // Small margin from bottom
+    // width is calculated dynamically
+    borderRadius: nh(7), // Rounded indicator
+    // backgroundColor is set by activeColor prop
+    height: nh(36), // Height of the indicator
+  },
+  segmentButton: {
+    flex: 1, // Each button takes equal space
+    alignItems: 'center',
+    justifyContent: 'center',
+    // backgroundColor: 'transparent', // Handled by indicator
+    zIndex: 1, // Ensure text is above the indicator
+    // borderRadius: nh(7), // Not needed on button itself if indicator is separate
+    // margin:1, // Not needed with absolute positioned indicator
+    height: '100%',
+  },
+  // --- List Header Styles ---
+  listHeaderContainer: {
+    paddingBottom: nh(5),
+    backgroundColor: COLORS.whiteF9F9F9 || COLORS.whiteFFFFFF,
+  },
+  feedTypeTitle: {
+    textAlign: 'center',
+    paddingBottom: nh(10),
+    fontSize: nw(13), // Slightly larger for clarity
+    color: COLORS.grey888888, // Slightly lighter
+  },
+  // --- Empty List Styles ---
+  emptyListContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: nh(28),
-    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(30),
+    minHeight: DEVICE_HEIGHT * 0.5,
   },
-  listHeaderContainer: {
-    paddingHorizontal: nw(16),
-    paddingTop: nh(10),
+  emptyTitle: { marginTop: nh(20), marginBottom: nh(10), textAlign: 'center' },
+  emptySubtitle: { textAlign: 'center', lineHeight: nh(20), marginBottom: nh(20) },
+  exploreButton: {
+    backgroundColor: COLORS.blue043142,
+    paddingVertical: nh(12),
+    paddingHorizontal: nw(30),
+    borderRadius: nh(25),
+    marginTop: nh(10),
+  },
+  // --- Footer Loading Styles ---
+  footerLoadingContainer: {
+    paddingVertical: nh(10),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
-  rightAlignedToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  smallSwitch: {
-    transform: [{scaleX: 0.8}, {scaleY: 0.8}],
-    marginLeft: nw(4),
-  },
-  feedHeading: {
-    paddingVertical: nh(4),
-    marginHorizontal: nw(16),
-    fontSize: 12,
-  },
 });
+
