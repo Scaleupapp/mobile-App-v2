@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import moment from 'moment';
+import PaymentOptionsModal from './PaymentOptionsModal';
 
 // Using RN Text for this example (Your Text component)
 const Text = ({children, style, variant, color, ...props}) => {
@@ -63,6 +64,9 @@ import {
   startQuizAttemptApi,
   fetchUserQuizAttemptsApi,
   fetchUserRegisteredQuizzesApi,
+  checkUserPaymentDetailsApi,
+  saveUserUpiDetailsApi,
+  saveUserBankDetailsApi
 } from '../../services/apiService'; // Assuming this path is correct
 import QuizInfoModal from './QuizInfoModal'; // Assuming this path is correct
 import LeaderboardModal from './LeaderboardModal'; // Assuming this path is correct
@@ -132,6 +136,9 @@ const QuizList = ({navigation, route}) => {
   const [isQuizInfoVisible, setIsQuizInfoVisible] = useState(false);
   const [selectedQuizInfo, setSelectedQuizInfo] = useState(null);
   const [countdowns, setCountdowns] = useState({});
+  // Add these state variables at the top of the QuizList component
+const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
+const [pendingQuizRegistration, setPendingQuizRegistration] = useState(null);
 
   // Combined data fetching logic
   const loadInitialData = useCallback(async (isRefresh = false) => {
@@ -222,7 +229,84 @@ const QuizList = ({navigation, route}) => {
   }, [loadInitialData]);
 
 
-  const handleRegister = async (quizId) => {
+  const handleSaveUPI = async (upiId) => {
+  try {
+    setIsLoading(true);
+    await saveUserUpiDetailsApi(upiId);
+    setIsPaymentModalVisible(false);
+    
+    // Now continue with the registration
+    if (pendingQuizRegistration) {
+      Alert.alert(
+        'Payment Details Saved',
+        'Your UPI details have been saved. Would you like to proceed with quiz registration?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Continue Registration', 
+            onPress: () => handleRegister(pendingQuizRegistration)
+          }
+        ]
+      );
+      setPendingQuizRegistration(null);
+    }
+  } catch (error) {
+    console.error('Error saving UPI details:', error);
+    Alert.alert('Error', 'Failed to save UPI details. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const handleSaveBankDetails = async (bankDetails) => {
+  try {
+    setIsLoading(true);
+    await saveUserBankDetailsApi(bankDetails);
+    setIsPaymentModalVisible(false);
+    
+    // Now continue with the registration
+    if (pendingQuizRegistration) {
+      Alert.alert(
+        'Payment Details Saved',
+        'Your bank details have been saved. Would you like to proceed with quiz registration?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Continue Registration', 
+            onPress: () => handleRegister(pendingQuizRegistration)
+          }
+        ]
+      );
+      setPendingQuizRegistration(null);
+    }
+  } catch (error) {
+    console.error('Error saving bank details:', error);
+    Alert.alert('Error', 'Failed to save bank details. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+const handleRegister = async (quizId) => {
+  try {
+    // First check if this is a paid quiz
+    const quiz = quizzes.find(q => q._id === quizId);
+    
+    if (quiz && quiz.isPaid) {
+      // Check if user has payment details
+      const response = await checkUserPaymentDetailsApi();
+      
+      if (!response.data.hasPaymentDetails) {
+        // If no payment details, show the modal and save the quiz for later registration
+        setPendingQuizRegistration(quizId);
+        setIsPaymentModalVisible(true);
+        return;
+      }
+    }
+    
+    // Regular registration flow
     Alert.alert(
       'Confirm Registration',
       'Are you sure you want to register for this quiz?',
@@ -251,7 +335,11 @@ const QuizList = ({navigation, route}) => {
       ],
       {cancelable: true},
     );
-  };
+  } catch (error) {
+    console.error('Error checking payment details:', error);
+    Alert.alert('Error', 'Could not check payment details. Please try again.');
+  }
+};
 
   const handleStartQuiz = async (quiz) => {
     const now = moment();
@@ -614,6 +702,19 @@ const QuizList = ({navigation, route}) => {
         onClose={() => setIsQuizInfoVisible(false)}
         quizInfo={selectedQuizInfo}
       />}
+
+      {/* Payment Options Modal */}
+<PaymentOptionsModal
+  visible={isPaymentModalVisible}
+  onClose={() => {
+    setIsPaymentModalVisible(false);
+    setPendingQuizRegistration(null);
+  }}
+  onSaveUPI={handleSaveUPI}
+  onSaveBankDetails={handleSaveBankDetails}
+/>
+
+
     </SafeAreaView>
   );
 };
