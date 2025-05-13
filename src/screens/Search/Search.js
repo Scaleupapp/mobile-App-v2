@@ -1,8 +1,8 @@
 //@ts-nocheck
+import React, {useCallback, useEffect, useState, useRef} from 'react';
 import {
   Image,
   Platform,
-  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -11,287 +11,469 @@ import {
   FlatList,
   SafeAreaView,
   ImageBackground,
+  ActivityIndicator,
+  LayoutAnimation,
+  UIManager,
+  Keyboard,
 } from 'react-native';
-import React, {useCallback, useEffect, useState} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import LinearGradient from 'react-native-linear-gradient';
+import {useDispatch} from 'react-redux'; // Assuming still needed for other parts of your app
 import {
   followUser,
   globalSearch,
   unlfollowUser,
 } from '../../services/apiService';
 import {COLORS} from '../../helper/colors';
-import CustomTextInput from '../../components/TextInput';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import Header from '../../components/Header';
-import {icons} from '../../assets/icons';
-import Text from '../../components/Text';
+import Header from '../../components/Header'; // Assuming this is your custom Header
+import {icons} from '../../assets/icons'; // Assuming icons.search and icons.close are available
+import Text from '../../components/Text'; // Assuming this is your custom Text component
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {useToast} from '../../components/CustomToast';
 import {debounce} from '../../helper/commonFunctions';
 
+// Enable LayoutAnimation for Android
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// Simple Search Icon (relies on icons.search from assets/icons)
+const SearchIcon = ({size = nw(20), color = COLORS.grey777777}) => (
+  <Image
+    source={icons.search} 
+    style={{width: size, height: size, tintColor: color, marginRight: nw(10)}}
+    resizeMode="contain"
+  />
+);
+// Simple Clear Icon (relies on icons.close from assets/icons)
+const ClearIcon = ({size = nw(18), color = COLORS.grey777777, onPress}) => (
+    <TouchableOpacity onPress={onPress} style={{padding: nw(5)}}>
+        <Image
+            source={icons.close} 
+            style={{width: size, height: size, tintColor: color}}
+            resizeMode="contain"
+        />
+    </TouchableOpacity>
+);
+
+
 const Search = () => {
-  const dispatch = useDispatch();
   const {showToast} = useToast();
-  const [data, setData] = useState([]);
-  const [text, setText] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchText, setSearchText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const textInputRef = useRef(null);
 
-  useEffect(() => {
-    if (text.length > 1) {
-      const data = {query: text};
-      globalSearch(data)
-        .then(res => {
-          setData(res?.data);
-        })
-        .catch(err => console.log('errr ', err));
-    } else {
-      setData([]);
-    }
-  }, [text]);
 
-  const handleInputChange = useCallback(
-    debounce(val => {
-      setText(val);
-      console.log('Debounced Input:', val);
-    }, 500),
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async query => {
+      if (query.length > 1) {
+        setIsLoading(true);
+        try {
+          const res = await globalSearch({query});
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+          setSearchResults(res?.data || []);
+        } catch (err) {
+          console.log('Error during global search: ', err);
+          setSearchResults([]);
+          showToast({type: 'error', title: 'Search failed. Please try again.'});
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setSearchResults([]);
+      }
+    }, 500), // 500ms debounce delay
     [],
   );
 
-  const setUserData = item => {
+  useEffect(() => {
+    debouncedSearch(searchText);
+  }, [searchText, debouncedSearch]);
+
+  const handleInputChange = text => {
+    setSearchText(text);
+  };
+  
+  const clearSearch = () => {
+    setSearchText('');
+    setSearchResults([]);
+    if (textInputRef.current) {
+        textInputRef.current.clear();
+    }
+    Keyboard.dismiss();
+  };
+
+
+  const navigateToUserProfile = userId => {
     navigationRef.navigate(Routes.OtherProfile, {
-      id: item,
+      id: userId,
     });
   };
 
-  const followThisUser = item => {
-    if (item?.isFollowing) {
-      unlfollowUser(item?.userId).then(res => {
-        showToast({type: 'success', title: res?.data?.message});
-        const data = {query: text};
-        globalSearch(data).then(res => {
-          setData(res?.data);
-        });
-      });
-    } else {
-      followUser(item?.userId).then(res => {
-        showToast({type: 'success', title: res?.data?.message});
-        const data = {query: text};
-        globalSearch(data).then(res => {
-          setData(res?.data);
-        });
-      });
+  const handleFollowToggle = async (userToToggle) => {
+    const originalUser = searchResults.find(u => u.userId === userToToggle.userId);
+    if (!originalUser) return;
+
+    // Optimistic UI update
+    const updatedResults = searchResults.map(user =>
+      user.userId === userToToggle.userId
+        ? {...user, isFollowing: !user.isFollowing, // Toggle follow state
+           followersCount: user.isFollowing ? Math.max(0, (user.followersCount || 0) - 1) : (user.followersCount || 0) + 1} // Adjust follower count
+        : user
+    );
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setSearchResults(updatedResults);
+
+    try {
+      let response;
+      if (originalUser.isFollowing) {
+        response = await unlfollowUser(userToToggle.userId);
+      } else {
+        response = await followUser(userToToggle.userId);
+      }
+      showToast({type: 'success', title: response?.data?.message || (originalUser.isFollowing ? 'Unfollowed' : 'Followed')});
+    } catch (error) {
+      console.error('Follow/Unfollow error:', error);
+      showToast({type: 'error', title: 'Action failed. Please try again.'});
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      debouncedSearch(searchText); 
     }
   };
 
-  const renderItem_didNumber = ({item, index}) => {
-    // console.log(item, "value---->")
+  const UserCard = ({item, index}) => {
+    const isLastItem = index === searchResults.length - 1;
     return (
       <TouchableOpacity
-        onPress={() => {
-          setUserData(item?.userId);
-        }}
-        style={[
-          styles.postStyle,
-          {marginTop: 10, marginBottom: data?.length - 1 == index ? 50 : 0},
-        ]}>
-        <TouchableOpacity
-          style={styles.info}
-          onPress={() => {
-            setUserData(item?.userId);
-          }}>
-          <View
-            style={{flexDirection: 'row', alignItems: 'center', width: '55%'}}>
-            {item?.profilePicture ? (
-              <Image
-                resizeMode="cover"
-                style={styles.profileImg}
-                source={{uri: item?.profilePicture}}
-              />
-            ) : (
-              <View
-                style={[
-                  styles.profileImg,
-                  {alignItems: 'center', justifyContent: 'center'},
-                ]}>
-                <Text variant="semibold20" color={COLORS.black333333}>
-                  {`${item?.firstname?.charAt(0).toUpperCase()}${item?.lastname
-                    ?.charAt(0)
-                    .toUpperCase()}`}
-                </Text>
-              </View>
-            )}
-            <View style={styles.nameType}>
-              <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <Text variant="semibold14" color={COLORS.black333333}>
-                  {item?.username}
-                </Text>
-                {item?.role === 'SME' && (
-                  <Image
-                    resizeMode="contain"
-                    tintColor={'#F6BE00'}
-                    source={require('../../assets/icons/medal-star.png')}
-                    style={{height: 25, width: 25, marginLeft: 2}}
-                  />
-                )}
-              </View>
-              <Text
-                color={COLORS.black333333}
-                numberOfLines={1}
-                variant="semibold12">
-                {item?.firstname + ' ' + item?.lastname}
+        activeOpacity={0.8}
+        onPress={() => navigateToUserProfile(item?.userId)}
+        style={[styles.userCardContainer, isLastItem && styles.lastUserCard]}>
+        <View style={styles.userCardLeft}>
+          {item?.profilePicture ? (
+            <Image
+              resizeMode="cover"
+              style={styles.profileImage}
+              source={{uri: item?.profilePicture}}
+              onError={(e) => console.log("Failed to load image", e.nativeEvent.error)}
+            />
+          ) : (
+            <View style={styles.profileImagePlaceholder}>
+              <Text style={styles.profileInitial}>
+                {`${item?.firstname?.charAt(0) || ''}${item?.lastname?.charAt(0) || ''}`.toUpperCase()}
               </Text>
-
-              <TouchableOpacity
-                onPress={() => {
-                  followThisUser(item);
-                }}>
-                <ImageBackground
-                  style={styles.color}
-                  source={require('../../assets/icons/button_.png')}>
-                  <Text color={COLORS.yellowF5BE00} variant="medium12">
-                    {item?.isFollowing ? 'Unfollow' : 'Follow'}
-                  </Text>
-                </ImageBackground>
-              </TouchableOpacity>
             </View>
+          )}
+          <View style={styles.userInfo}>
+            <View style={styles.usernameRow}>
+              <Text style={styles.usernameText} numberOfLines={1}>
+                {item?.username || 'Unknown User'}
+              </Text>
+              {item?.role === 'SME' && (
+                <Image
+                  resizeMode="contain"
+                  tintColor={COLORS.yellowF5BE00} 
+                  source={require('../../assets/icons/medal-star.png')} 
+                  style={styles.smeMedal}
+                />
+              )}
+            </View>
+            <Text style={styles.fullNameText} numberOfLines={1}>
+              {`${item?.firstname || ''} ${item?.lastname || ''}`.trim() || 'No name'}
+            </Text>
+             <View style={styles.statsRow}>
+                <Text style={styles.statText}>{item?.totalPosts || 0} Posts</Text>
+                <Text style={styles.statText}>·</Text>
+                <Text style={styles.statText}>{item?.followersCount || 0} Followers</Text>
+             </View>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              width: '45%',
-            }}>
-            <TouchableOpacity
-              onPress={() => {
-                setUserData(item?.userId);
-              }}
-              style={{alignItems: 'center'}}>
-              <Text color={COLORS.black333333} variant="medium12">
-                {item?.totalPosts}
-              </Text>
-              <Text color={COLORS.black333333} variant="medium12">
-                {'posts'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{alignItems: 'center'}}
-              onPress={() => {
-                setUserData(item?.userId);
-              }}>
-              <Text color={COLORS.black333333} variant="medium12">
-                {item?.followersCount}
-              </Text>
-              <Text color={COLORS.black333333} variant="medium12">
-                {'followers'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{alignItems: 'center'}}
-              onPress={() => {
-                setUserData(item?.userId);
-              }}>
-              <Text color={COLORS.black333333} variant="medium12">
-                {item?.followingCount}
-              </Text>
-              <Text color={COLORS.black333333} variant="medium12">
-                {'following'}
-              </Text>
-            </TouchableOpacity>
-          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.followButton,
+            item?.isFollowing ? styles.unfollowButton : styles.followButtonActive,
+          ]}
+          onPress={() => handleFollowToggle(item)}>
+          <Text
+            style={[
+              styles.followButtonText,
+              item?.isFollowing ? styles.unfollowButtonText : styles.followButtonActiveText,
+            ]}>
+            {item?.isFollowing ? 'Unfollow' : 'Follow'}
+          </Text>
         </TouchableOpacity>
       </TouchableOpacity>
     );
   };
-  return (
-    <SafeAreaView style={styles.main}>
-      <Header backgroundColor={COLORS.whiteFFFFFF} backIcon={icons.backDark} />
 
-      <View
-        style={{
-          alignItems: 'center',
-          marginTop: nh(30),
-        }}>
-        <CustomTextInput
-          placeholder="Search"
-          width={DEVICE_WIDTH - 32}
-          //   value={text}
-          //   onChangeText={setText}
-          onChangeText={handleInputChange}
-        />
-      </View>
+  const renderListEmptyComponent = () => {
+    if (isLoading && searchText.length > 1 && searchResults.length === 0) return null;
 
-      <View style={[styles.reelsStyle]}>
-        <FlatList
-          scrollEnabled
-          showsVerticalScrollIndicator={false}
-          data={data}
-          renderItem={renderItem_didNumber}
-          keyExtractor={(item, index) => index.toString()}
-          ListEmptyComponent={
-            <View style={styles.emptyList}>
-              <Text
-                style={{
-                  color: COLORS.grey777777,
-                  width: '100%',
-                  textAlign: 'center',
-                  fontSize: 20,
-                  fontWeight: '500',
-                }}>
-                {'No Search Results'}
-              </Text>
+    if (searchText.length > 1 && searchResults.length === 0 && !isLoading) { 
+      return (
+        <View style={styles.emptyStateContainer}>
+          {/* <Image source={require('../../assets/icons/search-big.png')} style={styles.emptyStateIcon} /> Removed */}
+          <Text style={[styles.emptyStateIconPlaceholder, {marginBottom: nh(20)}]}>🤔</Text> 
+          <Text style={styles.emptyStateTitle}>No Results Found</Text>
+          <Text style={styles.emptyStateSubtitle}>
+            No users matched "{searchText}". Try a different search.
+          </Text>
+        </View>
+      );
+    }
+    if (searchText.length === 0 && !isLoading) { 
+         return (
+            <View style={styles.emptyStateContainer}>
+                 {/* <Image source={require('../../assets/icons/search-users.png')} style={styles.emptyStateIcon} /> Removed */}
+                 <Text style={[styles.emptyStateIconPlaceholder, {marginBottom: nh(20)}]}>👥</Text>
+                <Text style={styles.emptyStateTitle}>Search for People</Text>
+                <Text style={styles.emptyStateSubtitle}>Find friends, creators, and interesting accounts.</Text>
             </View>
-          }
-        />
+         );
+    }
+    return null; 
+  };
+
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.whiteFFFFFF} />
+      
+      <View style={styles.searchContainer}>
+        <View style={[styles.textInputContainer, isFocused && styles.textInputContainerFocused]}>
+          <SearchIcon />
+          <TextInput
+            ref={textInputRef}
+            style={styles.textInput}
+            placeholder="Search for users..."
+            placeholderTextColor={COLORS.grey999999}
+            value={searchText}
+            onChangeText={handleInputChange}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            returnKeyType="search"
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchText.length > 0 && <ClearIcon onPress={clearSearch} />}
+        </View>
       </View>
+
+      {isLoading && searchText.length > 1 && searchResults.length === 0 && (
+        <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color={COLORS.blue043142} />
+            <Text style={styles.loadingText}>Searching...</Text>
+        </View>
+      )}
+
+      <FlatList
+        data={searchResults}
+        renderItem={UserCard}
+        keyExtractor={item => item.userId.toString()}
+        contentContainerStyle={styles.listContentContainer}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderListEmptyComponent}
+        keyboardShouldPersistTaps="handled" 
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  main: {
+  safeArea: {
     flex: 1,
     backgroundColor: COLORS.whiteFFFFFF,
   },
-  reelsStyle: {
-    flex: 1,
-    margin: 12,
-  },
-  postStyle: {
-    // height: 300,
-    width: '100%',
+  searchContainer: {
+    paddingHorizontal: nw(16),
+    paddingTop: nh(15), 
+    paddingBottom: nh(10),
     backgroundColor: COLORS.whiteFFFFFF,
-    borderRadius: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyD6D6D6,
   },
-  info: {
+  textInputContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: COLORS.greyD6D6D6_light, 
+    borderRadius: nw(12),
+    paddingHorizontal: nw(12),
+    height: nh(48),
+    borderWidth: 1,
+    borderColor: COLORS.greyD6D6D6_light, 
   },
-  profileImg: {
-    height: nw(56),
-    width: nw(56),
-    borderRadius: nw(28),
+  textInputContainerFocused: {
+    borderColor: COLORS.blue043142, 
+  },
+  textInput: {
+    flex: 1,
+    fontSize: nw(15),
+    color: COLORS.black333333,
+    marginLeft: nw(5), 
+    height: '100%',
+  },
+  loaderContainer: {
+    flex: 1, 
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: nh(20),
+  },
+  loadingText: {
+    marginTop: nh(10),
+    fontSize: nw(14),
+    color: COLORS.grey777777,
+  },
+  listContentContainer: {
+    paddingHorizontal: nw(16),
+    paddingTop: nh(10),
+    paddingBottom: nh(20), 
+    flexGrow: 1, 
+  },
+  userCardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: nh(12),
+    backgroundColor: COLORS.whiteFFFFFF, 
+    marginBottom: nh(12),
+    borderRadius: nw(10),
+    paddingHorizontal: nw(12),
+    shadowColor: COLORS.black333333,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+
+  },
+  lastUserCard: {
+    // No specific style needed if marginBottom handles spacing
+  },
+  userCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1, 
+    marginRight: nw(10), 
+  },
+  profileImage: {
+    width: nw(50),
+    height: nw(50),
+    borderRadius: nw(25),
     backgroundColor: COLORS.greyD6D6D6,
   },
-  nameType: {
-    paddingLeft: 10,
-    width: '70%',
-  },
-  color: {
-    height: nh(18),
-    alignItems: 'center',
-    justifyContent: 'center',
+  profileImagePlaceholder: {
+    width: nw(50),
+    height: nw(50),
     borderRadius: nw(25),
-    width: nw(65),
+    backgroundColor: COLORS.greyBBBBBB,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profileInitial: {
+    fontSize: nw(18),
+    color: COLORS.whiteFFFFFF,
+    fontWeight: 'bold',
+  },
+  userInfo: {
+    marginLeft: nw(12),
+    flex: 1, 
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  usernameText: {
+    fontSize: nw(15),
+    fontWeight: 'bold',
+    color: COLORS.black333333,
+  },
+  smeMedal: {
+    width: nw(16),
+    height: nw(16),
+    marginLeft: nw(5),
+  },
+  fullNameText: {
+    fontSize: nw(13),
+    color: COLORS.grey777777,
+    marginTop: nh(2),
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: nh(4),
   },
-  emptyList: {
-    flex: 1,
+  statText: {
+    fontSize: nw(11.5),
+    color: COLORS.grey777777,
+    marginRight: nw(6),
+  },
+  followButton: {
+    paddingHorizontal: nw(15),
+    paddingVertical: nh(8),
+    borderRadius: nw(8),
+    minWidth: nw(85),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  followButtonActive: {
+    backgroundColor: COLORS.blue043142,
+    borderColor: COLORS.blue043142,
+  },
+  unfollowButton: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderColor: COLORS.greyBBBBBB,
+  },
+  followButtonText: {
+    fontSize: nw(13),
+    fontWeight: 'bold',
+  },
+  followButtonActiveText: {
+    color: COLORS.whiteFFFFFF,
+  },
+  unfollowButtonText: {
+    color: COLORS.black333333,
+  },
+  emptyStateContainer: {
+    flex: 1, 
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 28,
+    padding: nw(20),
+  },
+  emptyStateIconPlaceholder: { // Style for the emoji placeholder
+      fontSize: nw(50), // Adjust size as needed
+      // No specific color needed for emoji unless you want to wrap it
+  },
+  emptyStateTitle: {
+    fontSize: nw(18),
+    fontWeight: 'bold',
+    color: COLORS.black333333,
+    textAlign: 'center',
+    marginBottom: nh(8),
+  },
+  emptyStateSubtitle: {
+    fontSize: nw(14),
+    color: COLORS.grey777777,
+    textAlign: 'center',
+    lineHeight: nw(20),
   },
 });
+
+// Ensure you have these icons in your assets/icons folder or update paths:
+// - icons.search (defined in your assets/icons.js or similar)
+// - icons.close (defined in your assets/icons.js or similar)
+// - medal-star.png (SME badge)
+// Note: search-big.png and search-users.png have been removed from this list.
+
+// Add to helper/colors.js if not already present:
+// export const COLORS = {
+//   ...
+//   greyD6D6D6_light: '#F5F5F5', // A very light grey, suitable for input backgrounds
+// };
 
 export default Search;
