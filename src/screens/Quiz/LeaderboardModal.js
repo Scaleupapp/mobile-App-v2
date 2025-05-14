@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   Modal,
   View,
@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator, // Added for loading states
 } from 'react-native';
+import ViewShot from 'react-native-view-shot';
 // Assuming Text component is correctly imported from your project structure
 // For this example, I'll use a mock similar to the one in QuizList.
 const Text = ({children, style, variant, color, ...props}) => {
@@ -20,28 +21,31 @@ const Text = ({children, style, variant, color, ...props}) => {
     const sizeMatch = variant.match(/\d+/);
     if (sizeMatch) fontSize = parseInt(sizeMatch[0], 10);
   }
-  return <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>{children}</RNText>;
+  return (
+    <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>
+      {children}
+    </RNText>
+  );
 };
-import { Text as RNText } from 'react-native';
+import {Text as RNText} from 'react-native';
 
 // Import moment library
-import moment from 'moment'; 
+import moment from 'moment';
 
 import {COLORS} from '../../helper/colors'; // Assuming this path is correct
 import {navigationRef} from '../../../App'; // Assuming this path is correct
-import Routes from '../../helper/routes';   // Assuming this path is correct
+import Routes from '../../helper/routes'; // Assuming this path is correct
 import {
   getUserRankingApi,
   getDetailedResultsApi,
   getLatestQuizAttemptIdApi,
 } from '../../services/apiService'; // Assuming this path is correct
-
+import Share from 'react-native-share';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // For icons
 
 const {width, height} = Dimensions.get('window');
-const nw = (percentage) => (width * percentage) / 100;
-const nh = (percentage) => (height * percentage) / 100;
-
+const nw = percentage => (width * percentage) / 100;
+const nh = percentage => (height * percentage) / 100;
 
 const TABS = {
   VIEW_RANK: 'Leaderboard', // Renamed for clarity
@@ -50,9 +54,9 @@ const TABS = {
 
 // Placeholder for profile picture if URI is null or invalid
 // Using an online placeholder. Replace with your local asset once available:
-// const DEFAULT_PROFILE_IMAGE = require('../../assets/images/default_profile.png'); 
-const DEFAULT_PROFILE_IMAGE_URI = 'https://placehold.co/60x60/E0E0E0/B0B0B0?text=User&font=roboto';
-
+// const DEFAULT_PROFILE_IMAGE = require('../../assets/images/default_profile.png');
+const DEFAULT_PROFILE_IMAGE_URI =
+  'https://placehold.co/60x60/E0E0E0/B0B0B0?text=User&font=roboto';
 
 const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [leaders, setLeaders] = useState([]);
@@ -62,8 +66,28 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [activeTab, setActiveTab] = useState(TABS.VIEW_RANK);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const ref = useRef();
 
+  const takeScreenShot = () => {
+    ref.current.capture().then(uri => {
+      console.log({uri});
+      shareToWhatsApp(uri);
+    });
+  };
+  const shareToWhatsApp = async imagePath => {
+    try {
+      const shareOptions = {
+        title: 'Share via',
+        url: imagePath, // make sure this is a full file path
+        type: 'image/png',
+        social: Share.Social.WHATSAPP,
+      };
 
+      await Share.shareSingle(shareOptions);
+    } catch (error) {
+      console.log('Error sharing to WhatsApp', error);
+    }
+  };
   const resetState = () => {
     setLeaders([]);
     setUserRankData(null);
@@ -73,7 +97,7 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
     setIsLoading(false);
     setError(null);
   };
-  
+
   useEffect(() => {
     if (visible) {
       fetchAttemptIdAndData();
@@ -81,7 +105,6 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
       resetState(); // Reset state when modal is closed
     }
   }, [visible, quizId]);
-
 
   const fetchAttemptIdAndData = async () => {
     if (!quizId) return;
@@ -101,221 +124,353 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
       } else {
         // If no attempt ID, still try to fetch leaderboard (might show global ranks)
         await fetchLeaderboardData(quizId);
-        console.warn("Could not find user's attempt ID for detailed results for quiz:", quizId);
+        console.warn(
+          "Could not find user's attempt ID for detailed results for quiz:",
+          quizId,
+        );
       }
     } catch (err) {
       console.error('Error fetching initial modal data:', err);
-      setError("Could not load details. Please try again.");
+      setError('Could not load details. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchLeaderboardData = async (currentQuizId) => {
+  const fetchLeaderboardData = async currentQuizId => {
     try {
       const response = await getUserRankingApi(currentQuizId);
       const allLeaders = response.data.leaders || [];
       setLeaders(allLeaders);
 
-      const userRankingApiResponse = response.data.userRanking; 
+      const userRankingApiResponse = response.data.userRanking;
       let finalUserRankData = null;
 
       if (userRankingApiResponse) {
-        if (userRankingApiResponse.username && (userRankingApiResponse.profilePicture !== undefined || userRankingApiResponse.profilePicture === null) && userRankingApiResponse.score !== undefined && userRankingApiResponse.rank !== undefined) {
+        if (
+          userRankingApiResponse.username &&
+          (userRankingApiResponse.profilePicture !== undefined ||
+            userRankingApiResponse.profilePicture === null) &&
+          userRankingApiResponse.score !== undefined &&
+          userRankingApiResponse.rank !== undefined
+        ) {
           finalUserRankData = userRankingApiResponse;
         } else {
-          const userInLeadersList = allLeaders.find(leader => leader.rank === userRankingApiResponse.rank);
+          const userInLeadersList = allLeaders.find(
+            leader => leader.rank === userRankingApiResponse.rank,
+          );
           if (userInLeadersList) {
             finalUserRankData = userInLeadersList;
           } else {
-            finalUserRankData = { 
-              rank: userRankingApiResponse.rank, 
-              score: userRankingApiResponse.score, 
-              username: 'You', 
-              profilePicture: null 
+            finalUserRankData = {
+              rank: userRankingApiResponse.rank,
+              score: userRankingApiResponse.score,
+              username: 'You',
+              profilePicture: null,
             };
           }
         }
       }
       setUserRankData(finalUserRankData);
-
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
-      if (!detailedResults && !error) setError("Could not load leaderboard.");
+      if (!detailedResults && !error) setError('Could not load leaderboard.');
     }
   };
 
   const fetchDetailedResults = async (currentQuizId, currentAttemptId) => {
     try {
-      const response = await getDetailedResultsApi(currentQuizId, currentAttemptId);
+      const response = await getDetailedResultsApi(
+        currentQuizId,
+        currentAttemptId,
+      );
       setDetailedResults(response.data);
       // Log the detailed results to check the structure
       // console.log("Fetched Detailed Results:", JSON.stringify(response.data, null, 2));
     } catch (err) {
       console.error('Error fetching detailed results:', err);
-       if (!leaders.length && !error) setError("Could not load your answers.");
+      if (!leaders.length && !error) setError('Could not load your answers.');
     }
   };
 
-
-  const navigateToUserProfile = (userId) => {
+  const navigateToUserProfile = userId => {
     if (!userId) {
-        console.warn("Navigate to user profile called with no userId");
-        return;
+      console.warn('Navigate to user profile called with no userId');
+      return;
     }
-    onClose(); 
+    onClose();
     if (navigationRef.isReady()) {
-      navigationRef.navigate(Routes.OtherProfile, { id: userId });
+      navigationRef.navigate(Routes.OtherProfile, {id: userId});
     } else {
-        console.warn("Navigation is not ready to navigate to user profile.");
+      console.warn('Navigation is not ready to navigate to user profile.');
     }
   };
 
-  const getMedalColor = (rank) => {
-    if (rank === 1) return COLORS.yellowF5BE00; 
-    if (rank === 2) return '#C0C0C0'; 
-    if (rank === 3) return '#CD7F32'; 
-    return COLORS.blue043142; 
+  const getMedalColor = rank => {
+    if (rank === 1) return COLORS.yellowF5BE00;
+    if (rank === 2) return '#C0C0C0';
+    if (rank === 3) return '#CD7F32';
+    return COLORS.blue043142;
   };
 
   const renderLeaderboard = () => {
-    if (isLoading && !leaders.length && !userRankData) { 
-      return <ActivityIndicator size="large" color={COLORS.yellowF5BE00} style={styles.loader} />;
+    if (isLoading && !leaders.length && !userRankData) {
+      return (
+        <ActivityIndicator
+          size="large"
+          color={COLORS.yellowF5BE00}
+          style={styles.loader}
+        />
+      );
     }
-    
-    if (error && !leaders.length && !userRankData) { 
-        return <Text style={styles.errorText}>{error}</Text>;
+
+    if (error && !leaders.length && !userRankData) {
+      return <Text style={styles.errorText}>{error}</Text>;
     }
 
     const topThree = leaders.slice(0, 3);
-    const बाकीLeaders = leaders.slice(3); 
+    const बाकीLeaders = leaders.slice(3);
 
     return (
       <View style={styles.contentContainer}>
-        {userRankData && ( 
-          <View style={styles.userPerformanceCard}>
-            <View style={styles.userPerformanceHeader}>
-                <Image 
-                    source={userRankData.profilePicture ? {uri: userRankData.profilePicture} : {uri: DEFAULT_PROFILE_IMAGE_URI}} 
-                    style={styles.userPerformanceProfilePic}
-                    onError={(e) => console.log("Error loading user profile image in performance card:", e.nativeEvent.error)}
+        <ViewShot ref={ref} style={{flex: 1}}>
+          {userRankData && (
+            <View style={styles.userPerformanceCard}>
+              <View style={styles.userPerformanceHeader}>
+                <Image
+                  source={
+                    userRankData.profilePicture
+                      ? {uri: userRankData.profilePicture}
+                      : {uri: DEFAULT_PROFILE_IMAGE_URI}
+                  }
+                  style={styles.userPerformanceProfilePic}
+                  onError={e =>
+                    console.log(
+                      'Error loading user profile image in performance card:',
+                      e.nativeEvent.error,
+                    )
+                  }
                 />
                 <View style={{flex: 1}}>
-                    <Text variant="semibold16" color={COLORS.blue043142} numberOfLines={1}>{userRankData.username || 'Your Performance'}</Text>
-                    <Text variant="regular12" color={COLORS.grey999999}>Quiz Score & Rank</Text>
+                  <Text
+                    variant="semibold16"
+                    color={COLORS.blue043142}
+                    numberOfLines={1}>
+                    {userRankData.username || 'Your Performance'}
+                  </Text>
+                  <Text variant="regular12" color={COLORS.grey999999}>
+                    Quiz Score & Rank
+                  </Text>
                 </View>
-            </View>
-            <View style={styles.userPerformanceStats}>
-              <View style={styles.statBox}>
-                <Text variant="bold20" color={COLORS.blue043142}>{detailedResults?.totalScore?.toFixed(2) || userRankData.score?.toFixed(2) || 'N/A'}</Text>
-                <Text variant="regular12" color={COLORS.grey999999}>Total Score</Text>
               </View>
-              <View style={styles.statBoxSeparator} />
-              <View style={styles.statBox}>
-                <Text variant="bold20" color={COLORS.blue043142}>#{userRankData.rank || detailedResults?.finalRank || 'N/A'}</Text>
-                <Text variant="regular12" color={COLORS.grey999999}>Your Rank</Text>
+              <View style={styles.userPerformanceStats}>
+                <View style={styles.statBox}>
+                  <Text variant="bold20" color={COLORS.blue043142}>
+                    {detailedResults?.totalScore?.toFixed(2) ||
+                      userRankData.score?.toFixed(2) ||
+                      'N/A'}
+                  </Text>
+                  <Text variant="regular12" color={COLORS.grey999999}>
+                    Total Score
+                  </Text>
+                </View>
+                <View style={styles.statBoxSeparator} />
+                <View style={styles.statBox}>
+                  <Text variant="bold20" color={COLORS.blue043142}>
+                    #{userRankData.rank || detailedResults?.finalRank || 'N/A'}
+                  </Text>
+                  <Text variant="regular12" color={COLORS.grey999999}>
+                    Your Rank
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {topThree.length > 0 && (
-          <View style={styles.podiumContainer}>
-            <Text variant="semibold18" style={styles.sectionTitle}>Top Rankers</Text>
-            <View style={styles.podiumRow}>
-              {[topThree.find(l => l.rank === 2), topThree.find(l => l.rank === 1), topThree.find(l => l.rank === 3)]
-                .map((leader, index) => {
-                  if (!leader) return <View key={`podium-empty-${index}`} style={styles.podiumItemPlaceholder} />; 
+          {topThree.length > 0 && (
+            <View style={styles.podiumContainer}>
+              <Text variant="semibold18" style={styles.sectionTitle}>
+                Top Rankers
+              </Text>
+              <View style={styles.podiumRow}>
+                {[
+                  topThree.find(l => l.rank === 2),
+                  topThree.find(l => l.rank === 1),
+                  topThree.find(l => l.rank === 3),
+                ].map((leader, index) => {
+                  if (!leader)
+                    return (
+                      <View
+                        key={`podium-empty-${index}`}
+                        style={styles.podiumItemPlaceholder}
+                      />
+                    );
                   const medalColor = getMedalColor(leader.rank);
                   const isFirstPlace = leader.rank === 1;
-                  let podiumItemSpecificStyle = isFirstPlace ? styles.podiumItemFirst : (leader.rank === 2 ? styles.podiumItemSecond : styles.podiumItemThird);
+                  let podiumItemSpecificStyle = isFirstPlace
+                    ? styles.podiumItemFirst
+                    : leader.rank === 2
+                    ? styles.podiumItemSecond
+                    : styles.podiumItemThird;
 
                   return (
-                    <TouchableOpacity 
-                        key={leader.userId || `podium-${leader.rank}`} 
-                        style={[styles.podiumItem, podiumItemSpecificStyle]}
-                        onPress={() => navigateToUserProfile(leader.userId)}
-                    >
+                    <TouchableOpacity
+                      key={leader.userId || `podium-${leader.rank}`}
+                      style={[styles.podiumItem, podiumItemSpecificStyle]}
+                      onPress={() => navigateToUserProfile(leader.userId)}>
                       <View style={styles.podiumProfilePicContainer}>
                         <Image
-                          source={leader.profilePicture ? {uri: leader.profilePicture} : {uri: DEFAULT_PROFILE_IMAGE_URI}}
-                          style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst]}
-                          onError={(e) => console.log("Error loading podium profile image:", e.nativeEvent.error)}
+                          source={
+                            leader.profilePicture
+                              ? {uri: leader.profilePicture}
+                              : {uri: DEFAULT_PROFILE_IMAGE_URI}
+                          }
+                          style={[
+                            styles.podiumProfilePic,
+                            isFirstPlace && styles.podiumProfilePicFirst,
+                          ]}
+                          onError={e =>
+                            console.log(
+                              'Error loading podium profile image:',
+                              e.nativeEvent.error,
+                            )
+                          }
                         />
-                        {leader.rank <=3 && ( 
-                            <View style={[styles.medalIconContainer, 
-                                        { backgroundColor: medalColor, 
-                                          borderColor: COLORS.whiteFFFFFF, 
-                                          borderWidth: isFirstPlace ? 2:1 
-                                        }]}>
-                                <Ionicons name="medal" size={isFirstPlace ? 16: 12} color={COLORS.whiteFFFFFF} />
-                            </View>
+                        {leader.rank <= 3 && (
+                          <View
+                            style={[
+                              styles.medalIconContainer,
+                              {
+                                backgroundColor: medalColor,
+                                borderColor: COLORS.whiteFFFFFF,
+                                borderWidth: isFirstPlace ? 2 : 1,
+                              },
+                            ]}>
+                            <Ionicons
+                              name="medal"
+                              size={isFirstPlace ? 16 : 12}
+                              color={COLORS.whiteFFFFFF}
+                            />
+                          </View>
                         )}
                       </View>
-                      <Text variant={isFirstPlace ? "semibold14" : "semibold12"} color={COLORS.blue043142} numberOfLines={1} style={styles.podiumUsername}>
+                      <Text
+                        variant={isFirstPlace ? 'semibold14' : 'semibold12'}
+                        color={COLORS.blue043142}
+                        numberOfLines={1}
+                        style={styles.podiumUsername}>
                         {leader.username}
                       </Text>
-                      <Text variant={isFirstPlace ? "bold14" : "regular12"} style={{color: medalColor, fontWeight: isFirstPlace? '700': '500'}}>
+                      <Text
+                        variant={isFirstPlace ? 'bold14' : 'regular12'}
+                        style={{
+                          color: medalColor,
+                          fontWeight: isFirstPlace ? '700' : '500',
+                        }}>
                         Rank {leader.rank}
                       </Text>
-                      <Text variant="semibold12" color={COLORS.grey999999} style={{marginTop:2}}>
+                      <Text
+                        variant="semibold12"
+                        color={COLORS.grey999999}
+                        style={{marginTop: 2}}>
                         {leader.score?.toFixed(2)} pts
                       </Text>
                     </TouchableOpacity>
                   );
-              })}
+                })}
+              </View>
             </View>
-          </View>
-        )}
-        
+          )}
+        </ViewShot>
         {बाकीLeaders.length > 0 && (
-            <>
-                <Text variant="semibold16" style={[styles.sectionTitle, {marginTop: 20, marginBottom: 10}]}>Full Leaderboard</Text>
-                {बाकीLeaders.map((leader) => (
-                <TouchableOpacity
-                    key={leader.userId || `leader-${leader.rank}`}
-                    style={[
-                    styles.leaderRow,
-                    userRankData && userRankData.rank === leader.rank && styles.userRankHighlight,
-                    ]}
-                    onPress={() => navigateToUserProfile(leader.userId)}>
-                    <View style={styles.leaderInfo}>
-                    <Text variant="semibold14" color={COLORS.blue043142} style={styles.leaderRank}>
-                        {leader.rank}.
-                    </Text>
-                    <Image
-                        source={leader.profilePicture ? {uri: leader.profilePicture} : {uri: DEFAULT_PROFILE_IMAGE_URI}}
-                        style={styles.leaderProfilePic}
-                        onError={(e) => console.log("Error loading leader row profile image:", e.nativeEvent.error)}
-                    />
-                    <Text variant="regular14" color={COLORS.darkGrey333333} numberOfLines={1} style={{flexShrink:1}}>
-                        {leader.username}
-                    </Text>
-                    </View>
-                    <Text variant="semibold14" color={COLORS.blue043142}>
-                    {leader.score?.toFixed(2)} pts
-                    </Text>
-                </TouchableOpacity>
-                ))}
-            </>
+          <>
+            <Text
+              variant="semibold16"
+              style={[styles.sectionTitle, {marginTop: 20, marginBottom: 10}]}>
+              Full Leaderboard
+            </Text>
+            {बाकीLeaders.map(leader => (
+              <TouchableOpacity
+                key={leader.userId || `leader-${leader.rank}`}
+                style={[
+                  styles.leaderRow,
+                  userRankData &&
+                    userRankData.rank === leader.rank &&
+                    styles.userRankHighlight,
+                ]}
+                onPress={() => navigateToUserProfile(leader.userId)}>
+                <View style={styles.leaderInfo}>
+                  <Text
+                    variant="semibold14"
+                    color={COLORS.blue043142}
+                    style={styles.leaderRank}>
+                    {leader.rank}.
+                  </Text>
+                  <Image
+                    source={
+                      leader.profilePicture
+                        ? {uri: leader.profilePicture}
+                        : {uri: DEFAULT_PROFILE_IMAGE_URI}
+                    }
+                    style={styles.leaderProfilePic}
+                    onError={e =>
+                      console.log(
+                        'Error loading leader row profile image:',
+                        e.nativeEvent.error,
+                      )
+                    }
+                  />
+                  <Text
+                    variant="regular14"
+                    color={COLORS.darkGrey333333}
+                    numberOfLines={1}
+                    style={{flexShrink: 1}}>
+                    {leader.username}
+                  </Text>
+                </View>
+                <Text variant="semibold14" color={COLORS.blue043142}>
+                  {leader.score?.toFixed(2)} pts
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </>
         )}
-        {leaders.length === 0 && !isLoading && <Text style={styles.emptyListText}>Leaderboard data is not available yet.</Text>}
-         {leaders.length > 0 && topThree.length === 0 && बाकीLeaders.length === 0 && !isLoading && ( 
-            <Text style={styles.emptyListText}>Leaderboard data is available but could not be displayed.</Text>
+        {leaders.length === 0 && !isLoading && (
+          <Text style={styles.emptyListText}>
+            Leaderboard data is not available yet.
+          </Text>
         )}
+        {leaders.length > 0 &&
+          topThree.length === 0 &&
+          बाकीLeaders.length === 0 &&
+          !isLoading && (
+            <Text style={styles.emptyListText}>
+              Leaderboard data is available but could not be displayed.
+            </Text>
+          )}
       </View>
     );
   };
 
   const renderDetailedQuizResults = () => {
     if (isLoading && !detailedResults) {
-        return <ActivityIndicator size="large" color={COLORS.yellowF5BE00} style={styles.loader} />;
+      return (
+        <ActivityIndicator
+          size="large"
+          color={COLORS.yellowF5BE00}
+          style={styles.loader}
+        />
+      );
     }
-    if (!detailedResults) { 
-        return <Text style={styles.errorText}>{error || "Your detailed answers are not available yet."}</Text>;
+    if (!detailedResults) {
+      return (
+        <Text style={styles.errorText}>
+          {error || 'Your detailed answers are not available yet.'}
+        </Text>
+      );
     }
 
-    const quizEndTime = moment(detailedResults.quizEndTime); 
+    const quizEndTime = moment(detailedResults.quizEndTime);
     const currentTime = moment();
 
     if (currentTime.isBefore(quizEndTime)) {
@@ -336,72 +491,123 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
       <View style={styles.contentContainer}>
         {(detailedResults.detailedAnswers || []).map((answer, index) => {
           // Log the structure of the first answer object to help debug
-          if (index === 0) { 
-            console.log("Detailed Answer Object (Structure Check):", JSON.stringify(answer, null, 2));
+          if (index === 0) {
+            console.log(
+              'Detailed Answer Object (Structure Check):',
+              JSON.stringify(answer, null, 2),
+            );
           }
-          
+
           const selectedOptionChar = answer.selectedOption; // User's selection char (e.g., "A", "B", "skip")
           // CRITICAL: Ensure 'answer.correctAnswer' from your API contains the TEXT of the correct option.
           // If it contains the CHARACTER (e.g., "A"), you'll need to adjust the logic.
-          const correctAnswerText = answer.correctAnswer;   
-          const isAnswerCorrectBoolean = typeof answer.isCorrect === 'boolean' ? answer.isCorrect : null; // Check if API provides a direct boolean
+          const correctAnswerText = answer.correctAnswer;
+          const isAnswerCorrectBoolean =
+            typeof answer.isCorrect === 'boolean' ? answer.isCorrect : null; // Check if API provides a direct boolean
 
           return (
-            <View
-              key={answer.questionId || index} 
-              style={styles.questionCard}>
+            <View key={answer.questionId || index} style={styles.questionCard}>
               <Text variant="semibold14" style={styles.questionText}>
                 {index + 1}. {answer.questionText}
               </Text>
               <View style={styles.optionsContainer}>
-                {(answer.options || []).map((optionText, i) => { 
+                {(answer.options || []).map((optionText, i) => {
                   const optionChar = String.fromCharCode(65 + i); // A, B, C, D
-                  
-                  const isUserSelectedOption = optionChar === selectedOptionChar;
+
+                  const isUserSelectedOption =
+                    optionChar === selectedOptionChar;
                   // Determine if this specific option's text matches the correct answer's text
-                  const isThisOptionTheCorrectOne = optionText === correctAnswerText; 
+                  const isThisOptionTheCorrectOne =
+                    optionText === correctAnswerText;
 
                   let optionStyle = [styles.optionText];
                   let icon = null;
 
-                  if (isUserSelectedOption) { 
-                    if (isThisOptionTheCorrectOne) { // User selected this, and it's the correct one
-                      icon = <Ionicons name="checkmark-circle" size={18} color={COLORS.greenSuccess} style={styles.optionIcon}/>;
+                  if (isUserSelectedOption) {
+                    if (isThisOptionTheCorrectOne) {
+                      // User selected this, and it's the correct one
+                      icon = (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={18}
+                          color={COLORS.greenSuccess}
+                          style={styles.optionIcon}
+                        />
+                      );
                       optionStyle.push(styles.correctSelectedOptionText);
-                    } else { // User selected this, but it's incorrect
-                      icon = <Ionicons name="close-circle" size={18} color={COLORS.redError} style={styles.optionIcon}/>;
+                    } else {
+                      // User selected this, but it's incorrect
+                      icon = (
+                        <Ionicons
+                          name="close-circle"
+                          size={18}
+                          color={COLORS.redError}
+                          style={styles.optionIcon}
+                        />
+                      );
                       optionStyle.push(styles.incorrectSelectedOptionText);
                     }
-                  } else if (isThisOptionTheCorrectOne) { // This option was not selected by user, but it IS the correct answer
-                    optionStyle.push(styles.correctOptionHighlightStyle); 
-                    icon = <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.greenSuccess} style={styles.optionIcon}/>; 
+                  } else if (isThisOptionTheCorrectOne) {
+                    // This option was not selected by user, but it IS the correct answer
+                    optionStyle.push(styles.correctOptionHighlightStyle);
+                    icon = (
+                      <Ionicons
+                        name="checkmark-circle-outline"
+                        size={18}
+                        color={COLORS.greenSuccess}
+                        style={styles.optionIcon}
+                      />
+                    );
                   }
 
                   return (
-                    <View key={`opt-q${answer.questionId}-i${i}`} style={styles.optionRow}>
-                        <Text variant="regular14" style={optionStyle}>
-                           {optionChar}. {optionText} 
-                        </Text>
-                        {icon}
+                    <View
+                      key={`opt-q${answer.questionId}-i${i}`}
+                      style={styles.optionRow}>
+                      <Text variant="regular14" style={optionStyle}>
+                        {optionChar}. {optionText}
+                      </Text>
+                      {icon}
                     </View>
                   );
                 })}
               </View>
 
               {/* Display the correct answer text if available and user didn't select it or selected incorrectly */}
-              {correctAnswerText && selectedOptionChar !== 'skip' &&
-               (answer.options.find(opt => String.fromCharCode(65 + answer.options.indexOf(opt)) === selectedOptionChar)) !== correctAnswerText && (
-                <Text variant="regular12" color={COLORS.blue043142} style={styles.correctAnswerDisplay}>
-                  Correct Answer: <Text variant="semibold12" color={COLORS.greenSuccess}>{correctAnswerText}</Text>
+              {correctAnswerText &&
+                selectedOptionChar !== 'skip' &&
+                answer.options.find(
+                  opt =>
+                    String.fromCharCode(65 + answer.options.indexOf(opt)) ===
+                    selectedOptionChar,
+                ) !== correctAnswerText && (
+                  <Text
+                    variant="regular12"
+                    color={COLORS.blue043142}
+                    style={styles.correctAnswerDisplay}>
+                    Correct Answer:{' '}
+                    <Text variant="semibold12" color={COLORS.greenSuccess}>
+                      {correctAnswerText}
+                    </Text>
+                  </Text>
+                )}
+
+              {selectedOptionChar === 'skip' && (
+                <Text
+                  variant="regular12Italic"
+                  color={COLORS.grey999999}
+                  style={styles.skippedText}>
+                  You skipped this question.
                 </Text>
               )}
-              
-              {selectedOptionChar === 'skip' && (
-                <Text variant="regular12Italic" color={COLORS.grey999999} style={styles.skippedText}>You skipped this question.</Text>
-              )}
               {/* Message if correct answer text is missing from API and question wasn't skipped */}
-              {!correctAnswerText && selectedOptionChar !== 'skip' && ( 
-                <Text variant="regular12Italic" color={COLORS.grey999999} style={styles.skippedText}>Correct answer information not available for this question.</Text>
+              {!correctAnswerText && selectedOptionChar !== 'skip' && (
+                <Text
+                  variant="regular12Italic"
+                  color={COLORS.grey999999}
+                  style={styles.skippedText}>
+                  Correct answer information not available for this question.
+                </Text>
               )}
 
               <View style={styles.metadataContainer}>
@@ -410,17 +616,39 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
                 </Text>
                 {/* Determine overall correctness for the label */}
                 {selectedOptionChar !== 'skip' ? (
-                    isAnswerCorrectBoolean !== null ? ( // Prefer direct boolean if available
-                        <Text variant="semibold12" style={isAnswerCorrectBoolean ? styles.correctText : styles.incorrectText}>
-                            {isAnswerCorrectBoolean ? 'Correct' : 'Incorrect'}
-                        </Text>
-                    ) : correctAnswerText ? ( // Fallback to comparing selected option text with correct answer text
-                        <Text
-                          variant="semibold12"
-                          style={ (answer.options.find(opt => String.fromCharCode(65 + answer.options.indexOf(opt)) === selectedOptionChar)) === correctAnswerText ? styles.correctText : styles.incorrectText}>
-                          { (answer.options.find(opt => String.fromCharCode(65 + answer.options.indexOf(opt)) === selectedOptionChar)) === correctAnswerText ? 'Correct' : 'Incorrect'}
-                        </Text>
-                    ) : null // If no way to determine, show nothing for the label
+                  isAnswerCorrectBoolean !== null ? ( // Prefer direct boolean if available
+                    <Text
+                      variant="semibold12"
+                      style={
+                        isAnswerCorrectBoolean
+                          ? styles.correctText
+                          : styles.incorrectText
+                      }>
+                      {isAnswerCorrectBoolean ? 'Correct' : 'Incorrect'}
+                    </Text>
+                  ) : correctAnswerText ? ( // Fallback to comparing selected option text with correct answer text
+                    <Text
+                      variant="semibold12"
+                      style={
+                        answer.options.find(
+                          opt =>
+                            String.fromCharCode(
+                              65 + answer.options.indexOf(opt),
+                            ) === selectedOptionChar,
+                        ) === correctAnswerText
+                          ? styles.correctText
+                          : styles.incorrectText
+                      }>
+                      {answer.options.find(
+                        opt =>
+                          String.fromCharCode(
+                            65 + answer.options.indexOf(opt),
+                          ) === selectedOptionChar,
+                      ) === correctAnswerText
+                        ? 'Correct'
+                        : 'Incorrect'}
+                    </Text>
+                  ) : null // If no way to determine, show nothing for the label
                 ) : null}
               </View>
               {answer.relatedTopics && answer.relatedTopics.length > 0 && (
@@ -443,8 +671,10 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
             </View>
           );
         })}
-         {(detailedResults.detailedAnswers || []).length === 0 && (
-            <Text style={styles.emptyListText}>No detailed answers to display.</Text>
+        {(detailedResults.detailedAnswers || []).length === 0 && (
+          <Text style={styles.emptyListText}>
+            No detailed answers to display.
+          </Text>
         )}
       </View>
     );
@@ -458,7 +688,7 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
       onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+          <TouchableOpacity style={styles.closeButton} onPress={takeScreenShot}>
             <Ionicons name="close-circle" size={30} color={COLORS.grey999999} />
           </TouchableOpacity>
 
@@ -466,11 +696,16 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
             {Object.values(TABS).map(tab => (
               <TouchableOpacity
                 key={tab}
-                style={[styles.tabItem, activeTab === tab && styles.activeTabItem]}
+                style={[
+                  styles.tabItem,
+                  activeTab === tab && styles.activeTabItem,
+                ]}
                 onPress={() => setActiveTab(tab)}>
                 <Text
                   variant={activeTab === tab ? 'semibold14' : 'regular14'}
-                  color={ activeTab === tab ? COLORS.yellowF5BE00 : COLORS.blue043142 }>
+                  color={
+                    activeTab === tab ? COLORS.yellowF5BE00 : COLORS.blue043142
+                  }>
                   {tab}
                 </Text>
               </TouchableOpacity>
@@ -489,34 +724,34 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: { 
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end', 
-    backgroundColor: 'rgba(0,0,0,0.6)', 
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   modalContent: {
     backgroundColor: COLORS.whiteFFFFFF,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    height: height * 0.85, 
-    paddingTop: 10, 
+    height: height * 0.85,
+    paddingTop: 10,
   },
   closeButton: {
     position: 'absolute',
     top: 12,
     right: 12,
-    zIndex: 10, 
-    padding: 5, 
+    zIndex: 10,
+    padding: 5,
   },
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
-    marginHorizontal: nw(4), 
-    marginBottom: 10, 
+    marginHorizontal: nw(4),
+    marginBottom: 10,
   },
   tabItem: {
-    flex: 1, 
+    flex: 1,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -526,8 +761,8 @@ const styles = StyleSheet.create({
   activeTabItem: {
     borderBottomColor: COLORS.yellowF5BE00,
   },
-  contentContainer: { 
-    paddingHorizontal: nw(4), 
+  contentContainer: {
+    paddingHorizontal: nw(4),
   },
   loader: {
     marginTop: nh(10),
@@ -548,12 +783,12 @@ const styles = StyleSheet.create({
   },
   // User Performance Card
   userPerformanceCard: {
-    backgroundColor: COLORS.lightBlueE6F0FF, 
+    backgroundColor: COLORS.lightBlueE6F0FF,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: COLORS.blue043142 + '40', 
+    borderColor: COLORS.blue043142 + '40',
   },
   userPerformanceHeader: {
     flexDirection: 'row',
@@ -573,7 +808,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.blue043142 + '33', 
+    borderTopColor: COLORS.blue043142 + '33',
   },
   statBox: {
     alignItems: 'center',
@@ -591,24 +826,24 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     alignItems: 'center',
   },
-  sectionTitle: { 
-    fontSize: 18, 
+  sectionTitle: {
+    fontSize: 18,
     color: COLORS.blue043142,
-    marginBottom: 16, 
-    textAlign: 'center', 
+    marginBottom: 16,
+    textAlign: 'center',
     fontWeight: '600',
   },
   podiumRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'flex-end', 
+    alignItems: 'flex-end',
     width: '100%',
   },
   podiumItem: {
     alignItems: 'center',
-    width: width / 3.8, 
-    paddingVertical: 10, 
-    paddingHorizontal: 5, 
+    width: width / 3.8,
+    paddingVertical: 10,
+    paddingHorizontal: 5,
     borderRadius: 8,
     backgroundColor: COLORS.whiteFFFFFF,
     elevation: 2,
@@ -616,33 +851,33 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
-    minHeight: 140, 
+    minHeight: 140,
     justifyContent: 'flex-end',
     marginHorizontal: 4,
     borderWidth: 1,
     borderColor: COLORS.greyEEEEEE,
   },
-  podiumItemPlaceholder: { 
+  podiumItemPlaceholder: {
     width: width / 3.8,
     marginHorizontal: 4,
   },
   podiumItemFirst: {
-    minHeight: 160, 
-    backgroundColor: COLORS.yellowF5BE00 + '15', 
+    minHeight: 160,
+    backgroundColor: COLORS.yellowF5BE00 + '15',
     elevation: 4,
     shadowOpacity: 0.15,
     borderColor: COLORS.yellowF5BE00,
-    transform: [{translateY: -10}] 
+    transform: [{translateY: -10}],
   },
   podiumItemSecond: {
-    minHeight: 150, 
-    backgroundColor: '#C0C0C0' + '15', 
+    minHeight: 150,
+    backgroundColor: '#C0C0C0' + '15',
     borderColor: '#C0C0C0',
-    transform: [{translateY: -5}] 
+    transform: [{translateY: -5}],
   },
   podiumItemThird: {
-    borderColor: '#CD7F32', 
-    backgroundColor: '#CD7F32' + '15', 
+    borderColor: '#CD7F32',
+    backgroundColor: '#CD7F32' + '15',
   },
   podiumProfilePicContainer: {
     position: 'relative',
@@ -662,17 +897,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.yellowF5BE00,
   },
   medalIconContainer: {
-      position: 'absolute',
-      bottom: -5,
-      right: -5,
-      borderRadius: 15,
-      padding: 3,
-      elevation: 3,
+    position: 'absolute',
+    bottom: -5,
+    right: -5,
+    borderRadius: 15,
+    padding: 3,
+    elevation: 3,
   },
   podiumUsername: {
     textAlign: 'center',
     marginTop: 4,
-    fontWeight: '500', 
+    fontWeight: '500',
   },
 
   // Leader List Styles
@@ -680,29 +915,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10, 
+    paddingVertical: 10,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
-    backgroundColor: COLORS.whiteFFFFFF, 
+    backgroundColor: COLORS.whiteFFFFFF,
     borderRadius: 8,
-    marginBottom: 8, 
+    marginBottom: 8,
     elevation: 1,
   },
   userRankHighlight: {
-    backgroundColor: COLORS.yellowF5BE00 + '33', 
+    backgroundColor: COLORS.yellowF5BE00 + '33',
     borderColor: COLORS.yellowF5BE00,
-    borderWidth: 1.5, 
+    borderWidth: 1.5,
   },
   leaderInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, 
+    flex: 1,
   },
   leaderRank: {
     marginRight: 10,
-    width: 30, 
-    textAlign: 'center', 
+    width: 30,
+    textAlign: 'center',
   },
   leaderProfilePic: {
     width: 35,
@@ -716,16 +951,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    marginTop: nh(10), 
+    marginTop: nh(10),
     backgroundColor: COLORS.greyF7F7F7,
-    borderRadius:12,
-    marginHorizontal: nw(5)
+    borderRadius: 12,
+    marginHorizontal: nw(5),
   },
   waitMessage: {
     color: COLORS.blue043142,
     textAlign: 'center',
     marginBottom: 8,
-    marginTop:10
+    marginTop: 10,
   },
   waitTimeText: {
     color: COLORS.grey999999,
@@ -735,7 +970,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.whiteFFFFFF,
     borderRadius: 12,
     padding: 16,
-    marginVertical: 8, 
+    marginVertical: 8,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
@@ -753,34 +988,34 @@ const styles = StyleSheet.create({
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between', 
-    paddingVertical: 10, 
+    justifyContent: 'space-between',
+    paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
   },
   optionText: {
     color: COLORS.darkGrey333333,
-    flex: 0.9, 
+    flex: 0.9,
   },
-  correctSelectedOptionText: { 
+  correctSelectedOptionText: {
     color: COLORS.greenSuccess,
     fontWeight: '600',
   },
-  incorrectSelectedOptionText: { 
+  incorrectSelectedOptionText: {
     color: COLORS.redError,
   },
-  correctOptionHighlightStyle: { 
-    color: COLORS.greenSuccess, 
+  correctOptionHighlightStyle: {
+    color: COLORS.greenSuccess,
   },
-  optionIcon: {
-  },
+  optionIcon: {},
   skippedText: {
     fontStyle: 'italic',
     marginVertical: 5,
     textAlign: 'center',
     color: COLORS.grey999999,
   },
-  correctAnswerDisplay: { // Style for displaying the correct answer text
+  correctAnswerDisplay: {
+    // Style for displaying the correct answer text
     marginTop: 8,
     fontStyle: 'italic',
   },
@@ -792,7 +1027,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.greyEEEEEE,
   },
-  correctText: { 
+  correctText: {
     color: COLORS.greenSuccess,
     fontWeight: '600',
   },
@@ -815,12 +1050,12 @@ const styles = StyleSheet.create({
   tagText: {
     backgroundColor: COLORS.greyEEEEEE,
     color: COLORS.blue043142,
-    paddingHorizontal: 10, 
-    paddingVertical: 5,  
-    borderRadius: 12,    
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
     marginRight: 6,
     marginBottom: 6,
-    fontSize: 11, 
+    fontSize: 11,
   },
 });
 
