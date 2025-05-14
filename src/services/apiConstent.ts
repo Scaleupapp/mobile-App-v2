@@ -77,5 +77,8 @@ export const API = {
   RAPIDFIRE_RECOMMEND: 'rapidfire-quiz/recommend',
   USER_QUIZ_ATTEMPTS: 'rapidfire-quiz/user-attempts', // New endpoint for fetching user quiz attempts
   FOLLOWING_LIST:'content/all-following',
-  INNERCIRCLERECIVED:'users/inner-circle/received-requests'
+  INNERCIRCLERECIVED:'users/inner-circle/received-requests',
+  USER_PAYMENT_DETAILS_CHECK: 'users/payment-details-check',
+  SAVE_UPI_DETAILS: 'users/save-upi-details',
+  SAVE_BANK_DETAILS: 'users/save-bank-details'
 };

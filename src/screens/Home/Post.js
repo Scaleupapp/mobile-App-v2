@@ -146,7 +146,7 @@ const PostView = ({
       const containingPlaylists = playlistsResponse.data.filter(playlist =>
         playlist.items.some(playlistItem => playlistItem.postId === item._id),
       );
-      console.log('1sttt', containingPlaylists);
+      // console.log('1sttt', containingPlaylists);
 
       setPlaylistInfo(containingPlaylists);
 

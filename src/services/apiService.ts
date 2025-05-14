@@ -7,6 +7,22 @@ export const loginApi = (payload: any) => {
   return axiosInstance.post(API.SIGNIN, payload);
 };
 
+// Add these new API functions to your apiService.ts file
+
+export const checkUserPaymentDetailsApi = () => {
+  return axiosInstance.get(API.USER_PAYMENT_DETAILS_CHECK);
+};
+
+export const saveUserUpiDetailsApi = (upiId: string) => {
+  return axiosInstance.post(API.SAVE_UPI_DETAILS, { upiId });
+};
+
+export const saveUserBankDetailsApi = (bankDetails: any) => {
+  return axiosInstance.post(API.SAVE_BANK_DETAILS, bankDetails);
+};
+
+
+
 export const getOtp = (payload: any) => {
   return axiosInstance.post(API.AUTH_OTP, payload);
 };
