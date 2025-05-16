@@ -42,6 +42,7 @@ import {
 } from '../../services/apiService'; // Assuming this path is correct
 import Share from 'react-native-share';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // For icons
+import Icon from '../../helper/icon';
 
 const {width, height} = Dimensions.get('window');
 const nw = percentage => (width * percentage) / 100;
@@ -80,10 +81,9 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
         title: 'Share via',
         url: imagePath, // make sure this is a full file path
         type: 'image/png',
-        social: Share.Social.WHATSAPP,
       };
 
-      await Share.shareSingle(shareOptions);
+      await Share.open(shareOptions);
     } catch (error) {
       console.log('Error sharing to WhatsApp', error);
     }
@@ -233,7 +233,9 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
 
     return (
       <View style={styles.contentContainer}>
-        <ViewShot ref={ref} style={{flex: 1}}>
+        <ViewShot
+          ref={ref}
+          style={{flex: 1, backgroundColor: COLORS.whiteFFFFFF}}>
           {userRankData && (
             <View style={styles.userPerformanceCard}>
               <View style={styles.userPerformanceHeader}>
@@ -688,7 +690,7 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
       onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={takeScreenShot}>
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Ionicons name="close-circle" size={30} color={COLORS.grey999999} />
           </TouchableOpacity>
 
@@ -711,7 +713,16 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
               </TouchableOpacity>
             ))}
           </View>
-
+          {activeTab === TABS.VIEW_RANK ? (
+            <Icon
+              onPress={takeScreenShot}
+              type="feather"
+              name="share-2"
+              size={20}
+              color={COLORS.blue043142}
+              style={{alignSelf: 'flex-end', marginRight: 16, marginBottom: 10}}
+            />
+          ) : null}
           <ScrollView contentContainerStyle={{paddingBottom: 20}}>
             {activeTab === TABS.VIEW_RANK
               ? renderLeaderboard()

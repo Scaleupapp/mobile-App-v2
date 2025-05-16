@@ -56,10 +56,10 @@ const QuizScreen = ({navigation, route}) => {
   const intervalRef = useRef(null); // For countdown interval
   const timerIntervalRef = useRef(null); // For question timer interval
 
-
   useEffect(() => {
     startCountdownBeforeQuiz();
-    return () => { // Cleanup intervals on unmount
+    return () => {
+      // Cleanup intervals on unmount
       clearInterval(intervalRef.current);
       clearInterval(timerIntervalRef.current);
     };
@@ -77,11 +77,12 @@ const QuizScreen = ({navigation, route}) => {
     return () => backHandler.remove(); // Cleanup listener on unmount
   }, []);
 
-
   useEffect(() => {
-    if (isCountdownVisible && countdownValue > 0) { // Animate only when countdown is active
+    if (isCountdownVisible && countdownValue > 0) {
+      // Animate only when countdown is active
       countdownScaleAnim.setValue(0.8); // Start smaller for a pop-in effect
-      Animated.spring(countdownScaleAnim, { // Using spring for a bouncier feel
+      Animated.spring(countdownScaleAnim, {
+        // Using spring for a bouncier feel
         toValue: 1,
         friction: 3, // Adjust for more or less bounce
         tension: 100, // Adjust for speed/energy
@@ -89,7 +90,6 @@ const QuizScreen = ({navigation, route}) => {
       }).start();
     }
   }, [countdownValue, isCountdownVisible]);
-
 
   const startCountdownBeforeQuiz = () => {
     let countdown = 5;
@@ -116,7 +116,7 @@ const QuizScreen = ({navigation, route}) => {
       fadeAnim.setValue(0);
 
       const response = await getNextQuestionApi(attemptId);
-      
+
       if (response.data.finished || currentQuestionNumber >= 10) {
         setLoadingQuestion(false);
         await showFinalResults();
@@ -131,7 +131,7 @@ const QuizScreen = ({navigation, route}) => {
         await loadNextQuestion();
         return;
       }
-      
+
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setSeenQuestions(prev => [...prev, question.questionId]);
       setCurrentQuestion(question);
@@ -141,15 +141,17 @@ const QuizScreen = ({navigation, route}) => {
       setLoadingQuestion(false);
       startQuestionTimer();
       fadeInQuestion();
-
     } catch (error) {
       setLoadingQuestion(false);
       showToast('Error loading question', 'error');
       Alert.alert(
         'Quiz Error',
         'There was a problem loading the next question. Please check your connection and try again.',
-        [{text: 'Go Back', onPress: () => navigation.goBack()}, {text: 'Retry', onPress: () => loadNextQuestion()}],
-        {cancelable: false}
+        [
+          {text: 'Go Back', onPress: () => navigation.goBack()},
+          {text: 'Retry', onPress: () => loadNextQuestion()},
+        ],
+        {cancelable: false},
       );
     }
   };
@@ -167,7 +169,7 @@ const QuizScreen = ({navigation, route}) => {
       await submitAnswerApi(quizId, attemptId, {
         questionId: currentQuestion.questionId,
         selectedOption: 'skip',
-        timeTaken: 15.00,
+        timeTaken: 15.0,
       });
     } catch (error) {
       showToast('Error submitting skipped answer', 'error');
@@ -194,14 +196,14 @@ const QuizScreen = ({navigation, route}) => {
     timerIntervalRef.current = setInterval(() => {
       const elapsedTime = (Date.now() - startTime) / 1000;
       const remainingTime = Math.max(15 - elapsedTime, 0);
-      
+
       LayoutAnimation.configureNext(LayoutAnimation.Presets.linear);
       setTimer(parseFloat(remainingTime.toFixed(2)));
 
       Animated.timing(timerBarAnim, {
         toValue: remainingTime / 15,
         duration: 100,
-        useNativeDriver: false, 
+        useNativeDriver: false,
       }).start();
 
       if (remainingTime <= 0) {
@@ -227,7 +229,10 @@ const QuizScreen = ({navigation, route}) => {
     setIsSubmitting(true);
 
     try {
-      const optionToSubmit = getOptionLetter(currentQuestion.options, selectedOption);
+      const optionToSubmit = getOptionLetter(
+        currentQuestion.options,
+        selectedOption,
+      );
       const timeTaken = parseFloat((15 - timer).toFixed(2));
 
       await submitAnswerApi(quizId, attemptId, {
@@ -252,7 +257,15 @@ const QuizScreen = ({navigation, route}) => {
       Alert.alert(
         'Quiz Completed!',
         `Amazing effort!\n\nYour Score: ${totalScore}\nProvisional Rank: ${finalRank}\n\nFinal rankings will be available after the quiz period ends.`,
-        [{text: 'OK', onPress: () => navigation.goBack()}],
+        [
+          {
+            text: 'Give Feedback',
+            onPress: () =>
+              navigation.navigate('QuizFeedbackScreen', {
+                quizEventId: quizId,
+              }),
+          },
+        ],
         {cancelable: false},
       );
     } catch (error) {
@@ -266,42 +279,57 @@ const QuizScreen = ({navigation, route}) => {
     }
   };
 
-  const handleOptionPress = (option) => {
-    if (timer > 0 && !showTimesUpMessage) { // Ensure options can only be pressed if time is running
+  const handleOptionPress = option => {
+    if (timer > 0 && !showTimesUpMessage) {
+      // Ensure options can only be pressed if time is running
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setSelectedOption(option);
       optionPressAnim.setValue(0.97); // Start slightly smaller
-      Animated.spring(optionPressAnim, { // Spring animation for a nice physical feel
+      Animated.spring(optionPressAnim, {
+        // Spring animation for a nice physical feel
         toValue: 1,
         friction: 5,
         useNativeDriver: true,
       }).start();
     }
   };
-  
+
   const QuizProgressBar = () => (
     <View style={styles.progressBarContainer}>
-      <Animated.View style={[styles.progressBarFill, { width: `${Math.min(100, (currentQuestionNumber / 10) * 100)}%` }]} />
+      <Animated.View
+        style={[
+          styles.progressBarFill,
+          {width: `${Math.min(100, (currentQuestionNumber / 10) * 100)}%`},
+        ]}
+      />
     </View>
   );
 
   const VisualTimerBar = () => (
     <View style={styles.visualTimerContainer}>
-      <Animated.View 
+      <Animated.View
         style={[
-            styles.visualTimerFill, 
-            { flexBasis: timerBarAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', '100%']
-            }) }
-        ]} 
+          styles.visualTimerFill,
+          {
+            flexBasis: timerBarAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['0%', '100%'],
+            }),
+          },
+        ]}
       />
     </View>
   );
 
   const renderQuestion = () => {
     if (!currentQuestion) {
-      return <ActivityIndicator size="large" color={COLORS.yellowF5BE00} style={{marginTop: 20}} />;
+      return (
+        <ActivityIndicator
+          size="large"
+          color={COLORS.yellowF5BE00}
+          style={{marginTop: 20}}
+        />
+      );
     }
     return (
       <Animated.View style={[styles.questionCard, {opacity: fadeAnim}]}>
@@ -328,33 +356,38 @@ const QuizScreen = ({navigation, route}) => {
             const isSelected = selectedOption === option;
             const isDisabled = timer === 0 || showTimesUpMessage;
             return (
-              <Animated.View 
-                key={index} 
+              <Animated.View
+                key={index}
                 // Apply press animation only if the option is the one being pressed
-                style={{ transform: [{ scale: (isSelected && !isDisabled) ? optionPressAnim : 1 }] }}
-              >
+                style={{
+                  transform: [
+                    {scale: isSelected && !isDisabled ? optionPressAnim : 1},
+                  ],
+                }}>
                 <Pressable
                   style={({pressed}) => [
                     styles.optionButton,
                     isSelected && !isDisabled && styles.selectedOptionButton, // Apply selected style only if not disabled
                     isDisabled && styles.disabledOptionButton,
                     {
-                      backgroundColor: isSelected && !isDisabled
-                        ? COLORS.yellowF5BE00
-                        : isDisabled 
-                            ? COLORS.greyD6D6D6 // Disabled background
-                            : COLORS.blue043142, // Default background
-                      transform: [{scale: pressed && !isDisabled ? 0.98 : 1}] // Press feedback only if not disabled
+                      backgroundColor:
+                        isSelected && !isDisabled
+                          ? COLORS.yellowF5BE00
+                          : isDisabled
+                          ? COLORS.greyD6D6D6 // Disabled background
+                          : COLORS.blue043142, // Default background
+                      transform: [{scale: pressed && !isDisabled ? 0.98 : 1}], // Press feedback only if not disabled
                     },
                   ]}
                   disabled={isDisabled}
                   onPress={() => handleOptionPress(option)}>
-                  <RNText style={[
-                      styles.optionText, 
+                  <RNText
+                    style={[
+                      styles.optionText,
                       isSelected && !isDisabled && styles.selectedOptionText,
                       isDisabled && styles.disabledOptionText,
                     ]}>
-                      {String.fromCharCode(65 + index)}. {option}
+                    {String.fromCharCode(65 + index)}. {option}
                   </RNText>
                 </Pressable>
               </Animated.View>
@@ -371,12 +404,14 @@ const QuizScreen = ({navigation, route}) => {
             <VisualTimerBar />
           </View>
 
-          {(timer === 0 || showTimesUpMessage) ? (
+          {timer === 0 || showTimesUpMessage ? (
             <TouchableOpacity
               style={[styles.actionButton, styles.nextButton]}
               onPress={handleTimeUpNext}
               activeOpacity={0.7}>
-              <RNText style={[styles.actionButtonText, styles.nextButtonText]}>Next Question</RNText>
+              <RNText style={[styles.actionButtonText, styles.nextButtonText]}>
+                Next Question
+              </RNText>
             </TouchableOpacity>
           ) : selectedOption != null ? (
             <TouchableOpacity
@@ -391,12 +426,15 @@ const QuizScreen = ({navigation, route}) => {
               {isSubmitting ? (
                 <ActivityIndicator color={COLORS.blue043142} />
               ) : (
-                <RNText style={[styles.actionButtonText, styles.submitButtonText]}>Submit</RNText>
+                <RNText
+                  style={[styles.actionButtonText, styles.submitButtonText]}>
+                  Submit
+                </RNText>
               )}
             </TouchableOpacity>
           ) : (
             // Placeholder to maintain layout consistency when no button is shown (i.e., option not selected yet)
-            <View style={styles.placeholderButton} /> 
+            <View style={styles.placeholderButton} />
           )}
         </View>
       </Animated.View>
@@ -407,21 +445,31 @@ const QuizScreen = ({navigation, route}) => {
     <View style={styles.container}>
       <Modal visible={isCountdownVisible} transparent animationType="fade">
         <View style={countdownStyles.overlay}>
-          <Animated.Text style={[countdownStyles.countdownText, {transform: [{scale: countdownScaleAnim}]}]}>
+          <Animated.Text
+            style={[
+              countdownStyles.countdownText,
+              {transform: [{scale: countdownScaleAnim}]},
+            ]}>
             {countdownValue}
           </Animated.Text>
         </View>
       </Modal>
 
       {loadingQuestion && !currentQuestion ? (
-         <View style={styles.fullScreenLoaderContainer}>
-            <ActivityIndicator size="large" color={COLORS.yellowF5BE00} />
-            <RNText style={styles.loadingText}>Loading Quiz...</RNText>
-         </View>
-      ) : loadingQuestion && currentQuestion ? ( 
-        <View style={styles.questionCard}> 
-            <ActivityIndicator size="large" color={COLORS.yellowF5BE00} style={{marginVertical: nh(50)}}/>
-            <RNText style={[styles.loadingText, {color: COLORS.blue043142}]}>Loading next question...</RNText>
+        <View style={styles.fullScreenLoaderContainer}>
+          <ActivityIndicator size="large" color={COLORS.yellowF5BE00} />
+          <RNText style={styles.loadingText}>Loading Quiz...</RNText>
+        </View>
+      ) : loadingQuestion && currentQuestion ? (
+        <View style={styles.questionCard}>
+          <ActivityIndicator
+            size="large"
+            color={COLORS.yellowF5BE00}
+            style={{marginVertical: nh(50)}}
+          />
+          <RNText style={[styles.loadingText, {color: COLORS.blue043142}]}>
+            Loading next question...
+          </RNText>
         </View>
       ) : (
         renderQuestion()
@@ -437,7 +485,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: nw(10), // Horizontal padding for the screen
-    paddingVertical: nh(20),   // Vertical padding for the screen
+    paddingVertical: nh(20), // Vertical padding for the screen
   },
   fullScreenLoaderContainer: {
     flex: 1,
@@ -627,10 +675,11 @@ const styles = StyleSheet.create({
   nextButtonText: {
     color: COLORS.whiteFFFFFF,
   },
-  disabledButtonOpacity: { // For submit button loading state
+  disabledButtonOpacity: {
+    // For submit button loading state
     opacity: 0.7,
   },
-  placeholderButton: { 
+  placeholderButton: {
     height: nh(52), // Match actionButton minHeight
     width: '100%',
   },

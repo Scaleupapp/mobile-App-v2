@@ -69,6 +69,7 @@ const Routes = {
   GroupChat: 'GroupChat',
   GroupProfile: 'GroupProfile',
   groupRequest: 'groupRequest',
+  QuizFeedbackScreen: 'QuizFeedbackScreen',
 };
 
 export default Routes;

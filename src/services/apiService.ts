@@ -463,5 +463,16 @@ export const getActiveQuiz = (groupId: any) => {
 };
 
 
+export const submitApprating = (payload: any) => {
+  return axiosInstance.post(`users/feedback-rating`,payload);
+};
 
 
+
+export const submitAppfeedback = (payload: any) => {
+  return axiosInstance.post(`users/feedback-comment`,payload);
+};
+
+export const submitQuizfeedback = (payload: any) => {
+  return axiosInstance.post(`rapidfire-quiz/feedback`,payload);
+};

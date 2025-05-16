@@ -71,6 +71,7 @@ import EditGroupProfile from './screens/Chat/EditGroupProfile';
 import GroupChat from './screens/Chat/GroupChat';
 import GroupProfile from './screens/Chat/GroupProfile';
 import GroupRequest from './screens/Chat/groupRequest';
+import QuizFeedbackScreen from './screens/Quiz/QuizFeedBack';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -570,6 +571,11 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.groupRequest}
         component={GroupRequest}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizFeedbackScreen}
+        component={QuizFeedbackScreen}
         options={{headerShown: false}}
       />
     </Stack.Navigator>
