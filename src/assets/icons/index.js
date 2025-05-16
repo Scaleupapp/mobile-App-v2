@@ -27,4 +27,5 @@ export const icons = {
   crosspageoutline: require('../icons/crosspageoutline.png'),
   quizInactive: require('../icons/quiz.png'),
   quizActive: require('../icons/quizsolid.png'),
+  questionsolid: require('../icons/questionsolid.png'),
 };

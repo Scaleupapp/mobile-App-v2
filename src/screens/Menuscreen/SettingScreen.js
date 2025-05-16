@@ -39,13 +39,21 @@ const menuItems = [
     ],
   },
   {
-    heading: 'Posts',
+    heading: 'Help & Support',
     data: [
-      {title: 'Saved', icon: icons.saved, navKey: Routes.MyPlaylist},
+      {
+        title: 'Raise a Query',
+        icon: icons.questionsolid,
+        navKey: Routes.SupportQueryScreen,
+      },
     ],
   },
+  {
+    heading: 'Posts',
+    data: [{title: 'Saved', icon: icons.saved, navKey: Routes.MyPlaylist}],
+  },
 ];
-
+// SupportQueryScreen
 const Settings = ({navigation, route}) => {
   const [open, setOpen] = useState(false);
   const [referralCode, setReferralCode] = useState('');

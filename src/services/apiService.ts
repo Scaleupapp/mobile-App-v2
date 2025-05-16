@@ -476,3 +476,8 @@ export const submitAppfeedback = (payload: any) => {
 export const submitQuizfeedback = (payload: any) => {
   return axiosInstance.post(`rapidfire-quiz/feedback`,payload);
 };
+
+export const submitquery = (payload: any) => {
+  return axiosInstance.post(`users/save-query`,payload);
+};
+

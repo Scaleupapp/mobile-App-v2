@@ -473,8 +473,10 @@ const Home = ({navigation, route}) => {
         </View>
       </View>
       <UpdatePopup activeQuiz={activeQuiz.length > 0} />
-      <AppRatingPopup />
-      {activeQuiz.length > 0 && activeQuiz[0] ? (
+      {activeQuiz?.collectFeedback ? (
+        <AppRatingPopup activeQuiz={activeQuiz?.collectFeedback} />
+      ) : null}
+      {activeQuiz?.length > 0 && activeQuiz[0] ? (
         <QuizstartedPopup activeQuiz={activeQuiz[0]} />
       ) : null}
     </SafeAreaView>

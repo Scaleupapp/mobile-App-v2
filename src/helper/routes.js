@@ -70,6 +70,7 @@ const Routes = {
   GroupProfile: 'GroupProfile',
   groupRequest: 'groupRequest',
   QuizFeedbackScreen: 'QuizFeedbackScreen',
+  SupportQueryScreen: 'SupportQueryScreen',
 };
 
 export default Routes;
