@@ -11,18 +11,18 @@ import {
 } from 'react-native';
 // Assuming Text component is correctly imported from your project structure
 // For this example, I'll use a mock similar to the one in QuizList.
-const Text = ({children, style, variant, color, ...props}) => {
-  let fontWeight = 'normal';
-  let fontSize = 14;
-  if (variant) {
-    if (variant.includes('semibold')) fontWeight = '600';
-    if (variant.includes('bold')) fontWeight = 'bold';
-    const sizeMatch = variant.match(/\d+/);
-    if (sizeMatch) fontSize = parseInt(sizeMatch[0], 10);
-  }
-  return <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>{children}</RNText>;
-};
-import { Text as RNText } from 'react-native';
+// const Text = ({children, style, variant, color, ...props}) => {
+//   let fontWeight = 'normal';
+//   let fontSize = 14;
+//   if (variant) {
+//     if (variant.includes('semibold')) fontWeight = '600';
+//     if (variant.includes('bold')) fontWeight = 'bold';
+//     const sizeMatch = variant.match(/\d+/);
+//     if (sizeMatch) fontSize = parseInt(sizeMatch[0], 10);
+//   }
+//   return <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>{children}</RNText>;
+// };
+import Text from '../../components/Text';
 
 // Import moment library
 import moment from 'moment'; 
@@ -171,6 +171,21 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
     }
   };
 
+  // Add this helper function near the top of the LeaderboardModal component
+const getUserInitials = (username) => {
+  if (!username) return '??';
+  
+  // Split by spaces to handle names like "John Doe"
+  const nameParts = username.split(' ');
+  if (nameParts.length >= 2) {
+    return `${nameParts[0].charAt(0)?.toUpperCase() || ''}${nameParts[1].charAt(0)?.toUpperCase() || ''}`;
+  }
+  
+  // If just one name or username
+  return username.charAt(0)?.toUpperCase() || '??';
+};
+
+
   const getMedalColor = (rank) => {
     if (rank === 1) return COLORS.yellowF5BE00; 
     if (rank === 2) return '#C0C0C0'; 
@@ -185,8 +200,12 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
     
     if (error && !leaders.length && !userRankData) { 
         return <Text style={styles.errorText}>{error}</Text>;
+
+
     }
 
+
+    
     const topThree = leaders.slice(0, 3);
     const बाकीLeaders = leaders.slice(3); 
 
@@ -195,11 +214,19 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
         {userRankData && ( 
           <View style={styles.userPerformanceCard}>
             <View style={styles.userPerformanceHeader}>
-                <Image 
-                    source={userRankData.profilePicture ? {uri: userRankData.profilePicture} : {uri: DEFAULT_PROFILE_IMAGE_URI}} 
-                    style={styles.userPerformanceProfilePic}
-                    onError={(e) => console.log("Error loading user profile image in performance card:", e.nativeEvent.error)}
-                />
+                {userRankData.profilePicture ? (
+  <Image 
+    source={{uri: userRankData.profilePicture}} 
+    style={styles.userPerformanceProfilePic}
+    onError={(e) => console.log("Error loading user profile image in performance card:", e.nativeEvent.error)}
+  />
+) : (
+  <View style={[styles.userPerformanceProfilePic, styles.avatarPlaceholder]}>
+    <Text variant="semibold16" color={COLORS.blue043142}>
+      {getUserInitials(userRankData.username)}
+    </Text>
+  </View>
+)}
                 <View style={{flex: 1}}>
                     <Text variant="semibold16" color={COLORS.blue043142} numberOfLines={1}>{userRankData.username || 'Your Performance'}</Text>
                     <Text variant="regular12" color={COLORS.grey999999}>Quiz Score & Rank</Text>
@@ -237,11 +264,19 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
                         onPress={() => navigateToUserProfile(leader.userId)}
                     >
                       <View style={styles.podiumProfilePicContainer}>
-                        <Image
-                          source={leader.profilePicture ? {uri: leader.profilePicture} : {uri: DEFAULT_PROFILE_IMAGE_URI}}
-                          style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst]}
-                          onError={(e) => console.log("Error loading podium profile image:", e.nativeEvent.error)}
-                        />
+                        {leader.profilePicture ? (
+  <Image
+    source={{uri: leader.profilePicture}}
+    style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst]}
+    onError={(e) => console.log("Error loading podium profile image:", e.nativeEvent.error)}
+  />
+) : (
+  <View style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst, styles.avatarPlaceholder]}>
+    <Text variant={isFirstPlace ? "semibold16" : "semibold14"} color={COLORS.blue043142}>
+      {getUserInitials(leader.username)}
+    </Text>
+  </View>
+)}
                         {leader.rank <=3 && ( 
                             <View style={[styles.medalIconContainer, 
                                         { backgroundColor: medalColor, 
@@ -283,11 +318,19 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
                     <Text variant="semibold14" color={COLORS.blue043142} style={styles.leaderRank}>
                         {leader.rank}.
                     </Text>
-                    <Image
-                        source={leader.profilePicture ? {uri: leader.profilePicture} : {uri: DEFAULT_PROFILE_IMAGE_URI}}
-                        style={styles.leaderProfilePic}
-                        onError={(e) => console.log("Error loading leader row profile image:", e.nativeEvent.error)}
-                    />
+                    {leader.profilePicture ? (
+  <Image
+    source={{uri: leader.profilePicture}}
+    style={styles.leaderProfilePic}
+    onError={(e) => console.log("Error loading leader row profile image:", e.nativeEvent.error)}
+  />
+) : (
+  <View style={[styles.leaderProfilePic, styles.avatarPlaceholder]}>
+    <Text variant="regular12" color={COLORS.blue043142}>
+      {getUserInitials(leader.username)}
+    </Text>
+  </View>
+)}
                     <Text variant="regular14" color={COLORS.darkGrey333333} numberOfLines={1} style={{flexShrink:1}}>
                         {leader.username}
                     </Text>
@@ -515,6 +558,11 @@ const styles = StyleSheet.create({
     marginHorizontal: nw(4), 
     marginBottom: 10, 
   },
+  avatarPlaceholder: {
+  backgroundColor: COLORS.greyD6D6D6 || '#D6D6D6',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   tabItem: {
     flex: 1, 
     paddingVertical: 14,

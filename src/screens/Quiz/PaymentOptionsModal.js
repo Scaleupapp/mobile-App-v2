@@ -89,7 +89,7 @@ const PaymentOptionsModal = ({ visible, onClose, onSaveUPI, onSaveBankDetails })
           </View>
           
           <Text style={styles.modalSubtitle}>
-            Please provide your payment details to register for this paid quiz.
+            Please provide your payment details to register for this Prized quiz.
           </Text>
           
           <View style={styles.optionsContainer}>
