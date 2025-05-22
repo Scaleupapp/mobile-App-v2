@@ -99,7 +99,7 @@ export const Story = () => {
         );
       }
     } catch (error) {
-      console.error('Error fetching stories:', error);
+      console.error('Error fetching stories:', error?.response?.data);
     } finally {
       setIsLoading(false);
     }

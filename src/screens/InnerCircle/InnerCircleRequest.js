@@ -36,6 +36,20 @@ import {formatDateforchat, getTimeAgo} from '../../helper/commonFunctions';
 import {navigationRef} from '../../../App';
 import ChatModal from '../Chat/ChatModal';
 
+
+// Helper function to generate initials (add this near the top of the component, after the imports)
+const getInitials = (firstname, lastname, username) => {
+  if (firstname && lastname) {
+    return `${firstname.charAt(0).toUpperCase()}${lastname.charAt(0).toUpperCase()}`;
+  } else if (firstname) {
+    return firstname.charAt(0).toUpperCase();
+  } else if (username) {
+    return username.charAt(0).toUpperCase();
+  }
+  return '?';
+};
+
+
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
   const [myinnerCircle, setMyInnerCircle] = useState([]);
@@ -70,38 +84,38 @@ const InnerCircleRequest = ({navigation, route}) => {
   }, []);
 
   const resetAndFetchMyCircle = async (showLoader = false) => {
-    if(showLoader) setLoading(true);
+    if (showLoader) setLoading(true);
     page.current = 1;
     setMyInnerCircle([]);
     setFilteredUsers([]);
     setAllFetched(false);
     await getmyInnerCircleList();
-    if(showLoader) setLoading(false);
+    if (showLoader) setLoading(false);
   };
 
   const resetAndFetchReceived = async (showLoader = false) => {
-    if(showLoader) setLoading(true);
+    if (showLoader) setLoading(true);
     page2.current = 1;
     setInnerCircle([]);
     setAllrecievedFetched(false);
     await getInnerCirclerecivedList();
-    if(showLoader) setLoading(false);
+    if (showLoader) setLoading(false);
   };
 
   const resetAndFetchSent = async (showLoader = false) => {
-    if(showLoader) setLoading(true);
+    if (showLoader) setLoading(true);
     page1.current = 1;
     setSentRequest([]);
     setAllsentFetched(false);
     await getInnerCircleList();
-    if(showLoader) setLoading(false);
+    if (showLoader) setLoading(false);
   };
 
   let getmyInnerCircleList = async (initialLoad = false) => {
     if (loading && !initialLoad) return;
     if (!initialLoad && allFetched) return;
 
-    if(!initialLoad) setLoading(true);
+    if (!initialLoad) setLoading(true);
     try {
       const resp = await myInnerCircleAPI(page?.current);
       const newUsers = resp?.data?.users || [];
@@ -118,25 +132,32 @@ const InnerCircleRequest = ({navigation, route}) => {
       }
       // Only increment page if API indicates more pages OR if new unique users were actually added
       // This condition might need refinement based on API behavior regarding totalPages
-      if (newUsers.length > 0 && (page?.current < resp?.data?.totalPages || resp?.data?.totalPages === undefined)) {
+      if (
+        newUsers.length > 0 &&
+        (page?.current < resp?.data?.totalPages ||
+          resp?.data?.totalPages === undefined)
+      ) {
         page.current += 1;
-      } else if (newUsers.length === 0 || page?.current >= resp?.data?.totalPages){
+      } else if (
+        newUsers.length === 0 ||
+        page?.current >= resp?.data?.totalPages
+      ) {
         setAllFetched(true);
       }
-
     } catch (error) {
       console.log('Error fetching my inner circle:', error);
-      if(!initialLoad) setAllFetched(true);
+      if (!initialLoad) setAllFetched(true);
     } finally {
-      if(!initialLoad) setLoading(false);
+      if (!initialLoad) setLoading(false);
     }
   };
 
-  let getInnerCircleList = async (initialLoad = false) => { // Sent requests
+  let getInnerCircleList = async (initialLoad = false) => {
+    // Sent requests
     if (loading && !initialLoad) return;
     if (!initialLoad && allsentFetched) return;
 
-    if(!initialLoad) setLoading(true);
+    if (!initialLoad) setLoading(true);
     try {
       const resp = await myInnerCirclesentAPI(page1?.current);
       const newRequests = resp?.data?.users || [];
@@ -150,26 +171,36 @@ const InnerCircleRequest = ({navigation, route}) => {
         // Create a Set of existing request IDs for efficient lookup
         const existingRequestIds = new Set(prev.map(pItem => pItem.id)); // Assuming 'item.id' is the unique ID for a sent request
         // Filter out new requests that are already in the previous list
-        const uniqueNewRequests = newRequests.filter(nItem => !existingRequestIds.has(nItem.id));
+        const uniqueNewRequests = newRequests.filter(
+          nItem => !existingRequestIds.has(nItem.id),
+        );
         return [...prev, ...uniqueNewRequests];
       });
 
-      if (page1?.current >= resp?.data?.totalPages || newRequests.length === 0) {
+      if (
+        page1?.current >= resp?.data?.totalPages ||
+        newRequests.length === 0
+      ) {
         setAllsentFetched(true);
       }
       // Only increment page if API indicates more pages OR if new unique requests were actually added
-      if (newRequests.length > 0 && (page1?.current < resp?.data?.totalPages || resp?.data?.totalPages === undefined)) {
-         page1.current += 1;
-      } else if (newRequests.length === 0 || page1?.current >= resp?.data?.totalPages) {
-         setAllsentFetched(true);
+      if (
+        newRequests.length > 0 &&
+        (page1?.current < resp?.data?.totalPages ||
+          resp?.data?.totalPages === undefined)
+      ) {
+        page1.current += 1;
+      } else if (
+        newRequests.length === 0 ||
+        page1?.current >= resp?.data?.totalPages
+      ) {
+        setAllsentFetched(true);
       }
-
-
     } catch (error) {
       console.log('Error fetching sent requests:', error);
-      if(!initialLoad) setAllsentFetched(true);
+      if (!initialLoad) setAllsentFetched(true);
     } finally {
-      if(!initialLoad) setLoading(false);
+      if (!initialLoad) setLoading(false);
     }
   };
 
@@ -182,11 +213,12 @@ const InnerCircleRequest = ({navigation, route}) => {
     }
   };
 
-  let getInnerCirclerecivedList = async (initialLoad = false) => { // Received requests
+  let getInnerCirclerecivedList = async (initialLoad = false) => {
+    // Received requests
     if (loading && !initialLoad) return;
     if (!initialLoad && allrecivedFetched) return;
 
-    if(!initialLoad) setLoading(true);
+    if (!initialLoad) setLoading(true);
     try {
       const resp = await myInnerCirclerecievedAPI(page2.current);
       const newReceived = resp?.data?.users || [];
@@ -194,26 +226,36 @@ const InnerCircleRequest = ({navigation, route}) => {
       setInnerCircle(prev => {
         if (page2.current === 1) return newReceived;
         const existingIds = new Set(prev.map(r => r.id)); // Assuming 'id' is unique for received requests
-        const uniqueNewReceived = newReceived.filter(r => !existingIds.has(r.id));
+        const uniqueNewReceived = newReceived.filter(
+          r => !existingIds.has(r.id),
+        );
         return [...prev, ...uniqueNewReceived];
       });
 
-
-      if (page2?.current >= resp?.data?.totalPages || newReceived.length === 0) {
+      if (
+        page2?.current >= resp?.data?.totalPages ||
+        newReceived.length === 0
+      ) {
         setAllrecievedFetched(true);
       }
-       // Only increment page if API indicates more pages OR if new unique requests were actually added
-      if (newReceived.length > 0 && (page2?.current < resp?.data?.totalPages || resp?.data?.totalPages === undefined)) {
-         page2.current += 1;
-      } else if (newReceived.length === 0 || page2?.current >= resp?.data?.totalPages) {
-         setAllrecievedFetched(true);
+      // Only increment page if API indicates more pages OR if new unique requests were actually added
+      if (
+        newReceived.length > 0 &&
+        (page2?.current < resp?.data?.totalPages ||
+          resp?.data?.totalPages === undefined)
+      ) {
+        page2.current += 1;
+      } else if (
+        newReceived.length === 0 ||
+        page2?.current >= resp?.data?.totalPages
+      ) {
+        setAllrecievedFetched(true);
       }
-
     } catch (error) {
       console.log('Error fetching received requests:', error);
-       if(!initialLoad) setAllrecivedFetched(true);
+      if (!initialLoad) setAllrecivedFetched(true);
     } finally {
-      if(!initialLoad) setLoading(false);
+      if (!initialLoad) setLoading(false);
     }
   };
 
@@ -228,24 +270,29 @@ const InnerCircleRequest = ({navigation, route}) => {
         setFilteredUsers(myinnerCircle);
       } else {
         const lowerSearchTerm = debouncedTerm.toLowerCase();
-        const results = myinnerCircle?.filter(user =>
-          user.firstname?.toLowerCase().includes(lowerSearchTerm) ||
-          user.lastname?.toLowerCase().includes(lowerSearchTerm) ||
-          user.username?.toLowerCase().includes(lowerSearchTerm),
+        const results = myinnerCircle?.filter(
+          user =>
+            user.firstname?.toLowerCase().includes(lowerSearchTerm) ||
+            user.lastname?.toLowerCase().includes(lowerSearchTerm) ||
+            user.username?.toLowerCase().includes(lowerSearchTerm),
         );
         setFilteredUsers(results);
       }
     }
   }, [debouncedTerm, myinnerCircle, selected]);
 
-
-  let declineRequest = async (targetUserId) => {
+  let declineRequest = async targetUserId => {
     setLoading(true);
     try {
-      await declineInnerCircleRequestAPI({ targetUserId });
-      setMyInnerCircle(prev => prev.filter(user => user.userId !== targetUserId));
-    } catch (error) { console.error('Error removing user from circle:', error); }
-    finally { setLoading(false); }
+      await declineInnerCircleRequestAPI({targetUserId});
+      setMyInnerCircle(prev =>
+        prev.filter(user => user.userId !== targetUserId),
+      );
+    } catch (error) {
+      console.error('Error removing user from circle:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const [selected, setSelected] = useState(0);
@@ -253,22 +300,34 @@ const InnerCircleRequest = ({navigation, route}) => {
     setSelected(number);
     setSearchTerm('');
     setDebouncedTerm('');
-    if (number === 0 && myinnerCircle.length === 0 && !allFetched && !loading) getmyInnerCircleList(true);
-    if (number === 1 && innerCircle.length === 0 && !allrecivedFetched && !loading) getInnerCirclerecivedList(true);
-    if (number === 2 && sent.length === 0 && !allsentFetched && !loading) getInnerCircleList(true);
-    if (number === 3 && studyGroups.length === 0 && !loading) fetchStudyGroups();
+    if (number === 0 && myinnerCircle.length === 0 && !allFetched && !loading)
+      getmyInnerCircleList(true);
+    if (
+      number === 1 &&
+      innerCircle.length === 0 &&
+      !allrecivedFetched &&
+      !loading
+    )
+      getInnerCirclerecivedList(true);
+    if (number === 2 && sent.length === 0 && !allsentFetched && !loading)
+      getInnerCircleList(true);
+    if (number === 3 && studyGroups.length === 0 && !loading)
+      fetchStudyGroups();
   };
 
   let acceptRequest = async (requestId, action) => {
     setLoading(true);
     try {
-      await acceptInnerCircleRequestAPI({ requestId, action });
+      await acceptInnerCircleRequestAPI({requestId, action});
       setInnerCircle(prev => prev.filter(user => user.id !== requestId));
       if (action === 'accept') {
         resetAndFetchMyCircle(true);
       }
-    } catch (error) { console.error('Error responding to request:', error); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error('Error responding to request:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const Widraw = async requestId => {
@@ -276,20 +335,28 @@ const InnerCircleRequest = ({navigation, route}) => {
     try {
       // await widrawInnerCircleRequestAPI({ requestId });
       setSentRequest(prev => prev.filter(user => user.id !== requestId));
-    } catch (error) { console.error('Error withdrawing request:', error); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error('Error withdrawing request:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   let createConvo = async (recipientId, item) => {
     setLoading(true);
     try {
-      const resp = await createConversation({ recipientId });
+      const resp = await createConversation({recipientId});
       navigationRef.navigate(Routes.Chat, {
         chatId: resp?.data?._id,
-        data: `${item?.firstname || ''} ${item?.lastname || item?.username || 'Chat'}`,
+        data: `${item?.firstname || ''} ${
+          item?.lastname || item?.username || 'Chat'
+        }`,
       });
-    } catch (error) { console.log('Error creating conversation:', error); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.log('Error creating conversation:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const truncateString = (str, maxLength = 25) => {
@@ -297,42 +364,73 @@ const InnerCircleRequest = ({navigation, route}) => {
     return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
   };
 
-
   const GroupCard = ({item}) => {
     let lastMessage = item?.lastMessage;
     return (
       <Pressable
         style={styles.cardBase}
-        onPress={() => navigation.navigate(Routes.GroupChat, { groupId: item?._id, data: item })}>
-        {item?.profilePicture ? (
-          <Image source={{ uri: `${item?.profilePicture}?timestamp=${new Date().getTime()}` }} style={styles.profileImageLarge} />
-        ) : (
-          <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
-            <Icon type="material-community" name="account-group" size={nh(30)} color={COLORS.blue043142} />
-          </View>
-        )}
+        onPress={() =>
+          navigation.navigate(Routes.GroupChat, {
+            groupId: item?._id,
+            data: item,
+          })
+        }>
+{item?.profilePicture ? (
+  <Image
+    source={{
+      uri: `${item?.profilePicture}?timestamp=${new Date().getTime()}`,
+    }}
+    style={styles.profileImageLarge}
+  />
+) : (
+  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
+    <Icon
+      type="material-community"
+      name="account-group"
+      size={nh(30)}
+      color={COLORS.blue043142}
+    />
+  </View>
+)}
         <View style={styles.cardTextContent}>
-          <Text variant="semibold15" color={COLORS.blue043142} numberOfLines={1}>
+          <Text
+            variant="semibold15"
+            color={COLORS.blue043142}
+            numberOfLines={1}>
             {item?.name}
           </Text>
           {lastMessage ? (
-            <Text variant="regular13" color={COLORS.grey777777} numberOfLines={1} style={styles.cardSubtitle}>
-              {`${lastMessage?.sender?.username}: ${truncateString(lastMessage?.content)}`}
+            <Text
+              variant="regular13"
+              color={COLORS.grey777777}
+              numberOfLines={1}
+              style={styles.cardSubtitle}>
+              {`${lastMessage?.sender?.username}: ${truncateString(
+                lastMessage?.content,
+              )}`}
             </Text>
           ) : (
-            <Text variant="regular13" color={COLORS.grey999999} style={styles.cardSubtitleItalic}>
+            <Text
+              variant="regular13"
+              color={COLORS.grey999999}
+              style={styles.cardSubtitleItalic}>
               No messages yet
             </Text>
           )}
         </View>
         <View style={styles.cardRightColumn}>
-          <Text variant="regular10" color={COLORS.greyA0A0A0} style={{marginBottom: nh(5)}}>
+          <Text
+            variant="regular10"
+            color={COLORS.greyA0A0A0}
+            style={{marginBottom: nh(5)}}>
             {formatDateforchat(lastMessage?.timestamp || item?.createdDate)}
           </Text>
           {item?.unreadMessageCount > 0 && (
             <View style={styles.unreadBadge}>
               <Text variant="bold10" color={COLORS.whiteFFFFFF}>
-                {item?.unreadMessageCount > 99 ? '99+' : item?.unreadMessageCount}
+                {item?.unreadMessageCount > 99
+                  ? '99+'
+                  : item?.unreadMessageCount}
               </Text>
             </View>
           )}
@@ -344,19 +442,52 @@ const InnerCircleRequest = ({navigation, route}) => {
   const RequestView = ({item}) => {
     return (
       <View style={styles.cardBase}>
-        <Image source={{uri: item?.profilePicture || images.defaultUserProfile}} style={styles.profileImageLarge} />
+        {item?.profilePicture ? (
+  <Image
+    source={{uri: item?.profilePicture}}
+    style={styles.profileImageLarge}
+  />
+) : (
+  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
+    <Text variant="semibold16" color={COLORS.blue043142}>
+      {getInitials(item?.firstname, item?.lastname, item?.username)}
+    </Text>
+  </View>
+)}
         <View style={styles.cardTextContent}>
-          <Text variant="semibold15" color={COLORS.blue043142} numberOfLines={1}>{item?.username}</Text>
-          <Text variant="regular13" color={COLORS.grey777777} style={styles.cardSubtitle}>
+          <Text
+            variant="semibold15"
+            color={COLORS.blue043142}
+            numberOfLines={1}>
+            {item?.username}
+          </Text>
+          <Text
+            variant="regular13"
+            color={COLORS.grey777777}
+            style={styles.cardSubtitle}>
             Wants to join your Inner Circle.
           </Text>
         </View>
         <View style={styles.cardActionsHorizontal}>
-          <TouchableOpacity onPress={() => acceptRequest(item?.id, 'reject')} style={styles.iconButton}>
-            <Icon type="antdesign" name="closecircleo" color={COLORS.redEA4335} size={nw(26)} />
+          <TouchableOpacity
+            onPress={() => acceptRequest(item?.id, 'reject')}
+            style={styles.iconButton}>
+            <Icon
+              type="antdesign"
+              name="closecircleo"
+              color={COLORS.redEA4335}
+              size={nw(26)}
+            />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => acceptRequest(item?.id, 'accept')} style={[styles.iconButton, {marginLeft: nw(18)}]}>
-            <Icon type="antdesign" name="checkcircleo" color={COLORS.green34A853} size={nw(26)} />
+          <TouchableOpacity
+            onPress={() => acceptRequest(item?.id, 'accept')}
+            style={[styles.iconButton, {marginLeft: nw(18)}]}>
+            <Icon
+              type="antdesign"
+              name="checkcircleo"
+              color={COLORS.green34A853}
+              size={nw(26)}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -373,41 +504,75 @@ const InnerCircleRequest = ({navigation, route}) => {
 
   const renderListFooter = (isLoadingPagination, hasMoreData) => {
     if (isLoadingPagination && hasMoreData) {
-      return <View style={styles.listLoader}><ActivityIndicator size="small" color={COLORS.blue043142} /></View>;
+      return (
+        <View style={styles.listLoader}>
+          <ActivityIndicator size="small" color={COLORS.blue043142} />
+        </View>
+      );
     }
-    return <View style={{ height: nh(20) }} />;
+    return <View style={{height: nh(20)}} />;
   };
 
-  const renderEmptyState = (image, title, subtitle, buttonText, onButtonPress) => (
+  const renderEmptyState = (
+    image,
+    title,
+    subtitle,
+    buttonText,
+    onButtonPress,
+  ) => (
     <View style={styles.emptyStateContainer}>
-      <Image source={image} resizeMode="contain" style={styles.emptyStateImage} />
-      <Text variant="semibold18" color={COLORS.blue043142} style={styles.emptyStateTitle}>{title}</Text>
-      <Text variant="regular14" color={COLORS.grey777777} style={styles.emptyStateSubtitle}>{subtitle}</Text>
+      <Image
+        source={image}
+        resizeMode="contain"
+        style={styles.emptyStateImage}
+      />
+      <Text
+        variant="semibold18"
+        color={COLORS.blue043142}
+        style={styles.emptyStateTitle}>
+        {title}
+      </Text>
+      <Text
+        variant="regular14"
+        color={COLORS.grey777777}
+        style={styles.emptyStateSubtitle}>
+        {subtitle}
+      </Text>
       {buttonText && onButtonPress && (
-        <Button text={buttonText} onPress={onButtonPress} style={styles.emptyStateButton} textStyle={styles.emptyStateButtonText} />
+        <Button
+          text={buttonText}
+          onPress={onButtonPress}
+          style={styles.emptyStateButton}
+          textStyle={styles.emptyStateButtonText}
+        />
       )}
     </View>
   );
 
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
 
-      <ImageBackground source={images.ellipse} style={styles.headerBackground} resizeMode="stretch">
+      <ImageBackground
+        source={images.ellipse}
+        style={styles.headerBackground}
+        resizeMode="stretch">
         <Header title="My Inner Circle" rightIcon={false} />
       </ImageBackground>
 
       <View style={styles.controlsContainer}>
         {selected === 0 && (
-        <View style={styles.searchWrapper}>
-          <CustomTextInput
-            height={nh(48)}
-            placeholder="Search in My Circle..."
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-        </View>
+          <View style={styles.searchWrapper}>
+            <CustomTextInput
+              height={nh(48)}
+              placeholder="Search in My Circle..."
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+            />
+          </View>
         )}
         <View style={styles.toggleWrapper}>
           <ToggleWithUnderline
@@ -419,124 +584,215 @@ const InnerCircleRequest = ({navigation, route}) => {
       </View>
 
       <View style={styles.contentArea}>
-        {selected === 0 && ( // MY CIRCLE
-          (filteredUsers?.length > 0 || (loading && myinnerCircle.length === 0 && !allFetched) ) ? ( // Show list or loader if initial loading for this tab
+        {selected === 0 && // MY CIRCLE
+          (filteredUsers?.length > 0 ||
+          (loading && myinnerCircle.length === 0 && !allFetched) ? ( // Show list or loader if initial loading for this tab
             <FlatList
               data={filteredUsers}
-              onEndReached={() => {!allFetched && getmyInnerCircleList()}}
+              onEndReached={() => {
+                !allFetched && getmyInnerCircleList();
+              }}
               onEndReachedThreshold={0.5}
-              ListFooterComponent={() => renderListFooter(loading && myinnerCircle.length > 0, !allFetched)}
+              ListFooterComponent={() =>
+                renderListFooter(
+                  loading && myinnerCircle.length > 0,
+                  !allFetched,
+                )
+              }
               renderItem={({item}) => {
                 const userItemForChat = {
                   userId: item?.userId,
                   firstname: item?.firstname,
                   lastname: item?.lastname,
-                  username: item?.username
+                  username: item?.username,
                 };
                 return (
                   <View style={styles.cardBase}>
-                    <TouchableOpacity onPress={() => navigationRef.navigate(Routes.OtherProfile, { type: 'other', id: item?.userId })}>
-                      <Image source={{uri: item?.profilePicture || images.defaultUserProfile}} style={styles.profileImageLarge} />
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigationRef.navigate(Routes.OtherProfile, {
+                          type: 'other',
+                          id: item?.userId,
+                        })
+                      }>
+                      {item?.profilePicture ? (
+  <Image
+    source={{uri: item?.profilePicture}}
+    style={styles.profileImageLarge}
+  />
+) : (
+  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
+    <Text variant="semibold16" color={COLORS.blue043142}>
+      {getInitials(item?.firstname, item?.lastname, item?.username)}
+    </Text>
+  </View>
+)}
                     </TouchableOpacity>
                     <View style={styles.cardTextContent}>
-                      <TouchableOpacity onPress={() => navigationRef.navigate(Routes.OtherProfile, { type: 'other', id: item?.userId })}>
-                          <Text variant="semibold15" color={COLORS.blue043142} numberOfLines={1}>{item?.username}</Text>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigationRef.navigate(Routes.OtherProfile, {
+                            type: 'other',
+                            id: item?.userId,
+                          })
+                        }>
+                        <Text
+                          variant="semibold15"
+                          color={COLORS.blue043142}
+                          numberOfLines={1}>
+                          {item?.username}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                     <View style={styles.cardActionsHorizontal}>
-                      <TouchableOpacity onPress={() => createConvo(item?.userId, userItemForChat)} style={styles.iconButton}>
-                          <Icon type="material-community" name="chat-outline" color={COLORS.blue043142} size={nw(25)} />
+                      <TouchableOpacity
+                        onPress={() =>
+                          createConvo(item?.userId, userItemForChat)
+                        }
+                        style={styles.iconButton}>
+                        <Icon
+                          type="material-community"
+                          name="chat-outline"
+                          color={COLORS.blue043142}
+                          size={nw(25)}
+                        />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => declineRequest(item?.userId)} style={[styles.iconButton, {marginLeft: nw(18)}]}>
-                          <Icon type="material-community" name="account-remove-outline" color={COLORS.redEA4335} size={nw(25)} />
+                      <TouchableOpacity
+                        onPress={() => declineRequest(item?.userId)}
+                        style={[styles.iconButton, {marginLeft: nw(18)}]}>
+                        <Icon
+                          type="material-community"
+                          name="account-remove-outline"
+                          color={COLORS.redEA4335}
+                          size={nw(25)}
+                        />
                       </TouchableOpacity>
                     </View>
                   </View>
                 );
               }}
-              keyExtractor={item => `mycircle-${item.userId?.toString() || Math.random()}`} // Ensure userId is unique
+              keyExtractor={item =>
+                `mycircle-${item.userId?.toString() || Math.random()}`
+              } // Ensure userId is unique
               contentContainerStyle={styles.listContentContainer}
             />
           ) : (
             renderEmptyState(
               images.norequest,
-              "Your Circle is Empty",
-              debouncedTerm ? `No results found for "${debouncedTerm}".` : "Connect with others or check incoming requests.",
-              !debouncedTerm ? "View Requests" : null,
-              !debouncedTerm ? () => onSelect(1) : null
+              'Your Circle is Empty',
+              debouncedTerm
+                ? `No results found for "${debouncedTerm}".`
+                : 'Connect with others or check incoming requests.',
+              !debouncedTerm ? 'View Requests' : null,
+              !debouncedTerm ? () => onSelect(1) : null,
             )
-          )
-        )}
+          ))}
 
-        {selected === 1 && ( // RECEIVED
-           (innerCircle?.length > 0 || (loading && innerCircle.length === 0 && !allrecivedFetched) ) ? (
+        {selected === 1 && // RECEIVED
+          (innerCircle?.length > 0 ||
+          (loading && innerCircle.length === 0 && !allrecivedFetched) ? (
             <FlatList
               data={innerCircle}
-              onEndReached={() => {!allrecivedFetched && getInnerCirclerecivedList()}}
+              onEndReached={() => {
+                !allrecivedFetched && getInnerCirclerecivedList();
+              }}
               onEndReachedThreshold={0.5}
-              ListFooterComponent={() => renderListFooter(loading && innerCircle.length > 0, !allrecivedFetched)}
+              ListFooterComponent={() =>
+                renderListFooter(
+                  loading && innerCircle.length > 0,
+                  !allrecivedFetched,
+                )
+              }
               renderItem={({item}) => <RequestView item={item} />}
-              keyExtractor={item => `received-${item.id?.toString() || Math.random()}`} // Ensure id is unique
+              keyExtractor={item =>
+                `received-${item.id?.toString() || Math.random()}`
+              } // Ensure id is unique
               contentContainerStyle={styles.listContentContainer}
             />
           ) : (
             renderEmptyState(
-                images.norequest,
-                "No New Requests",
-                "You have no pending inner circle requests at this time.",
-                "Explore Community",
-                () => navigation.navigate(Routes.Home)
+              images.norequest,
+              'No New Requests',
+              'You have no pending inner circle requests at this time.',
+              'Explore Community',
+              () => navigation.navigate(Routes.Home),
             )
-          )
-        )}
+          ))}
 
-        {selected === 2 && ( // SENT
-          (sent?.length > 0 || (loading && sent.length === 0 && !allsentFetched) ) ? (
+        {selected === 2 && // SENT
+          (sent?.length > 0 ||
+          (loading && sent.length === 0 && !allsentFetched) ? (
             <FlatList
               data={sent}
-              onEndReached={() => {!allsentFetched && getInnerCircleList()}}
+              onEndReached={() => {
+                !allsentFetched && getInnerCircleList();
+              }}
               onEndReachedThreshold={0.5}
-              ListFooterComponent={() => renderListFooter(loading && sent.length > 0, !allsentFetched)}
+              ListFooterComponent={() =>
+                renderListFooter(loading && sent.length > 0, !allsentFetched)
+              }
               renderItem={({item}) => {
-                const recipient = item.recipient || item.targetUser || item.user || {};
+                const recipient =
+                  item.recipient || item.targetUser || item.user || {};
                 const recipientUsername = recipient.username || 'Unknown User';
+
                 const recipientProfilePicture = recipient.profilePicture;
                 const recipientDetailsForChat = {
-                    userId: recipient.userId,
-                    firstname: recipient.firstname,
-                    lastname: recipient.lastname,
-                    username: recipient.username
-                 };
+                  userId: recipient.userId,
+                  firstname: recipient.firstname,
+                  lastname: recipient.lastname,
+                  username: recipient.username,
+                };
 
                 return (
                   <View style={styles.cardBase}>
-                    <Image
-                      source={{uri: recipientProfilePicture || images.defaultUserProfile}}
-                      style={styles.profileImageLarge}
-                    />
+                    {recipientProfilePicture ? (
+  <Image
+    source={{uri: recipientProfilePicture}}
+    style={styles.profileImageLarge}
+  />
+) : (
+  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
+    <Text variant="semibold16" color={COLORS.blue043142}>
+      {getInitials(recipient?.firstname, recipient?.lastname, recipient?.username)}
+    </Text>
+  </View>
+)}
                     <View style={styles.cardTextContent}>
                       <View style={styles.sentItemRow}>
-                          <Text variant="semibold15" color={COLORS.blue043142} numberOfLines={1}>
-                            {recipientUsername}
-                          </Text>
-                          <Text variant="regular10" color={COLORS.greyA0A0A0}>{getTimeAgo(item?.timestamp)}</Text>
+                        <Text
+                          variant="semibold15"
+                          color={COLORS.blue043142}
+                          numberOfLines={1}>
+                          {recipientUsername}
+                        </Text>
+                        <Text variant="regular10" color={COLORS.greyA0A0A0}>
+                          {getTimeAgo(item?.timestamp)}
+                        </Text>
                       </View>
                       <View style={[styles.sentItemRow, {marginTop: nh(4)}]}>
-                          <Text
-                              variant="semibold12"
-                              style={{
-                                  color: item?.status?.toLowerCase() === 'pending' ? COLORS.orangeFF8C00 :
-                                         item?.status?.toLowerCase() === 'accepted' ? COLORS.green34A853 :
-                                         COLORS.grey777777,
-                                  textTransform: 'capitalize'
-                              }}>
-                              Status: {item?.status || 'N/A'}
-                          </Text>
-                          {item?.status?.toLowerCase() === 'pending' && (
-                              <TouchableOpacity onPress={() => Widraw(item.id)} style={styles.withdrawButton}>
-                                  <Text variant="medium12" color={COLORS.blue043142}>Withdraw</Text>
-                              </TouchableOpacity>
-                          )}
+                        <Text
+                          variant="semibold12"
+                          style={{
+                            color:
+                              item?.status?.toLowerCase() === 'pending'
+                                ? COLORS.orangeFF8C00
+                                : item?.status?.toLowerCase() === 'accepted'
+                                ? COLORS.green34A853
+                                : COLORS.grey777777,
+                            textTransform: 'capitalize',
+                          }}>
+                          Status: {item?.status || 'N/A'}
+                        </Text>
+                        {item?.status?.toLowerCase() === 'pending' && (
+                          <TouchableOpacity
+                            onPress={() => Widraw(item.id)}
+                            style={styles.withdrawButton}>
+                            <Text variant="medium12" color={COLORS.blue043142}>
+                              Withdraw
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -552,53 +808,64 @@ const InnerCircleRequest = ({navigation, route}) => {
                 }
                 // Fallback for items without a proper ID (should be avoided)
                 console.warn('Sent item missing a reliable unique ID:', item);
-                return `sent-random-${Math.random().toString(36).substring(2, 9)}`;
+                return `sent-random-${Math.random()
+                  .toString(36)
+                  .substring(2, 9)}`;
               }}
               contentContainerStyle={styles.listContentContainer}
             />
           ) : (
             renderEmptyState(
-                images.norequest,
-                "No Sent Requests",
-                "You haven't sent any connection requests yet.",
-                "Find People",
-                () => { /* TODO: Navigate to User Discovery Screen */ }
+              images.norequest,
+              'No Sent Requests',
+              "You haven't sent any connection requests yet.",
+              'Find People',
+              () => {
+                /* TODO: Navigate to User Discovery Screen */
+              },
             )
-          )
-        )}
+          ))}
 
-        {selected === 3 && ( // GROUPS
-          (studyGroups?.length > 0 || (loading && studyGroups.length === 0)) ? (
+        {selected === 3 && // GROUPS
+          (studyGroups?.length > 0 || (loading && studyGroups.length === 0) ? (
             <FlatList
               data={studyGroups}
               renderItem={({item}) => <GroupCard item={item} />}
-              keyExtractor={item => `group-${item._id?.toString() || Math.random()}`} // Ensure _id is unique
+              keyExtractor={item =>
+                `group-${item._id?.toString() || Math.random()}`
+              } // Ensure _id is unique
               contentContainerStyle={styles.listContentContainer}
-              ListFooterComponent={() => <View style={{ height: nh(20) }} />} // Groups not paginated
+              ListFooterComponent={() => <View style={{height: nh(20)}} />} // Groups not paginated
             />
           ) : (
-              renderEmptyState(
-                images.nochat,
-                "No Study Groups Yet",
-                "Join or create a study group to collaborate with others.",
-                "Create a Study Group",
-                () => chatmodelRef.current?.present()
-              )
+            renderEmptyState(
+              images.nochat,
+              'No Study Groups Yet',
+              'Join or create a study group to collaborate with others.',
+              'Create a Study Group',
+              () => chatmodelRef.current?.present(),
             )
-        )}
+          ))}
       </View>
 
       <ChatModal group={1} ref={chatmodelRef} />
 
       {selected === 3 && studyGroups?.length > 0 && !loading && (
-        <TouchableOpacity style={styles.fab} activeOpacity={0.8} onPress={() => chatmodelRef.current?.present()}>
-            <Icon type="antdesign" name="plus" color={COLORS.whiteFFFFFF} size={nh(28)} />
+        <TouchableOpacity
+          style={styles.fab}
+          activeOpacity={0.8}
+          onPress={() => chatmodelRef.current?.present()}>
+          <Icon
+            type="antdesign"
+            name="plus"
+            color={COLORS.whiteFFFFFF}
+            size={nh(28)}
+          />
         </TouchableOpacity>
       )}
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   safeArea: {

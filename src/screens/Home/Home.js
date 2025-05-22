@@ -42,9 +42,13 @@ import {actions} from '../../redux/reducers';
 import UpdatePopup from '../../components/UpdatePopup';
 import QuizstartedPopup from '../../components/QuizstartedPopup';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AppRatingPopup from '../../components/AppRatingPopup';
 
 // Enable LayoutAnimation for Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -103,12 +107,7 @@ const PostSkeleton = () => {
       <View style={styles.skeletonLineLong} />
       <View style={styles.skeletonLineMedium} />
       {/* Shimmer Overlay */}
-      <Animated.View
-        style={[
-          styles.shimmerOverlay,
-          animatedShimmerStyle,
-        ]}
-      />
+      <Animated.View style={[styles.shimmerOverlay, animatedShimmerStyle]} />
     </View>
   );
 };
@@ -125,7 +124,8 @@ const CustomSegmentedControl = ({
   activeTextColor = COLORS.whiteFFFFFF,
   inactiveTextColor = COLORS.grey666666,
 }) => {
-  const itemWidth = Dimensions.get('window').width / segments.length - nw(16) / segments.length; // Adjust for margin/padding
+  const itemWidth =
+    Dimensions.get('window').width / segments.length - nw(16) / segments.length; // Adjust for margin/padding
   const translateX = useSharedValue(currentIndex * itemWidth);
 
   useEffect(() => {
@@ -139,7 +139,11 @@ const CustomSegmentedControl = ({
   });
 
   return (
-    <View style={[styles.segmentedControlContainer, {backgroundColor: inactiveColor}]}>
+    <View
+      style={[
+        styles.segmentedControlContainer,
+        {backgroundColor: inactiveColor},
+      ]}>
       <Animated.View
         style={[
           styles.activeSegmentIndicator,
@@ -154,7 +158,9 @@ const CustomSegmentedControl = ({
           style={[styles.segmentButton, {width: itemWidth}]}>
           <Text
             variant={currentIndex === index ? 'bold14' : 'medium14'}
-            color={currentIndex === index ? activeTextColor : inactiveTextColor}>
+            color={
+              currentIndex === index ? activeTextColor : inactiveTextColor
+            }>
             {segment}
           </Text>
         </TouchableOpacity>
@@ -173,8 +179,16 @@ const AnimatedPostItem = React.memo(({children, index}) => {
   useEffect(() => {
     // Animate in with a delay based on index for a staggered effect
     const delay = index * 100; // Adjust delay as needed
-    opacity.value = withTiming(1, { duration: 400, easing: Easing.out(Easing.quad), delay });
-    translateY.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.quad), delay });
+    opacity.value = withTiming(1, {
+      duration: 400,
+      easing: Easing.out(Easing.quad),
+      delay,
+    });
+    translateY.value = withTiming(0, {
+      duration: 400,
+      easing: Easing.out(Easing.quad),
+      delay,
+    });
   }, [opacity, translateY, index]);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -186,7 +200,6 @@ const AnimatedPostItem = React.memo(({children, index}) => {
 
   return <Animated.View style={animatedStyle}>{children}</Animated.View>;
 });
-
 
 const Home = ({navigation, route}) => {
   const dispatch = useDispatch();
@@ -204,13 +217,17 @@ const Home = ({navigation, route}) => {
   const [visibleItems, setVisibleItems] = useState([]);
   const [activeQuiz, setActiveQuiz] = useState([]);
 
-  const viewabilityConfig = useRef({itemVisiblePercentThreshold: 50, minimumViewTime: 300}).current;
-  
-  // onViewableItemsChanged to map item.id or item._id for visibleItems
-   const onViewableItemsChanged = useRef(({viewableItems}) => {
-    setVisibleItems(viewableItems.map(item => item.item._id || item.item.id || item.key));
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 300,
   }).current;
 
+  // onViewableItemsChanged to map item.id or item._id for visibleItems
+  const onViewableItemsChanged = useRef(({viewableItems}) => {
+    setVisibleItems(
+      viewableItems.map(item => item.item._id || item.item.id || item.key),
+    );
+  }).current;
 
   useEffect(() => {
     setInitialLoading(true);
@@ -229,6 +246,7 @@ const Home = ({navigation, route}) => {
   const getQuizData = async () => {
     try {
       const res = await getActiveQuiz();
+      console.log('🚀 ~ getQuizData ~ res?.data:', res?.data);
       setActiveQuiz(res?.data || []);
     } catch (error) {
       console.log(error?.response?.data?.message, 'getQuizData error');
@@ -249,14 +267,15 @@ const Home = ({navigation, route}) => {
 
   const fetchData = async (pageNum, isInitialOrRefresh = false) => {
     if (!isInitialOrRefresh && (loadingMore || refreshing)) return; // Prevent multiple calls if already loading/refreshing
-    
+
     if (isInitialOrRefresh) {
-        if (pageNum === 1) { // Only set initialLoading true for the very first fetch or full refresh
-            setInitialLoading(true);
-        }
-        setRefreshing(true);
+      if (pageNum === 1) {
+        // Only set initialLoading true for the very first fetch or full refresh
+        setInitialLoading(true);
+      }
+      setRefreshing(true);
     } else {
-        setLoadingMore(true);
+      setLoadingMore(true);
     }
 
     try {
@@ -270,14 +289,15 @@ const Home = ({navigation, route}) => {
       }
 
       const processedData = processContentList(responseData, showRecommended);
-      
+
       // Configure LayoutAnimation before state update that changes list length
       // LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
-
       if (processedData.length > 0) {
         setPage(prevPage => prevPage + 1);
-        setHome(prevHome => isInitialOrRefresh ? processedData : [...prevHome, ...processedData]);
+        setHome(prevHome =>
+          isInitialOrRefresh ? processedData : [...prevHome, ...processedData],
+        );
         setHasMore(true);
       } else {
         setHasMore(false);
@@ -309,27 +329,33 @@ const Home = ({navigation, route}) => {
     [hasMore, loadingMore, initialLoading, refreshing, page, showRecommended],
   );
 
-  const onProfilePress = useCallback(profileUserId => {
-    navigation.navigate('Profile', {userId: profileUserId});
-  }, [navigation]);
+  const onProfilePress = useCallback(
+    profileUserId => {
+      navigation.navigate('Profile', {userId: profileUserId});
+    },
+    [navigation],
+  );
 
-  const renderItem = useCallback(({item, index}) => {
-    const itemKey = item._id || item.id || index.toString();
-    const isVisible = visibleItems.includes(itemKey);
-    
-    return (
-      <AnimatedPostItem index={index}>
-        <PostView
-          item={item}
-          index={index}
-          selectedIndex={selectedIndex}
-          setSelectedIndex={setSelectedIndex}
-          isVideoVisible={isVisible}
-          onProfilePress={onProfilePress}
-        />
-      </AnimatedPostItem>
-    );
-  }, [visibleItems, selectedIndex, onProfilePress, setSelectedIndex]); // Added setSelectedIndex
+  const renderItem = useCallback(
+    ({item, index}) => {
+      const itemKey = item._id || item.id || index.toString();
+      const isVisible = visibleItems.includes(itemKey);
+
+      return (
+        <AnimatedPostItem index={index}>
+          <PostView
+            item={item}
+            index={index}
+            selectedIndex={selectedIndex}
+            setSelectedIndex={setSelectedIndex}
+            isVideoVisible={isVisible}
+            onProfilePress={onProfilePress}
+          />
+        </AnimatedPostItem>
+      );
+    },
+    [visibleItems, selectedIndex, onProfilePress, setSelectedIndex],
+  ); // Added setSelectedIndex
 
   const ListHeaderComponent = () => (
     <View style={styles.listHeaderContainer}>
@@ -341,19 +367,28 @@ const Home = ({navigation, route}) => {
           setShowRecommended(index === 1);
         }}
       />
-      <Text variant="medium12" color={COLORS.grey666666} style={styles.feedTypeTitle}>
+      <Text
+        variant="medium12"
+        color={COLORS.grey666666}
+        style={styles.feedTypeTitle}>
         {showRecommended ? 'Discover new content' : 'Latest from your network'}
       </Text>
     </View>
   );
 
-  const keyExtractor = useCallback((item, index) => item._id || item.id || index.toString(), []);
+  const keyExtractor = useCallback(
+    (item, index) => item._id || item.id || index.toString(),
+    [],
+  );
 
   // Initial Skeleton Loading State
   if (initialLoading && page === 1 && home.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
         <MainHeader />
         <View style={styles.layer1}>
           <View style={styles.layer2}>
@@ -372,7 +407,10 @@ const Home = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
       <MainHeader />
       <View style={styles.layer1}>
         <View style={styles.layer2}>
@@ -407,11 +445,21 @@ const Home = ({navigation, route}) => {
             ListEmptyComponent={
               !initialLoading && !refreshing && home.length === 0 ? (
                 <View style={styles.emptyListContainer}>
-                  <Icon name="compass-outline" size={nw(80)} color={COLORS.greyBBBBBB} />
-                  <Text variant="bold18" color={COLORS.blue043142} style={styles.emptyTitle}>
+                  <Icon
+                    name="compass-outline"
+                    size={nw(80)}
+                    color={COLORS.greyBBBBBB}
+                  />
+                  <Text
+                    variant="bold18"
+                    color={COLORS.blue043142}
+                    style={styles.emptyTitle}>
                     Nothing to see here... yet!
                   </Text>
-                  <Text variant="regular14" color={COLORS.grey666666} style={styles.emptySubtitle}>
+                  <Text
+                    variant="regular14"
+                    color={COLORS.grey666666}
+                    style={styles.emptySubtitle}>
                     {showRecommended
                       ? "We're looking for recommendations for you. Check back soon!"
                       : 'Follow creators or explore topics to fill your feed.'}
@@ -425,7 +473,10 @@ const Home = ({navigation, route}) => {
         </View>
       </View>
       <UpdatePopup activeQuiz={activeQuiz.length > 0} />
-      {activeQuiz.length > 0 && activeQuiz[0] ? (
+      {activeQuiz?.collectFeedback ? (
+        <AppRatingPopup activeQuiz={activeQuiz?.collectFeedback} />
+      ) : null}
+      {activeQuiz?.length > 0 && activeQuiz[0] ? (
         <QuizstartedPopup activeQuiz={activeQuiz[0]} />
       ) : null}
     </SafeAreaView>
@@ -466,14 +517,51 @@ const styles = StyleSheet.create({
     borderColor: COLORS.greyEEEEEE,
     overflow: 'hidden', // Important for shimmer effect
   },
-  skeletonHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: nh(12) },
-  skeletonAvatar: { width: nw(44), height: nw(44), borderRadius: nw(22), backgroundColor: COLORS.greyE0E0E0 },
-  skeletonUserInfo: { marginLeft: nw(10) },
-  skeletonLineShort: { width: nw(120), height: nh(12), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4), marginBottom: nh(6) },
-  skeletonLineExtraShort: { width: nw(80), height: nh(10), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4) },
-  skeletonMedia: { width: '100%', height: nh(220), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(8), marginBottom: nh(12) },
-  skeletonLineLong: { width: '90%', height: nh(10), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4), marginBottom: nh(6) },
-  skeletonLineMedium: { width: '70%', height: nh(10), backgroundColor: COLORS.greyE0E0E0, borderRadius: nh(4) },
+  skeletonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: nh(12),
+  },
+  skeletonAvatar: {
+    width: nw(44),
+    height: nw(44),
+    borderRadius: nw(22),
+    backgroundColor: COLORS.greyE0E0E0,
+  },
+  skeletonUserInfo: {marginLeft: nw(10)},
+  skeletonLineShort: {
+    width: nw(120),
+    height: nh(12),
+    backgroundColor: COLORS.greyE0E0E0,
+    borderRadius: nh(4),
+    marginBottom: nh(6),
+  },
+  skeletonLineExtraShort: {
+    width: nw(80),
+    height: nh(10),
+    backgroundColor: COLORS.greyE0E0E0,
+    borderRadius: nh(4),
+  },
+  skeletonMedia: {
+    width: '100%',
+    height: nh(220),
+    backgroundColor: COLORS.greyE0E0E0,
+    borderRadius: nh(8),
+    marginBottom: nh(12),
+  },
+  skeletonLineLong: {
+    width: '90%',
+    height: nh(10),
+    backgroundColor: COLORS.greyE0E0E0,
+    borderRadius: nh(4),
+    marginBottom: nh(6),
+  },
+  skeletonLineMedium: {
+    width: '70%',
+    height: nh(10),
+    backgroundColor: COLORS.greyE0E0E0,
+    borderRadius: nh(4),
+  },
   shimmerOverlay: {
     position: 'absolute',
     top: 0,
@@ -537,8 +625,12 @@ const styles = StyleSheet.create({
     padding: nw(30),
     minHeight: DEVICE_HEIGHT * 0.5,
   },
-  emptyTitle: { marginTop: nh(20), marginBottom: nh(10), textAlign: 'center' },
-  emptySubtitle: { textAlign: 'center', lineHeight: nh(20), marginBottom: nh(20) },
+  emptyTitle: {marginTop: nh(20), marginBottom: nh(10), textAlign: 'center'},
+  emptySubtitle: {
+    textAlign: 'center',
+    lineHeight: nh(20),
+    marginBottom: nh(20),
+  },
   exploreButton: {
     backgroundColor: COLORS.blue043142,
     paddingVertical: nh(12),
@@ -556,4 +648,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-
