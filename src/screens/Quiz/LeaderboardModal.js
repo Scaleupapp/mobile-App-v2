@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useCallback, useRef} from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import {
   Modal,
   View,
@@ -12,22 +12,23 @@ import {
 import ViewShot from 'react-native-view-shot';
 // Assuming Text component is correctly imported from your project structure
 // For this example, I'll use a mock similar to the one in QuizList.
-const Text = ({children, style, variant, color, ...props}) => {
-  let fontWeight = 'normal';
-  let fontSize = 14;
-  if (variant) {
-    if (variant.includes('semibold')) fontWeight = '600';
-    if (variant.includes('bold')) fontWeight = 'bold';
-    const sizeMatch = variant.match(/\d+/);
-    if (sizeMatch) fontSize = parseInt(sizeMatch[0], 10);
-  }
-  return (
-    <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>
-      {children}
-    </RNText>
-  );
-};
-import {Text as RNText} from 'react-native';
+// const Text = ({children, style, variant, color, ...props}) => {
+//   let fontWeight = 'normal';
+//   let fontSize = 14;
+//   if (variant) {
+//     if (variant.includes('semibold')) fontWeight = '600';
+//     if (variant.includes('bold')) fontWeight = 'bold';
+//     const sizeMatch = variant.match(/\d+/);
+//     if (sizeMatch) fontSize = parseInt(sizeMatch[0], 10);
+//   }
+//   return (
+//     <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>
+//       {children}
+//     </RNText>
+//   );
+// };
+// import {Text as RNText} from 'react-native';
+import Text from '../../components/Text';
 
 // Import moment library
 import moment from 'moment';
@@ -53,11 +54,7 @@ const TABS = {
   QUIZ_DETAILS: 'My Answers', // Renamed for clarity
 };
 
-// Placeholder for profile picture if URI is null or invalid
-// Using an online placeholder. Replace with your local asset once available:
-// const DEFAULT_PROFILE_IMAGE = require('../../assets/images/default_profile.png');
-const DEFAULT_PROFILE_IMAGE_URI =
-  'https://placehold.co/60x60/E0E0E0/B0B0B0?text=User&font=roboto';
+
 
 const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [leaders, setLeaders] = useState([]);
@@ -68,6 +65,39 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const ref = useRef();
+
+
+const getInitials = (username) => {
+  // console.log('=== getInitials called ===');
+  // console.log('Input username:', username);
+  // console.log('Username type:', typeof username);
+  
+  if (!username) {
+    console.log('No username provided, returning ??');
+    return '??';
+  }
+  
+  // Split by spaces to handle full names
+  const nameParts = username.split(' ').filter(part => part.length > 0);
+  console.log('Name parts:', nameParts);
+  
+  if (nameParts.length >= 2) {
+    // If there are at least 2 name parts, use first letter of first two parts
+    const initials = `${nameParts[0].charAt(0).toUpperCase()}${nameParts[1].charAt(0).toUpperCase()}`;
+    console.log('Two+ parts initials:', initials);
+    return initials;
+  } else if (nameParts.length === 1) {
+    // If single name, use first two characters or just first if name is single character
+    const name = nameParts[0];
+    const initials = name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.charAt(0).toUpperCase();
+    console.log('Single part initials:', initials);
+    return initials;
+  }
+  
+  console.log('Fallback to ??');
+  return '??';
+};
+
 
   const takeScreenShot = () => {
     ref.current.capture().then(uri => {
@@ -237,22 +267,61 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
           ref={ref}
           style={{flex: 1, backgroundColor: COLORS.whiteFFFFFF}}>
           {userRankData && (
-            <View style={styles.userPerformanceCard}>
-              <View style={styles.userPerformanceHeader}>
-                <Image
-                  source={
-                    userRankData.profilePicture
-                      ? {uri: userRankData.profilePicture}
-                      : {uri: DEFAULT_PROFILE_IMAGE_URI}
-                  }
-                  style={styles.userPerformanceProfilePic}
-                  onError={e =>
-                    console.log(
-                      'Error loading user profile image in performance card:',
-                      e.nativeEvent.error,
-                    )
-                  }
-                />
+  <View style={styles.userPerformanceCard}>
+    <View style={styles.userPerformanceHeader}>
+      {(() => {
+        console.log('=== USER PERFORMANCE PROFILE DEBUG ===');
+        console.log('userRankData:', userRankData);
+        console.log('userRankData.profilePicture:', userRankData.profilePicture);
+        console.log('profilePicture type:', typeof userRankData.profilePicture);
+        console.log('profilePicture length:', userRankData.profilePicture?.length);
+        console.log('Is profilePicture truthy?', !!userRankData.profilePicture);
+        console.log('Is profilePicture default?', userRankData.profilePicture === 'default-profile-pic-url');
+        console.log('userRankData.username:', userRankData.username);
+        
+        const hasValidProfilePic = userRankData.profilePicture && 
+                                  userRankData.profilePicture !== 'default-profile-pic-url' &&
+                                  userRankData.profilePicture.trim() !== '' &&
+                                  userRankData.profilePicture !== 'null' &&
+                                  userRankData.profilePicture !== 'undefined';
+        
+        console.log('hasValidProfilePic:', hasValidProfilePic);
+        
+        if (hasValidProfilePic) {
+          return (
+            <Image
+              source={{uri: userRankData.profilePicture}}
+              style={styles.userPerformanceProfilePic}
+              onError={e => {
+                console.log('=== IMAGE LOAD ERROR ===');
+                console.log('Error loading user profile image:', e.nativeEvent.error);
+                console.log('Failed URI:', userRankData.profilePicture);
+              }}
+              onLoad={() => {
+                console.log('=== IMAGE LOADED SUCCESSFULLY ===');
+                console.log('Loaded URI:', userRankData.profilePicture);
+              }}
+            />
+          );
+        } else {
+          const initials = getInitials(userRankData.username);
+          console.log('Showing initials instead:', initials);
+          return (
+            <View style={[
+              styles.userPerformanceProfilePic,
+              {
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: COLORS.greyD6D6D6,
+              },
+            ]}>
+              <Text variant="semibold16" color={COLORS.black333333}>
+                {initials}
+              </Text>
+            </View>
+          );
+        }
+      })()}
                 <View style={{flex: 1}}>
                   <Text
                     variant="semibold16"
@@ -321,23 +390,45 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
                       style={[styles.podiumItem, podiumItemSpecificStyle]}
                       onPress={() => navigateToUserProfile(leader.userId)}>
                       <View style={styles.podiumProfilePicContainer}>
-                        <Image
-                          source={
-                            leader.profilePicture
-                              ? {uri: leader.profilePicture}
-                              : {uri: DEFAULT_PROFILE_IMAGE_URI}
-                          }
-                          style={[
-                            styles.podiumProfilePic,
-                            isFirstPlace && styles.podiumProfilePicFirst,
-                          ]}
-                          onError={e =>
-                            console.log(
-                              'Error loading podium profile image:',
-                              e.nativeEvent.error,
-                            )
-                          }
-                        />
+{leader.profilePicture && leader.profilePicture !== 'default-profile-pic-url' ? (  <Image
+    source={{uri: leader.profilePicture}}
+    style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst]}
+    onError={e => console.log('Error loading podium profile image:', e.nativeEvent.error)}
+  />
+) : (
+  (() => {
+    console.log('=== PODIUM INITIALS DEBUG ===');
+    console.log('Leader object:', leader);
+    console.log('Leader username:', leader.username);
+    console.log('Is first place:', isFirstPlace);
+    const initials = getInitials(leader.username);
+    console.log('Generated initials for podium:', initials);
+    
+    return (
+      <View style={[
+        styles.podiumProfilePic,
+        isFirstPlace && styles.podiumProfilePicFirst,
+        {
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: COLORS.blue043142,
+          // Add debugging styles
+          borderWidth: 2,
+          borderColor: 'red',
+        },
+      ]}>
+        <Text 
+          variant={isFirstPlace ? 'bold16' : 'bold14'}
+          color={COLORS.whiteFFFFFF}
+          style={{textAlign: 'center'}}
+          onLayout={() => console.log('Podium Text component rendered with initials:', initials)}
+        >
+          {initials}
+        </Text>
+      </View>
+    );
+  })()
+)}
                         {leader.rank <= 3 && (
                           <View
                             style={[
@@ -408,20 +499,43 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
                     style={styles.leaderRank}>
                     {leader.rank}.
                   </Text>
-                  <Image
-                    source={
-                      leader.profilePicture
-                        ? {uri: leader.profilePicture}
-                        : {uri: DEFAULT_PROFILE_IMAGE_URI}
-                    }
-                    style={styles.leaderProfilePic}
-                    onError={e =>
-                      console.log(
-                        'Error loading leader row profile image:',
-                        e.nativeEvent.error,
-                      )
-                    }
-                  />
+{leader.profilePicture && leader.profilePicture !== 'default-profile-pic-url' ? (  <Image
+    source={{uri: leader.profilePicture}}
+    style={styles.leaderProfilePic}
+    onError={e => console.log('Error loading leader row profile image:', e.nativeEvent.error)}
+  />
+) : (
+  (() => {
+    console.log('=== LEADERBOARD INITIALS DEBUG ===');
+    console.log('Leader object:', leader);
+    console.log('Leader username:', leader.username);
+    const initials = getInitials(leader.username);
+    console.log('Generated initials for leaderboard:', initials);
+    
+    return (
+      <View style={[
+        styles.leaderProfilePic,
+        {
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: COLORS.blue043142,
+          // Add debugging styles
+          borderWidth: 2,
+          borderColor: 'yellow',
+        },
+      ]}>
+        <Text 
+          variant="bold12"
+          color={COLORS.whiteFFFFFF}
+          style={{textAlign: 'center'}}
+          onLayout={() => console.log('Leaderboard Text component rendered with initials:', initials)}
+        >
+          {initials}
+        </Text>
+      </View>
+    );
+  })()
+)}
                   <Text
                     variant="regular14"
                     color={COLORS.darkGrey333333}
