@@ -18,6 +18,7 @@ import Icon from '../../helper/icon';
 import {submitquery} from '../../services/apiService';
 import {navigationRef} from '../../../App';
 import Header from '../../components/Header';
+import {APP_FONTS} from '../../assets/fonts';
 
 const SupportQueryScreen = () => {
   const {colors} = useTheme();
@@ -38,7 +39,7 @@ const SupportQueryScreen = () => {
       // Replace with actual API call
       const response = await submitquery({query});
       setQuery('');
-      navigationRef.goBack();
+      navigationRef.navigate('MyQueriesScreen');
       console.log('🚀 ~ submitQuery ~ response:', response?.data);
     } catch (error) {
       //   Alert.alert('Network Error', error.message);
@@ -56,6 +57,21 @@ const SupportQueryScreen = () => {
         // onBackPress={handleBackPress}
         // onRightIconPress={handleRightIconPress}
       />
+      <Text
+        onPress={() => navigationRef.navigate('MyQueriesScreen')}
+        style={{
+          color: COLORS.blue043142,
+          fontFamily: APP_FONTS.PoppinsBold,
+          // alignItems: 'flex-end',
+          // flex:1,
+          marginTop: 20,
+          textAlign: 'right',
+          marginHorizontal: 20,
+          textDecorationLine: 'underline',
+          // justifyContent: 'flex-end',
+        }}>
+        My Queries
+      </Text>
 
       <TextInput
         style={[
