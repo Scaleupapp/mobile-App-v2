@@ -43,7 +43,8 @@ import UpdatePopup from '../../components/UpdatePopup';
 import QuizstartedPopup from '../../components/QuizstartedPopup';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AppRatingPopup from '../../components/AppRatingPopup';
-
+import InterestedQuiz from '../../components/InterestedQuiz';
+import mixpanel from '../../helper/mixpanelClient';
 // Enable LayoutAnimation for Android
 if (
   Platform.OS === 'android' &&
@@ -216,7 +217,7 @@ const Home = ({navigation, route}) => {
   const [showRecommended, setShowRecommended] = useState(false);
   const [visibleItems, setVisibleItems] = useState([]);
   const [activeQuiz, setActiveQuiz] = useState([]);
-
+  const [feedbackPopup, setFeedbackPopup] = useState({});
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
     minimumViewTime: 300,
@@ -239,6 +240,7 @@ const Home = ({navigation, route}) => {
   }, [showRecommended]);
 
   useEffect(() => {
+    mixpanel.track('Landed on Home');
     getProfileData();
     getQuizData();
   }, []);
@@ -249,6 +251,7 @@ const Home = ({navigation, route}) => {
       console.log('🚀 ~ getQuizData ~ res?.data:', res?.data);
       setActiveQuiz(res?.data || []);
     } catch (error) {
+      setFeedbackPopup(error?.response?.data);
       console.log(error?.response?.data?.message, 'getQuizData error');
     }
   };
@@ -259,6 +262,9 @@ const Home = ({navigation, route}) => {
       if (res?.data?.userProfileInfo) {
         const newdata = {...userData, ...res.data.userProfileInfo};
         dispatch(actions.setUserData(newdata));
+        mixpanel.identify(newdata?.id);
+        mixpanel.getPeople().set('$name', newdata.firstname);
+        mixpanel.getPeople().set('$email', newdata.email);
       }
     } catch (error) {
       console.log(error?.response?.data?.message, 'getProfileData error');
@@ -473,9 +479,15 @@ const Home = ({navigation, route}) => {
         </View>
       </View>
       <UpdatePopup activeQuiz={activeQuiz.length > 0} />
-      {activeQuiz?.collectFeedback ? (
-        <AppRatingPopup activeQuiz={activeQuiz?.collectFeedback} />
+      {feedbackPopup?.collectFeedback ? (
+        <AppRatingPopup activeQuiz={feedbackPopup?.collectFeedback} />
       ) : null}
+
+      {!feedbackPopup?.collectFeedback &&
+      feedbackPopup?.intrestedInCreatingQuiz == 'not collected' ? (
+        <InterestedQuiz />
+      ) : null}
+
       {activeQuiz?.length > 0 && activeQuiz[0] ? (
         <QuizstartedPopup activeQuiz={activeQuiz[0]} />
       ) : null}

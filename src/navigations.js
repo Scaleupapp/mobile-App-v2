@@ -6,7 +6,7 @@ import {setupAxiosInterceptors} from './services/axiosinstance';
 import Routes from './helper/routes';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {icons} from './assets/icons';
-import {Image, PermissionsAndroid, View} from 'react-native';
+import {Dimensions, Image, PermissionsAndroid, View} from 'react-native';
 import {isAndroid, nh, nw} from './helper/scales';
 import {COLORS} from './helper/colors';
 import Text from './components/Text';
@@ -74,6 +74,15 @@ import GroupRequest from './screens/Chat/groupRequest';
 import QuizFeedbackScreen from './screens/Quiz/QuizFeedBack';
 import SupportQueryScreen from './screens/Menuscreen/QueryScreen';
 import MyQueriesScreen from './screens/Menuscreen/QuerylistScreen';
+// --- Import User Generated Quiz Screens ---
+import CreateQuizScreen from './screens/Quiz/CreateQuizScreen';
+import EditQuizScreen from './screens/Quiz/EditQuizScreen';
+import CreatorDashboardScreen from './screens/Quiz/CreatorDashboardScreen';
+import QuizAnalyticsScreen from './screens/Quiz/QuizAnalyticsScreen';
+import QuizAccessRequestsScreen from './screens/Quiz/QuizAccessRequestsScreen';
+import AIPaymentModal from './screens/Quiz/AIPaymentModal'; // Assuming a modal might be its own screen or part of another
+import MyQuizzesScreen from './screens/Quiz/MyQuizzesScreen';
+import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
 
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
@@ -588,6 +597,47 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={'MyQueriesScreen'}
         component={MyQueriesScreen}
+        options={{headerShown: false}}
+      />
+      {/* --- Add User Generated Quiz Screens --- */}
+      <Stack.Screen
+        name={Routes.CreateQuiz}
+        component={CreateQuizScreen}
+        options={{headerShown: false}}
+      />
+      {/* <Stack.Screen
+        name={Routes.EditQuiz}
+        component={EditQuizScreen}
+        options={{headerShown: false}}
+      /> */}
+      <Stack.Screen
+        name={Routes.CreatorDashboard}
+        component={CreatorDashboardScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizAnalytics}
+        component={QuizAnalyticsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizAccessRequests}
+        component={QuizAccessRequestsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizParticipants}
+        component={QuizParticipantsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIPayment}
+        component={AIPaymentModal}
+        options={{presentation: 'modal', headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyQuizzes}
+        component={MyQuizzesScreen}
         options={{headerShown: false}}
       />
     </Stack.Navigator>
