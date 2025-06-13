@@ -668,6 +668,7 @@ const QuizList = ({navigation, route}) => {
   };
 
   const handleMyDashboard = () => {
+    mixpanel.track('Clicked on Dashboard');
     navigation.navigate(Routes.CreatorDashboard);
   };
 

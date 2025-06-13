@@ -19,6 +19,7 @@ import Text from '../../components/Text';
 import Button from '../../components/Button';
 import {APP_FONTS} from '../../assets/fonts';
 import Routes from '../../helper/routes';
+import mixpanel from '../../helper/mixpanelClient';
 
 /**
  * Milestone array stays the same
@@ -59,7 +60,7 @@ const MyBadge = ({navigation}) => {
     currentMilestone: milestones[0],
   });
 
-  const { totalRating, currentMilestone } = data;
+  const {totalRating, currentMilestone} = data;
 
   // Animated value for the circular progress ring
   const animationValue = useRef(new Animated.Value(0)).current;
@@ -82,7 +83,7 @@ const MyBadge = ({navigation}) => {
 
   const getProfileDetail = async () => {
     try {
-      const { data: profileData } = await getProfiledetails(userData?.id, 1);
+      const {data: profileData} = await getProfiledetails(userData?.id, 1);
       const rating = profileData?.totalRating ?? 0;
 
       // If the user is SME, directly set them to the last milestone
@@ -91,9 +92,9 @@ const MyBadge = ({navigation}) => {
           ? milestones[milestones.length - 1]
           : milestones.find(
               milestone =>
-                rating >= milestone.minRating && rating < milestone.maxRating
-            ) || milestones[milestones.length - 1]; 
-            // fallback if not found
+                rating >= milestone.minRating && rating < milestone.maxRating,
+            ) || milestones[milestones.length - 1];
+      // fallback if not found
 
       setData({
         totalRating: rating,
@@ -136,12 +137,13 @@ const MyBadge = ({navigation}) => {
   const getMilestonesStatus = () => {
     if (isSME) {
       // If user is SME, they have completed the entire journey
-      return milestones.map(m => ({ ...m, status: 'completed' }));
+      return milestones.map(m => ({...m, status: 'completed'}));
     } else {
       return milestones.map(m => {
-        if (totalRating >= m.maxRating) return { ...m, status: 'completed' };
-        if (m.badge === currentMilestone.badge) return { ...m, status: 'current' };
-        return { ...m, status: 'upcoming' };
+        if (totalRating >= m.maxRating) return {...m, status: 'completed'};
+        if (m.badge === currentMilestone.badge)
+          return {...m, status: 'current'};
+        return {...m, status: 'upcoming'};
       });
     }
   };
@@ -154,8 +156,7 @@ const MyBadge = ({navigation}) => {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.timelineScrollContent}
-        style={styles.timelineScroll}
-      >
+        style={styles.timelineScroll}>
         {statuses.map((m, index) => {
           const isActive = m.status === 'current' || m.status === 'completed';
           const nextIsActive =
@@ -181,13 +182,11 @@ const MyBadge = ({navigation}) => {
                   style={[
                     styles.milestoneCircle,
                     isActive && styles.milestoneCircleActive,
-                  ]}
-                >
+                  ]}>
                   <Text
                     variant="medium10"
                     color={isActive ? COLORS.whiteFFFFFF : COLORS.blue043142}
-                    style={{ textAlign: 'center' }}
-                  >
+                    style={{textAlign: 'center'}}>
                     {m.badge[0]}
                   </Text>
                 </View>
@@ -195,9 +194,8 @@ const MyBadge = ({navigation}) => {
                   variant="medium10"
                   style={[
                     styles.milestoneLabel,
-                    isActive && { color: COLORS.yellowF5BE00 },
-                  ]}
-                >
+                    isActive && {color: COLORS.yellowF5BE00},
+                  ]}>
                   {m.badge}
                 </Text>
               </View>
@@ -216,7 +214,10 @@ const MyBadge = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
       <Header title="My Badge" onBackPress={() => navigation.goBack()} />
 
       {/* Main content card */}
@@ -232,7 +233,7 @@ const MyBadge = ({navigation}) => {
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.black333333} />
         ) : (
-          <View style={{ alignItems: 'center' }}>
+          <View style={{alignItems: 'center'}}>
             {/* Circular progress ring */}
             <View style={styles.progressWrapper}>
               {/* Base Circle */}
@@ -242,7 +243,7 @@ const MyBadge = ({navigation}) => {
                 style={[
                   styles.overlayCircle,
                   {
-                    transform: [{ rotate: sweepAngle }],
+                    transform: [{rotate: sweepAngle}],
                   },
                 ]}
               />
@@ -298,7 +299,10 @@ const MyBadge = ({navigation}) => {
               textStyle={styles.buttonText}
               width={DEVICE_WIDTH - nw(32)}
               height={nh(50)}
-              onPress={() => navigation.navigate(Routes.CreatePost)}
+              onPress={() => {
+                mixpanel.track('Create Content');
+                navigation.navigate(Routes.CreatePost);
+              }}
             />
           </View>
         )}

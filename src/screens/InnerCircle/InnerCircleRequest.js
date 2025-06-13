@@ -35,12 +35,14 @@ import Routes from '../../helper/routes';
 import {formatDateforchat, getTimeAgo} from '../../helper/commonFunctions';
 import {navigationRef} from '../../../App';
 import ChatModal from '../Chat/ChatModal';
-
+import mixpanel from '../../helper/mixpanelClient';
 
 // Helper function to generate initials (add this near the top of the component, after the imports)
 const getInitials = (firstname, lastname, username) => {
   if (firstname && lastname) {
-    return `${firstname.charAt(0).toUpperCase()}${lastname.charAt(0).toUpperCase()}`;
+    return `${firstname.charAt(0).toUpperCase()}${lastname
+      .charAt(0)
+      .toUpperCase()}`;
   } else if (firstname) {
     return firstname.charAt(0).toUpperCase();
   } else if (username) {
@@ -48,7 +50,6 @@ const getInitials = (firstname, lastname, username) => {
   }
   return '?';
 };
-
 
 const InnerCircleRequest = ({navigation, route}) => {
   const [innerCircle, setInnerCircle] = useState([]);
@@ -68,7 +69,9 @@ const InnerCircleRequest = ({navigation, route}) => {
   const page1 = useRef(1); // Sent page
   const page2 = useRef(1); // Received page
   const chatmodelRef = useRef(null);
-
+  useEffect(() => {
+    mixpanel.track('Landed on Inner Circle');
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       setloader(true);
@@ -375,23 +378,23 @@ const InnerCircleRequest = ({navigation, route}) => {
             data: item,
           })
         }>
-{item?.profilePicture ? (
-  <Image
-    source={{
-      uri: `${item?.profilePicture}?timestamp=${new Date().getTime()}`,
-    }}
-    style={styles.profileImageLarge}
-  />
-) : (
-  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
-    <Icon
-      type="material-community"
-      name="account-group"
-      size={nh(30)}
-      color={COLORS.blue043142}
-    />
-  </View>
-)}
+        {item?.profilePicture ? (
+          <Image
+            source={{
+              uri: `${item?.profilePicture}?timestamp=${new Date().getTime()}`,
+            }}
+            style={styles.profileImageLarge}
+          />
+        ) : (
+          <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
+            <Icon
+              type="material-community"
+              name="account-group"
+              size={nh(30)}
+              color={COLORS.blue043142}
+            />
+          </View>
+        )}
         <View style={styles.cardTextContent}>
           <Text
             variant="semibold15"
@@ -443,17 +446,17 @@ const InnerCircleRequest = ({navigation, route}) => {
     return (
       <View style={styles.cardBase}>
         {item?.profilePicture ? (
-  <Image
-    source={{uri: item?.profilePicture}}
-    style={styles.profileImageLarge}
-  />
-) : (
-  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
-    <Text variant="semibold16" color={COLORS.blue043142}>
-      {getInitials(item?.firstname, item?.lastname, item?.username)}
-    </Text>
-  </View>
-)}
+          <Image
+            source={{uri: item?.profilePicture}}
+            style={styles.profileImageLarge}
+          />
+        ) : (
+          <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
+            <Text variant="semibold16" color={COLORS.blue043142}>
+              {getInitials(item?.firstname, item?.lastname, item?.username)}
+            </Text>
+          </View>
+        )}
         <View style={styles.cardTextContent}>
           <Text
             variant="semibold15"
@@ -616,17 +619,25 @@ const InnerCircleRequest = ({navigation, route}) => {
                         })
                       }>
                       {item?.profilePicture ? (
-  <Image
-    source={{uri: item?.profilePicture}}
-    style={styles.profileImageLarge}
-  />
-) : (
-  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
-    <Text variant="semibold16" color={COLORS.blue043142}>
-      {getInitials(item?.firstname, item?.lastname, item?.username)}
-    </Text>
-  </View>
-)}
+                        <Image
+                          source={{uri: item?.profilePicture}}
+                          style={styles.profileImageLarge}
+                        />
+                      ) : (
+                        <View
+                          style={[
+                            styles.profileImageLarge,
+                            styles.avatarPlaceholder,
+                          ]}>
+                          <Text variant="semibold16" color={COLORS.blue043142}>
+                            {getInitials(
+                              item?.firstname,
+                              item?.lastname,
+                              item?.username,
+                            )}
+                          </Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
                     <View style={styles.cardTextContent}>
                       <TouchableOpacity
@@ -747,17 +758,25 @@ const InnerCircleRequest = ({navigation, route}) => {
                 return (
                   <View style={styles.cardBase}>
                     {recipientProfilePicture ? (
-  <Image
-    source={{uri: recipientProfilePicture}}
-    style={styles.profileImageLarge}
-  />
-) : (
-  <View style={[styles.profileImageLarge, styles.avatarPlaceholder]}>
-    <Text variant="semibold16" color={COLORS.blue043142}>
-      {getInitials(recipient?.firstname, recipient?.lastname, recipient?.username)}
-    </Text>
-  </View>
-)}
+                      <Image
+                        source={{uri: recipientProfilePicture}}
+                        style={styles.profileImageLarge}
+                      />
+                    ) : (
+                      <View
+                        style={[
+                          styles.profileImageLarge,
+                          styles.avatarPlaceholder,
+                        ]}>
+                        <Text variant="semibold16" color={COLORS.blue043142}>
+                          {getInitials(
+                            recipient?.firstname,
+                            recipient?.lastname,
+                            recipient?.username,
+                          )}
+                        </Text>
+                      </View>
+                    )}
                     <View style={styles.cardTextContent}>
                       <View style={styles.sentItemRow}>
                         <Text

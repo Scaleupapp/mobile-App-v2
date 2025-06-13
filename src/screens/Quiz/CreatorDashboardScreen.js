@@ -414,6 +414,7 @@ import Routes from '../../helper/routes';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import mixpanel from '../../helper/mixpanelClient';
 
 // Helper for responsive scaling
 const {width: DEVICE_WIDTH, height: DEVICE_HEIGHT} = Dimensions.get('window');
@@ -498,6 +499,7 @@ const CreatorDashboardScreen = ({navigation}) => {
 
   // Navigation Handlers
   const handleCreateQuiz = () => {
+    mixpanel.track('Clicked on Create Quiz');
     navigation.navigate(Routes.CreateQuiz);
   };
 
