@@ -346,8 +346,36 @@ export const registerForQuizApi = (quizId: string) => {
   return axiosInstance.post(`rapidfire-quiz/${quizId}/register`);
 };
 
-export const fetchUserRegisteredQuizzesApi = () => {
-  return axiosInstance.get('rapidfire-quiz/user-registered');
+export const fetchUserRegisteredQuizzesApi = async () => {
+  try {
+    const response = await axiosInstance.get('rapidfire-quiz/user-registered');
+    console.log('Raw registered quizzes response:', response.data);
+    
+    // Ensure consistent format
+    if (response.data && response.data.registeredQuizIds) {
+      const formattedIds = response.data.registeredQuizIds.map((id: any) => {
+        if (typeof id === 'string') {
+          return id;
+        } else if (id && (id.id || id._id)) {
+          return (id.id || id._id).toString();
+        }
+        return null;
+      }).filter((id: string | null) => id !== null);
+      
+      return {
+        ...response,
+        data: {
+          ...response.data,
+          registeredQuizIds: formattedIds
+        }
+      };
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('Error fetching registered quizzes:', error);
+    throw error;
+  }
 };
 
 // Start a quiz attempt for a user
@@ -481,3 +509,327 @@ export const submitquery = (payload: any) => {
   return axiosInstance.post(`users/save-query`,payload);
 };
 
+export const submitQuizinterest = (payload: any) => {
+  return axiosInstance.post(`users/set-quiz-creation-intrest-status`,payload);
+};
+
+// ==========================================
+// USER QUIZ - CREATION AND MANAGEMENT
+// ==========================================
+
+// Create a new quiz (draft)
+export const createUserQuizApi = (payload: any) => {
+  return axiosInstance.post(API.USER_QUIZ_CREATE, payload);
+};
+
+// Update a draft quiz
+export const updateQuizDraftApi = (quizId: string, payload: any) => {
+  return axiosInstance.put(API.USER_QUIZ_UPDATE_DRAFT.replace(':id', quizId), payload);
+};
+
+// Submit quiz for review
+export const submitQuizForReviewApi = (quizId: string) => {
+  return axiosInstance.post(API.USER_QUIZ_SUBMIT.replace(':id', quizId));
+};
+
+// Get user's drafts
+export const getMyDraftsApi = (page: number = 1, limit: number = 10) => {
+  return axiosInstance.get(`${API.USER_QUIZ_DRAFTS}?page=${page}&limit=${limit}`);
+};
+
+// Delete a draft
+export const deleteQuizDraftApi = (quizId: string) => {
+  return axiosInstance.delete(API.USER_QUIZ_DELETE_DRAFT.replace(':id', quizId));
+};
+
+// Get public quizzes
+export const getPublicQuizzesApi = (params: {
+  page?: number;
+  limit?: number;
+  topics?: string;
+  difficulty?: string;
+  sortBy?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.USER_QUIZ_PUBLIC}?${queryString}`);
+};
+
+// Search quizzes
+export const searchUserQuizzesApi = (query: string, page: number = 1, limit: number = 20) => {
+  return axiosInstance.get(`${API.USER_QUIZ_SEARCH}?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+};
+
+// Get quiz by share ID
+export const getQuizByShareIdApi = (shareId: string) => {
+  return axiosInstance.get(API.USER_QUIZ_BY_SHARE_ID.replace(':shareId', shareId));
+};
+
+// Get quiz details by ID (for editing)
+export const getQuizByIdApi = (quizId: string) => {
+  return axiosInstance.get(API.USER_QUIZ_BY_ID.replace(':id', quizId));
+};
+
+// Delete quiz
+export const deleteUserQuizApi = (quizId: string) => {
+  return axiosInstance.delete(API.USER_QUIZ_DELETE.replace(':id', quizId));
+};
+
+// ==========================================
+// AI QUESTION GENERATION
+// ==========================================
+
+// Generate questions using AI
+export const generateAIQuestionsApi = (payload: {
+  quizId: string;
+  topic: string;
+  difficulty: string;
+  count: number;
+  additionalContext?: string;
+}) => {
+  return axiosInstance.post(API.USER_QUIZ_AI_GENERATE, payload);
+};
+
+// Calculate price for AI questions
+export const calculateAIPriceApi = (quizId: string, count: number) => {
+  return axiosInstance.post(API.USER_QUIZ_AI_PRICE, { quizId, count });
+};
+
+// Get AI usage statistics
+export const getAIUsageApi = (period: 'today' | 'week' | 'month' | 'all' = 'month') => {
+  return axiosInstance.get(`${API.USER_QUIZ_AI_USAGE}?period=${period}`);
+};
+
+// Get AI transaction history
+export const getAITransactionsApi = (params: {
+  page?: number;
+  limit?: number;
+  status?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.USER_QUIZ_AI_TRANSACTIONS}?${queryString}`);
+};
+
+// Initiate AI payment
+export const initiateAIPaymentApi = (transactionId: string) => {
+  return axiosInstance.post(API.USER_QUIZ_AI_PAYMENT_INIT, { transactionId });
+};
+
+// Verify AI payment
+export const verifyAIPaymentApi = (payload: {
+  transactionId: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}) => {
+  return axiosInstance.post(API.USER_QUIZ_AI_PAYMENT_VERIFY, payload);
+};
+
+// Request refund
+export const requestAIRefundApi = (transactionId: string, reason: string) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_AI_REFUND.replace(':transactionId', transactionId),
+    { reason }
+  );
+};
+
+// ==========================================
+// CREATOR DASHBOARD
+// ==========================================
+
+// Get dashboard overview
+export const getCreatorDashboardApi = () => {
+  return axiosInstance.get(API.USER_QUIZ_DASHBOARD);
+};
+
+// Get detailed stats
+export const getCreatorStatsApi = (period: 'week' | 'month' | 'year' | 'all' = 'month') => {
+  return axiosInstance.get(`${API.USER_QUIZ_STATS}?period=${period}`);
+};
+
+// Get my quizzes
+export const getMyQuizzesApi = (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  return axiosInstance.get(`${API.USER_QUIZ_MY_QUIZZES}${queryString ? '?' + queryString : ''}`);
+};
+
+// Get quiz analytics
+export const getQuizAnalyticsApi = (quizId: string, period: 'hour' | 'day' | 'week' | 'all' = 'all') => {
+  return axiosInstance.get(
+    `${API.USER_QUIZ_ANALYTICS.replace(':id', quizId)}?period=${period}`
+  );
+};
+
+// Get quiz participants
+export const getQuizParticipantsApi = (
+  quizId: string,
+  status: string = 'all',
+  page: number = 1,
+  limit: number = 50
+) => {
+  return axiosInstance.get(
+    `${API.USER_QUIZ_PARTICIPANTS.replace(':id', quizId)}?status=${status}&page=${page}&limit=${limit}`
+  );
+};
+
+// Get creator badges
+export const getCreatorBadgesApi = () => {
+  return axiosInstance.get(API.USER_QUIZ_BADGES);
+};
+
+// Get earnings
+export const getCreatorEarningsApi = (period: 'week' | 'month' | 'year' | 'all' = 'all') => {
+  return axiosInstance.get(`${API.USER_QUIZ_EARNINGS}?period=${period}`);
+};
+
+// Get creator leaderboard
+export const getCreatorLeaderboardApi = (
+  period: 'week' | 'month' | 'all' = 'month',
+  page: number = 1,
+  limit: number = 20
+) => {
+  return axiosInstance.get(
+    `${API.USER_QUIZ_CREATOR_LEADERBOARD}?period=${period}&page=${page}&limit=${limit}`
+  );
+};
+
+// ==========================================
+// ACCESS CONTROL
+// ==========================================
+
+// Request access to private quiz
+export const requestQuizAccessApi = (quizId: string, message?: string) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_ACCESS_REQUEST.replace(':quizId', quizId),
+    { message }
+  );
+};
+
+// Get my access requests
+export const getMyAccessRequestsApi = (
+  status: string = 'all',
+  page: number = 1,
+  limit: number = 20
+) => {
+  return axiosInstance.get(
+    `${API.USER_QUIZ_ACCESS_MY_REQUESTS}?status=${status}&page=${page}&limit=${limit}`
+  );
+};
+
+// Get access requests for a quiz (creator)
+export const getQuizAccessRequestsApi = (
+  quizId: string,
+  status: string = 'pending',
+  page: number = 1,
+  limit: number = 50
+) => {
+  return axiosInstance.get(
+    `${API.USER_QUIZ_ACCESS_QUIZ_REQUESTS.replace(':quizId', quizId)}?status=${status}&page=${page}&limit=${limit}`
+  );
+};
+
+// Approve access request
+export const approveAccessRequestApi = (requestId: string, note?: string) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_ACCESS_APPROVE.replace(':id', requestId),
+    { note }
+  );
+};
+
+// Reject access request
+export const rejectAccessRequestApi = (requestId: string, reason?: string) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_ACCESS_REJECT.replace(':id', requestId),
+    { reason }
+  );
+};
+
+// Bulk approve requests
+export const bulkApproveRequestsApi = (requestIds: string[], note?: string) => {
+  return axiosInstance.post(API.USER_QUIZ_ACCESS_BULK_APPROVE, { requestIds, note });
+};
+
+// Bulk reject requests
+export const bulkRejectRequestsApi = (requestIds: string[], reason?: string) => {
+  return axiosInstance.post(API.USER_QUIZ_ACCESS_BULK_REJECT, { requestIds, reason });
+};
+
+// ==========================================
+// SHARING
+// ==========================================
+
+// Generate QR code
+export const generateQuizQRCodeApi = (quizId: string, url: string, size: number = 300) => {
+  return axiosInstance.post(
+    `${API.USER_QUIZ_SHARE_QR.replace(':id', quizId)}?size=${size}`,
+    { url }
+  );
+};
+
+// Track share
+export const trackQuizShareApi = (quizId: string, platform: string, metadata?: any) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_SHARE_TRACK.replace(':id', quizId),
+    { platform, metadata }
+  );
+};
+
+// Get share stats
+export const getQuizShareStatsApi = (quizId: string, period: string = 'all') => {
+  return axiosInstance.get(
+    `${API.USER_QUIZ_SHARE_STATS.replace(':id', quizId)}?period=${period}`
+  );
+};
+
+// Get creator share analytics
+export const getCreatorShareAnalyticsApi = () => {
+  return axiosInstance.get(API.USER_QUIZ_SHARE_ANALYTICS);
+};
+
+// ==========================================
+// ADMIN REVIEW (if needed for admin panel)
+// ==========================================
+
+// Get pending reviews
+export const getPendingReviewsApi = (params: {
+  page?: number;
+  limit?: number;
+  priority?: string;
+  sortBy?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.USER_QUIZ_REVIEW_PENDING}?${queryString}`);
+};
+
+// Get review details
+export const getReviewDetailsApi = (quizId: string) => {
+  return axiosInstance.get(API.USER_QUIZ_REVIEW_DETAILS.replace(':id', quizId));
+};
+
+// Approve quiz (admin)
+export const approveQuizReviewApi = (quizId: string, note?: string) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_REVIEW_APPROVE.replace(':id', quizId),
+    { note }
+  );
+};
+
+// Reject quiz (admin)
+export const rejectQuizReviewApi = (quizId: string, reason: string, issues?: string[]) => {
+  return axiosInstance.post(
+    API.USER_QUIZ_REVIEW_REJECT.replace(':id', quizId),
+    { reason, issues }
+  );
+};
+
+// Trigger AI review
+export const triggerAIReviewApi = (quizId: string) => {
+  return axiosInstance.post(API.USER_QUIZ_REVIEW_AI_TRIGGER.replace(':id', quizId));
+};
+
+// Get review stats
+export const getReviewStatsApi = () => {
+  return axiosInstance.get(API.USER_QUIZ_REVIEW_STATS);
+};
+
+// In apiService.ts, add this line:
+export const submitForReviewApi = submitQuizForReviewApi;

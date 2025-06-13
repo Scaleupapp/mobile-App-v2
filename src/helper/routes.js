@@ -64,6 +64,7 @@ const Routes = {
   MyBadge: 'MyBadge',
   Quiz: 'Quiz',
   QuizList: 'QuizList',
+  QuizDetails: 'QuizDetails',
   QuizScreen: 'QuizScreen',
   EditGroupProfile: 'EditGroupProfile',
   GroupChat: 'GroupChat',
@@ -71,6 +72,16 @@ const Routes = {
   groupRequest: 'groupRequest',
   QuizFeedbackScreen: 'QuizFeedbackScreen',
   SupportQueryScreen: 'SupportQueryScreen',
+  // User Generated Quiz Routes
+  CreateQuiz: 'CreateQuiz',
+  EditQuiz: 'EditQuiz',
+  CreatorDashboard: 'CreatorDashboard',
+  QuizAnalytics: 'QuizAnalytics',
+  QuizAccessRequests: 'QuizAccessRequests',
+  AIPayment: 'AIPayment',
+  MyQuizzes: 'MyQuizzes',
+  QuizParticipants: 'QuizParticipants',
+  QuizAccessRequests: 'QuizAccessRequests',
 };
 
 export default Routes;

@@ -15,6 +15,7 @@ import Icon from '../../helper/icon';
 import {FlatList} from 'react-native-gesture-handler';
 import Routes from '../../helper/routes';
 import {logoutUser} from '../../helper/commonFunctions';
+import mixpanel from '../../helper/mixpanelClient';
 
 const MenuScreen = ({navigation, route}) => {
   const menu = [
@@ -49,6 +50,7 @@ const MenuScreen = ({navigation, route}) => {
       <Pressable
         style={styles.card}
         onPress={() => {
+          mixpanel.track(`Click on ${item?.title}`);
           if (item?.title === 'Logout') {
             // Show confirmation alert before logging out
             Alert.alert(

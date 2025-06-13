@@ -1,4 +1,5 @@
 export const API = {
+  BASE_URL1: 'http://localhost:3000/api/',
   BASE_URL: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
@@ -80,5 +81,63 @@ export const API = {
   INNERCIRCLERECIVED:'users/inner-circle/received-requests',
   USER_PAYMENT_DETAILS_CHECK: 'users/payment-details-check',
   SAVE_UPI_DETAILS: 'users/save-upi-details',
-  SAVE_BANK_DETAILS: 'users/save-bank-details'
+  SAVE_BANK_DETAILS: 'users/save-bank-details',
+  MIXPANEL:'ec35d7fc43e04586bbf6da1bf00dac9d',
+
+
+    // USER QUIZ ENDPOINTS
+    USER_QUIZ_CREATE: 'user-quiz/create',
+    USER_QUIZ_UPDATE_DRAFT: 'user-quiz/:id/draft',
+    USER_QUIZ_SUBMIT: 'user-quiz/:id/submit',
+    USER_QUIZ_DRAFTS: 'user-quiz/drafts',
+    USER_QUIZ_DELETE_DRAFT: 'user-quiz/draft/:id',
+    USER_QUIZ_PUBLIC: 'user-quiz/public',
+    USER_QUIZ_SEARCH: 'user-quiz/search',
+    USER_QUIZ_BY_SHARE_ID: 'user-quiz/shared/:shareId',
+    USER_QUIZ_BY_ID: 'user-quiz/:id',
+    USER_QUIZ_DELETE: 'user-quiz/:id',
+    
+    // AI QUESTION GENERATION
+    USER_QUIZ_AI_GENERATE: 'user-quiz/ai/generate',
+    USER_QUIZ_AI_PRICE: 'user-quiz/ai/price',
+    USER_QUIZ_AI_USAGE: 'user-quiz/ai/usage',
+    USER_QUIZ_AI_TRANSACTIONS: 'user-quiz/ai/transactions',
+    USER_QUIZ_AI_PAYMENT_INIT: 'user-quiz/ai/payment/initiate',
+    USER_QUIZ_AI_PAYMENT_VERIFY: 'user-quiz/ai/payment/verify',
+    USER_QUIZ_AI_WEBHOOK: 'user-quiz/ai/payment/webhook',
+    USER_QUIZ_AI_REFUND: 'user-quiz/ai/refund/:transactionId',
+    
+    // CREATOR DASHBOARD
+    USER_QUIZ_DASHBOARD: 'user-quiz/dashboard',
+    USER_QUIZ_STATS: 'user-quiz/stats',
+    USER_QUIZ_MY_QUIZZES: 'user-quiz/my-quizzes',
+    USER_QUIZ_ANALYTICS: 'user-quiz/analytics/:id',
+    USER_QUIZ_PARTICIPANTS: 'user-quiz/participants/:id',
+    USER_QUIZ_BADGES: 'user-quiz/badges',
+    USER_QUIZ_EARNINGS: 'user-quiz/earnings',
+    USER_QUIZ_CREATOR_LEADERBOARD: 'user-quiz/creator-leaderboard',
+    
+    // ACCESS CONTROL
+    USER_QUIZ_ACCESS_REQUEST: 'user-quiz/access/:quizId',
+    USER_QUIZ_ACCESS_MY_REQUESTS: 'user-quiz/access/my-requests',
+    USER_QUIZ_ACCESS_QUIZ_REQUESTS: 'user-quiz/access/quiz/:quizId',
+    USER_QUIZ_ACCESS_APPROVE: 'user-quiz/access/approve/:id',
+    USER_QUIZ_ACCESS_REJECT: 'user-quiz/access/reject/:id',
+    USER_QUIZ_ACCESS_BULK_APPROVE: 'user-quiz/access/bulk-approve',
+    USER_QUIZ_ACCESS_BULK_REJECT: 'user-quiz/access/bulk-reject',
+    
+    // SHARING
+    USER_QUIZ_SHARE_QR: 'user-quiz/share/qr/:id',
+    USER_QUIZ_SHARE_TRACK: 'user-quiz/share/track/:id',
+    USER_QUIZ_SHARE_STATS: 'user-quiz/share/stats/:id',
+    USER_QUIZ_SHARE_ANALYTICS: 'user-quiz/share/analytics',
+    
+    // ADMIN REVIEW
+    USER_QUIZ_REVIEW_PENDING: 'user-quiz/review/pending',
+    USER_QUIZ_REVIEW_DETAILS: 'user-quiz/review/:id',
+    USER_QUIZ_REVIEW_APPROVE: 'user-quiz/review/approve/:id',
+    USER_QUIZ_REVIEW_REJECT: 'user-quiz/review/reject/:id',
+    USER_QUIZ_REVIEW_AI_TRIGGER: 'user-quiz/review/ai/:id',
+    USER_QUIZ_REVIEW_STATS: 'user-quiz/review/stats',
+
 };

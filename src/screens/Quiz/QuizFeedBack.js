@@ -12,7 +12,7 @@ import {submitQuizfeedback} from '../../services/apiService';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 
-const overallExperienceOptions = ['Poor', 'Good', 'Very Good', 'Excellent'];
+const overallExperienceOptions = ['Poor', 'Good', 'Average', 'Excellent'];
 
 const QuizFeedbackScreen = ({route}) => {
   const [rating, setRating] = useState(0);

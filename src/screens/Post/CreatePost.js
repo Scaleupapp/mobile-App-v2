@@ -27,6 +27,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import {useRoute} from '@react-navigation/native';
 
 import {compressImage, compressVideo} from '../../helper/commonFunctions';
+import mixpanel from '../../helper/mixpanelClient';
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
@@ -79,6 +80,7 @@ const CreatePost = ({navigation}) => {
   }, [draftData]);
 
   useEffect(() => {
+    mixpanel.track('Landed Create Post');
     getProfileData();
   }, []);
 
@@ -113,7 +115,10 @@ const CreatePost = ({navigation}) => {
       console.log('Profile data fetched:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
     } catch (error) {
-      console.log('Profile data fetch error:', error?.response?.data?.message || error.message);
+      console.log(
+        'Profile data fetch error:',
+        error?.response?.data?.message || error.message,
+      );
       showToast({
         title: 'Failed to load profile data',
         type: 'error',
@@ -127,7 +132,10 @@ const CreatePost = ({navigation}) => {
       return;
     }
 
-    const selectedContentType = asset.type && asset.type.toLowerCase().includes('video') ? 'Video' : 'Image';
+    const selectedContentType =
+      asset.type && asset.type.toLowerCase().includes('video')
+        ? 'Video'
+        : 'Image';
     setContentType(selectedContentType);
 
     // Set temporary file for immediate preview with original URI
@@ -182,7 +190,10 @@ const CreatePost = ({navigation}) => {
       }
       if (result.errorCode) {
         console.log('ImagePicker Error: ', result.errorMessage);
-        showToast({title: result.errorMessage || 'Failed to select file', type: 'error'});
+        showToast({
+          title: result.errorMessage || 'Failed to select file',
+          type: 'error',
+        });
         return;
       }
 
@@ -214,10 +225,9 @@ const CreatePost = ({navigation}) => {
       return;
     }
     if (!file) {
-        showToast({title: 'Please upload a file.', type: 'error'});
-        return;
+      showToast({title: 'Please upload a file.', type: 'error'});
+      return;
     }
-
 
     try {
       setIsUploading(true);
@@ -232,8 +242,13 @@ const CreatePost = ({navigation}) => {
 
       const formData = new FormData();
       formData.append('heading', heading);
-      const topicsArray = topics.split(',').map(t => t.trim()).filter(t => t);
-      const hashtagsArray = hashtags.split(' ').filter(h => h.startsWith('#') && h.length > 1);
+      const topicsArray = topics
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t);
+      const hashtagsArray = hashtags
+        .split(' ')
+        .filter(h => h.startsWith('#') && h.length > 1);
 
       formData.append('relatedTopics', JSON.stringify(topicsArray));
       formData.append('hashtags', JSON.stringify(hashtagsArray));
@@ -246,15 +261,14 @@ const CreatePost = ({navigation}) => {
       // This condition ensures we don't re-upload the same file if only text fields changed for a draft
       let shouldAppendMedia = true;
       if (isEditingDraft && draftData.file && file.uri === draftData.file.uri) {
-          // If editing a draft AND the file URI is the same as the initial draft file URI,
-          // We might not need to re-upload it unless the backend requires it for updates.
-          // For simplicity, the current logic appends if file exists.
-          // If your backend can update post text without new media, you might add more sophisticated logic here.
-          // However, if URI is from compression, it might differ from a remote URI if draftData.file.uri is a remote URL.
-          // The original condition `!draftData?.file || file.uri !== draftData.file.uri` is safer if draft file URIs are local/temp.
-          // Let's assume for now we always send it if `file` is present.
+        // If editing a draft AND the file URI is the same as the initial draft file URI,
+        // We might not need to re-upload it unless the backend requires it for updates.
+        // For simplicity, the current logic appends if file exists.
+        // If your backend can update post text without new media, you might add more sophisticated logic here.
+        // However, if URI is from compression, it might differ from a remote URI if draftData.file.uri is a remote URL.
+        // The original condition `!draftData?.file || file.uri !== draftData.file.uri` is safer if draft file URIs are local/temp.
+        // Let's assume for now we always send it if `file` is present.
       }
-
 
       if (file && file.uri) {
         formData.append('media', {
@@ -263,7 +277,6 @@ const CreatePost = ({navigation}) => {
           name: file.name || `${contentType.toLowerCase()}_${Date.now()}`, // Ensure a name
         });
       }
-
 
       let response;
       const config = {
@@ -292,10 +305,11 @@ const CreatePost = ({navigation}) => {
         response = await axios.put(endpoint, formData, config);
 
         showToast({
-          title: isDraft ? 'Draft updated successfully!' : (response.data?.message || 'Post published successfully!'),
+          title: isDraft
+            ? 'Draft updated successfully!'
+            : response.data?.message || 'Post published successfully!',
           type: 'success',
         });
-
       } else {
         // Creating a new post or a new draft
         response = await axios.post(
@@ -304,7 +318,9 @@ const CreatePost = ({navigation}) => {
           config,
         );
         showToast({
-          title: isDraft ? 'Draft saved successfully!' : 'Post published successfully!',
+          title: isDraft
+            ? 'Draft saved successfully!'
+            : 'Post published successfully!',
           type: 'success',
         });
       }
@@ -314,10 +330,10 @@ const CreatePost = ({navigation}) => {
         resetForm();
         navigation.goBack();
       }, 500);
-
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'Failed to process post.';
+      const errorMessage =
+        error.response?.data?.message || 'Failed to process post.';
       showToast({title: errorMessage, type: 'error'});
     } finally {
       setIsUploading(false);
@@ -325,9 +341,9 @@ const CreatePost = ({navigation}) => {
     }
   };
 
-  const headerTitle = isEditingDraft ? "Edit Draft" : "New Post";
-  const publishButtonText = isEditingDraft ? "Publish Draft" : "Publish";
-  const saveDraftButtonText = isEditingDraft ? "Update Draft" : "Save Draft";
+  const headerTitle = isEditingDraft ? 'Edit Draft' : 'New Post';
+  const publishButtonText = isEditingDraft ? 'Publish Draft' : 'Publish';
+  const saveDraftButtonText = isEditingDraft ? 'Update Draft' : 'Save Draft';
   const disableActions = isUploading || isCompressing;
 
   return (
@@ -346,7 +362,7 @@ const CreatePost = ({navigation}) => {
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled" // Good for inputs in scrollview
-        >
+      >
         <View style={styles.layer1}>
           <View style={styles.layer2}>
             <CustomTextInput
@@ -378,7 +394,10 @@ const CreatePost = ({navigation}) => {
             />
 
             {/* Upload Section */}
-            <Text variant="medium14" color={COLORS.greyBBBBBB} style={styles.uploadLabel}>
+            <Text
+              variant="medium14"
+              color={COLORS.greyBBBBBB}
+              style={styles.uploadLabel}>
               Upload Image/Video
             </Text>
             <View style={styles.mediaUploadArea}>
@@ -387,8 +406,14 @@ const CreatePost = ({navigation}) => {
                   style={styles.uploadPlaceholder}
                   onPress={() => setModalVisible(true)}
                   disabled={disableActions}>
-                  <Icon name="cloud-upload-outline" size={nw(50)} color={COLORS.greyBBBBBB} />
-                  <Text style={styles.uploadPlaceholderText}>Tap to select Image/Video</Text>
+                  <Icon
+                    name="cloud-upload-outline"
+                    size={nw(50)}
+                    color={COLORS.greyBBBBBB}
+                  />
+                  <Text style={styles.uploadPlaceholderText}>
+                    Tap to select Image/Video
+                  </Text>
                 </TouchableOpacity>
               )}
 
@@ -402,15 +427,26 @@ const CreatePost = ({navigation}) => {
                     />
                   ) : (
                     <View style={styles.videoPreviewBox}>
-                      <Icon name="videocam-outline" size={nw(40)} color={COLORS.grey999999} />
-                      <Text style={styles.videoPreviewText}>Video Selected</Text>
+                      <Icon
+                        name="videocam-outline"
+                        size={nw(40)}
+                        color={COLORS.grey999999}
+                      />
+                      <Text style={styles.videoPreviewText}>
+                        Video Selected
+                      </Text>
                     </View>
                   )}
 
                   {isCompressing && (
                     <View style={styles.compressionOverlayOnPreview}>
-                      <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
-                      <Text style={styles.compressionTextOnPreview}>Compressing...</Text>
+                      <ActivityIndicator
+                        size="small"
+                        color={COLORS.whiteFFFFFF}
+                      />
+                      <Text style={styles.compressionTextOnPreview}>
+                        Compressing...
+                      </Text>
                     </View>
                   )}
 
@@ -423,8 +459,12 @@ const CreatePost = ({navigation}) => {
                       style={styles.removeFileButton}
                       onPress={removeFile}
                       disabled={disableActions} // Redundant but safe
-                      >
-                      <Icon name="close-circle" size={nw(26)} color={COLORS.red} />
+                    >
+                      <Icon
+                        name="close-circle"
+                        size={nw(26)}
+                        color={COLORS.red}
+                      />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -481,7 +521,7 @@ const CreatePost = ({navigation}) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-            if (!disableActions) setModalVisible(false);
+          if (!disableActions) setModalVisible(false);
         }}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -490,7 +530,11 @@ const CreatePost = ({navigation}) => {
               style={styles.modalOption}
               onPress={openGallery}
               disabled={disableActions}>
-              <Icon name="images-outline" size={nw(24)} color={COLORS.blue043142} />
+              <Icon
+                name="images-outline"
+                size={nw(24)}
+                color={COLORS.blue043142}
+              />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
             {/* Add more options like "Take Photo/Video" here if needed */}
@@ -528,7 +572,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: nh(25),
     borderTopRightRadius: nh(25),
     paddingHorizontal: nw(18), // Slightly increased padding
-    paddingTop: nh(25),      // Slightly reduced padding
+    paddingTop: nh(25), // Slightly reduced padding
     paddingBottom: nh(30), // Ensure space for buttons at the bottom
   },
   uploadLabel: {

@@ -10,7 +10,6 @@ import {COLORS} from '../helper/colors';
 import {icons} from '../assets/icons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import Entypo from 'react-native-vector-icons/Entypo';
 import Text from './Text';
 import {nh, nw} from '../helper/scales';
 import Icon from '../helper/icon';
@@ -20,6 +19,7 @@ import {logoutUser} from '../helper/commonFunctions';
 import {io} from 'socket.io-client';
 import {useSelector} from 'react-redux';
 import {APP_FONTS} from '../assets/fonts';
+import mixpanel from '../helper/mixpanelClient';
 
 const MainHeader = () => {
   const navigation = useNavigation();
@@ -55,7 +55,10 @@ const MainHeader = () => {
       <View style={styles.subcontainer}>
         <Icon
           // onPress={logoutUser}
-          onPress={() => navigation.navigate(Routes.MenuScreen)}
+          onPress={() => {
+            mixpanel.track(`Click on Menu at Header`);
+            navigation.navigate(Routes.MenuScreen);
+          }}
           type="material-community"
           name="dots-horizontal-circle"
           color={COLORS.whiteFFFFFF}
@@ -65,7 +68,10 @@ const MainHeader = () => {
         {/* Title */}
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <TouchableOpacity
-            onPress={() => navigation.navigate(Routes.Conversation)}>
+            onPress={() => {
+              mixpanel.track(`Click on Chat at Header`);
+              navigation.navigate(Routes.Conversation);
+            }}>
             {count > 0 && (
               <View
                 style={{
@@ -106,13 +112,19 @@ const MainHeader = () => {
             color={COLORS.whiteFFFFFF}
             size={nh(24)}
             style={{marginRight: -nh(8)}}
-            onPress={() => navigation.navigate(Routes.MyPlaylist)}
+            onPress={() => {
+              mixpanel.track(`Click on My Playlist at Header`);
+              navigation.navigate(Routes.MyPlaylist);
+            }}
           />
           <Ionicons
             name="musical-note-outline"
             color={COLORS.whiteFFFFFF}
             size={nh(26)}
-            onPress={() => navigation.navigate(Routes.MyPlaylist)}
+            onPress={() => {
+              mixpanel.track(`Click on My Playlist at Header`);
+              navigation.navigate(Routes.MyPlaylist);
+            }}
           />
         </View>
       </View>
