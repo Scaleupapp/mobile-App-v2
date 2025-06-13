@@ -242,7 +242,7 @@ const QuizList = ({navigation, route}) => {
           return typeof id === 'string' ? id : String(id);
         });
 
-        console.log('Registered Quiz IDs after loading:', registeredIds);
+        // console.log('Registered Quiz IDs after loading:', registeredIds);
         setRegisteredQuizIds(registeredIds);
 
         const platformQuizzes = (

@@ -66,7 +66,10 @@ const Header = ({title, subtitle, onBack, rightComponent}) => (
         {title}
       </Text>
       {subtitle && (
-        <Text variant="regular14" color={COLORS.whiteFFFFFF} style={{opacity: 0.9, marginTop: 4}}>
+        <Text
+          variant="regular14"
+          color={COLORS.whiteFFFFFF}
+          style={{opacity: 0.9, marginTop: 4}}>
           {subtitle}
         </Text>
       )}
@@ -78,15 +81,15 @@ const Header = ({title, subtitle, onBack, rightComponent}) => (
 // Stat Card Component
 const StatCard = ({icon, iconColor, value, label, trend, gradientColors}) => {
   const scale = useSharedValue(0);
-  
+
   useEffect(() => {
     scale.value = withSpring(1, {damping: 15, stiffness: 150});
   }, []);
-  
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{scale: scale.value}],
   }));
-  
+
   return (
     <Animated.View style={[styles.statCard, animatedStyle]}>
       <LinearGradient
@@ -94,27 +97,55 @@ const StatCard = ({icon, iconColor, value, label, trend, gradientColors}) => {
         start={{x: 0, y: 0}}
         end={{x: 1, y: 1}}
         style={styles.statCardGradient}>
-        <View style={[styles.statIconContainer, {backgroundColor: iconColor + '15'}]}>
+        <View
+          style={[
+            styles.statIconContainer,
+            {backgroundColor: iconColor + '15'},
+          ]}>
           <Ionicons name={icon} size={28} color={iconColor} />
         </View>
         <View style={styles.statContent}>
-          <Text variant="bold28" color={COLORS.blue043142} style={styles.statValue}>
+          <Text
+            variant="bold28"
+            color={COLORS.blue043142}
+            style={styles.statValue}>
             {value}
           </Text>
-          <Text variant="regular14" color={COLORS.grey666666} style={{marginTop: 4}}>
+          <Text
+            variant="regular14"
+            color={COLORS.grey666666}
+            style={{marginTop: 4}}>
             {label}
           </Text>
         </View>
         {trend !== undefined && (
           <View style={styles.trendContainer}>
-            <Ionicons 
-              name={trend > 0 ? "trending-up" : trend < 0 ? "trending-down" : "remove"} 
-              size={20} 
-              color={trend > 0 ? COLORS.greenSuccess : trend < 0 ? COLORS.redError : COLORS.grey999999} 
+            <Ionicons
+              name={
+                trend > 0
+                  ? 'trending-up'
+                  : trend < 0
+                  ? 'trending-down'
+                  : 'remove'
+              }
+              size={20}
+              color={
+                trend > 0
+                  ? COLORS.greenSuccess
+                  : trend < 0
+                  ? COLORS.redError
+                  : COLORS.grey999999
+              }
             />
-            <Text 
-              variant="semibold14" 
-              color={trend > 0 ? COLORS.greenSuccess : trend < 0 ? COLORS.redError : COLORS.grey999999}
+            <Text
+              variant="semibold14"
+              color={
+                trend > 0
+                  ? COLORS.greenSuccess
+                  : trend < 0
+                  ? COLORS.redError
+                  : COLORS.grey999999
+              }
               style={{marginLeft: 4}}>
               {Math.abs(trend)}%
             </Text>
@@ -126,132 +157,211 @@ const StatCard = ({icon, iconColor, value, label, trend, gradientColors}) => {
 };
 
 // Quiz Card Component with Access Request Management
-const QuizCard = ({quiz, index, onPress, onAnalytics, onViewAccessRequests}) => {
-  const getStatusColor = (status) => {
+const QuizCard = ({
+  quiz,
+  index,
+  onPress,
+  onAnalytics,
+  onViewAccessRequests,
+}) => {
+  const getStatusColor = status => {
     switch (status) {
-      case 'draft': return COLORS.grey666666;
+      case 'draft':
+        return COLORS.grey666666;
       case 'pending_review':
-      case 'manual_review': return COLORS.yellowF5BE00;
+      case 'manual_review':
+        return COLORS.yellowF5BE00;
       case 'approved':
-      case 'ai_approved': return COLORS.greenSuccess;
-      case 'rejected': return COLORS.redError;
-      default: return COLORS.grey999999;
+      case 'ai_approved':
+        return COLORS.greenSuccess;
+      case 'rejected':
+        return COLORS.redError;
+      default:
+        return COLORS.grey999999;
     }
   };
-  
-  const getStatusText = (status) => {
+
+  const getStatusText = status => {
     switch (status) {
-      case 'draft': return 'Draft';
-      case 'pending_review': return 'Under Review';
-      case 'manual_review': return 'Under Review';
+      case 'draft':
+        return 'Draft';
+      case 'pending_review':
+        return 'Under Review';
+      case 'manual_review':
+        return 'Under Review';
       case 'approved':
-      case 'ai_approved': return 'Published';
-      case 'rejected': return 'Rejected';
-      default: return status;
+      case 'ai_approved':
+        return 'Published';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return status;
     }
   };
-  
+
   return (
     <Animated.View
       entering={FadeInDown.delay(index * 100).springify()}
       style={styles.quizCard}>
       <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
         <View style={styles.quizCardHeader}>
-          <View style={[styles.statusBadge, {backgroundColor: getStatusColor(quiz.status) + '15'}]}>
-            <View style={[styles.statusDot, {backgroundColor: getStatusColor(quiz.status)}]} />
+          <View
+            style={[
+              styles.statusBadge,
+              {backgroundColor: getStatusColor(quiz.status) + '15'},
+            ]}>
+            <View
+              style={[
+                styles.statusDot,
+                {backgroundColor: getStatusColor(quiz.status)},
+              ]}
+            />
             <Text variant="semibold14" color={getStatusColor(quiz.status)}>
               {getStatusText(quiz.status)}
             </Text>
           </View>
-          
+
           <Text variant="regular14" color={COLORS.grey666666}>
             {moment(quiz.dates.created).format('MMM DD, YYYY')}
           </Text>
         </View>
-        
+
         {/* Title with Share Button */}
         <View style={styles.quizTitleRow}>
-          <Text variant="bold18" color={COLORS.blue043142} numberOfLines={2} style={styles.quizTitle}>
+          <Text
+            variant="bold18"
+            color={COLORS.blue043142}
+            numberOfLines={2}
+            style={styles.quizTitle}>
             {quiz.title}
           </Text>
         </View>
-        
+
         {/* Show if quiz is private */}
         {quiz.visibility === 'private' && (
           <View style={styles.privacyIndicator}>
-            <Ionicons name="lock-closed" size={14} color={COLORS.purpleCommunity} />
-            <Text variant="regular12" color={COLORS.purpleCommunity} style={{marginLeft: 4}}>
+            <Ionicons
+              name="lock-closed"
+              size={14}
+              color={COLORS.purpleCommunity}
+            />
+            <Text
+              variant="regular12"
+              color={COLORS.purpleCommunity}
+              style={{marginLeft: 4}}>
               Private Quiz
             </Text>
           </View>
         )}
-        
+
         <View style={styles.quizMetrics}>
           <View style={styles.metricItem}>
-            <Ionicons name="people-outline" size={18} color={COLORS.grey666666} />
-            <Text variant="regular14" color={COLORS.grey666666} style={{marginLeft: 6}}>
+            <Ionicons
+              name="people-outline"
+              size={18}
+              color={COLORS.grey666666}
+            />
+            <Text
+              variant="regular14"
+              color={COLORS.grey666666}
+              style={{marginLeft: 6}}>
               {quiz.statistics.attempts} attempts
             </Text>
           </View>
           <View style={styles.metricItem}>
             <Ionicons name="star" size={18} color={COLORS.yellowF5BE00} />
-            <Text variant="regular14" color={COLORS.grey666666} style={{marginLeft: 6}}>
+            <Text
+              variant="regular14"
+              color={COLORS.grey666666}
+              style={{marginLeft: 6}}>
               {quiz.statistics.rating || 'N/A'}
             </Text>
           </View>
           <View style={styles.metricItem}>
-            <Ionicons name="checkmark-circle-outline" size={18} color={COLORS.greenSuccess} />
-            <Text variant="regular14" color={COLORS.grey666666} style={{marginLeft: 6}}>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={18}
+              color={COLORS.greenSuccess}
+            />
+            <Text
+              variant="regular14"
+              color={COLORS.grey666666}
+              style={{marginLeft: 6}}>
               {quiz.statistics.completionRate}%
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.quizActions}>
           {quiz.status === 'draft' ? (
             <TouchableOpacity style={styles.editButton} onPress={onPress}>
-              <Ionicons name="create-outline" size={18} color={COLORS.blue043142} />
-              <Text variant="semibold14" color={COLORS.blue043142} style={{marginLeft: 6}}>
+              <Ionicons
+                name="create-outline"
+                size={18}
+                color={COLORS.blue043142}
+              />
+              <Text
+                variant="semibold14"
+                color={COLORS.blue043142}
+                style={{marginLeft: 6}}>
                 Continue Editing
               </Text>
             </TouchableOpacity>
           ) : (
             <View style={styles.publishedActionsRow}>
-              <TouchableOpacity style={styles.analyticsButton} onPress={() => onAnalytics(quiz)}>
-                <Ionicons name="bar-chart-outline" size={18} color={COLORS.purpleCommunity} />
-                <Text variant="semibold14" color={COLORS.purpleCommunity} style={{marginLeft: 6}}>
+              <TouchableOpacity
+                style={styles.analyticsButton}
+                onPress={() => onAnalytics(quiz)}>
+                <Ionicons
+                  name="bar-chart-outline"
+                  size={18}
+                  color={COLORS.purpleCommunity}
+                />
+                <Text
+                  variant="semibold14"
+                  color={COLORS.purpleCommunity}
+                  style={{marginLeft: 6}}>
                   View Analytics
                 </Text>
               </TouchableOpacity>
-              
+
               {/* Access Requests Button for Private Quizzes */}
-              {quiz.visibility === 'private' && quiz.statistics.pendingAccessRequests > 0 && (
-                <TouchableOpacity 
-                  style={styles.accessRequestsButton} 
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    onViewAccessRequests(quiz);
-                  }}>
-                  <View style={styles.requestsCountBadge}>
-                    <Text variant="bold10" color={COLORS.whiteFFFFFF}>
-                      {quiz.statistics.pendingAccessRequests}
+              {quiz.visibility === 'private' &&
+                quiz.statistics.pendingAccessRequests > 0 && (
+                  <TouchableOpacity
+                    style={styles.accessRequestsButton}
+                    onPress={e => {
+                      e.stopPropagation();
+                      onViewAccessRequests(quiz);
+                    }}>
+                    <View style={styles.requestsCountBadge}>
+                      <Text variant="bold10" color={COLORS.whiteFFFFFF}>
+                        {quiz.statistics.pendingAccessRequests}
+                      </Text>
+                    </View>
+                    <Ionicons
+                      name="key-outline"
+                      size={18}
+                      color={COLORS.orangeWarning}
+                    />
+                    <Text
+                      variant="semibold14"
+                      color={COLORS.orangeWarning}
+                      style={{marginLeft: 6}}>
+                      Requests
                     </Text>
-                  </View>
-                  <Ionicons name="key-outline" size={18} color={COLORS.orangeWarning} />
-                  <Text variant="semibold14" color={COLORS.orangeWarning} style={{marginLeft: 6}}>
-                    Requests
-                  </Text>
-                </TouchableOpacity>
-              )}
-              
+                  </TouchableOpacity>
+                )}
+
               {/* Share Button */}
-              {['approved', 'ai_approved'].includes(quiz.status) && quiz.shareId && (
-                <QuizShareButton 
-                  quiz={quiz} 
-                  variant="icon"
-                  style={styles.shareIconButton}
-                />
-              )}
+              {['approved', 'ai_approved'].includes(quiz.status) &&
+                quiz.shareId && (
+                  <QuizShareButton
+                    quiz={quiz}
+                    variant="icon"
+                    style={styles.shareIconButton}
+                  />
+                )}
             </View>
           )}
         </View>
@@ -266,7 +376,11 @@ const BadgeItem = ({badge, earned, progress}) => (
     <View style={[styles.badgeIcon, earned && styles.badgeIconEarned]}>
       <Text variant="bold24">{badge.icon}</Text>
     </View>
-    <Text variant="semibold14" color={earned ? COLORS.blue043142 : COLORS.grey666666} numberOfLines={2} style={styles.badgeName}>
+    <Text
+      variant="semibold14"
+      color={earned ? COLORS.blue043142 : COLORS.grey666666}
+      numberOfLines={2}
+      style={styles.badgeName}>
       {badge.name}
     </Text>
     {!earned && progress !== undefined && (
@@ -335,32 +449,36 @@ const QUIZ_FILTERS = [
 
 const CreatorDashboardScreen = ({navigation}) => {
   const userdata = useSelector(state => state?.userData);
-  
+
   // State Management
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [quizzes, setQuizzes] = useState([]);
-  const [badges, setBadges] = useState({earnedBadges: [], availableBadges: [], summary: {}});
+  const [badges, setBadges] = useState({
+    earnedBadges: [],
+    availableBadges: [],
+    summary: {},
+  });
   const [activeFilter, setActiveFilter] = useState('all');
   const [showAllBadges, setShowAllBadges] = useState(false);
-  
+
   // Load Dashboard Data
   useEffect(() => {
     loadDashboardData();
   }, []);
-  
+
   const loadDashboardData = async (refresh = false) => {
     try {
       if (!refresh) setIsLoading(true);
-      
+
       // Fetch all data in parallel
       const [dashboardRes, quizzesRes, badgesRes] = await Promise.all([
         getCreatorDashboardApi(),
         getMyQuizzesApi({status: 'all', page: 1, limit: 10}),
         getCreatorBadgesApi(),
       ]);
-      
+
       setDashboardData(dashboardRes.data.data);
       setQuizzes(quizzesRes.data.data.quizzes);
       setBadges(badgesRes.data.data);
@@ -372,68 +490,89 @@ const CreatorDashboardScreen = ({navigation}) => {
       setIsRefreshing(false);
     }
   };
-  
+
   const onRefresh = useCallback(() => {
     setIsRefreshing(true);
     loadDashboardData(true);
   }, []);
-  
+
   // Navigation Handlers
   const handleCreateQuiz = () => {
     navigation.navigate(Routes.CreateQuiz);
   };
-  
-  const handleQuizPress = (quiz) => {
+
+  const handleQuizPress = quiz => {
     if (quiz.status === 'draft') {
       navigation.navigate(Routes.EditQuiz, {quizId: quiz.id});
     } else {
-      navigation.navigate(Routes.QuizAnalytics, {quizId: quiz.id, quizTitle: quiz.title});
+      navigation.navigate(Routes.QuizAnalytics, {
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+      });
     }
   };
-  
-  const handleViewAnalytics = (quiz) => {
-    navigation.navigate(Routes.QuizAnalytics, {quizId: quiz.id, quizTitle: quiz.title});
+
+  const handleViewAnalytics = quiz => {
+    navigation.navigate(Routes.QuizAnalytics, {
+      quizId: quiz.id,
+      quizTitle: quiz.title,
+    });
   };
-  
+
   const handleViewAllQuizzes = () => {
     navigation.navigate(Routes.MyQuizzes);
   };
-  
+
   // Add handler for viewing access requests
-  const handleViewAccessRequests = (quiz) => {
+  const handleViewAccessRequests = quiz => {
     navigation.navigate(Routes.QuizAccessRequests, {
       quizId: quiz.id,
-      quizTitle: quiz.title
+      quizTitle: quiz.title,
     });
   };
-  
+
   // Filter quizzes
   const filteredQuizzes = useMemo(() => {
     if (activeFilter === 'all') return quizzes;
     return quizzes.filter(quiz => {
       switch (activeFilter) {
-        case 'draft': return quiz.status === 'draft';
-        case 'pending': return ['pending_review', 'manual_review'].includes(quiz.status);
-        case 'published': return ['approved', 'ai_approved'].includes(quiz.status);
-        case 'rejected': return quiz.status === 'rejected';
-        default: return true;
+        case 'draft':
+          return quiz.status === 'draft';
+        case 'pending':
+          return ['pending_review', 'manual_review'].includes(quiz.status);
+        case 'published':
+          return ['approved', 'ai_approved'].includes(quiz.status);
+        case 'rejected':
+          return quiz.status === 'rejected';
+        default:
+          return true;
       }
     });
   }, [quizzes, activeFilter]);
-  
+
   // Render Chart
   const renderActivityChart = () => {
-    if (!dashboardData?.recentActivity?.quizzes || dashboardData.recentActivity.quizzes.length === 0) {
+    if (
+      !dashboardData?.recentActivity?.quizzes ||
+      dashboardData.recentActivity.quizzes.length === 0
+    ) {
       return (
         <View style={styles.chartPlaceholder}>
-          <MaterialIcons name="insert-chart" size={48} color={COLORS.greyEEEEEE} />
-          <Text variant="regular16" color={COLORS.grey666666} style={{marginTop: 16}}>
+          <MaterialIcons
+            name="insert-chart"
+            size={48}
+            color={COLORS.greyEEEEEE}
+          />
+          <Text
+            variant="regular16"
+            color={COLORS.grey666666}
+            style={{marginTop: 16}}>
             No activity data available yet
           </Text>
         </View>
       );
     }
-    
+
     // Prepare data for last 7 days
     const last7Days = Array.from({length: 7}, (_, i) => {
       const date = moment().subtract(i, 'days');
@@ -443,26 +582,28 @@ const CreatorDashboardScreen = ({navigation}) => {
         attempts: 0,
       };
     }).reverse();
-    
+
     // Aggregate attempts by day
     dashboardData.recentActivity.quizzes.forEach(quiz => {
-      const dayIndex = last7Days.findIndex(day => 
-        moment(quiz.createdAt).format('MMM DD') === day.date
+      const dayIndex = last7Days.findIndex(
+        day => moment(quiz.createdAt).format('MMM DD') === day.date,
       );
       if (dayIndex !== -1) {
         last7Days[dayIndex].attempts += quiz.attempts;
       }
     });
-    
+
     const chartData = {
       labels: last7Days.map(d => d.dayLabel),
-      datasets: [{
-        data: last7Days.map(d => d.attempts),
-        color: (opacity = 1) => `rgba(245, 190, 0, ${opacity})`,
-        strokeWidth: 3,
-      }],
+      datasets: [
+        {
+          data: last7Days.map(d => d.attempts),
+          color: (opacity = 1) => `rgba(245, 190, 0, ${opacity})`,
+          strokeWidth: 3,
+        },
+      ],
     };
-    
+
     return (
       <LineChart
         data={chartData}
@@ -497,24 +638,27 @@ const CreatorDashboardScreen = ({navigation}) => {
       />
     );
   };
-  
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.yellowF5BE00} />
-        <Text variant="regular16" color={COLORS.blue043142} style={{marginTop: 16}}>
+        <Text
+          variant="regular16"
+          color={COLORS.blue043142}
+          style={{marginTop: 16}}>
           Loading your dashboard...
         </Text>
       </View>
     );
   }
-  
+
   const {overview, creator, recentActivity, aiUsage} = dashboardData || {};
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue043142} />
-      
+
       {/* Header Section */}
       <LinearGradient
         colors={[COLORS.blue043142, '#02293A']}
@@ -524,17 +668,21 @@ const CreatorDashboardScreen = ({navigation}) => {
           subtitle="Manage your quizzes and track performance"
           onBack={() => navigation.goBack()}
           rightComponent={
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.notificationButton}
               onPress={() => navigation.navigate(Routes.Notifications)}>
-              <Ionicons name="notifications-outline" size={24} color={COLORS.whiteFFFFFF} />
+              <Ionicons
+                name="notifications-outline"
+                size={24}
+                color={COLORS.whiteFFFFFF}
+              />
               {recentActivity?.pendingAccessRequests > 0 && (
                 <View style={styles.notificationDot} />
               )}
             </TouchableOpacity>
           }
         />
-        
+
         {/* Creator Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
@@ -545,11 +693,7 @@ const CreatorDashboardScreen = ({navigation}) => {
               />
             ) : (
               <View style={styles.profileImagePlaceholder}>
-                <Ionicons
-                  name="person"
-                  size={32}
-                  color={COLORS.whiteFFFFFF}
-                />
+                <Ionicons name="person" size={32} color={COLORS.whiteFFFFFF} />
               </View>
             )}
           </View>
@@ -559,17 +703,24 @@ const CreatorDashboardScreen = ({navigation}) => {
             </Text>
             <View style={styles.levelBadge}>
               <Ionicons name="star" size={14} color={COLORS.yellowF5BE00} />
-              <Text variant="semibold14" color={COLORS.yellowF5BE00} style={{marginLeft: 4}}>
+              <Text
+                variant="semibold14"
+                color={COLORS.yellowF5BE00}
+                style={{marginLeft: 4}}>
                 {creator?.points || 0} Points • Level {creator?.level || 1}
               </Text>
             </View>
           </View>
           <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={22} color={COLORS.whiteFFFFFF} />
+            <Ionicons
+              name="settings-outline"
+              size={22}
+              color={COLORS.whiteFFFFFF}
+            />
           </TouchableOpacity>
         </View>
       </LinearGradient>
-      
+
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
@@ -582,56 +733,60 @@ const CreatorDashboardScreen = ({navigation}) => {
             tintColor={COLORS.yellowF5BE00}
           />
         }>
-        
         {/* Stats Overview */}
         <View style={styles.statsSection}>
-          <Text variant="bold20" color={COLORS.blue043142} style={styles.sectionTitle}>
+          <Text
+            variant="bold20"
+            color={COLORS.blue043142}
+            style={styles.sectionTitle}>
             Overview
           </Text>
           {overview?.totalQuizzes > 0 ? (
-    /* ---------- normal stats grid ---------- */
-    <View style={styles.statsGrid}>
-      <StatCard
-        icon="document-text-outline"
-        iconColor={COLORS.blue043142}
-        value={overview.totalQuizzes}
-        label="Total Quizzes"
-      />
-      <StatCard
-        icon="people-outline"
-        iconColor={COLORS.purpleCommunity}
-        value={overview.totalParticipants}
-        label="Participants"
-      />
-      <StatCard
-        icon="star"
-        iconColor={COLORS.yellowF5BE00}
-        value={overview.overallRating?.toFixed(1) || 'N/A'}
-        label="Avg Rating"
-      />
-      <StatCard
-        icon="checkmark-circle-outline"
-        iconColor={COLORS.greenSuccess}
-        value={`${overview.engagementRate}%`}
-        label="Completion"
-      />
-    </View>
-  ) : (
-    /* ---------- empty-state message ---------- */
-    <View style={{paddingVertical: nh(4), alignItems: 'center'}}>
-      <Ionicons name="information-circle-outline" size={36} color={COLORS.grey999999} />
-      <Text
-        variant="regular16"
-        color={COLORS.grey666666}
-        style={{marginTop: nh(1.5), textAlign: 'center'}}>
-        Please create a Quiz to see Quiz Creator Statistics
-      </Text>
-    </View>
-  )}
+            /* ---------- normal stats grid ---------- */
+            <View style={styles.statsGrid}>
+              <StatCard
+                icon="document-text-outline"
+                iconColor={COLORS.blue043142}
+                value={overview.totalQuizzes}
+                label="Total Quizzes"
+              />
+              <StatCard
+                icon="people-outline"
+                iconColor={COLORS.purpleCommunity}
+                value={overview.totalParticipants}
+                label="Participants"
+              />
+              <StatCard
+                icon="star"
+                iconColor={COLORS.yellowF5BE00}
+                value={overview.overallRating?.toFixed(1) || 'N/A'}
+                label="Avg Rating"
+              />
+              <StatCard
+                icon="checkmark-circle-outline"
+                iconColor={COLORS.greenSuccess}
+                value={`${overview.engagementRate}%`}
+                label="Completion"
+              />
+            </View>
+          ) : (
+            /* ---------- empty-state message ---------- */
+            <View style={{paddingVertical: nh(4), alignItems: 'center'}}>
+              <Ionicons
+                name="information-circle-outline"
+                size={36}
+                color={COLORS.grey999999}
+              />
+              <Text
+                variant="regular16"
+                color={COLORS.grey666666}
+                style={{marginTop: nh(1.5), textAlign: 'center'}}>
+                Please create a Quiz to see Quiz Creator Statistics
+              </Text>
+            </View>
+          )}
         </View>
-        
-        
-        
+
         {/* Badges Section */}
         <View style={styles.badgesSection}>
           <View style={styles.sectionHeader}>
@@ -640,7 +795,8 @@ const CreatorDashboardScreen = ({navigation}) => {
             </Text>
             <TouchableOpacity onPress={() => setShowAllBadges(true)}>
               <Text variant="regular14" color={COLORS.purpleCommunity}>
-                View All ({badges.summary?.earned || 0}/{badges.summary?.total || 10})
+                View All ({badges.summary?.earned || 0}/
+                {badges.summary?.total || 10})
               </Text>
             </TouchableOpacity>
           </View>
@@ -661,7 +817,7 @@ const CreatorDashboardScreen = ({navigation}) => {
             ))}
           </ScrollView>
         </View>
-        
+
         {/* Recent Quizzes */}
         <View style={styles.quizzesSection}>
           <View style={styles.sectionHeader}>
@@ -674,7 +830,7 @@ const CreatorDashboardScreen = ({navigation}) => {
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           {/* Filter Pills */}
           <ScrollView
             horizontal
@@ -689,16 +845,21 @@ const CreatorDashboardScreen = ({navigation}) => {
               />
             ))}
           </ScrollView>
-          
+
           {/* Quiz List */}
           {filteredQuizzes.length === 0 ? (
             <View style={styles.emptyQuizzes}>
               <MaterialIcons name="quiz" size={56} color={COLORS.greyEEEEEE} />
-              <Text variant="regular16" color={COLORS.grey666666} style={{marginTop: 16}}>
+              <Text
+                variant="regular16"
+                color={COLORS.grey666666}
+                style={{marginTop: 16}}>
                 No quizzes found
               </Text>
               {activeFilter === 'all' && (
-                <TouchableOpacity style={styles.createFirstQuizButton} onPress={handleCreateQuiz}>
+                <TouchableOpacity
+                  style={styles.createFirstQuizButton}
+                  onPress={handleCreateQuiz}>
                   <Text variant="semibold14" color={COLORS.whiteFFFFFF}>
                     Create Your First Quiz
                   </Text>
@@ -718,9 +879,7 @@ const CreatorDashboardScreen = ({navigation}) => {
             ))
           )}
         </View>
-        
-        
-        
+
         {/* Streak Card */}
         {overview?.currentStreak > 0 && (
           <View style={styles.streakCard}>
@@ -731,7 +890,10 @@ const CreatorDashboardScreen = ({navigation}) => {
               <Text variant="bold18" color={COLORS.blue043142}>
                 {overview.currentStreak} Day Streak! 🔥
               </Text>
-              <Text variant="regular14" color={COLORS.grey666666} style={{marginTop: 4}}>
+              <Text
+                variant="regular14"
+                color={COLORS.grey666666}
+                style={{marginTop: 4}}>
                 Keep creating to maintain your streak
               </Text>
             </View>
@@ -745,11 +907,11 @@ const CreatorDashboardScreen = ({navigation}) => {
             </View>
           </View>
         )}
-        
+
         {/* Bottom Spacing */}
         <View style={{height: nh(10)}} />
       </ScrollView>
-      
+
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleCreateQuiz}>
         <LinearGradient
@@ -758,7 +920,7 @@ const CreatorDashboardScreen = ({navigation}) => {
           <Ionicons name="add" size={32} color={COLORS.whiteFFFFFF} />
         </LinearGradient>
       </TouchableOpacity>
-      
+
       {/* All Badges Modal */}
       <Modal
         visible={showAllBadges}
@@ -769,42 +931,61 @@ const CreatorDashboardScreen = ({navigation}) => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text variant="bold20" color={COLORS.blue043142}>
-                All Badges ({badges.summary?.earned || 0}/{badges.summary?.total || 10})
+                All Badges ({badges.summary?.earned || 0}/
+                {badges.summary?.total || 10})
               </Text>
               <TouchableOpacity onPress={() => setShowAllBadges(false)}>
                 <Ionicons name="close" size={28} color={COLORS.grey666666} />
               </TouchableOpacity>
             </View>
-            
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-              <Text variant="bold18" color={COLORS.blue043142} style={styles.badgeCategory}>
+
+            <ScrollView
+              style={styles.modalBody}
+              showsVerticalScrollIndicator={false}>
+              <Text
+                variant="bold18"
+                color={COLORS.blue043142}
+                style={styles.badgeCategory}>
                 Earned Badges
               </Text>
               <View style={styles.badgesGrid}>
                 {badges.earnedBadges?.map(badge => (
                   <View key={badge.id} style={styles.badgeGridItem}>
                     <BadgeItem badge={badge} earned={true} />
-                    <Text variant="regular12" color={COLORS.grey666666} style={{marginTop: 8, textAlign: 'center'}}>
+                    <Text
+                      variant="regular12"
+                      color={COLORS.grey666666}
+                      style={{marginTop: 8, textAlign: 'center'}}>
                       {moment(badge.earnedAt).format('MMM DD, YYYY')}
                     </Text>
                   </View>
                 ))}
               </View>
-              
-              <Text variant="bold18" color={COLORS.blue043142} style={[styles.badgeCategory, {marginTop: nh(4)}]}>
+
+              <Text
+                variant="bold18"
+                color={COLORS.blue043142}
+                style={[styles.badgeCategory, {marginTop: nh(4)}]}>
                 Available Badges
               </Text>
               <View style={styles.badgesGrid}>
                 {badges.availableBadges?.map(badge => (
                   <View key={badge.id} style={styles.badgeGridItem}>
-                    <BadgeItem badge={badge} earned={false} progress={badge.progressPercentage} />
-                    <Text variant="regular12" color={COLORS.grey666666} style={{marginTop: 8, textAlign: 'center'}}>
+                    <BadgeItem
+                      badge={badge}
+                      earned={false}
+                      progress={badge.progressPercentage}
+                    />
+                    <Text
+                      variant="regular12"
+                      color={COLORS.grey666666}
+                      style={{marginTop: 8, textAlign: 'center'}}>
                       {badge.progress}/{badge.target}
                     </Text>
                   </View>
                 ))}
               </View>
-              
+
               <View style={{height: nh(4)}} />
             </ScrollView>
           </View>
@@ -826,7 +1007,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.whiteFFFFFF,
   },
   headerGradient: {
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    // paddingTop: Platform.OS === 'android' ? 0 : 0,
     paddingBottom: nh(3),
   },
   header: {
@@ -908,7 +1089,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingTop: nh(3),
   },
-  
+
   // Stats Section
   statsSection: {
     paddingHorizontal: nw(4),
@@ -959,7 +1140,7 @@ const styles = StyleSheet.create({
     top: nw(4),
     right: nw(4),
   },
-  
+
   // Chart Section
   chartSection: {
     paddingHorizontal: nw(4),
@@ -970,6 +1151,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: nh(2),
+    marginHorizontal: 16,
   },
   chartContainer: {
     backgroundColor: COLORS.whiteFFFFFF,
@@ -986,7 +1168,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
+
   // Badges Section
   badgesSection: {
     marginBottom: nh(3),
@@ -1034,7 +1216,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.yellowF5BE00,
     borderRadius: 2,
   },
-  
+
   // Quizzes Section
   quizzesSection: {
     paddingHorizontal: nw(4),
@@ -1178,7 +1360,7 @@ const styles = StyleSheet.create({
     paddingVertical: nh(0.8),
     borderRadius: 12,
   },
-  
+
   // Quick Actions
   pendingRequestsSection: {
     paddingHorizontal: nw(4),
@@ -1268,7 +1450,7 @@ const styles = StyleSheet.create({
   streakStats: {
     alignItems: 'center',
   },
-  
+
   // FAB
   fab: {
     position: 'absolute',
@@ -1287,7 +1469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  
+
   // Modal
   modalContainer: {
     flex: 1,
