@@ -605,11 +605,11 @@ export const RootNavigator = () => {
         component={CreateQuizScreen}
         options={{headerShown: false}}
       />
-      {/* <Stack.Screen
+      <Stack.Screen
         name={Routes.EditQuiz}
         component={EditQuizScreen}
         options={{headerShown: false}}
-      /> */}
+      />
       <Stack.Screen
         name={Routes.CreatorDashboard}
         component={CreatorDashboardScreen}

@@ -71,7 +71,10 @@ const CustomInput = ({
   editable = true,
 }) => (
   <View style={styles.inputContainer}>
-    <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+    <Text
+      variant="semibold14"
+      color={COLORS.blue043142}
+      style={styles.inputLabel}>
       {label}
     </Text>
     <View style={[styles.inputWrapper, error && styles.inputWrapperError]}>
@@ -91,13 +94,19 @@ const CustomInput = ({
         editable={editable}
       />
       {maxLength && (
-        <Text variant="regular12" color={COLORS.grey999999} style={styles.charCount}>
+        <Text
+          variant="regular12"
+          color={COLORS.grey999999}
+          style={styles.charCount}>
           {value.length}/{maxLength}
         </Text>
       )}
     </View>
     {error && (
-      <Text variant="regular12" color={COLORS.redError} style={styles.errorText}>
+      <Text
+        variant="regular12"
+        color={COLORS.redError}
+        style={styles.errorText}>
         {error}
       </Text>
     )}
@@ -107,11 +116,14 @@ const CustomInput = ({
 // Segmented Control Component
 const SegmentedControl = ({options, selectedValue, onValueChange, label}) => (
   <View style={styles.segmentedContainer}>
-    <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+    <Text
+      variant="semibold14"
+      color={COLORS.blue043142}
+      style={styles.inputLabel}>
       {label}
     </Text>
     <View style={styles.segmentedWrapper}>
-      {options.map((option) => (
+      {options.map(option => (
         <TouchableOpacity
           key={option.value}
           style={[
@@ -120,7 +132,9 @@ const SegmentedControl = ({options, selectedValue, onValueChange, label}) => (
           ]}
           onPress={() => onValueChange(option.value)}>
           <Text
-            variant={selectedValue === option.value ? 'semibold14' : 'regular14'}
+            variant={
+              selectedValue === option.value ? 'semibold14' : 'regular14'
+            }
             color={
               selectedValue === option.value
                 ? COLORS.whiteFFFFFF
@@ -132,7 +146,10 @@ const SegmentedControl = ({options, selectedValue, onValueChange, label}) => (
       ))}
     </View>
     {options.find(opt => opt.value === selectedValue)?.helperText && (
-      <Text variant="regular12" color={COLORS.grey999999} style={styles.helperText}>
+      <Text
+        variant="regular12"
+        color={COLORS.grey999999}
+        style={styles.helperText}>
         {options.find(opt => opt.value === selectedValue).helperText}
       </Text>
     )}
@@ -179,7 +196,7 @@ const COLORS = {
 
 const CreateQuizScreen = ({navigation}) => {
   const userdata = useSelector(state => state?.userData);
-  
+
   // Form State
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -189,24 +206,24 @@ const CreateQuizScreen = ({navigation}) => {
   const [difficulty, setDifficulty] = useState('medium');
   const [visibility, setVisibility] = useState('public');
   const [startTime, setStartTime] = useState(
-    new Date(Date.now() + 48 * 60 * 60 * 1000) // 48 hours from now
+    new Date(Date.now() + 48 * 61 * 60 * 1000), // 48 hours from now
   );
   const [endTime, setEndTime] = useState(
-    new Date(Date.now() + 72 * 60 * 60 * 1000) // 72 hours from now
+    new Date(Date.now() + 72 * 60 * 60 * 1000), // 72 hours from now
   );
   const [timePerQuestion, setTimePerQuestion] = useState(30);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Error State
   const [errors, setErrors] = useState({});
-  
+
   // Refs
   const scrollViewRef = useRef(null);
-  
+
   // Validation Functions
-  const validateTitle = (value) => {
+  const validateTitle = value => {
     if (!value || value.trim().length < 3) {
       return 'Title must be at least 3 characters';
     }
@@ -215,8 +232,8 @@ const CreateQuizScreen = ({navigation}) => {
     }
     return null;
   };
-  
-  const validateDescription = (value) => {
+
+  const validateDescription = value => {
     if (!value || value.trim().length < 10) {
       return 'Description must be at least 10 characters';
     }
@@ -225,8 +242,8 @@ const CreateQuizScreen = ({navigation}) => {
     }
     return null;
   };
-  
-  const validateTopics = (topicsList) => {
+
+  const validateTopics = topicsList => {
     if (!topicsList || topicsList.length === 0) {
       return 'At least one topic is required';
     }
@@ -235,23 +252,23 @@ const CreateQuizScreen = ({navigation}) => {
     }
     return null;
   };
-  
+
   const validateDates = () => {
     const now = new Date();
     const minStartTime = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-    
+
     if (startTime < minStartTime) {
       return {
         startTime: 'Quiz must be scheduled at least 48 hours in advance',
       };
     }
-    
+
     if (endTime <= startTime) {
       return {
         endTime: 'End time must be after start time',
       };
     }
-    
+
     // Check if duration is at least 1 hour
     const duration = endTime - startTime;
     if (duration < 60 * 60 * 1000) {
@@ -259,30 +276,30 @@ const CreateQuizScreen = ({navigation}) => {
         endTime: 'Quiz duration must be at least 1 hour',
       };
     }
-    
+
     return null;
   };
-  
+
   // Real-time validation
   useEffect(() => {
     const newErrors = {};
-    
+
     if (title && validateTitle(title)) {
       newErrors.title = validateTitle(title);
     }
-    
+
     if (description && validateDescription(description)) {
       newErrors.description = validateDescription(description);
     }
-    
+
     const dateErrors = validateDates();
     if (dateErrors) {
       Object.assign(newErrors, dateErrors);
     }
-    
+
     setErrors(newErrors);
   }, [title, description, startTime, endTime]);
-  
+
   // Handle Image Picker
   const handleImagePicker = () => {
     const options = {
@@ -292,111 +309,111 @@ const CreateQuizScreen = ({navigation}) => {
       maxWidth: 2000,
       quality: 0.8,
     };
-    
-    launchImageLibrary(options, (response) => {
+
+    launchImageLibrary(options, response => {
       if (response.didCancel || response.error) {
         return;
       }
-      
+
       if (response.assets && response.assets[0]) {
         setCoverImage(response.assets[0]);
       }
     });
   };
-  
+
   // Handle Add Topic
   const handleAddTopic = () => {
     const trimmedTopic = currentTopic.trim();
-    
+
     if (!trimmedTopic) {
       return;
     }
-    
+
     if (trimmedTopic.length > 50) {
       Alert.alert('Error', 'Topic name must not exceed 50 characters');
       return;
     }
-    
+
     if (topics.length >= 5) {
       Alert.alert('Error', 'Maximum 5 topics allowed');
       return;
     }
-    
+
     if (topics.find(t => t.toLowerCase() === trimmedTopic.toLowerCase())) {
       Alert.alert('Error', 'This topic already exists');
       return;
     }
-    
+
     setTopics([...topics, trimmedTopic]);
     setCurrentTopic('');
   };
-  
+
   // Handle Remove Topic
-  const handleRemoveTopic = (index) => {
+  const handleRemoveTopic = index => {
     setTopics(topics.filter((_, i) => i !== index));
   };
-  
+
   // Handle Date Change
   const handleStartDateChange = (event, selectedDate) => {
     setShowStartPicker(false);
     if (selectedDate) {
       setStartTime(selectedDate);
-      
+
       // Auto-adjust end time if needed
       if (endTime <= selectedDate) {
         setEndTime(new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000));
       }
     }
   };
-  
+
   const handleEndDateChange = (event, selectedDate) => {
     setShowEndPicker(false);
     if (selectedDate) {
       setEndTime(selectedDate);
     }
   };
-  
+
   // Final Validation
   const performFinalValidation = () => {
     const validationErrors = {};
-    
+
     const titleError = validateTitle(title);
     if (titleError) validationErrors.title = titleError;
-    
+
     const descError = validateDescription(description);
     if (descError) validationErrors.description = descError;
-    
+
     const topicsError = validateTopics(topics);
     if (topicsError) validationErrors.topics = topicsError;
-    
+
     const dateErrors = validateDates();
     if (dateErrors) {
       Object.assign(validationErrors, dateErrors);
     }
-    
+
     return validationErrors;
   };
-  
+
   // Handle Submit
   const handleSubmit = async () => {
     Keyboard.dismiss();
-    
+
     // Perform validation
     const validationErrors = performFinalValidation();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      
+
       // Scroll to first error
       scrollViewRef.current?.scrollTo({y: 0, animated: true});
-      
+
       Alert.alert(
         'Validation Error',
         'Please fix all errors before proceeding',
-        [{text: 'OK'}]
+        [{text: 'OK'}],
       );
       return;
     }
-    
+
     // Prepare quiz data
     const quizData = {
       title: title.trim(),
@@ -409,12 +426,12 @@ const CreateQuizScreen = ({navigation}) => {
       timePerQuestion,
       coverImage: coverImage?.uri || null,
     };
-    
+
     try {
       setIsLoading(true);
-      
+
       const response = await createUserQuizApi(quizData);
-      
+
       if (response.data.success) {
         Alert.alert(
           'Success',
@@ -430,21 +447,22 @@ const CreateQuizScreen = ({navigation}) => {
               },
             },
           ],
-          {cancelable: false}
+          {cancelable: false},
         );
       }
     } catch (error) {
       console.error('Error creating quiz:', error);
-      
-      const errorMessage = error.response?.data?.message || 
-                          'Failed to create quiz. Please try again.';
-      
+
+      const errorMessage =
+        error.response?.data?.message ||
+        'Failed to create quiz. Please try again.';
+
       Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Check if form is valid
   const isFormValid = () => {
     return (
@@ -454,20 +472,17 @@ const CreateQuizScreen = ({navigation}) => {
       Object.keys(errors).length === 0
     );
   };
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue043142} />
-      
+
       <LinearGradient
         colors={[COLORS.blue043142, '#02293A']}
         style={styles.headerGradient}>
-        <Header
-          title="Create a New Quiz"
-          onBack={() => navigation.goBack()}
-        />
+        <Header title="Create a New Quiz" onBack={() => navigation.goBack()} />
       </LinearGradient>
-      
+
       <KeyboardAvoidingView
         style={{flex: 1}}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -477,7 +492,6 @@ const CreateQuizScreen = ({navigation}) => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-          
           {/* Title Input */}
           <CustomInput
             label="Title *"
@@ -487,7 +501,7 @@ const CreateQuizScreen = ({navigation}) => {
             maxLength={100}
             error={errors.title}
           />
-          
+
           {/* Description Input */}
           <CustomInput
             label="Description *"
@@ -498,10 +512,13 @@ const CreateQuizScreen = ({navigation}) => {
             maxLength={500}
             error={errors.description}
           />
-          
+
           {/* Cover Image */}
           <View style={styles.imageSection}>
-            <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+            <Text
+              variant="semibold14"
+              color={COLORS.blue043142}
+              style={styles.inputLabel}>
               Cover Image
             </Text>
             <TouchableOpacity
@@ -515,18 +532,28 @@ const CreateQuizScreen = ({navigation}) => {
                 />
               ) : (
                 <View style={styles.imagePlaceholder}>
-                  <MaterialIcons name="add-photo-alternate" size={48} color={COLORS.grey999999} />
-                  <Text variant="regular14" color={COLORS.grey999999} style={{marginTop: 8}}>
+                  <MaterialIcons
+                    name="add-photo-alternate"
+                    size={48}
+                    color={COLORS.grey999999}
+                  />
+                  <Text
+                    variant="regular14"
+                    color={COLORS.grey999999}
+                    style={{marginTop: 8}}>
                     Upload Image
                   </Text>
                 </View>
               )}
             </TouchableOpacity>
           </View>
-          
+
           {/* Topics */}
           <View style={styles.topicsSection}>
-            <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+            <Text
+              variant="semibold14"
+              color={COLORS.blue043142}
+              style={styles.inputLabel}>
               Topics * (Max 5)
             </Text>
             <View style={styles.topicInputWrapper}>
@@ -543,18 +570,23 @@ const CreateQuizScreen = ({navigation}) => {
               <TouchableOpacity
                 style={[
                   styles.addTopicButton,
-                  (!currentTopic.trim() || topics.length >= 5) && styles.addTopicButtonDisabled,
+                  (!currentTopic.trim() || topics.length >= 5) &&
+                    styles.addTopicButtonDisabled,
                 ]}
                 onPress={handleAddTopic}
                 disabled={!currentTopic.trim() || topics.length >= 5}>
                 <Text
                   variant="semibold14"
-                  color={(!currentTopic.trim() || topics.length >= 5) ? COLORS.grey999999 : COLORS.whiteFFFFFF}>
+                  color={
+                    !currentTopic.trim() || topics.length >= 5
+                      ? COLORS.grey999999
+                      : COLORS.whiteFFFFFF
+                  }>
                   Add
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             {topics.length > 0 && (
               <View style={styles.topicsList}>
                 {topics.map((topic, index) => (
@@ -566,14 +598,17 @@ const CreateQuizScreen = ({navigation}) => {
                 ))}
               </View>
             )}
-            
+
             {errors.topics && (
-              <Text variant="regular12" color={COLORS.redError} style={styles.errorText}>
+              <Text
+                variant="regular12"
+                color={COLORS.redError}
+                style={styles.errorText}>
                 {errors.topics}
               </Text>
             )}
           </View>
-          
+
           {/* Difficulty */}
           <SegmentedControl
             label="Difficulty *"
@@ -585,7 +620,7 @@ const CreateQuizScreen = ({navigation}) => {
             selectedValue={difficulty}
             onValueChange={setDifficulty}
           />
-          
+
           {/* Visibility */}
           <SegmentedControl
             label="Visibility *"
@@ -604,65 +639,110 @@ const CreateQuizScreen = ({navigation}) => {
             selectedValue={visibility}
             onValueChange={setVisibility}
           />
-          
+
           {/* Schedule Section */}
           <View style={styles.scheduleSection}>
-            <Text variant="semibold16" color={COLORS.blue043142} style={styles.sectionTitle}>
+            <Text
+              variant="semibold16"
+              color={COLORS.blue043142}
+              style={styles.sectionTitle}>
               Schedule
             </Text>
-            
+
             {/* Start Time */}
             <View style={styles.datePickerContainer}>
-              <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+              <Text
+                variant="semibold14"
+                color={COLORS.blue043142}
+                style={styles.inputLabel}>
                 Start Time *
               </Text>
               <TouchableOpacity
-                style={[styles.dateButton, errors.startTime && styles.dateButtonError]}
+                style={[
+                  styles.dateButton,
+                  errors.startTime && styles.dateButtonError,
+                ]}
                 onPress={() => setShowStartPicker(true)}>
-                <Ionicons name="calendar-outline" size={20} color={COLORS.blue043142} />
-                <Text variant="regular14" color={COLORS.blue043142} style={{marginLeft: 8}}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.blue043142}
+                />
+                <Text
+                  variant="regular14"
+                  color={COLORS.blue043142}
+                  style={{marginLeft: 8}}>
                   {moment(startTime).format('MMM DD, YYYY - hh:mm A')}
                 </Text>
               </TouchableOpacity>
               {errors.startTime && (
-                <Text variant="regular12" color={COLORS.redError} style={styles.errorText}>
+                <Text
+                  variant="regular12"
+                  color={COLORS.redError}
+                  style={styles.errorText}>
                   {errors.startTime}
                 </Text>
               )}
             </View>
-            
+
             {/* End Time */}
             <View style={styles.datePickerContainer}>
-              <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+              <Text
+                variant="semibold14"
+                color={COLORS.blue043142}
+                style={styles.inputLabel}>
                 End Time *
               </Text>
               <TouchableOpacity
-                style={[styles.dateButton, errors.endTime && styles.dateButtonError]}
+                style={[
+                  styles.dateButton,
+                  errors.endTime && styles.dateButtonError,
+                ]}
                 onPress={() => setShowEndPicker(true)}>
-                <Ionicons name="calendar-outline" size={20} color={COLORS.blue043142} />
-                <Text variant="regular14" color={COLORS.blue043142} style={{marginLeft: 8}}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.blue043142}
+                />
+                <Text
+                  variant="regular14"
+                  color={COLORS.blue043142}
+                  style={{marginLeft: 8}}>
                   {moment(endTime).format('MMM DD, YYYY - hh:mm A')}
                 </Text>
               </TouchableOpacity>
               {errors.endTime && (
-                <Text variant="regular12" color={COLORS.redError} style={styles.errorText}>
+                <Text
+                  variant="regular12"
+                  color={COLORS.redError}
+                  style={styles.errorText}>
                   {errors.endTime}
                 </Text>
               )}
             </View>
-            
+
             {/* Quiz Duration Display */}
             <View style={styles.durationInfo}>
-              <Ionicons name="time-outline" size={16} color={COLORS.grey999999} />
-              <Text variant="regular12" color={COLORS.grey999999} style={{marginLeft: 6}}>
+              <Ionicons
+                name="time-outline"
+                size={16}
+                color={COLORS.grey999999}
+              />
+              <Text
+                variant="regular12"
+                color={COLORS.grey999999}
+                style={{marginLeft: 6}}>
                 Quiz Duration: {moment.duration(endTime - startTime).humanize()}
               </Text>
             </View>
           </View>
-          
+
           {/* Time Per Question */}
           <View style={styles.sliderSection}>
-            <Text variant="semibold14" color={COLORS.blue043142} style={styles.inputLabel}>
+            <Text
+              variant="semibold14"
+              color={COLORS.blue043142}
+              style={styles.inputLabel}>
               Time Per Question *
             </Text>
             <View style={styles.sliderContainer}>
@@ -684,16 +764,19 @@ const CreateQuizScreen = ({navigation}) => {
                 60s
               </Text>
             </View>
-            <Text variant="semibold16" color={COLORS.yellowF5BE00} style={styles.sliderValue}>
+            <Text
+              variant="semibold16"
+              color={COLORS.yellowF5BE00}
+              style={styles.sliderValue}>
               {timePerQuestion} seconds
             </Text>
           </View>
-          
+
           {/* Bottom Spacing */}
           <View style={{height: nh(10)}} />
         </ScrollView>
       </KeyboardAvoidingView>
-      
+
       {/* Submit Button */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
@@ -720,7 +803,7 @@ const CreateQuizScreen = ({navigation}) => {
           )}
         </TouchableOpacity>
       </View>
-      
+
       {/* Date Pickers */}
       {showStartPicker && (
         <DateTimePicker
@@ -731,7 +814,7 @@ const CreateQuizScreen = ({navigation}) => {
           minimumDate={new Date(Date.now() + 48 * 60 * 60 * 1000)}
         />
       )}
-      
+
       {showEndPicker && (
         <DateTimePicker
           value={endTime}
