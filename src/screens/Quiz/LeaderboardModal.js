@@ -7,58 +7,192 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
-  ActivityIndicator, // Added for loading states
+  ActivityIndicator,
+  Animated,
+  Alert,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
-// Assuming Text component is correctly imported from your project structure
-// For this example, I'll use a mock similar to the one in QuizList.
-// const Text = ({children, style, variant, color, ...props}) => {
-//   let fontWeight = 'normal';
-//   let fontSize = 14;
-//   if (variant) {
-//     if (variant.includes('semibold')) fontWeight = '600';
-//     if (variant.includes('bold')) fontWeight = 'bold';
-//     const sizeMatch = variant.match(/\d+/);
-//     if (sizeMatch) fontSize = parseInt(sizeMatch[0], 10);
-//   }
-//   return (
-//     <RNText style={[{fontSize, fontWeight, color}, style]} {...props}>
-//       {children}
-//     </RNText>
-//   );
-// };
-// import {Text as RNText} from 'react-native';
 import Text from '../../components/Text';
-
-// Import moment library
 import moment from 'moment';
-
-import {COLORS} from '../../helper/colors'; // Assuming this path is correct
-import {navigationRef} from '../../../App'; // Assuming this path is correct
-import Routes from '../../helper/routes'; // Assuming this path is correct
+import {COLORS} from '../../helper/colors';
+import {navigationRef} from '../../../App';
+import Routes from '../../helper/routes';
 import {
   getUserRankingApi,
   getDetailedResultsApi,
   getLatestQuizAttemptIdApi,
-} from '../../services/apiService'; // Assuming this path is correct
+  explainAnswerApi,
+  getExplanationQuotaApi,
+} from '../../services/apiService';
 import Share from 'react-native-share';
-import Ionicons from 'react-native-vector-icons/Ionicons'; // For icons
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Icon from '../../helper/icon';
+import LinearGradient from 'react-native-linear-gradient';
 
 const {width, height} = Dimensions.get('window');
 const nw = percentage => (width * percentage) / 100;
 const nh = percentage => (height * percentage) / 100;
 
 const TABS = {
-  VIEW_RANK: 'Leaderboard', // Renamed for clarity
-  QUIZ_DETAILS: 'My Answers', // Renamed for clarity
+  VIEW_RANK: 'Leaderboard',
+  QUIZ_DETAILS: 'My Answers',
 };
 
 
 
+// Explanation Quota Banner Component
+const QuotaBanner = ({ quota, onClose }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+
+ 
+
+ 
+};
+
+// Explanation Card Component
+const ExplanationCard = ({ explanation, onClose }) => {
+  const slideAnim = useRef(new Animated.Value(height)).current;
+  
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      tension: 65,
+      friction: 11,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handleClose = () => {
+    Animated.timing(slideAnim, {
+      toValue: height,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => onClose());
+  };
+
+  return (
+    <Animated.View 
+      style={[
+        styles.explanationOverlay,
+        { transform: [{ translateY: slideAnim }] }
+      ]}>
+      <View style={styles.explanationCard}>
+        <View style={styles.explanationHeader}>
+          <View style={styles.explanationTitleContainer}>
+            <MaterialIcons name="lightbulb" size={24} color={COLORS.yellowF5BE00} />
+            <Text variant="semibold16" color={COLORS.blue043142} style={{marginLeft: 8}}>
+              AI Explanation
+            </Text>
+          </View>
+          <TouchableOpacity onPress={handleClose} style={styles.explanationCloseBtn}>
+            <Ionicons name="close-circle" size={28} color={COLORS.grey999999} />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.explanationContent} showsVerticalScrollIndicator={false}>
+          {/* Core Explanation */}
+          <View style={styles.explanationSection}>
+            <Text variant="semibold14" color={COLORS.blue043142} style={styles.sectionHeader}>
+              Understanding the Concept
+            </Text>
+            <Text variant="regular14" color={COLORS.darkGrey333333} style={styles.explanationText}>
+              {explanation.explanation?.core || explanation.core}
+            </Text>
+          </View>
+
+          {/* Why Correct */}
+          <View style={styles.explanationSection}>
+            <View style={styles.correctHeader}>
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.greenSuccess} />
+              <Text variant="semibold14" color={COLORS.greenSuccess} style={{marginLeft: 6}}>
+                Why This Answer is Correct
+              </Text>
+            </View>
+            <Text variant="regular14" color={COLORS.darkGrey333333} style={styles.explanationText}>
+              {explanation.explanation?.whyCorrect || explanation.whyCorrect}
+            </Text>
+          </View>
+
+          {/* Why Incorrect (if user was wrong) */}
+          {(explanation.explanation?.whyIncorrect || explanation.whyIncorrect) && (
+            <View style={styles.explanationSection}>
+              <View style={styles.incorrectHeader}>
+                <Ionicons name="close-circle" size={20} color={COLORS.redError} />
+                <Text variant="semibold14" color={COLORS.redError} style={{marginLeft: 6}}>
+                  Why Your Answer Was Wrong
+                </Text>
+              </View>
+              <Text variant="regular14" color={COLORS.darkGrey333333} style={styles.explanationText}>
+                {explanation.explanation?.whyIncorrect || explanation.whyIncorrect}
+              </Text>
+            </View>
+          )}
+
+          {/* Key Takeaway */}
+          <View style={[styles.explanationSection, styles.takeawaySection]}>
+            <MaterialIcons name="star" size={20} color={COLORS.yellowF5BE00} />
+            <Text variant="semibold14" color={COLORS.blue043142} style={{marginLeft: 8}}>
+              Key Takeaway
+            </Text>
+          </View>
+          <Text variant="regular14" color={COLORS.blue043142} style={[styles.explanationText, {fontWeight: '500'}]}>
+            {explanation.explanation?.keyTakeaway || explanation.keyTakeaway}
+          </Text>
+
+          {/* Memory Tip */}
+          {(explanation.memoryTip || explanation.explanation?.memoryTip) && (
+            <View style={styles.memoryTipContainer}>
+              <MaterialIcons name="psychology" size={20} color={COLORS.blue043142} />
+              <Text variant="regular13" color={COLORS.blue043142} style={{marginLeft: 8, flex: 1}}>
+                💡 <Text variant="semibold13">Memory Tip:</Text> {explanation.memoryTip || explanation.explanation?.memoryTip}
+              </Text>
+            </View>
+          )}
+
+          {/* Related Topics */}
+          {(explanation.relatedTopics || explanation.explanation?.relatedTopics) && (explanation.relatedTopics || explanation.explanation?.relatedTopics).length > 0 && (
+            <View style={styles.explanationSection}>
+              <Text variant="semibold14" color={COLORS.blue043142} style={styles.sectionHeader}>
+                Related Topics to Study
+              </Text>
+              <View style={styles.relatedTopicsContainer}>
+                {(explanation.relatedTopics || explanation.explanation?.relatedTopics).map((topic, idx) => (
+                  <View key={idx} style={styles.relatedTopicChip}>
+                    <Text variant="regular12" color={COLORS.blue043142}>
+                      {topic}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Saved Info */}
+          <View style={styles.savedInfoContainer}>
+            <MaterialIcons name="bookmark" size={16} color={COLORS.yellowF5BE00} />
+            <Text variant="regular12" color={COLORS.grey999999} style={{marginLeft: 6}}>
+              This explanation is saved in your Learning Vault
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    </Animated.View>
+  );
+};
+
 const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [leaders, setLeaders] = useState([]);
-  const [userRankData, setUserRankData] = useState(null); // Combined user's rank, score, profile from leaders list
+  const [userRankData, setUserRankData] = useState(null);
   const [detailedResults, setDetailedResults] = useState(null);
   const [attemptId, setAttemptId] = useState(null);
   const [activeTab, setActiveTab] = useState(TABS.VIEW_RANK);
@@ -66,38 +200,36 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
   const [error, setError] = useState(null);
   const ref = useRef();
 
+  // New state for explanations
+  const [explanations, setExplanations] = useState({});
+  const [loadingExplanation, setLoadingExplanation] = useState({});
+  const [quota, setQuota] = useState(null);
+  const [showQuotaBanner, setShowQuotaBanner] = useState(false);
+  const [selectedExplanation, setSelectedExplanation] = useState(null);
 
-const getInitials = (username) => {
-  // console.log('=== getInitials called ===');
-  // console.log('Input username:', username);
-  // console.log('Username type:', typeof username);
-  
-  if (!username) {
-    console.log('No username provided, returning ??');
+  const getInitials = (username) => {
+    if (!username) {
+      console.log('No username provided, returning ??');
+      return '??';
+    }
+    
+    const nameParts = username.split(' ').filter(part => part.length > 0);
+    console.log('Name parts:', nameParts);
+    
+    if (nameParts.length >= 2) {
+      const initials = `${nameParts[0].charAt(0).toUpperCase()}${nameParts[1].charAt(0).toUpperCase()}`;
+      console.log('Two+ parts initials:', initials);
+      return initials;
+    } else if (nameParts.length === 1) {
+      const name = nameParts[0];
+      const initials = name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.charAt(0).toUpperCase();
+      console.log('Single part initials:', initials);
+      return initials;
+    }
+    
+    console.log('Fallback to ??');
     return '??';
-  }
-  
-  // Split by spaces to handle full names
-  const nameParts = username.split(' ').filter(part => part.length > 0);
-  console.log('Name parts:', nameParts);
-  
-  if (nameParts.length >= 2) {
-    // If there are at least 2 name parts, use first letter of first two parts
-    const initials = `${nameParts[0].charAt(0).toUpperCase()}${nameParts[1].charAt(0).toUpperCase()}`;
-    console.log('Two+ parts initials:', initials);
-    return initials;
-  } else if (nameParts.length === 1) {
-    // If single name, use first two characters or just first if name is single character
-    const name = nameParts[0];
-    const initials = name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.charAt(0).toUpperCase();
-    console.log('Single part initials:', initials);
-    return initials;
-  }
-  
-  console.log('Fallback to ??');
-  return '??';
-};
-
+  };
 
   const takeScreenShot = () => {
     ref.current.capture().then(uri => {
@@ -105,36 +237,58 @@ const getInitials = (username) => {
       shareToWhatsApp(uri);
     });
   };
+
   const shareToWhatsApp = async imagePath => {
     try {
       const shareOptions = {
         title: 'Share via',
-        url: imagePath, // make sure this is a full file path
+        url: imagePath,
         type: 'image/png',
       };
-
       await Share.open(shareOptions);
     } catch (error) {
       console.log('Error sharing to WhatsApp', error);
     }
   };
+
   const resetState = () => {
     setLeaders([]);
     setUserRankData(null);
     setDetailedResults(null);
     setAttemptId(null);
-    // setActiveTab(TABS.VIEW_RANK); // Keep active tab or reset as preferred
     setIsLoading(false);
     setError(null);
+    setExplanations({});
+    setLoadingExplanation({});
+    setSelectedExplanation(null);
   };
 
   useEffect(() => {
     if (visible) {
       fetchAttemptIdAndData();
     } else {
-      resetState(); // Reset state when modal is closed
+      resetState();
     }
   }, [visible, quizId]);
+
+  useEffect(() => {
+    if (activeTab === TABS.QUIZ_DETAILS && visible) {
+      fetchQuota();
+    }
+  }, [activeTab, visible]);
+
+  const fetchQuota = async () => {
+    try {
+      const response = await getExplanationQuotaApi();
+      setQuota(response.data);
+      if (response.data.quotaStatus.remaining > 0) {
+        setShowQuotaBanner(true);
+        setTimeout(() => setShowQuotaBanner(false), 5000);
+      }
+    } catch (error) {
+      console.error('Error fetching quota:', error);
+    }
+  };
 
   const fetchAttemptIdAndData = async () => {
     if (!quizId) return;
@@ -146,13 +300,11 @@ const getInitials = (username) => {
       setAttemptId(currentAttemptId);
 
       if (currentAttemptId) {
-        // Fetch both leaderboard and detailed results in parallel
         await Promise.all([
           fetchLeaderboardData(quizId),
           fetchDetailedResults(quizId, currentAttemptId),
         ]);
       } else {
-        // If no attempt ID, still try to fetch leaderboard (might show global ranks)
         await fetchLeaderboardData(quizId);
         console.warn(
           "Could not find user's attempt ID for detailed results for quiz:",
@@ -215,8 +367,6 @@ const getInitials = (username) => {
         currentAttemptId,
       );
       setDetailedResults(response.data);
-      // Log the detailed results to check the structure
-      // console.log("Fetched Detailed Results:", JSON.stringify(response.data, null, 2));
     } catch (err) {
       console.error('Error fetching detailed results:', err);
       if (!leaders.length && !error) setError('Could not load your answers.');
@@ -243,6 +393,51 @@ const getInitials = (username) => {
     return COLORS.blue043142;
   };
 
+  const handleExplainAnswer = async (questionId, answer) => {
+    if (!quota || quota.quotaStatus.remaining === 0) {
+      Alert.alert(
+        'No Explanations Left',
+        `You've used all 3 free explanations for today. They will reset at midnight.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    setLoadingExplanation(prev => ({ ...prev, [questionId]: true }));
+
+    try {
+      const response = await explainAnswerApi({
+        questionId,
+        userAnswer: answer.selectedOption,
+        attemptId,
+      });
+
+      const explanationData = response.data.explanation;
+      setExplanations(prev => ({ ...prev, [questionId]: explanationData }));
+      setSelectedExplanation(explanationData);
+      
+      setQuota(prev => ({
+        ...prev,
+        quotaStatus: {
+          ...prev.quotaStatus,
+          remaining: response.data.remaining,
+        },
+      }));
+
+      // Don't show alert, just let the explanation slide up
+
+    } catch (error) {
+      console.error('Error getting explanation:', error);
+      Alert.alert(
+        'Error',
+        'Could not generate explanation. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoadingExplanation(prev => ({ ...prev, [questionId]: false }));
+    }
+  };
+
   const renderLeaderboard = () => {
     if (isLoading && !leaders.length && !userRankData) {
       return (
@@ -267,61 +462,54 @@ const getInitials = (username) => {
           ref={ref}
           style={{flex: 1, backgroundColor: COLORS.whiteFFFFFF}}>
           {userRankData && (
-  <View style={styles.userPerformanceCard}>
-    <View style={styles.userPerformanceHeader}>
-      {(() => {
-        console.log('=== USER PERFORMANCE PROFILE DEBUG ===');
-        console.log('userRankData:', userRankData);
-        console.log('userRankData.profilePicture:', userRankData.profilePicture);
-        console.log('profilePicture type:', typeof userRankData.profilePicture);
-        console.log('profilePicture length:', userRankData.profilePicture?.length);
-        console.log('Is profilePicture truthy?', !!userRankData.profilePicture);
-        console.log('Is profilePicture default?', userRankData.profilePicture === 'default-profile-pic-url');
-        console.log('userRankData.username:', userRankData.username);
-        
-        const hasValidProfilePic = userRankData.profilePicture && 
-                                  userRankData.profilePicture !== 'default-profile-pic-url' &&
-                                  userRankData.profilePicture.trim() !== '' &&
-                                  userRankData.profilePicture !== 'null' &&
-                                  userRankData.profilePicture !== 'undefined';
-        
-        console.log('hasValidProfilePic:', hasValidProfilePic);
-        
-        if (hasValidProfilePic) {
-          return (
-            <Image
-              source={{uri: userRankData.profilePicture}}
-              style={styles.userPerformanceProfilePic}
-              onError={e => {
-                console.log('=== IMAGE LOAD ERROR ===');
-                console.log('Error loading user profile image:', e.nativeEvent.error);
-                console.log('Failed URI:', userRankData.profilePicture);
-              }}
-              onLoad={() => {
-                console.log('=== IMAGE LOADED SUCCESSFULLY ===');
-                console.log('Loaded URI:', userRankData.profilePicture);
-              }}
-            />
-          );
-        } else {
-          const initials = getInitials(userRankData.username);
-          console.log('Showing initials instead:', initials);
-          return (
-            <View style={[
-              styles.userPerformanceProfilePic,
-              {
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: COLORS.greyD6D6D6,
-              },
-            ]}>
-              <Text variant="semibold16" color={COLORS.black333333}>
-                {initials}
-              </Text>
-            </View>
-          );
-        }
-      })()}
+            <View style={styles.userPerformanceCard}>
+              <View style={styles.userPerformanceHeader}>
+                {(() => {
+                  console.log('=== USER PERFORMANCE PROFILE DEBUG ===');
+                  console.log('userRankData:', userRankData);
+                  console.log('userRankData.profilePicture:', userRankData.profilePicture);
+                  
+                  const hasValidProfilePic = userRankData.profilePicture && 
+                                            userRankData.profilePicture !== 'default-profile-pic-url' &&
+                                            userRankData.profilePicture.trim() !== '' &&
+                                            userRankData.profilePicture !== 'null' &&
+                                            userRankData.profilePicture !== 'undefined';
+                  
+                  console.log('hasValidProfilePic:', hasValidProfilePic);
+                  
+                  if (hasValidProfilePic) {
+                    return (
+                      <Image
+                        source={{uri: userRankData.profilePicture}}
+                        style={styles.userPerformanceProfilePic}
+                        onError={e => {
+                          console.log('=== IMAGE LOAD ERROR ===');
+                          console.log('Error loading user profile image:', e.nativeEvent.error);
+                        }}
+                        onLoad={() => {
+                          console.log('=== IMAGE LOADED SUCCESSFULLY ===');
+                        }}
+                      />
+                    );
+                  } else {
+                    const initials = getInitials(userRankData.username);
+                    console.log('Showing initials instead:', initials);
+                    return (
+                      <View style={[
+                        styles.userPerformanceProfilePic,
+                        {
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: COLORS.greyD6D6D6,
+                        },
+                      ]}>
+                        <Text variant="semibold16" color={COLORS.black333333}>
+                          {initials}
+                        </Text>
+                      </View>
+                    );
+                  }
+                })()}
                 <View style={{flex: 1}}>
                   <Text
                     variant="semibold16"
@@ -390,45 +578,35 @@ const getInitials = (username) => {
                       style={[styles.podiumItem, podiumItemSpecificStyle]}
                       onPress={() => navigateToUserProfile(leader.userId)}>
                       <View style={styles.podiumProfilePicContainer}>
-{leader.profilePicture && leader.profilePicture !== 'default-profile-pic-url' ? (  <Image
-    source={{uri: leader.profilePicture}}
-    style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst]}
-    onError={e => console.log('Error loading podium profile image:', e.nativeEvent.error)}
-  />
-) : (
-  (() => {
-    console.log('=== PODIUM INITIALS DEBUG ===');
-    console.log('Leader object:', leader);
-    console.log('Leader username:', leader.username);
-    console.log('Is first place:', isFirstPlace);
-    const initials = getInitials(leader.username);
-    console.log('Generated initials for podium:', initials);
-    
-    return (
-      <View style={[
-        styles.podiumProfilePic,
-        isFirstPlace && styles.podiumProfilePicFirst,
-        {
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: COLORS.blue043142,
-          // Add debugging styles
-          borderWidth: 2,
-          borderColor: 'red',
-        },
-      ]}>
-        <Text 
-          variant={isFirstPlace ? 'bold16' : 'bold14'}
-          color={COLORS.whiteFFFFFF}
-          style={{textAlign: 'center'}}
-          onLayout={() => console.log('Podium Text component rendered with initials:', initials)}
-        >
-          {initials}
-        </Text>
-      </View>
-    );
-  })()
-)}
+                        {leader.profilePicture && leader.profilePicture !== 'default-profile-pic-url' ? (
+                          <Image
+                            source={{uri: leader.profilePicture}}
+                            style={[styles.podiumProfilePic, isFirstPlace && styles.podiumProfilePicFirst]}
+                            onError={e => console.log('Error loading podium profile image:', e.nativeEvent.error)}
+                          />
+                        ) : (
+                          (() => {
+                            const initials = getInitials(leader.username);
+                            return (
+                              <View style={[
+                                styles.podiumProfilePic,
+                                isFirstPlace && styles.podiumProfilePicFirst,
+                                {
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  backgroundColor: COLORS.blue043142,
+                                },
+                              ]}>
+                                <Text 
+                                  variant={isFirstPlace ? 'bold16' : 'bold14'}
+                                  color={COLORS.whiteFFFFFF}
+                                  style={{textAlign: 'center'}}>
+                                  {initials}
+                                </Text>
+                              </View>
+                            );
+                          })()
+                        )}
                         {leader.rank <= 3 && (
                           <View
                             style={[
@@ -499,43 +677,34 @@ const getInitials = (username) => {
                     style={styles.leaderRank}>
                     {leader.rank}.
                   </Text>
-{leader.profilePicture && leader.profilePicture !== 'default-profile-pic-url' ? (  <Image
-    source={{uri: leader.profilePicture}}
-    style={styles.leaderProfilePic}
-    onError={e => console.log('Error loading leader row profile image:', e.nativeEvent.error)}
-  />
-) : (
-  (() => {
-    console.log('=== LEADERBOARD INITIALS DEBUG ===');
-    console.log('Leader object:', leader);
-    console.log('Leader username:', leader.username);
-    const initials = getInitials(leader.username);
-    console.log('Generated initials for leaderboard:', initials);
-    
-    return (
-      <View style={[
-        styles.leaderProfilePic,
-        {
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: COLORS.blue043142,
-          // Add debugging styles
-          borderWidth: 2,
-          borderColor: 'yellow',
-        },
-      ]}>
-        <Text 
-          variant="bold12"
-          color={COLORS.whiteFFFFFF}
-          style={{textAlign: 'center'}}
-          onLayout={() => console.log('Leaderboard Text component rendered with initials:', initials)}
-        >
-          {initials}
-        </Text>
-      </View>
-    );
-  })()
-)}
+                  {leader.profilePicture && leader.profilePicture !== 'default-profile-pic-url' ? (
+                    <Image
+                      source={{uri: leader.profilePicture}}
+                      style={styles.leaderProfilePic}
+                      onError={e => console.log('Error loading leader row profile image:', e.nativeEvent.error)}
+                    />
+                  ) : (
+                    (() => {
+                      const initials = getInitials(leader.username);
+                      return (
+                        <View style={[
+                          styles.leaderProfilePic,
+                          {
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: COLORS.blue043142,
+                          },
+                        ]}>
+                          <Text 
+                            variant="bold12"
+                            color={COLORS.whiteFFFFFF}
+                            style={{textAlign: 'center'}}>
+                            {initials}
+                          </Text>
+                        </View>
+                      );
+                    })()
+                  )}
                   <Text
                     variant="regular14"
                     color={COLORS.darkGrey333333}
@@ -605,8 +774,49 @@ const getInitials = (username) => {
 
     return (
       <View style={styles.contentContainer}>
+        {/* Quota Banner */}
+        {showQuotaBanner && quota && (
+          <QuotaBanner 
+            quota={quota} 
+            onClose={() => setShowQuotaBanner(false)} 
+          />
+        )}
+
+        {/* Quota Status Pill with Learning Vault Link */}
+        {quota && (
+          <View style={styles.quotaHeaderContainer}>
+            <TouchableOpacity 
+              style={styles.quotaStatusPill}
+              onPress={() => setShowQuotaBanner(!showQuotaBanner)}>
+              <MaterialIcons 
+                name="auto-awesome" 
+                size={16} 
+                color={quota.quotaStatus.remaining > 0 ? COLORS.yellowF5BE00 : COLORS.grey999999} 
+              />
+              <Text 
+                variant="regular12" 
+                color={quota.quotaStatus.remaining > 0 ? COLORS.blue043142 : COLORS.grey999999}
+                style={{marginLeft: 4}}>
+                {quota.quotaStatus.remaining} AI explanations left today • Reset at midnight !
+              </Text>
+  
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.learningVaultBtn}
+              onPress={() => {
+                onClose();
+                navigationRef.navigate(Routes.LearningVault); // You'll need to add this route
+              }}>
+              <MaterialIcons name="collections-bookmark" size={16} color={COLORS.blue043142} />
+              <Text variant="regular12" color={COLORS.blue043142} style={{marginLeft: 4}}>
+                Learning Vault
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {(detailedResults.detailedAnswers || []).map((answer, index) => {
-          // Log the structure of the first answer object to help debug
           if (index === 0) {
             console.log(
               'Detailed Answer Object (Structure Check):',
@@ -614,25 +824,32 @@ const getInitials = (username) => {
             );
           }
 
-          const selectedOptionChar = answer.selectedOption; // User's selection char (e.g., "A", "B", "skip")
-          // CRITICAL: Ensure 'answer.correctAnswer' from your API contains the TEXT of the correct option.
-          // If it contains the CHARACTER (e.g., "A"), you'll need to adjust the logic.
+          const questionId = answer.questionId;
+          const hasExplanation = explanations[questionId];
+          const isLoadingThis = loadingExplanation[questionId];
+          const selectedOptionChar = answer.selectedOption;
           const correctAnswerText = answer.correctAnswer;
           const isAnswerCorrectBoolean =
-            typeof answer.isCorrect === 'boolean' ? answer.isCorrect : null; // Check if API provides a direct boolean
+            typeof answer.isCorrect === 'boolean' ? answer.isCorrect : null;
 
           return (
             <View key={answer.questionId || index} style={styles.questionCard}>
-              <Text variant="semibold14" style={styles.questionText}>
-                {index + 1}. {answer.questionText}
-              </Text>
+              <View style={styles.questionHeaderRow}>
+                <Text variant="semibold14" style={styles.questionText}>
+                  {index + 1}. {answer.questionText}
+                </Text>
+                {hasExplanation && (
+                  <View style={styles.savedIndicator}>
+                    <MaterialIcons name="bookmark" size={16} color={COLORS.yellowF5BE00} />
+                  </View>
+                )}
+              </View>
               <View style={styles.optionsContainer}>
                 {(answer.options || []).map((optionText, i) => {
-                  const optionChar = String.fromCharCode(65 + i); // A, B, C, D
+                  const optionChar = String.fromCharCode(65 + i);
 
                   const isUserSelectedOption =
                     optionChar === selectedOptionChar;
-                  // Determine if this specific option's text matches the correct answer's text
                   const isThisOptionTheCorrectOne =
                     optionText === correctAnswerText;
 
@@ -641,7 +858,6 @@ const getInitials = (username) => {
 
                   if (isUserSelectedOption) {
                     if (isThisOptionTheCorrectOne) {
-                      // User selected this, and it's the correct one
                       icon = (
                         <Ionicons
                           name="checkmark-circle"
@@ -652,7 +868,6 @@ const getInitials = (username) => {
                       );
                       optionStyle.push(styles.correctSelectedOptionText);
                     } else {
-                      // User selected this, but it's incorrect
                       icon = (
                         <Ionicons
                           name="close-circle"
@@ -664,7 +879,6 @@ const getInitials = (username) => {
                       optionStyle.push(styles.incorrectSelectedOptionText);
                     }
                   } else if (isThisOptionTheCorrectOne) {
-                    // This option was not selected by user, but it IS the correct answer
                     optionStyle.push(styles.correctOptionHighlightStyle);
                     icon = (
                       <Ionicons
@@ -689,7 +903,6 @@ const getInitials = (username) => {
                 })}
               </View>
 
-              {/* Display the correct answer text if available and user didn't select it or selected incorrectly */}
               {correctAnswerText &&
                 selectedOptionChar !== 'skip' &&
                 answer.options.find(
@@ -716,7 +929,6 @@ const getInitials = (username) => {
                   You skipped this question.
                 </Text>
               )}
-              {/* Message if correct answer text is missing from API and question wasn't skipped */}
               {!correctAnswerText && selectedOptionChar !== 'skip' && (
                 <Text
                   variant="regular12Italic"
@@ -726,47 +938,82 @@ const getInitials = (username) => {
                 </Text>
               )}
 
-              <View style={styles.metadataContainer}>
-                <Text variant="regular12" color={COLORS.darkGrey333333}>
-                  Time Taken: {answer.timeTaken ?? 'N/A'}s
-                </Text>
-                {/* Determine overall correctness for the label */}
-                {selectedOptionChar !== 'skip' ? (
-                  isAnswerCorrectBoolean !== null ? ( // Prefer direct boolean if available
-                    <Text
-                      variant="semibold12"
-                      style={
-                        isAnswerCorrectBoolean
-                          ? styles.correctText
-                          : styles.incorrectText
-                      }>
-                      {isAnswerCorrectBoolean ? 'Correct' : 'Incorrect'}
-                    </Text>
-                  ) : correctAnswerText ? ( // Fallback to comparing selected option text with correct answer text
-                    <Text
-                      variant="semibold12"
-                      style={
-                        answer.options.find(
+              <View style={styles.questionFooter}>
+                <View style={styles.metadataContainer}>
+                  <Text variant="regular12" color={COLORS.darkGrey333333}>
+                    Time Taken: {answer.timeTaken ?? 'N/A'}s
+                  </Text>
+                  {selectedOptionChar !== 'skip' ? (
+                    isAnswerCorrectBoolean !== null ? (
+                      <Text
+                        variant="semibold12"
+                        style={
+                          isAnswerCorrectBoolean
+                            ? styles.correctText
+                            : styles.incorrectText
+                        }>
+                        {isAnswerCorrectBoolean ? 'Correct' : 'Incorrect'}
+                      </Text>
+                    ) : correctAnswerText ? (
+                      <Text
+                        variant="semibold12"
+                        style={
+                          answer.options.find(
+                            opt =>
+                              String.fromCharCode(
+                                65 + answer.options.indexOf(opt),
+                              ) === selectedOptionChar,
+                          ) === correctAnswerText
+                            ? styles.correctText
+                            : styles.incorrectText
+                        }>
+                        {answer.options.find(
                           opt =>
                             String.fromCharCode(
                               65 + answer.options.indexOf(opt),
                             ) === selectedOptionChar,
                         ) === correctAnswerText
-                          ? styles.correctText
-                          : styles.incorrectText
-                      }>
-                      {answer.options.find(
-                        opt =>
-                          String.fromCharCode(
-                            65 + answer.options.indexOf(opt),
-                          ) === selectedOptionChar,
-                      ) === correctAnswerText
-                        ? 'Correct'
-                        : 'Incorrect'}
-                    </Text>
-                  ) : null // If no way to determine, show nothing for the label
-                ) : null}
+                          ? 'Correct'
+                          : 'Incorrect'}
+                      </Text>
+                    ) : null
+                  ) : null}
+                </View>
+
+                {/* AI Explanation Button */}
+                {selectedOptionChar !== 'skip' && (
+                  <TouchableOpacity
+                    style={[
+                      styles.explainButton,
+                      hasExplanation && styles.explainButtonViewed,
+                      (!quota || quota.quotaStatus.remaining === 0) && !hasExplanation && styles.explainButtonDisabled,
+                    ]}
+                    onPress={() => {
+                      if (hasExplanation) {
+                        setSelectedExplanation(hasExplanation);
+                      } else {
+                        handleExplainAnswer(questionId, answer);
+                      }
+                    }}
+                    disabled={isLoadingThis || (!hasExplanation && (!quota || quota.quotaStatus.remaining === 0))}>
+                    {isLoadingThis ? (
+                      <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
+                    ) : (
+                      <>
+                        <MaterialIcons 
+                          name={hasExplanation ? "lightbulb" : "lightbulb-outline"} 
+                          size={16} 
+                          color={COLORS.whiteFFFFFF} 
+                        />
+                        <Text variant="semibold12" color={COLORS.whiteFFFFFF} style={{marginLeft: 6}}>
+                          {hasExplanation ? 'View Explanation' : 'Get AI Explanation'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
               </View>
+
               {answer.relatedTopics && answer.relatedTopics.length > 0 && (
                 <View style={styles.tagsContainer}>
                   <Text variant="semibold12" style={styles.tagTitle}>
@@ -844,6 +1091,14 @@ const getInitials = (username) => {
           </ScrollView>
         </View>
       </View>
+
+      {/* Explanation Modal */}
+      {selectedExplanation && (
+        <ExplanationCard
+          explanation={selectedExplanation}
+          onClose={() => setSelectedExplanation(null)}
+        />
+      )}
     </Modal>
   );
 };
@@ -1102,10 +1357,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
   },
-  questionText: {
+  questionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  questionText: {
+    flex: 1,
     color: COLORS.blue043142,
     lineHeight: 20,
+  },
+  savedIndicator: {
+    backgroundColor: COLORS.yellowF5BE00 + '20',
+    padding: 6,
+    borderRadius: 16,
+    marginLeft: 8,
   },
   optionsContainer: {
     marginBottom: 12,
@@ -1140,17 +1407,12 @@ const styles = StyleSheet.create({
     color: COLORS.grey999999,
   },
   correctAnswerDisplay: {
-    // Style for displaying the correct answer text
     marginTop: 8,
     fontStyle: 'italic',
   },
   metadataContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.greyEEEEEE,
   },
   correctText: {
     color: COLORS.greenSuccess,
@@ -1181,6 +1443,211 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginBottom: 6,
     fontSize: 11,
+  },
+
+  // Quota Banner Styles
+  quotaBanner: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  quotaGradient: {
+    padding: 16,
+  },
+  quotaContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  quotaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  quotaTextContainer: {
+    marginLeft: 12,
+  },
+  quotaRight: {
+    alignItems: 'flex-end',
+  },
+  resetTimeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quotaCloseBtn: {
+    marginTop: 4,
+    padding: 4,
+  },
+
+  // Quota Header Container
+  quotaHeaderContainer: {
+    flexDirection: 'column',
+    gap: 12,
+    marginBottom: 16,
+  },
+
+  // Quota Status Pill
+  quotaStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.greyF7F7F7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.greyEEEEEE,
+  },
+
+  // Learning Vault Button
+  learningVaultBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.blue043142 + '10',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.blue043142 + '30',
+  },
+
+  // Question Footer
+  questionFooter: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.greyEEEEEE,
+  },
+
+  // Explain Button
+  explainButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.blue043142,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  explainButtonViewed: {
+    backgroundColor: COLORS.yellowF5BE00,
+  },
+  explainButtonDisabled: {
+    backgroundColor: COLORS.grey999999,
+    elevation: 0,
+  },
+
+  // Explanation Card Styles
+  explanationOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.85,
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  explanationCard: {
+    flex: 1,
+    paddingTop: 16,
+  },
+  explanationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyEEEEEE,
+  },
+  explanationTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  explanationCloseBtn: {
+    padding: 4,
+  },
+  explanationContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  explanationSection: {
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    marginBottom: 8,
+  },
+  explanationText: {
+    lineHeight: 22,
+  },
+  correctHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  incorrectHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  takeawaySection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  memoryTipContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: COLORS.yellowF5BE00 + '15',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.yellowF5BE00 + '30',
+  },
+  relatedTopicsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  relatedTopicChip: {
+    backgroundColor: COLORS.blue043142 + '10',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.blue043142 + '20',
+  },
+  savedInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.yellowF5BE00 + '10',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: COLORS.yellowF5BE00 + '20',
   },
 });
 

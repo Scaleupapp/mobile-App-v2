@@ -82,6 +82,7 @@ const Routes = {
   MyQuizzes: 'MyQuizzes',
   QuizParticipants: 'QuizParticipants',
   QuizAccessRequests: 'QuizAccessRequests',
+  LearningVault: 'LearningVault',
 };
 
 export default Routes;

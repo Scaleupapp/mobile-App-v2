@@ -1,6 +1,6 @@
 export const API = {
-  BASE_URL1: 'http://localhost:3000/api/',
-  BASE_URL: 'https://api.scaleupapp.club/api/',
+  BASE_URL: 'http://localhost:3000/api/',
+  BASE_URL1: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
   APPLY_REFERRAL_CODE: 'auth/applyReferralCode',
@@ -139,5 +139,35 @@ export const API = {
     USER_QUIZ_REVIEW_REJECT: 'user-quiz/review/reject/:id',
     USER_QUIZ_REVIEW_AI_TRIGGER: 'user-quiz/review/ai/:id',
     USER_QUIZ_REVIEW_STATS: 'user-quiz/review/stats',
+
+  // ==========================================
+  // LEARNING ASSISTANT - EXPLANATION SYSTEM
+  // ==========================================
+  EXPLAIN_ANSWER: 'learning-assistant/explain-answer',
+  EXPLANATION_QUOTA: 'learning-assistant/explanation-quota',
+  PURCHASE_EXPLANATIONS: 'learning-assistant/purchase-explanations',
+  
+  // ==========================================
+  // LEARNING ASSISTANT - LEARNING VAULT
+  // ==========================================
+  LEARNING_VAULT: 'learning-assistant/learning-vault',
+  LEARNING_VAULT_FAVORITE: 'learning-assistant/learning-vault/:explanationId/favorite',
+  LEARNING_VAULT_NOTE: 'learning-assistant/learning-vault/:explanationId/note',
+  LEARNING_VAULT_DOWNLOAD: 'learning-assistant/learning-vault/download',
+  
+  // ==========================================
+  // LEARNING ASSISTANT - AREA INSIGHTS
+  // ==========================================
+  AREA_INSIGHTS: 'learning-assistant/area-insights',
+  AREA_INSIGHTS_DETAIL: 'learning-assistant/area-insights/:topic',
+  AREA_INSIGHTS_PURCHASE: 'learning-assistant/area-insights/purchase',
+  AREA_INSIGHTS_SET_GOAL: 'learning-assistant/area-insights/:topic/set-goal',
+  
+  // ==========================================
+  // LEARNING ASSISTANT - ANALYTICS & PAYMENT
+  // ==========================================
+  LEARNING_ANALYTICS: 'learning-assistant/analytics',
+  LEARNING_CREATE_ORDER: 'learning-assistant/create-order',
+  LEARNING_VERIFY_PAYMENT: 'learning-assistant/verify-payment',
 
 };

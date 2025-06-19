@@ -831,5 +831,141 @@ export const getReviewStatsApi = () => {
   return axiosInstance.get(API.USER_QUIZ_REVIEW_STATS);
 };
 
+// ==========================================
+// LEARNING ASSISTANT - EXPLANATION SYSTEM
+// ==========================================
+
+// Get AI explanation for a quiz answer
+export const explainAnswerApi = (payload: {
+  questionId: string;
+  userAnswer: string;
+  attemptId?: string;
+}) => {
+  return axiosInstance.post(API.EXPLAIN_ANSWER, payload);
+};
+
+// Get user's explanation quota status
+export const getExplanationQuotaApi = () => {
+  return axiosInstance.get(API.EXPLANATION_QUOTA);
+};
+
+// Purchase explanation bundle
+export const purchaseExplanationsApi = (payload: {
+  bundleSize: 10 | 30 | 50;
+  paymentId: string;
+}) => {
+  return axiosInstance.post(API.PURCHASE_EXPLANATIONS, payload);
+};
+
+// ==========================================
+// LEARNING ASSISTANT - LEARNING VAULT
+// ==========================================
+
+// Get saved explanations with filters
+export const getLearningVaultApi = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  tags?: string;
+  topics?: string;
+  favorites?: boolean;
+  sortBy?: 'createdAt' | 'viewCount' | 'questionText';
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.LEARNING_VAULT}?${queryString}`);
+};
+
+// Toggle favorite status
+export const toggleFavoriteExplanationApi = (explanationId: string) => {
+  return axiosInstance.post(
+    API.LEARNING_VAULT_FAVORITE.replace(':explanationId', explanationId)
+  );
+};
+
+// Add/Update note on explanation
+export const addExplanationNoteApi = (explanationId: string, note: string) => {
+  return axiosInstance.post(
+    API.LEARNING_VAULT_NOTE.replace(':explanationId', explanationId),
+    { note }
+  );
+};
+
+// Download learning vault as PDF
+export const downloadLearningVaultApi = () => {
+  return axiosInstance.get(API.LEARNING_VAULT_DOWNLOAD, {
+    responseType: 'blob'
+  });
+};
+
+// ==========================================
+// LEARNING ASSISTANT - AREA INSIGHTS
+// ==========================================
+
+// Get area of improvement insights
+export const getAreaInsightsApi = (params?: {
+  page?: number;
+  limit?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.AREA_INSIGHTS}?${queryString}`);
+};
+
+// Get detailed insight for specific topic
+export const getDetailedInsightApi = (topic: string) => {
+  return axiosInstance.get(
+    API.AREA_INSIGHTS_DETAIL.replace(':topic', encodeURIComponent(topic))
+  );
+};
+
+// Purchase detailed insights
+export const purchaseDetailedInsightApi = (payload: {
+  topics: string[];
+  paymentId: string;
+}) => {
+  return axiosInstance.post(API.AREA_INSIGHTS_PURCHASE, payload);
+};
+
+// Set learning goal for a topic
+export const setLearningGoalApi = (
+  topic: string,
+  payload: {
+    targetDate: string;
+    targetErrorRate: number;
+  }
+) => {
+  return axiosInstance.post(
+    API.AREA_INSIGHTS_SET_GOAL.replace(':topic', encodeURIComponent(topic)),
+    payload
+  );
+};
+
+// ==========================================
+// LEARNING ASSISTANT - ANALYTICS & PAYMENT
+// ==========================================
+
+// Get overall learning analytics
+export const getLearningAnalyticsApi = () => {
+  return axiosInstance.get(API.LEARNING_ANALYTICS);
+};
+
+// Create Razorpay order for explanation bundles
+export const createExplanationOrderApi = (payload: {
+  bundleSize: 10 | 30 | 50;
+  amount: number;
+}) => {
+  return axiosInstance.post(API.LEARNING_CREATE_ORDER, payload);
+};
+
+// Verify Razorpay payment
+export const verifyExplanationPaymentApi = (payload: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  bundleSize: 10 | 30 | 50;
+  amount: number;
+}) => {
+  return axiosInstance.post(API.LEARNING_VERIFY_PAYMENT, payload);
+};
+
 // In apiService.ts, add this line:
 export const submitForReviewApi = submitQuizForReviewApi;
