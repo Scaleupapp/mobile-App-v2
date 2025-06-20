@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Modal,
@@ -15,10 +15,10 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {generateQuizQRCodeApi, trackQuizShareApi} from '../services/apiService';
-import {APP_CONFIG} from '../constants/appConfig';
+import { generateQuizQRCodeApi, trackQuizShareApi } from '../services/apiService';
+import { APP_CONFIG } from '../constants/appConfig';
 
-const {width: DEVICE_WIDTH} = Dimensions.get('window');
+const { width: DEVICE_WIDTH } = Dimensions.get('window');
 const nw = percentage => (DEVICE_WIDTH * percentage) / 100;
 
 const COLORS = {
@@ -30,22 +30,20 @@ const COLORS = {
   greenSuccess: '#28A745',
 };
 
-const QuizShareModal = ({visible, onClose, quiz, showToast}) => {
+const QuizShareModal = ({ visible, onClose, quiz, showToast }) => {
   const [qrCode, setQrCode] = useState(null);
   const [loading, setLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState('share'); // 'share' or 'qr'
-
-  const shareUrl = `${APP_CONFIG.SHARE_URLS.QUIZ}${
-    quiz.uniqueShareId || quiz.shareId
-  }`;
-
+  
+  const shareUrl = `${APP_CONFIG.SHARE_URLS.QUIZ}${quiz.uniqueShareId || quiz.shareId}`;
+  
   // Generate QR Code when modal opens and QR tab is selected
   useEffect(() => {
     if (visible && selectedTab === 'qr' && !qrCode) {
       generateQRCode();
     }
   }, [visible, selectedTab]);
-
+  
   const generateQRCode = async () => {
     try {
       setLoading(true);
@@ -58,23 +56,23 @@ const QuizShareModal = ({visible, onClose, quiz, showToast}) => {
       setLoading(false);
     }
   };
-
-  const shareOnPlatform = async platform => {
+  
+  const shareOnPlatform = async (platform) => {
     let message = `Check out this quiz: "${quiz.title}"\n\n${quiz.description}\n\nTake the quiz here: ${shareUrl}`;
-
+    
     try {
       const result = await Share.share({
         title: `Quiz: ${quiz.title}`,
         message: Platform.OS === 'ios' ? message : `${message}\n${shareUrl}`,
         url: Platform.OS === 'ios' ? shareUrl : undefined,
       });
-
+      
       if (result.action === Share.sharedAction) {
         // Track the share
         trackQuizShareApi(quiz.id, platform).catch(console.error);
         showToast({
           type: 'success',
-          title: 'Quiz shared successfully!',
+          title: 'Quiz shared successfully!'
         });
       }
     } catch (error) {
@@ -82,24 +80,21 @@ const QuizShareModal = ({visible, onClose, quiz, showToast}) => {
       Alert.alert('Error', 'Failed to share quiz');
     }
   };
-
+  
   const copyLink = async () => {
     Clipboard.setString(shareUrl);
     showToast({
       type: 'success',
-      title: 'Link copied to clipboard!',
+      title: 'Link copied to clipboard!'
     });
     trackQuizShareApi(quiz.id, 'link').catch(console.error);
   };
-
+  
   const downloadQRCode = async () => {
     // Implement QR code download/save functionality
-    Alert.alert(
-      'Save QR Code',
-      'QR code saving functionality to be implemented',
-    );
+    Alert.alert('Save QR Code', 'QR code saving functionality to be implemented');
   };
-
+  
   return (
     <Modal
       visible={visible}
@@ -117,123 +112,80 @@ const QuizShareModal = ({visible, onClose, quiz, showToast}) => {
               <Ionicons name="close" size={24} color={COLORS.grey666666} />
             </TouchableOpacity>
           </View>
-
+          
           {/* Quiz Info */}
           <View style={styles.quizInfo}>
-            <Text
-              variant="semibold16"
-              color={COLORS.blue043142}
-              numberOfLines={1}>
+            <Text variant="semibold16" color={COLORS.blue043142} numberOfLines={1}>
               {quiz.title}
             </Text>
-            <Text
-              variant="regular12"
-              color={COLORS.grey666666}
-              style={styles.shareCount}>
+            <Text variant="regular12" color={COLORS.grey666666} style={styles.shareCount}>
               Shared {quiz.statistics?.shares || 0} times
             </Text>
           </View>
-
+          
           {/* Tab Selector */}
           <View style={styles.tabContainer}>
             <TouchableOpacity
               style={[styles.tab, selectedTab === 'share' && styles.activeTab]}
               onPress={() => setSelectedTab('share')}>
-              <Text
-                variant={selectedTab === 'share' ? 'semibold14' : 'regular14'}
-                color={
-                  selectedTab === 'share'
-                    ? COLORS.purpleCommunity
-                    : COLORS.grey666666
-                }>
+              <Text 
+                variant={selectedTab === 'share' ? "semibold14" : "regular14"} 
+                color={selectedTab === 'share' ? COLORS.purpleCommunity : COLORS.grey666666}>
                 Share Options
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, selectedTab === 'qr' && styles.activeTab]}
               onPress={() => setSelectedTab('qr')}>
-              <Text
-                variant={selectedTab === 'qr' ? 'semibold14' : 'regular14'}
-                color={
-                  selectedTab === 'qr'
-                    ? COLORS.purpleCommunity
-                    : COLORS.grey666666
-                }>
+              <Text 
+                variant={selectedTab === 'qr' ? "semibold14" : "regular14"} 
+                color={selectedTab === 'qr' ? COLORS.purpleCommunity : COLORS.grey666666}>
                 QR Code
               </Text>
             </TouchableOpacity>
           </View>
-
+          
           {/* Content */}
           {selectedTab === 'share' ? (
             <View style={styles.shareContent}>
               {/* Copy Link */}
               <TouchableOpacity style={styles.shareOption} onPress={copyLink}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    {backgroundColor: COLORS.purpleCommunity + '15'},
-                  ]}>
-                  <Ionicons
-                    name="link"
-                    size={24}
-                    color={COLORS.purpleCommunity}
-                  />
+                <View style={[styles.iconContainer, { backgroundColor: COLORS.purpleCommunity + '15' }]}>
+                  <Ionicons name="link" size={24} color={COLORS.purpleCommunity} />
                 </View>
                 <View style={styles.shareOptionText}>
-                  <Text variant="semibold14" color={COLORS.blue043142}>
-                    Copy Link
-                  </Text>
-                  <Text
-                    variant="regular12"
-                    color={COLORS.grey666666}
-                    numberOfLines={1}>
+                  <Text variant="semibold14" color={COLORS.blue043142}>Copy Link</Text>
+                  <Text variant="regular12" color={COLORS.grey666666} numberOfLines={1}>
                     {shareUrl}
                   </Text>
                 </View>
               </TouchableOpacity>
-
+              
               {/* Share via Apps */}
-              <TouchableOpacity
-                style={styles.shareOption}
-                onPress={() => shareOnPlatform('native')}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    {backgroundColor: '#25D366' + '15'},
-                  ]}>
+              <TouchableOpacity style={styles.shareOption} onPress={() => shareOnPlatform('native')}>
+                <View style={[styles.iconContainer, { backgroundColor: '#25D366' + '15' }]}>
                   <Ionicons name="share-social" size={24} color="#25D366" />
                 </View>
                 <View style={styles.shareOptionText}>
-                  <Text variant="semibold14" color={COLORS.blue043142}>
-                    Share via Apps
-                  </Text>
+                  <Text variant="semibold14" color={COLORS.blue043142}>Share via Apps</Text>
                   <Text variant="regular12" color={COLORS.grey666666}>
                     WhatsApp, Telegram, Email, etc.
                   </Text>
                 </View>
               </TouchableOpacity>
-
+              
               {/* Social Media Quick Links */}
               <View style={styles.socialButtons}>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => shareOnPlatform('whatsapp')}>
+                <TouchableOpacity style={styles.socialButton} onPress={() => shareOnPlatform('whatsapp')}>
                   <Ionicons name="logo-whatsapp" size={28} color="#25D366" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => shareOnPlatform('twitter')}>
+                <TouchableOpacity style={styles.socialButton} onPress={() => shareOnPlatform('twitter')}>
                   <Ionicons name="logo-twitter" size={28} color="#1DA1F2" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => shareOnPlatform('linkedin')}>
+                <TouchableOpacity style={styles.socialButton} onPress={() => shareOnPlatform('linkedin')}>
                   <Ionicons name="logo-linkedin" size={28} color="#0077B5" />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.socialButton}
-                  onPress={() => shareOnPlatform('facebook')}>
+                <TouchableOpacity style={styles.socialButton} onPress={() => shareOnPlatform('facebook')}>
                   <Ionicons name="logo-facebook" size={28} color="#1877F2" />
                 </TouchableOpacity>
               </View>
@@ -242,48 +194,28 @@ const QuizShareModal = ({visible, onClose, quiz, showToast}) => {
             <View style={styles.qrContent}>
               {loading ? (
                 <View style={styles.qrLoading}>
-                  <ActivityIndicator
-                    size="large"
-                    color={COLORS.purpleCommunity}
-                  />
-                  <Text
-                    variant="regular14"
-                    color={COLORS.grey666666}
-                    style={{marginTop: 10}}>
+                  <ActivityIndicator size="large" color={COLORS.purpleCommunity} />
+                  <Text variant="regular14" color={COLORS.grey666666} style={{ marginTop: 10 }}>
                     Generating QR Code...
                   </Text>
                 </View>
               ) : qrCode ? (
                 <>
                   <View style={styles.qrCodeContainer}>
-                    <Image source={{uri: qrCode}} style={styles.qrCodeImage} />
+                    <Image source={{ uri: qrCode }} style={styles.qrCodeImage} />
                   </View>
-                  <Text
-                    variant="regular12"
-                    color={COLORS.grey666666}
-                    style={styles.qrInstruction}>
+                  <Text variant="regular12" color={COLORS.grey666666} style={styles.qrInstruction}>
                     Scan this QR code to access the quiz directly
                   </Text>
-                  <TouchableOpacity
-                    style={styles.downloadButton}
-                    onPress={downloadQRCode}>
-                    <Ionicons
-                      name="download-outline"
-                      size={20}
-                      color={COLORS.whiteFFFFFF}
-                    />
-                    <Text
-                      variant="semibold14"
-                      color={COLORS.whiteFFFFFF}
-                      style={{marginLeft: 8}}>
+                  <TouchableOpacity style={styles.downloadButton} onPress={downloadQRCode}>
+                    <Ionicons name="download-outline" size={20} color={COLORS.whiteFFFFFF} />
+                    <Text variant="semibold14" color={COLORS.whiteFFFFFF} style={{ marginLeft: 8 }}>
                       Save QR Code
                     </Text>
                   </TouchableOpacity>
                 </>
               ) : (
-                <TouchableOpacity
-                  style={styles.generateButton}
-                  onPress={generateQRCode}>
+                <TouchableOpacity style={styles.generateButton} onPress={generateQRCode}>
                   <Text variant="semibold14" color={COLORS.purpleCommunity}>
                     Generate QR Code
                   </Text>
@@ -390,7 +322,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
@@ -420,12 +352,8 @@ const styles = StyleSheet.create({
 });
 
 // Text component placeholder
-const Text = ({children, variant, color, ...props}) => {
-  return (
-    <RNText style={{color}} {...props}>
-      {children}
-    </RNText>
-  );
+const Text = ({ children, variant, color, ...props }) => {
+  return <RNText style={{ color }} {...props}>{children}</RNText>;
 };
 
 export default QuizShareModal;
