@@ -10,7 +10,11 @@ import {
 } from 'react-native';
 import Modal from 'react-native-modal';
 import {COLORS} from '../helper/colors';
-import {submitQuizinterest} from '../services/apiService';
+import {
+  submitAppfeedback,
+  submitApprating,
+  submitQuizinterest,
+} from '../services/apiService';
 import {nw} from '../helper/scales';
 
 const InterestedQuiz = () => {
