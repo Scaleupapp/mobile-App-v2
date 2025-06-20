@@ -83,7 +83,7 @@ import QuizAccessRequestsScreen from './screens/Quiz/QuizAccessRequestsScreen';
 import AIPaymentModal from './screens/Quiz/AIPaymentModal'; // Assuming a modal might be its own screen or part of another
 import MyQuizzesScreen from './screens/Quiz/MyQuizzesScreen';
 import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
-
+import LearningVault from './screens/LearningVault/LearningVault';
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -638,6 +638,11 @@ export const RootNavigator = () => {
       <Stack.Screen
         name={Routes.MyQuizzes}
         component={MyQuizzesScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.LearningVault}
+        component={LearningVault}
         options={{headerShown: false}}
       />
     </Stack.Navigator>

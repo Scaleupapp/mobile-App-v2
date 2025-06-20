@@ -20,6 +20,10 @@ import mixpanel from '../../helper/mixpanelClient';
 const MenuScreen = ({navigation, route}) => {
   const menu = [
     {
+      title: 'My AI Vault',
+      nav: Routes.LearningVault,
+    },
+    {
       title: 'My Badge',
       nav: Routes.MyBadge,
     },

@@ -20,6 +20,15 @@ export const COLORS = {
   yellowF5BE00_light: '#FFF9E6', // A very light, pale yellow, good for backgrounds related to yellowF5BE00
   blue043142_light: '#E0E8F0',   // A very light, desaturated blue, good for backgrounds related to blue043142
 
+  // Missing colors that are being used in LearningVault component
+  greenSuccess: '#34A853',   // Using your existing green color
+  redError: '#EA4335',       // Using your existing red color
+  greyF7F7F7: '#F7F7F7',    // Very light grey background
+  greyEEEEEE: '#EEEEEE',    // Light grey for borders
+  darkGrey333333: '#333333', // Dark grey for text (same as grey333333)
+  orange: '#FF6B35',         // Orange for warnings/info
+  purple: '#6B46C1',         // Purple accent color
+
   // You can add more colors or variants as your app grows
   // Example: A dedicated error text color if different from main red
   // errorText: '#B00020',

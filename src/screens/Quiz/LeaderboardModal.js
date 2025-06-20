@@ -806,7 +806,9 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
               style={styles.learningVaultBtn}
               onPress={() => {
                 onClose();
-                navigationRef.navigate(Routes.LearningVault); // You'll need to add this route
+                if (navigationRef.isReady()) {
+                  navigationRef.navigate(Routes.LearningVault);
+                }
               }}>
               <MaterialIcons name="collections-bookmark" size={16} color={COLORS.blue043142} />
               <Text variant="regular12" color={COLORS.blue043142} style={{marginLeft: 4}}>
