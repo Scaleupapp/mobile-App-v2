@@ -1416,7 +1416,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-date-picker (5.0.12):
+  - react-native-date-picker (5.0.13):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1595,7 +1595,7 @@ PODS:
     - Yoga
   - react-native-tracking-transparency (0.1.2):
     - React
-  - react-native-video (6.14.0):
+  - react-native-video (6.15.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1608,7 +1608,7 @@ PODS:
     - React-featureflags
     - React-graphics
     - React-ImageManager
-    - react-native-video/Video (= 6.14.0)
+    - react-native-video/Video (= 6.15.0)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-rendererdebug
@@ -1620,7 +1620,7 @@ PODS:
   - react-native-video-cache (2.7.4):
     - KTVHTTPCache (~> 2.0.0)
     - React
-  - react-native-video/Fabric (6.14.0):
+  - react-native-video/Fabric (6.15.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1641,7 +1641,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-video/Video (6.14.0):
+  - react-native-video/Video (6.15.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1951,7 +1951,7 @@ PODS:
     - React-logger (= 0.76.2)
     - React-perflogger (= 0.76.2)
     - React-utils (= 0.76.2)
-  - RNCAsyncStorage (2.1.2):
+  - RNCAsyncStorage (2.2.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2003,7 +2003,7 @@ PODS:
     - FirebaseCoreExtension
     - React-Core
     - RNFBApp
-  - RNGestureHandler (2.25.0):
+  - RNGestureHandler (2.21.2):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2013,7 +2013,6 @@ PODS:
     - React-Core
     - React-debug
     - React-Fabric
-    - React-FabricComponents
     - React-featureflags
     - React-graphics
     - React-ImageManager
@@ -2061,6 +2060,27 @@ PODS:
     - RNNotifee/NotifeeCore (= 9.1.8)
   - RNNotifee/NotifeeCore (9.1.8):
     - React-Core
+  - RNReactNativeHapticFeedback (2.3.3):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.01.01.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNReanimated (3.18.0):
     - DoubleConversion
     - glog
@@ -2364,6 +2384,7 @@ DEPENDENCIES:
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
   - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
   - "RNNotifee (from `../node_modules/@notifee/react-native`)"
+  - RNReactNativeHapticFeedback (from `../node_modules/react-native-haptic-feedback`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNShare (from `../node_modules/react-native-share`)
@@ -2575,6 +2596,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-image-crop-picker"
   RNNotifee:
     :path: "../node_modules/@notifee/react-native"
+  RNReactNativeHapticFeedback:
+    :path: "../node_modules/react-native-haptic-feedback"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2651,7 +2674,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: cff02bc87f8a1d5b9985c1c92ea8e84e854229d9
   react-native-blur: 173953e28d5c90e8632f7bc23fc888fdc1bef8ee
   react-native-compressor: 69ab068187d230867c344707c1287617d67fc0cf
-  react-native-date-picker: 2882e09f0d02afe5af85e2b066157e33c220bed3
+  react-native-date-picker: bbe8fd4b219969f6c3fac20d82866a0c70c572a2
   react-native-document-picker: 489aaeb15e9bc11cc31e577997867e93886eb565
   react-native-image-picker: 3d0b0a3d29c978434e810e92b5da40c995d16a04
   react-native-month-year-picker: 8b72e984757e47e08fece220fa09fcdf1816203d
@@ -2659,7 +2682,7 @@ SPEC CHECKSUMS:
   react-native-safe-area-context: ee4151c59dc010b5211fe68eca73b0f98d17b224
   react-native-slider: 7df6b259d5da74c2559c095f94107cf709023907
   react-native-tracking-transparency: 15eb319f2b982070eb9831582af27d87badfa624
-  react-native-video: 65aa95551c0dbab2a82c03384d226b6a27e615dd
+  react-native-video: 74555275c141967838950444266dff55f673a93c
   react-native-video-cache: 03aa1f85f515d6db4366689bbd2e7ff068a3e434
   react-native-view-shot: 22270050f4336256ca95ea691a585e752c27302b
   React-nativeconfig: 7f8cd6cae21f8bb18c53b746c495e72795fc5cb0
@@ -2689,15 +2712,16 @@ SPEC CHECKSUMS:
   React-utils: 7ce63e32e4ca425cc73cfb84e656bfb9e02e58b3
   ReactCodegen: 76542015d808938c67640540879b99413001fe42
   ReactCommon: a1c914f7575011239a63603a95fb341d0331953c
-  RNCAsyncStorage: b4d0d23c8ebaa65cbbc81c5d6c632edcd26a25e9
+  RNCAsyncStorage: 9e35a7b216f4f61fcc1f2b03ca643273e3c15492
   RNDateTimePicker: b6444613c5e4ed017a9184e30ec059eba1d64db3
   RNDeviceInfo: d863506092aef7e7af3a1c350c913d867d795047
   RNFBApp: fa019b2037b8ef205590ede97d6e4e212c7be970
   RNFBMessaging: 5ca448b58a07a42ad67a78ef88df46f172202047
-  RNGestureHandler: 8198151a2861eed0408e3ff2a96156ff3ee2595c
+  RNGestureHandler: 932e0f07ccf470940afa9d0a8b6d8221e7e19cff
   RNGoogleSignin: 86da11c8dda986f31ea1900b79f1e87c78167ae9
   RNImageCropPicker: b0afedeefd8655254a15c34103718455fde6ce59
   RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
+  RNReactNativeHapticFeedback: dddb16e62d4d9c4a5e0ac1d32ede09f6a9083e4c
   RNReanimated: 2626318a8fc0ce5a4a581ab86c63b97da84bb149
   RNScreens: 1f9cdaad0b1b81ec8c57256f193d918af49808db
   RNShare: 2fd1216f2c8b8d729625d8fac3abe50444a7323b

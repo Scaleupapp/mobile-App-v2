@@ -83,6 +83,12 @@ const Routes = {
   QuizParticipants: 'QuizParticipants',
   QuizAccessRequests: 'QuizAccessRequests',
   LearningVault: 'LearningVault',
+  AreasOfImprovement: 'AreasOfImprovement',    // Main areas page we're building
+  TopicInsight: 'TopicInsight',                // Individual topic detailed insight
+  LearningAnalytics: 'LearningAnalytics',      // Learning analytics dashboard
+  QuizExplanation: 'QuizExplanation',          // Quiz explanation modal/screen
+  SetLearningGoal: 'SetLearningGoal',          // Goal setting screen
+
 };
 
 export default Routes;

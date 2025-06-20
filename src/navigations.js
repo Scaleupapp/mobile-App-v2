@@ -84,6 +84,8 @@ import AIPaymentModal from './screens/Quiz/AIPaymentModal'; // Assuming a modal 
 import MyQuizzesScreen from './screens/Quiz/MyQuizzesScreen';
 import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
 import LearningVault from './screens/LearningVault/LearningVault';
+import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
+import TopicInsight from './screens/TopicInsight/TopicInsight';
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -645,6 +647,16 @@ export const RootNavigator = () => {
         component={LearningVault}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+          name={Routes.AreasOfImprovement}
+          component={AreasOfImprovement}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.TopicInsight}
+          component={TopicInsight}
+          options={{headerShown: false}}
+        />
     </Stack.Navigator>
   );
 };
