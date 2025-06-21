@@ -88,7 +88,7 @@ const Routes = {
   LearningAnalytics: 'LearningAnalytics',      // Learning analytics dashboard
   QuizExplanation: 'QuizExplanation',          // Quiz explanation modal/screen
   SetLearningGoal: 'SetLearningGoal',          // Goal setting screen
-
+  LearningIntelligenceHub: 'LearningIntelligenceHub', // Main hub for learning intelligence
 };
 
 export default Routes;

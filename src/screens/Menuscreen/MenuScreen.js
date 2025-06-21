@@ -20,6 +20,12 @@ import mixpanel from '../../helper/mixpanelClient';
 const MenuScreen = ({navigation, route}) => {
   const menu = [
     {
+      title: 'Learning Intelligence',
+      nav: Routes.LearningIntelligenceHub,
+      subtitle: 'AI insights, knowledge vault & analytics',
+    },
+    /*
+    {
       title: 'Areas of Improvement',
       nav: Routes.AreasOfImprovement,
      
@@ -29,6 +35,7 @@ const MenuScreen = ({navigation, route}) => {
       nav: Routes.LearningVault,
      
     },
+    */
     {
       title: 'My Badge',
       nav: Routes.MyBadge,
@@ -41,10 +48,12 @@ const MenuScreen = ({navigation, route}) => {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
     },
+    /*
     {
       title: 'Performance & Analytics',
       nav: Routes.UserAnalyticsPerf,
     },
+    */
     {
       title: 'Help Centre',
       nav: Routes.HelpScreen,

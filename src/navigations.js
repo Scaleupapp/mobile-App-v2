@@ -86,6 +86,8 @@ import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
 import LearningVault from './screens/LearningVault/LearningVault';
 import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
 import TopicInsight from './screens/TopicInsight/TopicInsight';
+import LearningIntelligenceHub from './screens/LearningIntelligence/LearningIntelligenceHub';
+
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -655,6 +657,11 @@ export const RootNavigator = () => {
         <Stack.Screen
           name={Routes.TopicInsight}
           component={TopicInsight}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.LearningIntelligenceHub}
+          component={LearningIntelligenceHub}
           options={{headerShown: false}}
         />
     </Stack.Navigator>
