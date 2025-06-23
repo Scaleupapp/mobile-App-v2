@@ -37,6 +37,10 @@ const MenuScreen = ({navigation, route}) => {
     },
     */
     {
+      title: 'AI Flashcards',
+      nav: Routes.FlashcardHub,
+    },
+    {
       title: 'My Badge',
       nav: Routes.MyBadge,
     },

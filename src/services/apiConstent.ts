@@ -170,4 +170,56 @@ export const API = {
   LEARNING_CREATE_ORDER: 'learning-assistant/create-order',
   LEARNING_VERIFY_PAYMENT: 'learning-assistant/verify-payment',
 
+  // ==========================================
+  // FLASHCARD SYSTEM API ENDPOINTS
+  // ==========================================
+  
+  // DECK MANAGEMENT
+  FLASHCARD_DECKS: 'flashcards/decks',
+  FLASHCARD_DECK_CREATE: 'flashcards/decks',
+  FLASHCARD_DECK_DETAILS: 'flashcards/decks/:deckId',
+  FLASHCARD_DECK_UPDATE: 'flashcards/decks/:deckId',
+  FLASHCARD_DECK_DELETE: 'flashcards/decks/:deckId',
+  FLASHCARD_DECK_EXPORT: 'flashcards/export/:deckId',
+  
+  // DOCUMENT PROCESSING
+  FLASHCARD_UPLOAD_DOCUMENT: 'flashcards/upload',
+  FLASHCARD_PROCESSING_STATUS: 'flashcards/processing/:processingId',
+  
+  // STUDY SESSIONS
+  FLASHCARD_STUDY_START: 'flashcards/study/:deckId',
+  FLASHCARD_STUDY_ANSWER: 'flashcards/study/answer/:cardId',
+  FLASHCARD_STUDY_STATS: 'flashcards/stats/:deckId',
+  FLASHCARD_DUE_CARDS: 'flashcards/due-cards/:deckId',
+  
+  // CARD MANAGEMENT
+  FLASHCARD_CARDS: 'flashcards/cards',
+  FLASHCARD_CARD_UPDATE: 'flashcards/cards/:cardId',
+  FLASHCARD_CARD_DELETE: 'flashcards/cards/:cardId',
+  
+  // PUBLIC DECKS
+  FLASHCARD_PUBLIC_DECKS: 'public/flashcards/decks',
+  FLASHCARD_PUBLIC_SUBJECTS: 'public/flashcards/subjects/popular',
+  FLASHCARD_PUBLIC_TRENDING: 'public/flashcards/trending',
+  FLASHCARD_PUBLIC_SEARCH: 'public/flashcards/search',
+  FLASHCARD_PUBLIC_PREVIEW: 'public/flashcards/decks/:deckId/preview',
+  FLASHCARD_PUBLIC_TEMPLATES: 'public/flashcards/subjects/:subject/templates',
+  
+  // CRAM MODE
+  FLASHCARD_CRAM_SESSION: 'flashcards/cram/decks/:deckId/cram-session',
+  FLASHCARD_CRAM_RECOMMENDATIONS: 'flashcards/cram/decks/:deckId/cram-recommendations',
+  
+  // SUMMARIES & AI FEATURES
+  FLASHCARD_SUMMARY_GENERATE: 'flashcards/summary/decks/:deckId/generate-summary',
+  FLASHCARD_SUMMARY_QUICK_REVIEW: 'flashcards/summary/decks/:deckId/quick-review-from-source',
+  FLASHCARD_SUMMARY_FORMULA_SHEET: 'flashcards/summary/decks/:deckId/formula-sheet-from-source',
+  FLASHCARD_SUMMARY_COMPREHENSIVE: 'flashcards/summary/decks/:deckId/comprehensive-summary-from-source',
+  
+  // ADMIN
+  FLASHCARD_ADMIN_STATS: 'admin/flashcards/stats',
+  FLASHCARD_ADMIN_PROCESSING_JOBS: 'admin/flashcards/processing-jobs',
+  FLASHCARD_ADMIN_CLEANUP: 'admin/flashcards/cleanup',
+  FLASHCARD_ADMIN_USERS: 'admin/flashcards/users/:userId',
+  FLASHCARD_ADMIN_TEMPLATES: 'admin/flashcards/templates',
+  
 };

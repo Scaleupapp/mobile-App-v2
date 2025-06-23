@@ -21,8 +21,6 @@ export const saveUserBankDetailsApi = (bankDetails: any) => {
   return axiosInstance.post(API.SAVE_BANK_DETAILS, bankDetails);
 };
 
-
-
 export const getOtp = (payload: any) => {
   return axiosInstance.post(API.AUTH_OTP, payload);
 };
@@ -286,24 +284,6 @@ export const deletemultipleChatMessage = (convid: any, payload: any) => {
   );
 };
 
-// export const deletemultipleChatMessage = async (convid: any, payload: any) => {
-//   try {
-//     const user = await AsyncStorage.getItem('userData');
-//     const parsedUser = JSON.parse(user);
-//     const response = await axios.delete(`https://api.scaleupapp.club/api/${API.CHAT}/${convid}/messages/delete-for-me`, {
-//       data:{payload}, // Payload for DELETE request
-//       headers: {
-//         'Content-Type': 'application/json',
-//         Authorization: `Bearer ${parsedUser?.token}`,
-//       },
-//     });
-
-//     console.log('Message deleted:', response.data);
-//   } catch (error) {
-//     console.error('Error deleting message:', error.response?.data || error);
-//   }
-// };
-
 export const markReadAPI = (payload: any) => {
   return axiosInstance.post(`${API.CHAT}/mark-read`, payload);
 };
@@ -429,7 +409,6 @@ export const deleteStory = (payload: any) => {
   return axiosInstance.delete(`stories`, payload);
 };
 
-
 export const clearChat = (id: any) => {
   return axiosInstance.delete(`${API.CHAT}/${id}/messages/clear-chat`);
 };
@@ -476,11 +455,9 @@ export const leaveStudyGroup = (groupId: any) => {
   return axiosInstance.post(`${API.CHAT}/group/${groupId}/leave`);
 };
 
-
 export const getGrouprequest = (groupId: any) => {
   return axiosInstance.get(`${API.CHAT}/group/all-requests`);
 };
-
 
 export const acceptgroupRequest = (payload: any) => {
   return axiosInstance.post(`${API.CHAT}/group/handle-requests`,payload);
@@ -490,12 +467,9 @@ export const getActiveQuiz = (groupId: any) => {
   return axiosInstance.get(`rapidfire-quiz/unattempted-live`);
 };
 
-
 export const submitApprating = (payload: any) => {
   return axiosInstance.post(`users/feedback-rating`,payload);
 };
-
-
 
 export const submitAppfeedback = (payload: any) => {
   return axiosInstance.post(`users/feedback-comment`,payload);
@@ -967,5 +941,287 @@ export const verifyExplanationPaymentApi = (payload: {
   return axiosInstance.post(API.LEARNING_VERIFY_PAYMENT, payload);
 };
 
-// In apiService.ts, add this line:
+// ==========================================
+// FLASHCARD API FUNCTIONS
+// ==========================================
+
+// DECK MANAGEMENT
+export const createFlashcardDeckApi = (payload: {
+  title: string;
+  description?: string;
+  subject: string;
+  subjectDetails?: any;
+  tags?: string[];
+  isPublic?: boolean;
+  originalDeckId?: string; // NEW: for copying decks
+}) => {
+  return axiosInstance.post(API.FLASHCARD_DECK_CREATE, payload);
+};
+
+export const getUserFlashcardDecksApi = (params?: {
+  page?: number;
+  limit?: number;
+  subject?: string;
+  search?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.FLASHCARD_DECKS}?${queryString}`);
+};
+
+export const getFlashcardDeckDetailsApi = (deckId: string, params?: {
+  page?: number;
+  limit?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.FLASHCARD_DECK_DETAILS.replace(':deckId', deckId)}?${queryString}`
+  );
+};
+
+export const updateFlashcardDeckApi = (deckId: string, payload: any) => {
+  return axiosInstance.put(
+    API.FLASHCARD_DECK_UPDATE.replace(':deckId', deckId),
+    payload
+  );
+};
+
+export const deleteFlashcardDeckApi = (deckId: string) => {
+  return axiosInstance.delete(
+    API.FLASHCARD_DECK_DELETE.replace(':deckId', deckId)
+  );
+};
+
+// DOCUMENT PROCESSING
+export const uploadFlashcardDocumentApi = (formData: FormData) => {
+  return axiosInstance.post(API.FLASHCARD_UPLOAD_DOCUMENT, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const getFlashcardProcessingStatusApi = (processingId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_PROCESSING_STATUS.replace(':processingId', processingId)
+  );
+};
+
+// ==========================================
+// ENHANCED STUDY SESSIONS - Priority 1
+// ==========================================
+
+// NEW: Enhanced study session with planning data
+export const startFlashcardStudySessionApi = (
+  deckId: string,
+  params?: {
+    sessionType?: 'new' | 'review' | 'mixed';
+    cardCount?: number;
+    timeLimit?: number;
+    includePlanning?: boolean;
+  }
+) => {
+  const enhancedParams = {
+    ...params,
+    includePlanning: 'true', // Always include planning data for Priority 1
+  };
+  
+  const queryString = new URLSearchParams(enhancedParams as any).toString();
+  return axiosInstance.get(
+    `${API.FLASHCARD_STUDY_START.replace(':deckId', deckId)}?${queryString}`
+  );
+};
+
+// NEW: Enhanced answer submission with detailed feedback
+export const submitFlashcardAnswerApi = (
+  cardId: string,
+  payload: {
+    wasCorrect: boolean;
+    responseTime?: number;
+    difficulty?: string;
+    userAnswer?: string; // NEW: Track user's actual answer
+  }
+) => {
+  return axiosInstance.post(
+    API.FLASHCARD_STUDY_ANSWER.replace(':cardId', cardId),
+    payload
+  );
+};
+
+// NEW: Get due cards count for session planning
+export const getDueCardsCountApi = (deckId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_DUE_CARDS.replace(':deckId', deckId)
+  );
+};
+
+// Enhanced study stats with real-time data
+export const getFlashcardStudyStatsApi = (
+  deckId: string,
+  timeframe?: string
+) => {
+  return axiosInstance.get(
+    `${API.FLASHCARD_STUDY_STATS.replace(':deckId', deckId)}?timeframe=${timeframe || '7d'}`
+  );
+};
+
+// NEW: Study session summary for planning
+export const getStudySessionSummaryApi = (deckId: string) => {
+  return axiosInstance.get(
+    `${API.FLASHCARD_STUDY_STATS.replace(':deckId', deckId)}?summary=true`
+  );
+};
+
+// NEW: Get user progress for a specific deck
+export const getUserProgressApi = (deckId: string) => {
+  return axiosInstance.get(
+    `flashcards/progress/${deckId}`
+  );
+};
+
+// NEW: Get mastery statistics
+export const getMasteryStatsApi = (deckId: string) => {
+  return axiosInstance.get(
+    `flashcards/mastery/${deckId}`
+  );
+};
+
+// ==========================================
+// CARD MANAGEMENT
+// ==========================================
+
+export const updateFlashcardApi = (cardId: string, payload: any) => {
+  return axiosInstance.put(
+    API.FLASHCARD_CARD_UPDATE.replace(':cardId', cardId),
+    payload
+  );
+};
+
+export const deleteFlashcardApi = (cardId: string) => {
+  return axiosInstance.delete(
+    API.FLASHCARD_CARD_DELETE.replace(':cardId', cardId)
+  );
+};
+
+export const createFlashcardApi = (payload: {
+  deckId: string;
+  question: string;
+  answer: string;
+  explanation?: string;
+  hints?: string[];
+  difficulty?: 'easy' | 'medium' | 'hard';
+  tags?: string[];
+  cardType?: 'text' | 'multiple_choice' | 'true_false';
+}) => {
+  return axiosInstance.post(API.FLASHCARD_CARDS, payload);
+};
+
+// ==========================================
+// PUBLIC DECKS
+// ==========================================
+
+export const getPublicFlashcardDecksApi = (params?: {
+  subject?: string;
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.FLASHCARD_PUBLIC_DECKS}?${queryString}`);
+};
+
+export const getPopularFlashcardSubjectsApi = () => {
+  return axiosInstance.get(API.FLASHCARD_PUBLIC_SUBJECTS);
+};
+
+export const getTrendingFlashcardDecksApi = () => {
+  return axiosInstance.get(API.FLASHCARD_PUBLIC_TRENDING);
+};
+
+export const searchFlashcardDecksApi = (params: {
+  query: string;
+  subject?: string;
+  difficulty?: string;
+  minCards?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.FLASHCARD_PUBLIC_SEARCH}?${queryString}`);
+};
+
+export const getFlashcardDeckPreviewApi = (deckId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_PUBLIC_PREVIEW.replace(':deckId', deckId)
+  );
+};
+
+// ==========================================
+// CRAM MODE
+// ==========================================
+
+export const generateFlashcardCramSessionApi = (
+  deckId: string,
+  params?: {
+    timeUntilExam?: string;
+    focusArea?: string;
+    confidenceMode?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.FLASHCARD_CRAM_SESSION.replace(':deckId', deckId)}?${queryString}`
+  );
+};
+
+export const getFlashcardCramRecommendationsApi = (deckId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_CRAM_RECOMMENDATIONS.replace(':deckId', deckId)
+  );
+};
+
+// ==========================================
+// SUMMARIES & AI FEATURES
+// ==========================================
+
+export const generateFlashcardStudySummaryApi = (deckId: string) => {
+  return axiosInstance.post(
+    API.FLASHCARD_SUMMARY_GENERATE.replace(':deckId', deckId)
+  );
+};
+
+export const getFlashcardQuickReviewApi = (
+  deckId: string,
+  timeAvailable?: number
+) => {
+  return axiosInstance.get(
+    `${API.FLASHCARD_SUMMARY_QUICK_REVIEW.replace(':deckId', deckId)}?timeAvailable=${timeAvailable || 15}`
+  );
+};
+
+export const getFlashcardFormulaSheetApi = (deckId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_SUMMARY_FORMULA_SHEET.replace(':deckId', deckId)
+  );
+};
+
+export const getFlashcardComprehensiveSummaryApi = (deckId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_SUMMARY_COMPREHENSIVE.replace(':deckId', deckId)
+  );
+};
+
+// ==========================================
+// EXPORT
+// ==========================================
+
+export const exportFlashcardDeckApi = (deckId: string) => {
+  return axiosInstance.get(
+    API.FLASHCARD_DECK_EXPORT.replace(':deckId', deckId)
+  );
+};
+
+// ==========================================
+// BACKWARD COMPATIBILITY & ALIASES
+// ==========================================
+
+// Maintain backward compatibility
 export const submitForReviewApi = submitQuizForReviewApi;

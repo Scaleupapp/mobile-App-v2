@@ -89,6 +89,22 @@ const Routes = {
   QuizExplanation: 'QuizExplanation',          // Quiz explanation modal/screen
   SetLearningGoal: 'SetLearningGoal',          // Goal setting screen
   LearningIntelligenceHub: 'LearningIntelligenceHub', // Main hub for learning intelligence
+
+    // NEW FLASHCARD ROUTES
+    FlashcardHub: 'FlashcardHub',
+    FlashcardDashboard: 'FlashcardDashboard', // Alternative name for hub
+    MyDecks: 'MyDecks',
+    DeckDetails: 'DeckDetails',
+    StudySession: 'StudySession',
+    CreateDeck: 'CreateDeck',
+    UploadDocument: 'UploadDocument',
+    CramMode: 'CramMode',
+    CramFlashcardViewer: 'CramFlashcardViewer',
+    PublicDecks: 'PublicDecks',
+    FlashcardAnalytics: 'FlashcardAnalytics',
+    FlashcardViewer: 'FlashcardViewer',
+    AddEditCard: 'AddEditCard',
+    StudySummary: 'StudySummary',
 };
 
 export default Routes;
