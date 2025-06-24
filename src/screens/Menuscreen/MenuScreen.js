@@ -39,19 +39,29 @@ const MenuScreen = ({navigation, route}) => {
     {
       title: 'AI Flashcards',
       nav: Routes.FlashcardHub,
+      subtitle: 'Create, study & analyze flashcards',
+    },
+    {
+      title: 'Study Buddy',
+      nav: Routes.AIStudyBuddyHub,
+      subtitle: 'AI-powered study sessions & insights',
     },
     {
       title: 'My Badge',
       nav: Routes.MyBadge,
-    },
-    {
-      title: 'My Profile',
-      nav: Routes.MyProfile,
+      subtitle: 'Track your achievements & progress',
     },
     {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
+      subtitle: 'Connect with your study peers',
     },
+    {
+      title: 'My Profile',
+      nav: Routes.MyProfile,
+      
+    },
+   
     /*
     {
       title: 'Performance & Analytics',
@@ -61,10 +71,12 @@ const MenuScreen = ({navigation, route}) => {
     {
       title: 'Help Centre',
       nav: Routes.HelpScreen,
+      
     },
     {
       title: 'Settings',
       nav: Routes.Settings,
+      
     },
   ];
 
@@ -104,7 +116,7 @@ const MenuScreen = ({navigation, route}) => {
           </Text>
           {item.subtitle && (
             <Text
-              variant="regular11"
+              variant="medium5"
               color={COLORS.grey999999}
               style={{marginLeft: nw(46), marginTop: 2}}>
               {item.subtitle}

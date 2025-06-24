@@ -1,6 +1,7 @@
 import axios from 'axios';
 import {API} from './apiConstent';
 import axiosInstance from './axiosinstance';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const loginApi = (payload: any) => {
@@ -1217,6 +1218,452 @@ export const exportFlashcardDeckApi = (deckId: string) => {
   return axiosInstance.get(
     API.FLASHCARD_DECK_EXPORT.replace(':deckId', deckId)
   );
+};
+
+// ==========================================
+// AI STUDY BUDDY - CORE CONVERSATION
+// ==========================================
+
+// Initialize new study session
+export const aiStudyBuddyInitSessionApi = (payload: {
+  subject: string;
+  syllabus: string;
+  grade?: string;
+  initialQuery?: string;
+  learningGoals?: string[];
+}) => {
+  return axiosInstance.post(API.AI_STUDY_BUDDY_SESSION_INIT, payload);
+};
+
+// Send message in session
+export const aiStudyBuddySendMessageApi = (sessionId: string, payload: {
+  message: string;
+  attachments?: Array<{
+    type: 'image' | 'code' | 'formula' | 'diagram' | 'file';
+    url?: string;
+    filename?: string;
+    metadata?: any;
+  }>;
+}) => {
+  return axiosInstance.post(
+    API.AI_STUDY_BUDDY_SEND_MESSAGE.replace(':sessionId', sessionId),
+    payload
+  );
+};
+
+// Get conversation history
+export const aiStudyBuddyGetHistoryApi = (
+  sessionId: string,
+  params?: {
+    page?: number;
+    limit?: number;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.AI_STUDY_BUDDY_GET_HISTORY.replace(':sessionId', sessionId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// ==========================================
+// AI STUDY BUDDY - SESSION MANAGEMENT
+// ==========================================
+
+// Get user's active sessions
+export const aiStudyBuddyGetActiveSessionsApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_ACTIVE_SESSIONS);
+};
+
+// Get session history with filters
+export const aiStudyBuddyGetSessionHistoryApi = (params?: {
+  page?: number;
+  limit?: number;
+  subject?: string;
+  status?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_SESSION_HISTORY}${queryString ? '?' + queryString : ''}`);
+};
+
+// Get specific session details
+export const aiStudyBuddyGetSessionDetailsApi = (sessionId: string) => {
+  return axiosInstance.get(
+    API.AI_STUDY_BUDDY_SESSION_DETAILS.replace(':sessionId', sessionId)
+  );
+};
+
+// Update session (pause, resume, complete, etc.)
+export const aiStudyBuddyUpdateSessionApi = (sessionId: string, payload: {
+  action: 'pause' | 'resume' | 'complete' | 'archive' | 'update_goals' | 'add_tags';
+  metadata?: {
+    learningGoals?: string[];
+    tags?: string[];
+  };
+}) => {
+  return axiosInstance.patch(
+    API.AI_STUDY_BUDDY_UPDATE_SESSION.replace(':sessionId', sessionId),
+    payload
+  );
+};
+
+// Delete session
+export const aiStudyBuddyDeleteSessionApi = (sessionId: string, permanent: boolean = false) => {
+  return axiosInstance.delete(
+    `${API.AI_STUDY_BUDDY_DELETE_SESSION.replace(':sessionId', sessionId)}${permanent ? '?permanent=true' : ''}`
+  );
+};
+
+// Get user analytics
+export const aiStudyBuddyGetAnalyticsApi = (timeframe: '7d' | '30d' | '90d' | '1y' = '30d') => {
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_USER_ANALYTICS}?timeframe=${timeframe}`);
+};
+
+// Get bookmarked messages
+export const aiStudyBuddyGetBookmarksApi = (params?: {
+  page?: number;
+  limit?: number;
+  subject?: string;
+  topic?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_BOOKMARKS}${queryString ? '?' + queryString : ''}`);
+};
+
+// ==========================================
+// AI STUDY BUDDY - MESSAGE INTERACTIONS
+// ==========================================
+
+// React to message
+export const aiStudyBuddyReactToMessageApi = (messageId: string, payload: {
+  reaction?: 'helpful' | 'not_helpful' | 'partially_helpful' | 'confusing';
+  rating?: number; // 1-5
+}) => {
+  return axiosInstance.post(
+    API.AI_STUDY_BUDDY_MESSAGE_REACT.replace(':messageId', messageId),
+    payload
+  );
+};
+
+// Toggle bookmark on message
+export const aiStudyBuddyToggleBookmarkApi = (messageId: string) => {
+  return axiosInstance.post(
+    API.AI_STUDY_BUDDY_MESSAGE_BOOKMARK.replace(':messageId', messageId)
+  );
+};
+
+// ==========================================
+// AI STUDY BUDDY - QUOTA MANAGEMENT
+// ==========================================
+
+// Get quota status
+export const aiStudyBuddyGetQuotaApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_QUOTA_STATUS);
+};
+
+// Add bonus quota (admin/referral)
+export const aiStudyBuddyAddBonusQuotaApi = (payload: {
+  amount: number;
+  reason: string;
+  expiresInDays?: number;
+}) => {
+  return axiosInstance.post(API.AI_STUDY_BUDDY_ADD_BONUS_QUOTA, payload);
+};
+
+// Reset daily quota (admin)
+export const aiStudyBuddyResetQuotaApi = () => {
+  return axiosInstance.post(API.AI_STUDY_BUDDY_RESET_QUOTA);
+};
+
+// ==========================================
+// AI STUDY BUDDY - SUBSCRIPTION (Future Phase)
+// ==========================================
+
+// Get subscription plans
+export const aiStudyBuddyGetPlansApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_SUBSCRIPTION_PLANS);
+};
+
+// Create subscription order
+export const aiStudyBuddyCreateOrderApi = (payload: {
+  planType: 'monthly' | 'yearly';
+  couponCode?: string;
+}) => {
+  return axiosInstance.post(API.AI_STUDY_BUDDY_CREATE_ORDER, payload);
+};
+
+// Verify subscription payment
+export const aiStudyBuddyVerifyPaymentApi = (payload: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+  subscriptionId: string;
+}) => {
+  return axiosInstance.post(API.AI_STUDY_BUDDY_VERIFY_PAYMENT, payload);
+};
+
+// Get current subscription
+export const aiStudyBuddyGetSubscriptionApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_CURRENT_SUBSCRIPTION);
+};
+
+// Cancel subscription
+export const aiStudyBuddyCancelSubscriptionApi = (payload: {
+  reason?: string;
+  feedback?: string;
+  cancelImmediately?: boolean;
+}) => {
+  return axiosInstance.post(API.AI_STUDY_BUDDY_CANCEL_SUBSCRIPTION, payload);
+};
+
+// ==========================================
+// AI STUDY BUDDY - INTEGRATIONS
+// ==========================================
+
+// Generate flashcards from conversation
+export const aiStudyBuddyGenerateFlashcardsApi = (sessionId: string, payload: {
+  cardCount?: number;
+  deckName?: string;
+  topics?: string[];
+}) => {
+  return axiosInstance.post(
+    API.AI_STUDY_BUDDY_GENERATE_FLASHCARDS.replace(':sessionId', sessionId),
+    payload
+  );
+};
+
+// Generate quiz from conversation
+export const aiStudyBuddyGenerateQuizApi = (sessionId: string, payload: {
+  questionCount?: number;
+  quizTitle?: string;
+  topics?: string[];
+  difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
+}) => {
+  return axiosInstance.post(
+    API.AI_STUDY_BUDDY_GENERATE_QUIZ.replace(':sessionId', sessionId),
+    payload
+  );
+};
+
+// Update areas of improvement
+export const aiStudyBuddyUpdateAreasApi = (sessionId: string) => {
+  return axiosInstance.post(
+    API.AI_STUDY_BUDDY_UPDATE_AREAS.replace(':sessionId', sessionId)
+  );
+};
+
+// Export conversation
+export const aiStudyBuddyExportConversationApi = (
+  sessionId: string,
+  params?: {
+    format?: 'pdf' | 'markdown' | 'txt';
+    includeAnalytics?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.AI_STUDY_BUDDY_EXPORT_CONVERSATION.replace(':sessionId', sessionId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// Download exported file
+export const aiStudyBuddyDownloadFileApi = (filename: string) => {
+  return axiosInstance.get(
+    API.AI_STUDY_BUDDY_DOWNLOAD_EXPORT.replace(':filename', filename),
+    { responseType: 'blob' }
+  );
+};
+
+// ==========================================
+// AI STUDY BUDDY - CONFIGURATION & UTILITIES
+// ==========================================
+
+// Get available subjects and syllabi
+export const aiStudyBuddyGetSubjectsApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_SUBJECTS_CONFIG);
+};
+
+// Get feature availability
+export const aiStudyBuddyGetFeaturesApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_FEATURES);
+};
+
+// Health check
+export const aiStudyBuddyHealthCheckApi = () => {
+  return axiosInstance.get(API.AI_STUDY_BUDDY_HEALTH);
+};
+
+// ==========================================
+// AI STUDY BUDDY - HELPER FUNCTIONS
+// ==========================================
+
+// Parse API response and handle errors
+export const handleAiStudyBuddyResponse = (response: any) => {
+  if (response.data && response.data.success) {
+    return response.data;
+  } else {
+    throw new Error(response.data?.message || 'API request failed');
+  }
+};
+
+// Format error messages for UI
+export const formatAiStudyBuddyError = (error: any) => {
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  } else if (error.message) {
+    return error.message;
+  } else {
+    return 'Something went wrong. Please try again.';
+  }
+};
+
+// Check if quota exceeded from error
+export const isAiStudyBuddyQuotaExceeded = (error: any) => {
+  return error.response?.status === 429 || 
+         error.response?.data?.message?.includes('quota') ||
+         error.response?.data?.message?.includes('limit');
+};
+
+export const aiStudyBuddySearchMessagesApi = (params: {
+  query?: string;
+  page?: number;
+  limit?: number;
+  subject?: string;
+  dateRange?: string;
+  messageType?: string;
+  sessionId?: string;
+  userId?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_SEARCH_MESSAGES}?${queryString}`);
+};
+
+// Alternative: If you want to keep it simple like other functions
+export const aiStudyBuddySearchMessagesApiSimple = (params: any) => {
+  const queryString = new URLSearchParams(params).toString();
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_SEARCH_MESSAGES}?${queryString}`);
+};
+
+interface AIStudyBuddySearchParams {
+  query?: string;
+  page?: number;
+  limit?: number;
+  subject?: string;
+  dateRange?: 'today' | 'week' | 'month' | 'all';
+  messageType?: 'user' | 'ai' | 'all';
+  sessionId?: string;
+  userId?: string;
+}
+
+
+
+// Alternative approach - you can also define it inline like other APIs in your codebase:
+export const aiStudyBuddySearchMessagesApiAlternative = (params: {
+  query?: string;
+  page?: number;
+  limit?: number;
+  subject?: string;
+  dateRange?: string;
+  messageType?: string;
+  sessionId?: string;
+  userId?: string;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_SEARCH_MESSAGES}?${queryString}`);
+};
+
+// If you want to keep it consistent with your existing pattern, use this version:
+export const aiStudyBuddySearchMessagesApiConsistent = (params: any) => {
+  const queryString = new URLSearchParams(params).toString();
+  return axiosInstance.get(`${API.AI_STUDY_BUDDY_SEARCH_MESSAGES}?${queryString}`);
+};
+
+// Check if Pro upgrade required
+export const isAiStudyBuddyUpgradeRequired = (error: any) => {
+  return error.response?.data?.upgradeRequired === true ||
+         error.response?.status === 403;
+};
+
+// Format quota display text
+export const formatAiStudyBuddyQuota = (quota: any) => {
+  if (quota.subscriptionType === 'pro') {
+    return 'Unlimited questions';
+  }
+  
+  const { used, limit, remaining } = quota.dailyQuota;
+  return `${remaining}/${limit} questions remaining today`;
+};
+
+// Calculate time until quota reset
+export const getAiStudyBuddyTimeUntilReset = (resetTime?: Date) => {
+  if (!resetTime) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    resetTime = tomorrow;
+  }
+  
+  const now = new Date();
+  const diff = resetTime.getTime() - now.getTime();
+  
+  if (diff <= 0) return 'Soon';
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else {
+    return `${minutes}m`;
+  }
+};
+
+// Validate session initialization payload
+export const validateAiStudyBuddySession = (payload: {
+  subject: string;
+  syllabus: string;
+  grade?: string;
+  initialQuery?: string;
+  learningGoals?: string[];
+}) => {
+  const errors: string[] = [];
+  
+  if (!payload.subject?.trim()) {
+    errors.push('Subject is required');
+  }
+  
+  if (!payload.syllabus?.trim()) {
+    errors.push('Syllabus is required');
+  }
+  
+  if (payload.initialQuery && payload.initialQuery.length > 1000) {
+    errors.push('Initial query too long (max 1000 characters)');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+// Validate message payload
+export const validateAiStudyBuddyMessage = (payload: {
+  message: string;
+  attachments?: any[];
+}) => {
+  const errors: string[] = [];
+  
+  if (!payload.message?.trim()) {
+    errors.push('Message cannot be empty');
+  }
+  
+  if (payload.message && payload.message.length > 5000) {
+    errors.push('Message too long (max 5000 characters)');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
 };
 
 // ==========================================

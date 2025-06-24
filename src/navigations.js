@@ -99,6 +99,15 @@ import MyDecks from './screens/Flashcards/MyDecks';
 import StudySummary from './screens/Flashcards/StudySummary';
 import CramMode from './screens/Flashcards/CramMode';
 import CramFlashcardViewer from './screens/Flashcards/CramFlashcardViewer.js';  
+import AIStudyBuddyHub from './screens/AIStudyBuddy/AIStudyBuddyHub';
+import AIStudyBuddyNewSession from './screens/AIStudyBuddy/AIStudyBuddyNewSession';
+import AIStudyBuddyChat from './screens/AIStudyBuddy/AIStudyBuddyChat';
+import AIStudyBuddyActiveSessions from './screens/AIStudyBuddy/AIStudyBuddyActiveSessions';
+import AIStudyBuddySessionDetails from './screens/AIStudyBuddy/AIStudyBuddySessionDetails';
+import AIStudyBuddySessionHistory from './screens/AIStudyBuddy/AIStudyBuddySessionHistory';
+import AIStudyBuddyAnalytics from './screens/AIStudyBuddy/AIStudyBuddyAnalytics';
+import AIStudyBuddyBookmarks from './screens/AIStudyBuddy/AIStudyBuddyBookmarks';
+import AIStudyBuddySearch from './screens/AIStudyBuddy/AIStudyBuddySearch';
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -733,6 +742,51 @@ export const RootNavigator = () => {
         <Stack.Screen
           name={Routes.CramFlashcardViewer}
           component={CramFlashcardViewer}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyHub}
+          component={AIStudyBuddyHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyNewSession}
+          component={AIStudyBuddyNewSession}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyChat}
+          component={AIStudyBuddyChat}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name={Routes.AIStudyBuddyActiveSessions} 
+          component={AIStudyBuddyActiveSessions} 
+          options={{headerShown: false}} 
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddySessionDetails}
+          component={AIStudyBuddySessionDetails}
+          options={{headerShown: false}}
+        />    
+        <Stack.Screen
+          name={Routes.AIStudyBuddySessionHistory}
+          component={AIStudyBuddySessionHistory}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyAnalytics}
+          component={AIStudyBuddyAnalytics}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyBookmarks}
+          component={AIStudyBuddyBookmarks}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddySearchMessages}
+          component={AIStudyBuddySearch}
           options={{headerShown: false}}
         />
     </Stack.Navigator>
