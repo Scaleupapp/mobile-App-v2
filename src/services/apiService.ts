@@ -13,6 +13,20 @@ export const checkUserPaymentDetailsApi = () => {
   return axiosInstance.get(API.USER_PAYMENT_DETAILS_CHECK);
 };
 
+export const getContentWithPremiumCheck = async (contentId: string) => {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    const response = await axiosInstance.get(`${API.CONTENT_ACCESS}/${contentId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const saveUserUpiDetailsApi = (upiId: string) => {
   return axiosInstance.post(API.SAVE_UPI_DETAILS, { upiId });
 };
@@ -125,6 +139,8 @@ export const getProfiledetails = (id: any, page: any) => {
     `${API.PROFILE_CONTENT}/${id}?page=${page}&pageSize=10`,
   );
 };
+
+
 
 export const updateProfile = (payload: any) => {
   return axiosInstance.put(API.PROFILE_DETAIL, payload);
@@ -290,7 +306,7 @@ export const deletemultipleChatMessage = (convid: any, payload: any) => {
 //   try {
 //     const user = await AsyncStorage.getItem('userData');
 //     const parsedUser = JSON.parse(user);
-//     const response = await axios.delete(`https://api.scaleupapp.club/api/${API.CHAT}/${convid}/messages/delete-for-me`, {
+//     const response = await axios.delete(`http://192.168.1.8:3000/api/${API.CHAT}/${convid}/messages/delete-for-me`, {
 //       data:{payload}, // Payload for DELETE request
 //       headers: {
 //         'Content-Type': 'application/json',

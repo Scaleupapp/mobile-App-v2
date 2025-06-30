@@ -203,7 +203,7 @@ const Conversation = ({navigation, route}) => {
     }
 
     // **IMPORTANT**: Verify this URL and namespace with your backend.
-    const socketInstance = io('https://api.scaleupapp.club/api/', {
+    const socketInstance = io('http://192.168.1.8:3000/api/', {
       auth: {token: userData.token},
       transports: ['websocket'],
       reconnectionAttempts: 5,

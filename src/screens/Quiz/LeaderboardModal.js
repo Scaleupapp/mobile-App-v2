@@ -68,33 +68,31 @@ const LeaderboardModal = ({visible, onClose, quizId}) => {
 
 
 const getInitials = (username) => {
-  // console.log('=== getInitials called ===');
-  // console.log('Input username:', username);
-  // console.log('Username type:', typeof username);
+
   
   if (!username) {
-    console.log('No username provided, returning ??');
+    // console.log('No username provided, returning ??');
     return '??';
   }
   
   // Split by spaces to handle full names
   const nameParts = username.split(' ').filter(part => part.length > 0);
-  console.log('Name parts:', nameParts);
+  //console.log('Name parts:', nameParts);
   
   if (nameParts.length >= 2) {
     // If there are at least 2 name parts, use first letter of first two parts
     const initials = `${nameParts[0].charAt(0).toUpperCase()}${nameParts[1].charAt(0).toUpperCase()}`;
-    console.log('Two+ parts initials:', initials);
+    //console.log('Two+ parts initials:', initials);
     return initials;
   } else if (nameParts.length === 1) {
     // If single name, use first two characters or just first if name is single character
     const name = nameParts[0];
     const initials = name.length >= 2 ? name.substring(0, 2).toUpperCase() : name.charAt(0).toUpperCase();
-    console.log('Single part initials:', initials);
+    //console.log('Single part initials:', initials);
     return initials;
   }
   
-  console.log('Fallback to ??');
+  // console.log('Fallback to ??');
   return '??';
 };
 
@@ -270,14 +268,14 @@ const getInitials = (username) => {
   <View style={styles.userPerformanceCard}>
     <View style={styles.userPerformanceHeader}>
       {(() => {
-        console.log('=== USER PERFORMANCE PROFILE DEBUG ===');
-        console.log('userRankData:', userRankData);
-        console.log('userRankData.profilePicture:', userRankData.profilePicture);
-        console.log('profilePicture type:', typeof userRankData.profilePicture);
-        console.log('profilePicture length:', userRankData.profilePicture?.length);
-        console.log('Is profilePicture truthy?', !!userRankData.profilePicture);
-        console.log('Is profilePicture default?', userRankData.profilePicture === 'default-profile-pic-url');
-        console.log('userRankData.username:', userRankData.username);
+        // console.log('=== USER PERFORMANCE PROFILE DEBUG ===');
+        // console.log('userRankData:', userRankData);
+        // console.log('userRankData.profilePicture:', userRankData.profilePicture);
+        // console.log('profilePicture type:', typeof userRankData.profilePicture);
+        // console.log('profilePicture length:', userRankData.profilePicture?.length);
+        // console.log('Is profilePicture truthy?', !!userRankData.profilePicture);
+        // console.log('Is profilePicture default?', userRankData.profilePicture === 'default-profile-pic-url');
+        // console.log('userRankData.username:', userRankData.username);
         
         const hasValidProfilePic = userRankData.profilePicture && 
                                   userRankData.profilePicture !== 'default-profile-pic-url' &&
@@ -285,7 +283,7 @@ const getInitials = (username) => {
                                   userRankData.profilePicture !== 'null' &&
                                   userRankData.profilePicture !== 'undefined';
         
-        console.log('hasValidProfilePic:', hasValidProfilePic);
+        // console.log('hasValidProfilePic:', hasValidProfilePic);
         
         if (hasValidProfilePic) {
           return (
@@ -293,19 +291,19 @@ const getInitials = (username) => {
               source={{uri: userRankData.profilePicture}}
               style={styles.userPerformanceProfilePic}
               onError={e => {
-                console.log('=== IMAGE LOAD ERROR ===');
-                console.log('Error loading user profile image:', e.nativeEvent.error);
-                console.log('Failed URI:', userRankData.profilePicture);
+                // console.log('=== IMAGE LOAD ERROR ===');
+                // console.log('Error loading user profile image:', e.nativeEvent.error);
+                  // console.log('Failed URI:', userRankData.profilePicture);
               }}
               onLoad={() => {
-                console.log('=== IMAGE LOADED SUCCESSFULLY ===');
-                console.log('Loaded URI:', userRankData.profilePicture);
+                // console.log('=== IMAGE LOADED SUCCESSFULLY ===');
+                // console.log('Loaded URI:', userRankData.profilePicture);
               }}
             />
           );
         } else {
           const initials = getInitials(userRankData.username);
-          console.log('Showing initials instead:', initials);
+          // console.log('Showing initials instead:', initials);
           return (
             <View style={[
               styles.userPerformanceProfilePic,
@@ -397,12 +395,12 @@ const getInitials = (username) => {
   />
 ) : (
   (() => {
-    console.log('=== PODIUM INITIALS DEBUG ===');
-    console.log('Leader object:', leader);
-    console.log('Leader username:', leader.username);
-    console.log('Is first place:', isFirstPlace);
+      // console.log('=== PODIUM INITIALS DEBUG ===');
+      // console.log('Leader object:', leader);
+      // console.log('Leader username:', leader.username);
+      // console.log('Is first place:', isFirstPlace);
     const initials = getInitials(leader.username);
-    console.log('Generated initials for podium:', initials);
+    // console.log('Generated initials for podium:', initials);
     
     return (
       <View style={[
@@ -506,11 +504,11 @@ const getInitials = (username) => {
   />
 ) : (
   (() => {
-    console.log('=== LEADERBOARD INITIALS DEBUG ===');
-    console.log('Leader object:', leader);
-    console.log('Leader username:', leader.username);
+    // console.log('=== LEADERBOARD INITIALS DEBUG ===');
+    // console.log('Leader object:', leader);
+    // console.log('Leader username:', leader.username);
     const initials = getInitials(leader.username);
-    console.log('Generated initials for leaderboard:', initials);
+    // console.log('Generated initials for leaderboard:', initials);
     
     return (
       <View style={[

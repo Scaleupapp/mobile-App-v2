@@ -14,7 +14,9 @@ export const COLORS = {
   green34A853: '#34A853',   // Primary green (e.g., for success)
   pinkFBD9D7: '#FBD9D7',     // Light pink
   greenishD6EEDD: '#D6EEDD', // Light greenish
-  black333333: '#333333',    // Duplicate of grey333333, often used for main text
+  black333333: '#333333', 
+  green: 'green',
+  red:'red',   // Duplicate of grey333333, often used for main text
 
   // Suggested Light Variants for UI Elements (e.g., backgrounds, tags)
   yellowF5BE00_light: '#FFF9E6', // A very light, pale yellow, good for backgrounds related to yellowF5BE00

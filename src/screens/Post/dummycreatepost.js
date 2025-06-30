@@ -8,10 +8,9 @@ import {
   Dimensions,
   Modal,
   TouchableOpacity,
-  Image, // for image preview
+  Image,
   ActivityIndicator,
-  Platform, // Added for potential KeyboardAvoidingView if needed later
-  Switch,
+  Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {COLORS} from '../../helper/colors';
@@ -26,12 +25,8 @@ import {getProfile} from '../../services/apiService';
 import {launchImageLibrary} from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {useRoute} from '@react-navigation/native';
-import Video from 'react-native-video';
 
 import {compressImage, compressVideo} from '../../helper/commonFunctions';
-
-import { getVideoDuration } from 'react-native-video-duration';
-
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
@@ -43,16 +38,16 @@ const CreatePost = ({navigation}) => {
   const [topics, setTopics] = useState('');
   const [captions, setCaptions] = useState('');
   const [hashtags, setHashtags] = useState('');
-  const [file, setFile] = useState(null); // Stores {uri, type, name}
-  const [contentType, setContentType] = useState('Image'); // default
+  const [file, setFile] = useState(null);
+  const [contentType, setContentType] = useState('Image');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
 
   // Premium content state
-  const [isPremium, setIsPremium] = useState(false);
-  const [price, setPrice] = useState('');
-  // const [previewDuration, setPreviewDuration] = useState('');
+  const [activeTab, setActiveTab] = useState('normal'); // 'normal' or 'premium'
+  const [premiumPrice, setPremiumPrice] = useState('');
+  const [premiumContentLeft, setPremiumContentLeft] = useState(3); // Demo value
 
   // Modal for selecting media
   const [modalVisible, setModalVisible] = useState(false);
@@ -62,41 +57,6 @@ const CreatePost = ({navigation}) => {
 
   // Determine if editing an existing draft
   const isEditingDraft = Boolean(draftData?.id);
-
-
-  const [contentMetrics, setContentMetrics] = useState(null);
-
-
-
-const fetchContentMetrics = async () => {
-  try {
-    const userData = await AsyncStorage.getItem('userData');
-    const {token} = JSON.parse(userData);
-    
-    const response = await axios.get(
-      'http://192.168.1.8:3000/api/content/fetch-upload-metrics',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    
-    setContentMetrics(response.data.userContentMetrics);
-  } catch (error) {
-    console.log('Content metrics fetch error:', error?.response?.data?.message || error.message);
-    // Only show toast if user has creator badge (otherwise they can't see metrics anyway)
-    if (profileData?.creatorBadgeUnlocked) {
-      showToast({
-        title: 'Failed to load content metrics',
-        type: 'error',
-      });
-    }
-  }
-};
-
-
-
 
   useEffect(() => {
     if (draftData) {
@@ -113,10 +73,6 @@ const fetchContentMetrics = async () => {
 
       setCaptions(draftData.captions || '');
       setContentType(draftData.contentType || 'Image');
-      setIsPremium(draftData.isPremium || false);
-      setPrice(draftData.price ? draftData.price.toString() : '');
-      // setPreviewDuration(draftData.previewDuration ? draftData.previewDuration.toString() : '');
-      
       if (draftData.file && draftData.file.uri) {
         setFile({
           uri: draftData.file.uri,
@@ -124,120 +80,18 @@ const fetchContentMetrics = async () => {
           name: draftData.file.name,
         });
       }
+      
+      // Set premium data if exists
+      if (draftData.isPremium) {
+        setActiveTab('premium');
+        setPremiumPrice(draftData.price?.toString() || '');
+      }
     }
   }, [draftData]);
 
   useEffect(() => {
     getProfileData();
   }, []);
-
-  useEffect(() => {
-  if (profileData?.creatorBadgeUnlocked) {
-    fetchContentMetrics();
-  }
-}, [profileData]);
-
-
-
-
-  // console.log("vkhbsksdvkbdsvbkvdskbvsd",profileData?.creatorBadgeUnlocked);
-
-
-
-  const PremiumContentCounter = () => {
-  if (!profileData?.creatorBadgeUnlocked || !contentMetrics) {
-    return null;
-  }
-
-  const { premiumContent } = contentMetrics;
-  console.log('ppppppppppppppppp',premiumContent)
-  const remainingCount = premiumContent.permittedUploadCount - premiumContent.uploadCount;
-
-  return (
-    <View style={styles.premiumCounterContainer}>
-      <View style={styles.premiumCounterHeader}>
-        <Icon name="diamond-outline" size={nw(18)} color={COLORS.yellowF5BE00} />
-        <Text variant="medium14" color={COLORS.greyBBBBBB}>
-          Premium Content Quota
-        </Text>
-      </View>
-      
-      <View style={styles.premiumCounterStats}>
-        <View style={styles.statItem}>
-          <Text variant="bold16" color={COLORS.blue043142}>
-            {remainingCount}
-          </Text>
-          <Text variant="regular12" color={COLORS.grey999999}>
-            Remaining
-          </Text>
-        </View>
-        
-        <View style={styles.statDivider} />
-        
-        <View style={styles.statItem}>
-          <Text variant="regular14" color={COLORS.greyBBBBBB}>
-            {premiumContent.uploadCount}/{premiumContent.permittedUploadCount}
-          </Text>
-          <Text variant="regular12" color={COLORS.grey999999}>
-            Used this month
-          </Text>
-        </View>
-      </View>
-      
-      {remainingCount === 0 && (
-        <View style={styles.quotaExhaustedWarning}>
-          <Icon name="warning-outline" size={nw(16)} color={COLORS.red} />
-          <Text variant="regular12" color={COLORS.red}>
-            Upload more free videos to increase your premium quota
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-};
-
-const ContentRequirementsChecker = () => {
-  if (!contentMetrics) {
-    return null;
-  }
-
-  const { freeContent, overallFreeContentCount } = contentMetrics;
-  const hasUploadedTenOverall = overallFreeContentCount >= 10;
-  const hasUploadedThreeThisMonth = freeContent.currentMonthCount >= 3;
-
-  return (
-    <View style={styles.requirementsContainer}>
-      <Text variant="medium14" color={COLORS.greyBBBBBB} style={styles.requirementsTitle}>
-        Premium Content Requirements
-      </Text>
-      
-      <View style={styles.requirementRow}>
-        <Icon 
-          name={hasUploadedTenOverall ? "checkmark-circle" : "close-circle"} 
-          size={nw(18)} 
-          color={hasUploadedTenOverall ? COLORS.green : COLORS.red} 
-        />
-        <Text variant="regular12" color={COLORS.greyBBBBBB}>
-          Upload 10+ free content overall ({overallFreeContentCount}/10)
-        </Text>
-      </View>
-      
-      <View style={styles.requirementRow}>
-        <Icon 
-          name={hasUploadedThreeThisMonth ? "checkmark-circle" : "close-circle"} 
-          size={nw(18)} 
-          color={hasUploadedThreeThisMonth ? COLORS.green : COLORS.red} 
-        />
-        <Text variant="regular12" color={COLORS.greyBBBBBB}>
-          Upload 3+ free content this month ({freeContent.currentMonthCount}/3)
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-
-
 
   const resetForm = () => {
     setHeading('');
@@ -247,33 +101,25 @@ const ContentRequirementsChecker = () => {
     setFile(null);
     setContentType('Image');
     setUploadProgress(0);
-    setIsPremium(false);
-    setPrice('');
-    // setPreviewDuration('');
-    // Do not reset isUploading or isCompressing here, they are handled by their operations
+    setActiveTab('normal');
+    setPremiumPrice('');
   };
 
   const removeFile = () => {
     setFile(null);
-    //setContentType('Image'); // Content type will be re-evaluated on next selection
   };
 
   const getProfileData = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
       if (!userData) {
-        // Handle case where user data is not found, perhaps prompt login
         showToast({title: 'User not logged in.', type: 'error'});
-        // navigation.navigate('Login'); // Example redirect
         return;
       }
       const parsedUser = JSON.parse(userData);
-
-      const res = await getProfile(''); // Assuming getProfile uses stored token or handles auth
+      const res = await getProfile('');
       console.log('Profile data fetched:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
-
-      console.log("gggggggggggggggggggg",parsedUser);
     } catch (error) {
       console.log('Profile data fetch error:', error?.response?.data?.message || error.message);
       showToast({
@@ -292,39 +138,30 @@ const ContentRequirementsChecker = () => {
     const selectedContentType = asset.type && asset.type.toLowerCase().includes('video') ? 'Video' : 'Image';
     setContentType(selectedContentType);
 
-    // Set temporary file for immediate preview with original URI
     const tempFile = {
       uri: asset.uri,
       type: asset.type,
-      name: asset.fileName || 'media', // Use fileName from asset
+      name: asset.fileName || 'media',
     };
     setFile(tempFile);
 
     try {
       setIsCompressing(true);
       let compressedUri;
-      let videoDuration = null;
 
       if (selectedContentType === 'Video') {
-        
-
         compressedUri = await compressVideo(asset.uri);
-        videoDuration = asset.duration || asset.playableDuration || 60; // Default 60 seconds
-        console.log('Video duration from asset:', videoDuration);
-        
       } else {
         compressedUri = await compressImage(asset.uri);
       }
-      setFile({...tempFile, uri: compressedUri,
-              duration: videoDuration // Store duration in file object
-      }); // Update with compressed URI
+      setFile({...tempFile, uri: compressedUri});
     } catch (error) {
       console.error('Error processing file:', error);
       showToast({
         title: 'Failed to process file',
         type: 'error',
       });
-      setFile(null); // Revert or clear file on compression error
+      setFile(null);
     } finally {
       setIsCompressing(false);
     }
@@ -338,7 +175,7 @@ const ContentRequirementsChecker = () => {
       });
       return;
     }
-    setModalVisible(false); // Close modal immediately
+    setModalVisible(false);
 
     try {
       const result = await launchImageLibrary({
@@ -368,36 +205,23 @@ const ContentRequirementsChecker = () => {
     }
   };
 
-const handlePremiumToggle = (value) => {
-  if (value && contentMetrics) {
-    const hasUploadedTenOverall = contentMetrics.overallFreeContentCount >= 10;
-    const hasUploadedThreeThisMonth = contentMetrics.freeContent.uploadCount >= 3;
-    
-    if (!hasUploadedTenOverall || !hasUploadedThreeThisMonth) {
-      showToast({
-        title: 'Requirements not met for premium content',
-        type: 'error'
-      });
-      return;
-    }
-  }
-  
-  setIsPremium(value);
-  if (!value) {
-    setPrice('');
-  }
-};
-
-  const validatePremiumFields = () => {
-    if (isPremium) {
-      if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+  const validatePremiumContent = () => {
+    if (activeTab === 'premium') {
+      if (premiumContentLeft <= 0) {
+        showToast({title: 'No premium content slots left for this month.', type: 'error'});
+        return false;
+      }
+      
+      if (!premiumPrice || isNaN(Number(premiumPrice))) {
         showToast({title: 'Please enter a valid price for premium content.', type: 'error'});
         return false;
       }
-      // if (!previewDuration || isNaN(parseInt(previewDuration)) || parseInt(previewDuration) <= 0) {
-      //   showToast({title: 'Please enter a valid preview duration in seconds.', type: 'error'});
-      //   return false;
-      // }
+      
+      const price = Number(premiumPrice);
+      if (price < 100 || price > 500) {
+        showToast({title: 'Price should be between ₹100 - ₹500', type: 'error'});
+        return false;
+      }
     }
     return true;
   };
@@ -418,21 +242,11 @@ const handlePremiumToggle = (value) => {
       return;
     }
     if (!file) {
-        showToast({title: 'Please upload a file.', type: 'error'});
-        return;
-    }
-
-    // Validate premium fields if premium is enabled
-    if (!validatePremiumFields()) {
+      showToast({title: 'Please upload a file.', type: 'error'});
       return;
     }
 
-    // Check if user has creator badge for premium content
-    if (isPremium && !profileData?.creatorBadgeUnlocked) {
-      showToast({
-        title: 'You need to unlock the Content Creator badge to create premium content.',
-        type: 'error'
-      });
+    if (!validatePremiumContent()) {
       return;
     }
 
@@ -454,44 +268,22 @@ const handlePremiumToggle = (value) => {
 
       formData.append('relatedTopics', JSON.stringify(topicsArray));
       formData.append('hashtags', JSON.stringify(hashtagsArray));
-      formData.append('verify', 'Yes'); // Assuming this is constant
+      formData.append('verify', 'Yes');
       formData.append('captions', captions);
       formData.append('contentType', contentType);
       formData.append('isDraft', isDraft ? 'true' : 'false');
-
-      // Add premium content fields
-      if (isPremium) {
-        formData.append('isPremium', 'true');
-        formData.append('price', price);
-// Calculate preview duration as 10% of video duration
-  if (contentType === 'Video' && file?.duration) {
-    const calculatedPreviewDuration = Math.max(2, Math.floor(file.duration * 0.1)); // Minimum 5 seconds
-    formData.append('previewDuration', calculatedPreviewDuration.toString());
-  } else {
-    formData.append('previewDuration', '10'); // Default for images or if duration unavailable
-  }
-      } else {
-        formData.append('isPremium', 'false');
-      }
-
-      // Append media if it's a new file or if it's different from the draft's original file
-      // This condition ensures we don't re-upload the same file if only text fields changed for a draft
-      let shouldAppendMedia = true;
-      if (isEditingDraft && draftData.file && file.uri === draftData.file.uri) {
-          // If editing a draft AND the file URI is the same as the initial draft file URI,
-          // We might not need to re-upload it unless the backend requires it for updates.
-          // For simplicity, the current logic appends if file exists.
-          // If your backend can update post text without new media, you might add more sophisticated logic here.
-          // However, if URI is from compression, it might differ from a remote URI if draftData.file.uri is a remote URL.
-          // The original condition `!draftData?.file || file.uri !== draftData.file.uri` is safer if draft file URIs are local/temp.
-          // Let's assume for now we always send it if `file` is present.
+      
+      // Premium content fields
+      formData.append('isPremium', activeTab === 'premium' ? 'true' : 'false');
+      if (activeTab === 'premium') {
+        formData.append('price', premiumPrice);
       }
 
       if (file && file.uri) {
         formData.append('media', {
           uri: file.uri,
           type: file.type,
-          name: file.name || `${contentType.toLowerCase()}_${Date.now()}`, // Ensure a name
+          name: file.name || `${contentType.toLowerCase()}_${Date.now()}`,
         });
       }
 
@@ -512,12 +304,9 @@ const handlePremiumToggle = (value) => {
       };
 
       if (isEditingDraft) {
-        // If it's a draft, we decide to update or publish it.
-        // The original code used PUT for both updating a draft and publishing an existing draft.
-        // This seems fine if the backend differentiates via the endpoint or 'isDraft' flag.
         const endpoint = isDraft
-          ? `http://192.168.1.8:3000/api/content/${draftData.id}` // Update draft
-          : `http://192.168.1.8:3000/api/content/publish/${draftData.id}`; // Publish draft
+          ? `http://192.168.1.8:3000/api/content/${draftData.id}`
+          : `http://192.168.1.8:3000/api/content/publish/${draftData.id}`;
 
         response = await axios.put(endpoint, formData, config);
 
@@ -527,7 +316,6 @@ const handlePremiumToggle = (value) => {
         });
 
       } else {
-        // Creating a new post or a new draft
         response = await axios.post(
           'http://192.168.1.8:3000/api/content/create',
           formData,
@@ -539,18 +327,12 @@ const handlePremiumToggle = (value) => {
         });
       }
 
-      console.log('Post/Draft Operation Success:', response.data);
-      
-      // Show achievement message if creator badge was unlocked
-      if (response.data?.acheivement) {
-        setTimeout(() => {
-          showToast({
-            title: response.data.acheivement,
-            type: 'success',
-          });
-        }, 1000);
+      // Decrease premium content count if premium content was created
+      if (activeTab === 'premium' && !isDraft) {
+        setPremiumContentLeft(prev => prev - 1);
       }
-      
+
+      console.log('Post/Draft Operation Success:', response.data);
       setTimeout(() => {
         resetForm();
         navigation.goBack();
@@ -562,7 +344,6 @@ const handlePremiumToggle = (value) => {
       showToast({title: errorMessage, type: 'error'});
     } finally {
       setIsUploading(false);
-      // setUploadProgress(0); // Progress bar will hide or reset based on isUploading
     }
   };
 
@@ -570,6 +351,66 @@ const handlePremiumToggle = (value) => {
   const publishButtonText = isEditingDraft ? "Publish Draft" : "Publish";
   const saveDraftButtonText = isEditingDraft ? "Update Draft" : "Save Draft";
   const disableActions = isUploading || isCompressing;
+
+  const renderTabHeader = () => (
+    <View style={styles.tabContainer}>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'normal' && styles.activeTab]}
+        onPress={() => setActiveTab('normal')}
+        disabled={disableActions}>
+        <Text style={[styles.tabText, activeTab === 'normal' && styles.activeTabText]}>
+          Normal
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'premium' && styles.activeTab]}
+        onPress={() => setActiveTab('premium')}
+        disabled={disableActions}>
+        <Text style={[styles.tabText, activeTab === 'premium' && styles.activeTabText]}>
+          Premium
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderPremiumOptions = () => {
+    if (activeTab !== 'premium') return null;
+
+    return (
+      <View style={styles.premiumOptionsContainer}>
+        <View style={styles.premiumInfoContainer}>
+          <View style={styles.premiumInfoItem}>
+            <Icon name="star" size={nw(20)} color={COLORS.yellowF5BE00} />
+            <Text style={styles.premiumInfoText}>
+              Premium content left: {premiumContentLeft}
+            </Text>
+          </View>
+        </View>
+        
+        <CustomTextInput
+          label="Price (₹100 - ₹500)"
+          value={premiumPrice}
+          onChangeText={(text) => {
+            // Only allow numbers
+            const numericText = text.replace(/[^0-9]/g, '');
+            if (Number(numericText) > 500) {
+              showToast({title: 'Maximum price is ₹500', type: 'warning'});
+              return;
+            }
+            setPremiumPrice(numericText);
+          }}
+          keyboardType="numeric"
+          disabled={disableActions}
+        />
+        
+        {premiumPrice && Number(premiumPrice) > 500 && (
+          <Text style={styles.warningText}>
+            ⚠️ Price cannot exceed ₹500
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -583,13 +424,13 @@ const handlePremiumToggle = (value) => {
         style={{flex: 1}}
         contentContainerStyle={{
           flexGrow: 1,
-          // Removed minHeight: '100%' as flexGrow: 1 on ScrollView and flex:1 on children should handle expansion
         }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled" // Good for inputs in scrollview
-        >
+        keyboardShouldPersistTaps="handled">
         <View style={styles.layer1}>
           <View style={styles.layer2}>
+            {renderTabHeader()}
+            
             <CustomTextInput
               label="Heading"
               value={heading}
@@ -607,8 +448,8 @@ const handlePremiumToggle = (value) => {
               value={captions}
               onChangeText={setCaptions}
               multiline={true}
-              numberOfLines={4} // Adjust as needed
-              textAlignVertical="top" // Good for multiline
+              numberOfLines={4}
+              textAlignVertical="top"
               disabled={disableActions}
             />
             <CustomTextInput
@@ -617,55 +458,8 @@ const handlePremiumToggle = (value) => {
               onChangeText={setHashtags}
               disabled={disableActions}
             />
-            {profileData?.creatorBadgeUnlocked && <PremiumContentCounter />}
-            {<ContentRequirementsChecker />}
 
-
-
-            {/* Premium Content Section */}
-            <View style={styles.premiumSection}>
-              <View style={styles.premiumToggleContainer}>
-                <Text variant="medium14" color={COLORS.greyBBBBBB}>
-                  Premium Content
-                </Text>
-                <Switch
-                  value={isPremium}
-                  onValueChange={handlePremiumToggle}
-                  disabled={disableActions || !profileData?.creatorBadgeUnlocked}
-                  trackColor={{ false: COLORS.greyBBBBBB, true: COLORS.yellowF5BE00 }}
-                  thumbColor={isPremium ? COLORS.whiteFFFFFF : COLORS.greyBBBBBB}
-                />
-              </View>
-
-                {/* <ContentRequirementsChecker /> */}
-
-
-             
-
-              {isPremium && (
-                <View style={styles.premiumFieldsContainer}>
-                  <CustomTextInput
-                    label="Price (Rs. 99 - Rs. 499)"
-                    value={price}
-                    onChangeText={setPrice}
-                    keyboardType="numeric"
-                    placeholder="e.g., Rs. 99"
-                    disabled={disableActions}
-                  />
-                  {/* <CustomTextInput
-                    label="Preview Duration (seconds)"
-                    value={previewDuration}
-                    onChangeText={setPreviewDuration}
-                    keyboardType="numeric"
-                    placeholder="e.g., 30"
-                    disabled={disableActions}
-                  /> */}
-                  {/* <Text variant="regular12" color={COLORS.grey999999} style={styles.premiumHelpText}>
-                    Users will see a preview of your content for the specified duration before being prompted to purchase.
-                  </Text> */}
-                </View>
-              )}
-            </View>
+            {renderPremiumOptions()}
 
             {/* Upload Section */}
             <Text variant="medium14" color={COLORS.greyBBBBBB} style={styles.uploadLabel}>
@@ -708,28 +502,20 @@ const handlePremiumToggle = (value) => {
                     {file.name || 'Selected media'}
                   </Text>
 
-                  {!disableActions && ( // Show remove button only if not uploading/compressing
+                  {!disableActions && (
                     <TouchableOpacity
                       style={styles.removeFileButton}
                       onPress={removeFile}
-                      disabled={disableActions} // Redundant but safe
-                      >
+                      disabled={disableActions}>
                       <Icon name="close-circle" size={nw(26)} color={COLORS.red} />
                     </TouchableOpacity>
-                  )}
-
-                  {isPremium && (
-                    <View style={styles.premiumBadge}>
-                      <Icon name="diamond-outline" size={nw(16)} color={COLORS.yellowF5BE00} />
-                      <Text style={styles.premiumBadgeText}>Premium</Text>
-                    </View>
                   )}
                 </View>
               )}
             </View>
 
             {/* Upload Progress */}
-            {isUploading && ( // Only show progress when actually uploading
+            {isUploading && (
               <View style={styles.progressContainer}>
                 <View
                   style={[styles.progressBar, {width: `${uploadProgress}%`}]}
@@ -747,25 +533,24 @@ const handlePremiumToggle = (value) => {
                 height={nh(40)}
                 textStyle={{fontSize: 14}}
                 onPress={() => navigation.goBack()}
-                disabled={isUploading} // Cancel should ideally not be disabled by compression
+                disabled={isUploading}
               />
               <Button
                 text={saveDraftButtonText}
-                width={nw(100)} // Slightly wider for longer text
+                width={nw(100)}
                 height={nh(40)}
                 textStyle={{fontSize: 14}}
                 onPress={() => handlePost(true)}
                 disabled={disableActions}
-                variant="outline" // Making save draft secondary
+                variant="outline"
               />
               <Button
                 text={publishButtonText}
-                width={nw(100)} // Slightly wider
+                width={nw(100)}
                 height={nh(40)}
                 textStyle={{fontSize: 14}}
                 onPress={() => handlePost(false)}
                 disabled={disableActions}
-                // Default variant (likely solid) to make it primary
               />
             </View>
           </View>
@@ -778,7 +563,7 @@ const handlePremiumToggle = (value) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-            if (!disableActions) setModalVisible(false);
+          if (!disableActions) setModalVisible(false);
         }}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -790,7 +575,6 @@ const handlePremiumToggle = (value) => {
               <Icon name="images-outline" size={nw(24)} color={COLORS.blue043142} />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
-            {/* Add more options like "Take Photo/Video" here if needed */}
             <TouchableOpacity
               style={styles.modalCancelOption}
               onPress={() => setModalVisible(false)}
@@ -804,7 +588,6 @@ const handlePremiumToggle = (value) => {
   );
 };
 
-
 export default CreatePost;
 
 const styles = StyleSheet.create({
@@ -812,70 +595,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.yellowF5BE00,
   },
-
-   premiumCounterContainer: {
-    backgroundColor: COLORS.whiteFFFFFF,
-    borderRadius: nw(8),
-    padding: nw(16),
-    marginBottom: nh(16),
-    borderWidth: 1,
-    borderColor: COLORS.greyEEEEEE,
-  },
-  
-  premiumCounterHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: nh(12),
-  },
-
-  requirementsContainer: {
-  backgroundColor: COLORS.whiteFFFFFF,
-  padding: nw(16),
-  marginVertical: nh(8),
-  borderRadius: nw(8),
-  borderWidth: 1,
-  borderColor: COLORS.greyEEEEEE,
-},
-requirementsTitle: {
-  marginBottom: nh(12),
-},
-requirementRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: nh(8),
-  gap: nw(8),
-},
-
-
-  
-  premiumCounterStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  
-  statDivider: {
-    width: 1,
-    height: nh(30),
-    backgroundColor: COLORS.greyEEEEEE,
-    marginHorizontal: nw(16),
-  },
-  
-  quotaExhaustedWarning: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nh(12),
-    padding: nw(8),
-    backgroundColor: '#FEF2F2',
-    borderRadius: nw(6),
-  },
-
-  
   layer1: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
@@ -1123,3 +842,18 @@ requirementRow: {
     fontWeight: 'bold',
   },
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

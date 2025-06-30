@@ -259,6 +259,7 @@ const Home = ({navigation, route}) => {
       if (res?.data?.userProfileInfo) {
         const newdata = {...userData, ...res.data.userProfileInfo};
         dispatch(actions.setUserData(newdata));
+        // console.log("sjdfknzvdkhbsefhbfeshbwefj",res?.data?.userProfileInfo);
       }
     } catch (error) {
       console.log(error?.response?.data?.message, 'getProfileData error');
