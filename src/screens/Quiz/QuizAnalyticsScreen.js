@@ -604,13 +604,7 @@ const QuizAnalyticsScreen = ({navigation, route}) => {
         />
       </ScrollView>
       
-      {/* Participation Timeline */}
-      <View style={styles.chartCard}>
-        <Text variant="semibold16" color={COLORS.blue043142} style={styles.chartTitle}>
-          Participation Timeline
-        </Text>
-        {renderParticipationChart()}
-      </View>
+      
       
       {/* Score Distribution */}
       <View style={styles.chartCard}>

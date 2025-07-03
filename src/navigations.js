@@ -83,7 +83,31 @@ import QuizAccessRequestsScreen from './screens/Quiz/QuizAccessRequestsScreen';
 import AIPaymentModal from './screens/Quiz/AIPaymentModal'; // Assuming a modal might be its own screen or part of another
 import MyQuizzesScreen from './screens/Quiz/MyQuizzesScreen';
 import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
-
+import LearningVault from './screens/LearningVault/LearningVault';
+import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
+import TopicInsight from './screens/TopicInsight/TopicInsight';
+import LearningIntelligenceHub from './screens/LearningIntelligence/LearningIntelligenceHub';
+import FlashcardHub from './screens/Flashcards/FlashcardHub'; 
+import CreateDeck from './screens/Flashcards/CreateDeck';
+import UploadDocument from './screens/Flashcards/UploadDocument';
+import DeckDetails from './screens/Flashcards/DeckDetails';
+import FlashcardViewer from './screens/Flashcards/FlashcardViewer';
+import BrowsePublicDecks from './screens/Flashcards/BrowsePublicDecks';
+import AddEditCard from './screens/Flashcards/AddEditCard';
+import FlashcardAnalytics from './screens/Flashcards/FlashcardAnalytics';
+import MyDecks from './screens/Flashcards/MyDecks';
+import StudySummary from './screens/Flashcards/StudySummary';
+import CramMode from './screens/Flashcards/CramMode';
+import CramFlashcardViewer from './screens/Flashcards/CramFlashcardViewer.js';  
+import AIStudyBuddyHub from './screens/AIStudyBuddy/AIStudyBuddyHub';
+import AIStudyBuddyNewSession from './screens/AIStudyBuddy/AIStudyBuddyNewSession';
+import AIStudyBuddyChat from './screens/AIStudyBuddy/AIStudyBuddyChat';
+import AIStudyBuddyActiveSessions from './screens/AIStudyBuddy/AIStudyBuddyActiveSessions';
+import AIStudyBuddySessionDetails from './screens/AIStudyBuddy/AIStudyBuddySessionDetails';
+import AIStudyBuddySessionHistory from './screens/AIStudyBuddy/AIStudyBuddySessionHistory';
+import AIStudyBuddyAnalytics from './screens/AIStudyBuddy/AIStudyBuddyAnalytics';
+import AIStudyBuddyBookmarks from './screens/AIStudyBuddy/AIStudyBuddyBookmarks';
+import AIStudyBuddySearch from './screens/AIStudyBuddy/AIStudyBuddySearch';
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -248,11 +272,11 @@ const TabNavigator = props => {
         }}
       />
       <Tab.Screen
-        name={Routes.LearningVideo}
-        component={LearningVideo}
+        name={Routes.FlashcardHub}
+        component={FlashcardHub}
         options={{
           headerShown: false,
-          tabBarLabel: ({focused}) => setBottomIconText('Videos', focused),
+          tabBarLabel: ({focused}) => setBottomIconText('Flashcard', focused),
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.book1 : icons.book2, focused),
         }}
@@ -640,6 +664,131 @@ export const RootNavigator = () => {
         component={MyQuizzesScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={Routes.LearningVault}
+        component={LearningVault}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+          name={Routes.AreasOfImprovement}
+          component={AreasOfImprovement}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.TopicInsight}
+          component={TopicInsight}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.LearningIntelligenceHub}
+          component={LearningIntelligenceHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.FlashcardHub}
+          component={FlashcardHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.CreateDeck}
+          component={CreateDeck}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.UploadDocument}
+          component={UploadDocument}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.DeckDetails}
+          component={DeckDetails}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.FlashcardViewer}
+          component={FlashcardViewer}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.PublicDecks}
+          component={BrowsePublicDecks}
+          options={{headerShown: false}}
+        />  
+        <Stack.Screen
+          name={Routes.AddEditCard}
+          component={AddEditCard}
+          options={{headerShown: false}}
+        />
+          <Stack.Screen
+          name={Routes.FlashcardAnalytics}
+          component={FlashcardAnalytics}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.MyDecks}
+          component={MyDecks}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.StudySummary}
+          component={StudySummary}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.CramMode}
+          component={CramMode}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.CramFlashcardViewer}
+          component={CramFlashcardViewer}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyHub}
+          component={AIStudyBuddyHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyNewSession}
+          component={AIStudyBuddyNewSession}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyChat}
+          component={AIStudyBuddyChat}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name={Routes.AIStudyBuddyActiveSessions} 
+          component={AIStudyBuddyActiveSessions} 
+          options={{headerShown: false}} 
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddySessionDetails}
+          component={AIStudyBuddySessionDetails}
+          options={{headerShown: false}}
+        />    
+        <Stack.Screen
+          name={Routes.AIStudyBuddySessionHistory}
+          component={AIStudyBuddySessionHistory}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyAnalytics}
+          component={AIStudyBuddyAnalytics}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyBookmarks}
+          component={AIStudyBuddyBookmarks}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddySearchMessages}
+          component={AIStudyBuddySearch}
+          options={{headerShown: false}}
+        />
     </Stack.Navigator>
   );
 };

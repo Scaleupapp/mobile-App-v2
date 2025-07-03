@@ -5,7 +5,7 @@ import {
   StatusBar,
   View,
   Pressable,
-  Alert, // <-- Import Alert
+  Alert,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {DEVICE_WIDTH, nh, nw} from '../../helper/scales';
@@ -20,28 +20,63 @@ import mixpanel from '../../helper/mixpanelClient';
 const MenuScreen = ({navigation, route}) => {
   const menu = [
     {
-      title: 'My Badge',
-      nav: Routes.MyBadge,
+      title: 'Learning Intelligence',
+      nav: Routes.LearningIntelligenceHub,
+      subtitle: 'AI insights, knowledge vault & analytics',
+    },
+    /*
+    {
+      title: 'Areas of Improvement',
+      nav: Routes.AreasOfImprovement,
+     
     },
     {
-      title: 'My Profile',
-      nav: Routes.MyProfile,
+      title: 'My AI Vault',
+      nav: Routes.LearningVault,
+     
+    },
+    */
+    {
+      title: 'AI Flashcards',
+      nav: Routes.FlashcardHub,
+      subtitle: 'Create, study & analyze flashcards',
+    },
+    {
+      title: 'Study Buddy',
+      nav: Routes.AIStudyBuddyHub,
+      subtitle: 'AI-powered study sessions & insights',
+    },
+    {
+      title: 'My Badge',
+      nav: Routes.MyBadge,
+      subtitle: 'Track your achievements & progress',
     },
     {
       title: 'My Inner Circle',
       nav: Routes.InnerCircleRequest,
+      subtitle: 'Connect with your study peers',
     },
+    {
+      title: 'My Profile',
+      nav: Routes.MyProfile,
+      
+    },
+   
+    /*
     {
       title: 'Performance & Analytics',
       nav: Routes.UserAnalyticsPerf,
     },
+    */
     {
       title: 'Help Centre',
       nav: Routes.HelpScreen,
+      
     },
     {
       title: 'Settings',
       nav: Routes.Settings,
+      
     },
   ];
 
@@ -52,7 +87,6 @@ const MenuScreen = ({navigation, route}) => {
         onPress={() => {
           mixpanel.track(`Click on ${item?.title}`);
           if (item?.title === 'Logout') {
-            // Show confirmation alert before logging out
             Alert.alert(
               'Logout',
               'Are you sure you want to log out?',
@@ -69,21 +103,26 @@ const MenuScreen = ({navigation, route}) => {
               ],
               {cancelable: true},
             );
-          }
-          // else if (item.nav === Routes.QuizList) {
-          //   // Navigate to the Home screen and switch to QuizList tab
-          //   navigation.navigate(Routes.Home, {screen: Routes.QuizList});
-          // }
-          else {
+          } else {
             navigation.navigate(item.nav);
           }
         }}>
-        <Text
-          variant="medium14"
-          color={COLORS.grey777777}
-          style={{marginLeft: nw(46)}}>
-          {item.title}
-        </Text>
+        <View style={styles.cardContent}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={{marginLeft: nw(46)}}>
+            {item.title}
+          </Text>
+          {item.subtitle && (
+            <Text
+              variant="medium5"
+              color={COLORS.grey999999}
+              style={{marginLeft: nw(46), marginTop: 2}}>
+              {item.subtitle}
+            </Text>
+          )}
+        </View>
         <Icon
           type="material"
           name="keyboard-arrow-right"
@@ -152,10 +191,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: nh(10),
-    height: nh(40),
+    minHeight: nh(40),
     backgroundColor: COLORS.whiteFFFFFF,
     borderColor: 'rgba(214, 214, 214, 0.2)',
     boxShadow: '2 2 5 0 rgba(0, 0, 0, 0.2)',
     elevation: 3,
+    paddingVertical: nh(8),
+  },
+  cardContent: {
+    flex: 1,
   },
 });

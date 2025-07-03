@@ -140,4 +140,143 @@ export const API = {
     USER_QUIZ_REVIEW_AI_TRIGGER: 'user-quiz/review/ai/:id',
     USER_QUIZ_REVIEW_STATS: 'user-quiz/review/stats',
 
+  // ==========================================
+  // LEARNING ASSISTANT - EXPLANATION SYSTEM
+  // ==========================================
+  EXPLAIN_ANSWER: 'learning-assistant/explain-answer',
+  EXPLANATION_QUOTA: 'learning-assistant/explanation-quota',
+  PURCHASE_EXPLANATIONS: 'learning-assistant/purchase-explanations',
+  
+  // ==========================================
+  // LEARNING ASSISTANT - LEARNING VAULT
+  // ==========================================
+  LEARNING_VAULT: 'learning-assistant/learning-vault',
+  LEARNING_VAULT_FAVORITE: 'learning-assistant/learning-vault/:explanationId/favorite',
+  LEARNING_VAULT_NOTE: 'learning-assistant/learning-vault/:explanationId/note',
+  LEARNING_VAULT_DOWNLOAD: 'learning-assistant/learning-vault/download',
+  
+  // ==========================================
+  // LEARNING ASSISTANT - AREA INSIGHTS
+  // ==========================================
+  AREA_INSIGHTS: 'learning-assistant/area-insights',
+  AREA_INSIGHTS_DETAIL: 'learning-assistant/area-insights/:topic',
+  AREA_INSIGHTS_PURCHASE: 'learning-assistant/area-insights/purchase',
+  AREA_INSIGHTS_SET_GOAL: 'learning-assistant/area-insights/:topic/set-goal',
+  
+  // ==========================================
+  // LEARNING ASSISTANT - ANALYTICS & PAYMENT
+  // ==========================================
+  LEARNING_ANALYTICS: 'learning-assistant/analytics',
+  LEARNING_CREATE_ORDER: 'learning-assistant/create-order',
+  LEARNING_VERIFY_PAYMENT: 'learning-assistant/verify-payment',
+
+  // ==========================================
+  // FLASHCARD SYSTEM API ENDPOINTS
+  // ==========================================
+  
+  // DECK MANAGEMENT
+  FLASHCARD_DECKS: 'flashcards/decks',
+  FLASHCARD_DECK_CREATE: 'flashcards/decks',
+  FLASHCARD_DECK_DETAILS: 'flashcards/decks/:deckId',
+  FLASHCARD_DECK_UPDATE: 'flashcards/decks/:deckId',
+  FLASHCARD_DECK_DELETE: 'flashcards/decks/:deckId',
+  FLASHCARD_DECK_EXPORT: 'flashcards/export/:deckId',
+  
+  // DOCUMENT PROCESSING
+  FLASHCARD_UPLOAD_DOCUMENT: 'flashcards/upload',
+  FLASHCARD_PROCESSING_STATUS: 'flashcards/processing/:processingId',
+  
+  // STUDY SESSIONS
+  FLASHCARD_STUDY_START: 'flashcards/study/:deckId',
+  FLASHCARD_STUDY_ANSWER: 'flashcards/study/answer/:cardId',
+  FLASHCARD_STUDY_STATS: 'flashcards/stats/:deckId',
+  FLASHCARD_DUE_CARDS: 'flashcards/due-cards/:deckId',
+  
+  // CARD MANAGEMENT
+  FLASHCARD_CARDS: 'flashcards/cards',
+  FLASHCARD_CARD_UPDATE: 'flashcards/cards/:cardId',
+  FLASHCARD_CARD_DELETE: 'flashcards/cards/:cardId',
+  
+  // PUBLIC DECKS
+  FLASHCARD_PUBLIC_DECKS: 'public/flashcards/decks',
+  FLASHCARD_PUBLIC_SUBJECTS: 'public/flashcards/subjects/popular',
+  FLASHCARD_PUBLIC_TRENDING: 'public/flashcards/trending',
+  FLASHCARD_PUBLIC_SEARCH: 'public/flashcards/search',
+  FLASHCARD_PUBLIC_PREVIEW: 'public/flashcards/decks/:deckId/preview',
+  FLASHCARD_PUBLIC_TEMPLATES: 'public/flashcards/subjects/:subject/templates',
+  
+  // CRAM MODE
+  FLASHCARD_CRAM_SESSION: 'flashcards/cram/decks/:deckId/cram-session',
+  FLASHCARD_CRAM_RECOMMENDATIONS: 'flashcards/cram/decks/:deckId/cram-recommendations',
+  
+  // SUMMARIES & AI FEATURES
+  FLASHCARD_SUMMARY_GENERATE: 'flashcards/summary/decks/:deckId/generate-summary',
+  FLASHCARD_SUMMARY_QUICK_REVIEW: 'flashcards/summary/decks/:deckId/quick-review-from-source',
+  FLASHCARD_SUMMARY_FORMULA_SHEET: 'flashcards/summary/decks/:deckId/formula-sheet-from-source',
+  FLASHCARD_SUMMARY_COMPREHENSIVE: 'flashcards/summary/decks/:deckId/comprehensive-summary-from-source',
+  
+  // ADMIN
+  FLASHCARD_ADMIN_STATS: 'admin/flashcards/stats',
+  FLASHCARD_ADMIN_PROCESSING_JOBS: 'admin/flashcards/processing-jobs',
+  FLASHCARD_ADMIN_CLEANUP: 'admin/flashcards/cleanup',
+  FLASHCARD_ADMIN_USERS: 'admin/flashcards/users/:userId',
+  FLASHCARD_ADMIN_TEMPLATES: 'admin/flashcards/templates',
+  
+  // ==========================================
+// AI STUDY BUDDY - CORE CONVERSATION
+// ==========================================
+AI_STUDY_BUDDY_SESSION_INIT: 'ai-study-buddy/session/init',
+AI_STUDY_BUDDY_SEND_MESSAGE: 'ai-study-buddy/session/:sessionId/message',
+AI_STUDY_BUDDY_GET_HISTORY: 'ai-study-buddy/session/:sessionId/history',
+
+// ==========================================
+// AI STUDY BUDDY - SESSION MANAGEMENT  
+// ==========================================
+AI_STUDY_BUDDY_ACTIVE_SESSIONS: 'ai-study-buddy/sessions/active',
+AI_STUDY_BUDDY_SESSION_HISTORY: 'ai-study-buddy/sessions/history',
+AI_STUDY_BUDDY_SESSION_DETAILS: 'ai-study-buddy/session/:sessionId/details',
+AI_STUDY_BUDDY_UPDATE_SESSION: 'ai-study-buddy/session/:sessionId',
+AI_STUDY_BUDDY_DELETE_SESSION: 'ai-study-buddy/session/:sessionId',
+AI_STUDY_BUDDY_USER_ANALYTICS: 'ai-study-buddy/analytics',
+AI_STUDY_BUDDY_BOOKMARKS: 'ai-study-buddy/bookmarks',
+
+// ==========================================
+// AI STUDY BUDDY - MESSAGE INTERACTIONS
+// ==========================================
+AI_STUDY_BUDDY_MESSAGE_REACT: 'ai-study-buddy/message/:messageId/react',
+AI_STUDY_BUDDY_MESSAGE_BOOKMARK: 'ai-study-buddy/message/:messageId/bookmark',
+
+// ==========================================
+// AI STUDY BUDDY - QUOTA & LIMITS
+// ==========================================
+AI_STUDY_BUDDY_QUOTA_STATUS: 'ai-study-buddy/quota/status',
+AI_STUDY_BUDDY_ADD_BONUS_QUOTA: 'ai-study-buddy/quota/bonus',
+AI_STUDY_BUDDY_RESET_QUOTA: 'ai-study-buddy/quota/reset',
+
+// ==========================================
+// AI STUDY BUDDY - SUBSCRIPTION (Future)
+// ==========================================
+AI_STUDY_BUDDY_SUBSCRIPTION_PLANS: 'ai-study-buddy/subscription/plans',
+AI_STUDY_BUDDY_CREATE_ORDER: 'ai-study-buddy/subscription/create-order',
+AI_STUDY_BUDDY_VERIFY_PAYMENT: 'ai-study-buddy/subscription/verify-payment',
+AI_STUDY_BUDDY_CURRENT_SUBSCRIPTION: 'ai-study-buddy/subscription/current',
+AI_STUDY_BUDDY_CANCEL_SUBSCRIPTION: 'ai-study-buddy/subscription/cancel',
+AI_STUDY_BUDDY_SEARCH_MESSAGES: 'ai-study-buddy/search',
+
+// ==========================================
+// AI STUDY BUDDY - INTEGRATIONS
+// ==========================================
+AI_STUDY_BUDDY_GENERATE_FLASHCARDS: 'ai-study-buddy/session/:sessionId/generate-flashcards',
+AI_STUDY_BUDDY_GENERATE_QUIZ: 'ai-study-buddy/session/:sessionId/generate-quiz',
+AI_STUDY_BUDDY_UPDATE_AREAS: 'ai-study-buddy/session/:sessionId/update-areas',
+AI_STUDY_BUDDY_EXPORT_CONVERSATION: 'ai-study-buddy/session/:sessionId/export',
+AI_STUDY_BUDDY_DOWNLOAD_EXPORT: 'ai-study-buddy/download/:filename',
+
+// ==========================================
+// AI STUDY BUDDY - CONFIGURATION & UTILITIES
+// ==========================================
+AI_STUDY_BUDDY_SUBJECTS_CONFIG: 'ai-study-buddy/config/subjects',
+AI_STUDY_BUDDY_FEATURES: 'ai-study-buddy/features',
+AI_STUDY_BUDDY_HEALTH: 'ai-study-buddy/health',
+
 };
