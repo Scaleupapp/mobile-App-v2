@@ -28,6 +28,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useDispatch} from 'react-redux';
 import {actions} from '../../redux/reducers';
 import {isvalidMobileNumber} from '../../helper/commonFunctions';
+import {Mixpanel} from 'mixpanel-react-native';
+import mixpanel from '../../helper/mixpanelClient';
 
 const Login = ({navigation}) => {
   const {showToast} = useToast();
@@ -54,7 +56,13 @@ const Login = ({navigation}) => {
   const [resendTimer, setResendTimer] = useState(60);
   const [isResendDisabled, setIsResendDisabled] = useState(false);
   const [phoneNumberData, setphoneNumberData] = useState(false);
+  const trackAutomaticEvents = false;
 
+  useEffect(() => {
+    mixpanel.track('Landed_Login', {
+      'Signup Type': 'username password',
+    });
+  }, []);
   useEffect(() => {
     let timer;
     if (resendTimer > 0 && isResendDisabled) {
@@ -101,6 +109,9 @@ const Login = ({navigation}) => {
 
   const toggleSecureEntry = () => {
     setState(prev => ({...prev, secureTextEntry: !prev.secureTextEntry}));
+    mixpanel.track('Toggle_Password_Visibility', {
+      isHidden: !state.secureTextEntry,
+    });
   };
 
   const onSelect = number => {
@@ -160,19 +171,24 @@ const Login = ({navigation}) => {
 
     if (state.selected === 0) {
       // Login with Username/Password
+      mixpanel.track('Login_Clicked', {
+        loginMethod: 'username-password',
+        username: state.username,
+      });
       try {
         const {data} = await loginApi({
           loginIdentifier: state.username,
           password: state.password,
         });
+
         showToast({type: 'success', title: data?.message});
-        
+
         // *** Store the token if returned ***
         if (data.token) {
           await AsyncStorage.setItem('token', data.token);
           console.log('Token stored:', data.token);
         }
-        
+
         const stringifiedUserData = JSON.stringify(data);
         await AsyncStorage.setItem('userData', stringifiedUserData);
         dispatch(actions.setUserData(stringifiedUserData));
@@ -186,19 +202,23 @@ const Login = ({navigation}) => {
     } else {
       // Login with Mobile Number and OTP
       if (state.requestedOtp) {
+        mixpanel.track('Verify_OTP_Clicked', {
+          mobileNumber: state.mobileNumber,
+        });
+
         try {
           const {data} = await verifyOtp({
             phoneNumber: state.mobileNumber,
             userOTP: state.otp,
           });
           showToast({type: 'success', title: 'OTP Sent Successfully'});
-          
+
           // *** Store the token if returned (if applicable) ***
           if (data.token) {
             await AsyncStorage.setItem('token', data.token);
             console.log('Token stored:', data.token);
           }
-          
+
           const stringifiedUserData = JSON.stringify(data);
           await AsyncStorage.setItem('userData', stringifiedUserData);
           dispatch(actions.setUserData(stringifiedUserData));
@@ -214,6 +234,9 @@ const Login = ({navigation}) => {
           console.log('Verify OTP Error:', error);
         }
       } else {
+        mixpanel.track('Request_OTP_Clicked', {
+          mobileNumber: state.mobileNumber,
+        });
         try {
           const {data} = await getOtp({phoneNumber: state.mobileNumber});
           setphoneNumberData(data);
@@ -278,8 +301,14 @@ const Login = ({navigation}) => {
                   {/* Uncomment the CheckBox if needed */}
                 </View>
                 <TouchableOpacity
-                  onPress={() => navigation.navigate(Routes.ForgotPassword)}>
-                  <Text variant="medium12" color={COLORS.grey999999} style={{textDecorationLine: 'underline'}}>
+                  onPress={() => {
+                    mixpanel.track('Click_Forgot_Password');
+                    navigation.navigate(Routes.ForgotPassword);
+                  }}>
+                  <Text
+                    variant="medium12"
+                    color={COLORS.grey999999}
+                    style={{textDecorationLine: 'underline'}}>
                     Forgot Password?
                   </Text>
                 </TouchableOpacity>
@@ -337,7 +366,10 @@ const Login = ({navigation}) => {
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>Don’t have an account! </Text>
             <RNText
-              onPress={() => navigation.navigate('SignUp')}
+              onPress={() => {
+                mixpanel.track('Click_Sign_Up');
+                navigation.navigate('SignUp');
+              }}
               style={styles.signupLink}>
               Sign up
             </RNText>

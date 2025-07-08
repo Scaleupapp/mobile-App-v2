@@ -29,6 +29,7 @@ import {useRoute} from '@react-navigation/native';
 import Video from 'react-native-video';
 
 import {compressImage, compressVideo} from '../../helper/commonFunctions';
+import mixpanel from '../../helper/mixpanelClient';
 
 import { getVideoDuration } from 'react-native-video-duration';
 
@@ -74,7 +75,7 @@ const fetchContentMetrics = async () => {
     const {token} = JSON.parse(userData);
     
     const response = await axios.get(
-      'http://192.168.1.8:3000/api/content/fetch-upload-metrics',
+      'https://api.scaleupapp.club/api/content/fetch-upload-metrics',
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -128,6 +129,7 @@ const fetchContentMetrics = async () => {
   }, [draftData]);
 
   useEffect(() => {
+    mixpanel.track('Landed Create Post');
     getProfileData();
   }, []);
 
@@ -275,7 +277,10 @@ const ContentRequirementsChecker = () => {
 
       console.log("gggggggggggggggggggg",parsedUser);
     } catch (error) {
-      console.log('Profile data fetch error:', error?.response?.data?.message || error.message);
+      console.log(
+        'Profile data fetch error:',
+        error?.response?.data?.message || error.message,
+      );
       showToast({
         title: 'Failed to load profile data',
         type: 'error',
@@ -289,7 +294,10 @@ const ContentRequirementsChecker = () => {
       return;
     }
 
-    const selectedContentType = asset.type && asset.type.toLowerCase().includes('video') ? 'Video' : 'Image';
+    const selectedContentType =
+      asset.type && asset.type.toLowerCase().includes('video')
+        ? 'Video'
+        : 'Image';
     setContentType(selectedContentType);
 
     // Set temporary file for immediate preview with original URI
@@ -352,7 +360,10 @@ const ContentRequirementsChecker = () => {
       }
       if (result.errorCode) {
         console.log('ImagePicker Error: ', result.errorMessage);
-        showToast({title: result.errorMessage || 'Failed to select file', type: 'error'});
+        showToast({
+          title: result.errorMessage || 'Failed to select file',
+          type: 'error',
+        });
         return;
       }
 
@@ -418,8 +429,8 @@ const handlePremiumToggle = (value) => {
       return;
     }
     if (!file) {
-        showToast({title: 'Please upload a file.', type: 'error'});
-        return;
+      showToast({title: 'Please upload a file.', type: 'error'});
+      return;
     }
 
     // Validate premium fields if premium is enabled
@@ -449,8 +460,13 @@ const handlePremiumToggle = (value) => {
 
       const formData = new FormData();
       formData.append('heading', heading);
-      const topicsArray = topics.split(',').map(t => t.trim()).filter(t => t);
-      const hashtagsArray = hashtags.split(' ').filter(h => h.startsWith('#') && h.length > 1);
+      const topicsArray = topics
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t);
+      const hashtagsArray = hashtags
+        .split(' ')
+        .filter(h => h.startsWith('#') && h.length > 1);
 
       formData.append('relatedTopics', JSON.stringify(topicsArray));
       formData.append('hashtags', JSON.stringify(hashtagsArray));
@@ -478,13 +494,13 @@ const handlePremiumToggle = (value) => {
       // This condition ensures we don't re-upload the same file if only text fields changed for a draft
       let shouldAppendMedia = true;
       if (isEditingDraft && draftData.file && file.uri === draftData.file.uri) {
-          // If editing a draft AND the file URI is the same as the initial draft file URI,
-          // We might not need to re-upload it unless the backend requires it for updates.
-          // For simplicity, the current logic appends if file exists.
-          // If your backend can update post text without new media, you might add more sophisticated logic here.
-          // However, if URI is from compression, it might differ from a remote URI if draftData.file.uri is a remote URL.
-          // The original condition `!draftData?.file || file.uri !== draftData.file.uri` is safer if draft file URIs are local/temp.
-          // Let's assume for now we always send it if `file` is present.
+        // If editing a draft AND the file URI is the same as the initial draft file URI,
+        // We might not need to re-upload it unless the backend requires it for updates.
+        // For simplicity, the current logic appends if file exists.
+        // If your backend can update post text without new media, you might add more sophisticated logic here.
+        // However, if URI is from compression, it might differ from a remote URI if draftData.file.uri is a remote URL.
+        // The original condition `!draftData?.file || file.uri !== draftData.file.uri` is safer if draft file URIs are local/temp.
+        // Let's assume for now we always send it if `file` is present.
       }
 
       if (file && file.uri) {
@@ -516,25 +532,28 @@ const handlePremiumToggle = (value) => {
         // The original code used PUT for both updating a draft and publishing an existing draft.
         // This seems fine if the backend differentiates via the endpoint or 'isDraft' flag.
         const endpoint = isDraft
-          ? `http://192.168.1.8:3000/api/content/${draftData.id}` // Update draft
-          : `http://192.168.1.8:3000/api/content/publish/${draftData.id}`; // Publish draft
+          ? `https://api.scaleupapp.club/api/content/${draftData.id}` // Update draft
+          : `https://api.scaleupapp.club/api/content/publish/${draftData.id}`; // Publish draft
 
         response = await axios.put(endpoint, formData, config);
 
         showToast({
-          title: isDraft ? 'Draft updated successfully!' : (response.data?.message || 'Post published successfully!'),
+          title: isDraft
+            ? 'Draft updated successfully!'
+            : response.data?.message || 'Post published successfully!',
           type: 'success',
         });
-
       } else {
         // Creating a new post or a new draft
         response = await axios.post(
-          'http://192.168.1.8:3000/api/content/create',
+          'https://api.scaleupapp.club/api/content/create',
           formData,
           config,
         );
         showToast({
-          title: isDraft ? 'Draft saved successfully!' : 'Post published successfully!',
+          title: isDraft
+            ? 'Draft saved successfully!'
+            : 'Post published successfully!',
           type: 'success',
         });
       }
@@ -555,10 +574,10 @@ const handlePremiumToggle = (value) => {
         resetForm();
         navigation.goBack();
       }, 500);
-
     } catch (error) {
       console.error('Upload Error:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'Failed to process post.';
+      const errorMessage =
+        error.response?.data?.message || 'Failed to process post.';
       showToast({title: errorMessage, type: 'error'});
     } finally {
       setIsUploading(false);
@@ -566,9 +585,9 @@ const handlePremiumToggle = (value) => {
     }
   };
 
-  const headerTitle = isEditingDraft ? "Edit Draft" : "New Post";
-  const publishButtonText = isEditingDraft ? "Publish Draft" : "Publish";
-  const saveDraftButtonText = isEditingDraft ? "Update Draft" : "Save Draft";
+  const headerTitle = isEditingDraft ? 'Edit Draft' : 'New Post';
+  const publishButtonText = isEditingDraft ? 'Publish Draft' : 'Publish';
+  const saveDraftButtonText = isEditingDraft ? 'Update Draft' : 'Save Draft';
   const disableActions = isUploading || isCompressing;
 
   return (
@@ -587,7 +606,7 @@ const handlePremiumToggle = (value) => {
         }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled" // Good for inputs in scrollview
-        >
+      >
         <View style={styles.layer1}>
           <View style={styles.layer2}>
             <CustomTextInput
@@ -668,7 +687,10 @@ const handlePremiumToggle = (value) => {
             </View>
 
             {/* Upload Section */}
-            <Text variant="medium14" color={COLORS.greyBBBBBB} style={styles.uploadLabel}>
+            <Text
+              variant="medium14"
+              color={COLORS.greyBBBBBB}
+              style={styles.uploadLabel}>
               Upload Image/Video
             </Text>
             <View style={styles.mediaUploadArea}>
@@ -677,8 +699,14 @@ const handlePremiumToggle = (value) => {
                   style={styles.uploadPlaceholder}
                   onPress={() => setModalVisible(true)}
                   disabled={disableActions}>
-                  <Icon name="cloud-upload-outline" size={nw(50)} color={COLORS.greyBBBBBB} />
-                  <Text style={styles.uploadPlaceholderText}>Tap to select Image/Video</Text>
+                  <Icon
+                    name="cloud-upload-outline"
+                    size={nw(50)}
+                    color={COLORS.greyBBBBBB}
+                  />
+                  <Text style={styles.uploadPlaceholderText}>
+                    Tap to select Image/Video
+                  </Text>
                 </TouchableOpacity>
               )}
 
@@ -692,15 +720,26 @@ const handlePremiumToggle = (value) => {
                     />
                   ) : (
                     <View style={styles.videoPreviewBox}>
-                      <Icon name="videocam-outline" size={nw(40)} color={COLORS.grey999999} />
-                      <Text style={styles.videoPreviewText}>Video Selected</Text>
+                      <Icon
+                        name="videocam-outline"
+                        size={nw(40)}
+                        color={COLORS.grey999999}
+                      />
+                      <Text style={styles.videoPreviewText}>
+                        Video Selected
+                      </Text>
                     </View>
                   )}
 
                   {isCompressing && (
                     <View style={styles.compressionOverlayOnPreview}>
-                      <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
-                      <Text style={styles.compressionTextOnPreview}>Compressing...</Text>
+                      <ActivityIndicator
+                        size="small"
+                        color={COLORS.whiteFFFFFF}
+                      />
+                      <Text style={styles.compressionTextOnPreview}>
+                        Compressing...
+                      </Text>
                     </View>
                   )}
 
@@ -713,8 +752,12 @@ const handlePremiumToggle = (value) => {
                       style={styles.removeFileButton}
                       onPress={removeFile}
                       disabled={disableActions} // Redundant but safe
-                      >
-                      <Icon name="close-circle" size={nw(26)} color={COLORS.red} />
+                    >
+                      <Icon
+                        name="close-circle"
+                        size={nw(26)}
+                        color={COLORS.red}
+                      />
                     </TouchableOpacity>
                   )}
 
@@ -778,7 +821,7 @@ const handlePremiumToggle = (value) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-            if (!disableActions) setModalVisible(false);
+          if (!disableActions) setModalVisible(false);
         }}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -787,7 +830,11 @@ const handlePremiumToggle = (value) => {
               style={styles.modalOption}
               onPress={openGallery}
               disabled={disableActions}>
-              <Icon name="images-outline" size={nw(24)} color={COLORS.blue043142} />
+              <Icon
+                name="images-outline"
+                size={nw(24)}
+                color={COLORS.blue043142}
+              />
               <Text style={styles.modalOptionText}>Choose from Gallery</Text>
             </TouchableOpacity>
             {/* Add more options like "Take Photo/Video" here if needed */}

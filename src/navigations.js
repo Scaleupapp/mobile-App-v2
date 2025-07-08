@@ -6,7 +6,7 @@ import {setupAxiosInterceptors} from './services/axiosinstance';
 import Routes from './helper/routes';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {icons} from './assets/icons';
-import {Image, PermissionsAndroid, View} from 'react-native';
+import {Dimensions, Image, PermissionsAndroid, View} from 'react-native';
 import {isAndroid, nh, nw} from './helper/scales';
 import {COLORS} from './helper/colors';
 import Text from './components/Text';
@@ -73,7 +73,41 @@ import GroupProfile from './screens/Chat/GroupProfile';
 import GroupRequest from './screens/Chat/groupRequest';
 import QuizFeedbackScreen from './screens/Quiz/QuizFeedBack';
 import SupportQueryScreen from './screens/Menuscreen/QueryScreen';
-
+import MyQueriesScreen from './screens/Menuscreen/QuerylistScreen';
+// --- Import User Generated Quiz Screens ---
+import CreateQuizScreen from './screens/Quiz/CreateQuizScreen';
+import EditQuizScreen from './screens/Quiz/EditQuizScreen';
+import CreatorDashboardScreen from './screens/Quiz/CreatorDashboardScreen';
+import QuizAnalyticsScreen from './screens/Quiz/QuizAnalyticsScreen';
+import QuizAccessRequestsScreen from './screens/Quiz/QuizAccessRequestsScreen';
+import AIPaymentModal from './screens/Quiz/AIPaymentModal'; // Assuming a modal might be its own screen or part of another
+import MyQuizzesScreen from './screens/Quiz/MyQuizzesScreen';
+import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
+import LearningVault from './screens/LearningVault/LearningVault';
+import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
+import TopicInsight from './screens/TopicInsight/TopicInsight';
+import LearningIntelligenceHub from './screens/LearningIntelligence/LearningIntelligenceHub';
+import FlashcardHub from './screens/Flashcards/FlashcardHub'; 
+import CreateDeck from './screens/Flashcards/CreateDeck';
+import UploadDocument from './screens/Flashcards/UploadDocument';
+import DeckDetails from './screens/Flashcards/DeckDetails';
+import FlashcardViewer from './screens/Flashcards/FlashcardViewer';
+import BrowsePublicDecks from './screens/Flashcards/BrowsePublicDecks';
+import AddEditCard from './screens/Flashcards/AddEditCard';
+import FlashcardAnalytics from './screens/Flashcards/FlashcardAnalytics';
+import MyDecks from './screens/Flashcards/MyDecks';
+import StudySummary from './screens/Flashcards/StudySummary';
+import CramMode from './screens/Flashcards/CramMode';
+import CramFlashcardViewer from './screens/Flashcards/CramFlashcardViewer.js';  
+import AIStudyBuddyHub from './screens/AIStudyBuddy/AIStudyBuddyHub';
+import AIStudyBuddyNewSession from './screens/AIStudyBuddy/AIStudyBuddyNewSession';
+import AIStudyBuddyChat from './screens/AIStudyBuddy/AIStudyBuddyChat';
+import AIStudyBuddyActiveSessions from './screens/AIStudyBuddy/AIStudyBuddyActiveSessions';
+import AIStudyBuddySessionDetails from './screens/AIStudyBuddy/AIStudyBuddySessionDetails';
+import AIStudyBuddySessionHistory from './screens/AIStudyBuddy/AIStudyBuddySessionHistory';
+import AIStudyBuddyAnalytics from './screens/AIStudyBuddy/AIStudyBuddyAnalytics';
+import AIStudyBuddyBookmarks from './screens/AIStudyBuddy/AIStudyBuddyBookmarks';
+import AIStudyBuddySearch from './screens/AIStudyBuddy/AIStudyBuddySearch';
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -238,11 +272,11 @@ const TabNavigator = props => {
         }}
       />
       <Tab.Screen
-        name={Routes.LearningVideo}
-        component={LearningVideo}
+        name={Routes.FlashcardHub}
+        component={FlashcardHub}
         options={{
           headerShown: false,
-          tabBarLabel: ({focused}) => setBottomIconText('Videos', focused),
+          tabBarLabel: ({focused}) => setBottomIconText('Flashcard', focused),
           tabBarIcon: ({focused}) =>
             setBottomIcon(focused ? icons.book1 : icons.book2, focused),
         }}
@@ -584,6 +618,177 @@ export const RootNavigator = () => {
         component={SupportQueryScreen}
         options={{headerShown: false}}
       />
+      <Stack.Screen
+        name={'MyQueriesScreen'}
+        component={MyQueriesScreen}
+        options={{headerShown: false}}
+      />
+      {/* --- Add User Generated Quiz Screens --- */}
+      <Stack.Screen
+        name={Routes.CreateQuiz}
+        component={CreateQuizScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.EditQuiz}
+        component={EditQuizScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CreatorDashboard}
+        component={CreatorDashboardScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizAnalytics}
+        component={QuizAnalyticsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizAccessRequests}
+        component={QuizAccessRequestsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.QuizParticipants}
+        component={QuizParticipantsScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIPayment}
+        component={AIPaymentModal}
+        options={{presentation: 'modal', headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyQuizzes}
+        component={MyQuizzesScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.LearningVault}
+        component={LearningVault}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+          name={Routes.AreasOfImprovement}
+          component={AreasOfImprovement}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.TopicInsight}
+          component={TopicInsight}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.LearningIntelligenceHub}
+          component={LearningIntelligenceHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.FlashcardHub}
+          component={FlashcardHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.CreateDeck}
+          component={CreateDeck}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.UploadDocument}
+          component={UploadDocument}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.DeckDetails}
+          component={DeckDetails}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.FlashcardViewer}
+          component={FlashcardViewer}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.PublicDecks}
+          component={BrowsePublicDecks}
+          options={{headerShown: false}}
+        />  
+        <Stack.Screen
+          name={Routes.AddEditCard}
+          component={AddEditCard}
+          options={{headerShown: false}}
+        />
+          <Stack.Screen
+          name={Routes.FlashcardAnalytics}
+          component={FlashcardAnalytics}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.MyDecks}
+          component={MyDecks}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.StudySummary}
+          component={StudySummary}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.CramMode}
+          component={CramMode}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.CramFlashcardViewer}
+          component={CramFlashcardViewer}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyHub}
+          component={AIStudyBuddyHub}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyNewSession}
+          component={AIStudyBuddyNewSession}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyChat}
+          component={AIStudyBuddyChat}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen 
+          name={Routes.AIStudyBuddyActiveSessions} 
+          component={AIStudyBuddyActiveSessions} 
+          options={{headerShown: false}} 
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddySessionDetails}
+          component={AIStudyBuddySessionDetails}
+          options={{headerShown: false}}
+        />    
+        <Stack.Screen
+          name={Routes.AIStudyBuddySessionHistory}
+          component={AIStudyBuddySessionHistory}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyAnalytics}
+          component={AIStudyBuddyAnalytics}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddyBookmarks}
+          component={AIStudyBuddyBookmarks}
+          options={{headerShown: false}}
+        />
+        <Stack.Screen
+          name={Routes.AIStudyBuddySearchMessages}
+          component={AIStudyBuddySearch}
+          options={{headerShown: false}}
+        />
     </Stack.Navigator>
   );
 };

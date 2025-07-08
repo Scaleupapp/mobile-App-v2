@@ -12,17 +12,15 @@ import {submitQuizfeedback} from '../../services/apiService';
 import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 
-const difficultyLevels = ['Easy', 'Moderate', 'Hard'];
-const overallExperienceOptions = ['Poor', 'Good', 'Very Good', 'Excellent'];
+const overallExperienceOptions = ['Poor', 'Good', 'Average', 'Excellent'];
 
 const QuizFeedbackScreen = ({route}) => {
   const [rating, setRating] = useState(0);
-  const [difficultyLevel, setDifficultyLevel] = useState('');
   const [overAllExperience, setOverAllExperience] = useState('');
   const [comment, setComment] = useState('');
 
   const submitFeedback = async () => {
-    if (!rating || !difficultyLevel || !overAllExperience) {
+    if (!rating || !overAllExperience) {
       Alert.alert('Please complete all fields.');
       return;
     }
@@ -32,7 +30,7 @@ const QuizFeedbackScreen = ({route}) => {
         route?.params?.quizEventId,
         rating,
         comment,
-        difficultyLevel,
+
         overAllExperience,
       );
 
@@ -40,18 +38,23 @@ const QuizFeedbackScreen = ({route}) => {
         quizEventId: route?.params?.quizEventId,
         rating,
         comment,
-        difficultyLevel,
+
         overAllExperience,
       });
       console.log('🚀 ~ submitFeedback ~ response:', response?.data);
 
       setRating(0);
-      setDifficultyLevel('');
       setOverAllExperience('');
       setComment('');
-      navigationRef.navigate(Routes.QuizList);
+      navigationRef.reset({
+        index: 0,
+        routes: [{name: Routes.QuizList}],
+      });
     } catch (error) {
-      navigationRef.navigate(Routes.QuizList);
+      navigationRef.reset({
+        index: 0,
+        routes: [{name: Routes.QuizList}],
+      });
       console.error(error, 'eee');
     }
   };
@@ -72,7 +75,7 @@ const QuizFeedbackScreen = ({route}) => {
       </View>
 
       {/* Difficulty Level */}
-      <Text style={styles.label}>Difficulty Level</Text>
+      {/* <Text style={styles.label}>Difficulty Level</Text>
       <View style={styles.optionRow}>
         {difficultyLevels.map(level => (
           <TouchableOpacity
@@ -92,7 +95,7 @@ const QuizFeedbackScreen = ({route}) => {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </View> */}
 
       {/* Overall Experience */}
       <Text style={styles.label}>Overall Experience</Text>

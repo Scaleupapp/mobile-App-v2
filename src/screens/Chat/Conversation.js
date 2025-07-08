@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useMemo,
-} from 'react';
+import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -35,6 +29,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import ToggleWithUnderline from '../../components/TogglewithUnderline';
 import Icon from '../../helper/icon';
 import {io} from 'socket.io-client';
+import mixpanel from '../../helper/mixpanelClient';
 
 // --- Theme Colors (adjust to your actual COLORS object) ---
 const THEME = {
@@ -58,12 +53,17 @@ const THEME = {
 const ConversationItemCard = React.memo(({item, onPress}) => {
   const user = item?.members?.[0]; // Assuming the other member is always the first in the array for 1:1
   const lastMessage = item?.lastMessage;
-  const initials = `${user?.firstname?.charAt(0)?.toUpperCase() || ''}${user?.lastname?.charAt(0)?.toUpperCase() || ''}`;
+  const initials = `${user?.firstname?.charAt(0)?.toUpperCase() || ''}${
+    user?.lastname?.charAt(0)?.toUpperCase() || ''
+  }`;
 
   return (
     <Pressable style={styles.listItemContainer} onPress={onPress}>
       {user?.profilePicture ? (
-        <PlatformImage source={{uri: user.profilePicture}} style={styles.profileImage} />
+        <PlatformImage
+          source={{uri: user.profilePicture}}
+          style={styles.profileImage}
+        />
       ) : (
         <View style={[styles.profileImage, styles.avatarPlaceholder]}>
           <Text variant="semibold16" color={THEME.avatarPlaceholderText}>
@@ -72,17 +72,28 @@ const ConversationItemCard = React.memo(({item, onPress}) => {
         </View>
       )}
       <View style={styles.itemTextContainer}>
-        <Text variant="semibold14" color={THEME.textColorPrimary} numberOfLines={1}>
-          {`${user?.firstname || ''} ${user?.lastname || user?.username || 'User'}`}
+        <Text
+          variant="semibold14"
+          color={THEME.textColorPrimary}
+          numberOfLines={1}>
+          {`${user?.firstname || ''} ${
+            user?.lastname || user?.username || 'User'
+          }`}
         </Text>
         {lastMessage?.message ? (
-          <Text variant="regular13" color={THEME.textColorSecondary} numberOfLines={1}>
+          <Text
+            variant="regular13"
+            color={THEME.textColorSecondary}
+            numberOfLines={1}>
             {lastMessage.message}
           </Text>
         ) : lastMessage?.mediaType ? (
-            <Text variant="regular13Italic" color={THEME.textColorSecondary} numberOfLines={1}>
-                {lastMessage.mediaType.includes('image') ? 'Photo' : 'Video'}
-            </Text>
+          <Text
+            variant="regular13Italic"
+            color={THEME.textColorSecondary}
+            numberOfLines={1}>
+            {lastMessage.mediaType.includes('image') ? 'Photo' : 'Video'}
+          </Text>
         ) : (
           <Text variant="regular13Italic" color={THEME.textColorTertiary}>
             No messages yet
@@ -116,21 +127,36 @@ const StudyGroupItemCard = React.memo(({item, onPress}) => {
     <Pressable style={styles.listItemContainer} onPress={onPress}>
       {item?.profilePicture ? (
         <PlatformImage
-          source={{uri: `${item.profilePicture}?timestamp=${new Date().getTime()}`}}
+          source={{
+            uri: `${item.profilePicture}?timestamp=${new Date().getTime()}`,
+          }}
           style={styles.profileImage}
         />
       ) : (
         <View style={[styles.profileImage, styles.avatarPlaceholder]}>
-          <Icon type="material-community" name="account-group" size={nw(24)} color={THEME.avatarPlaceholderText} />
+          <Icon
+            type="material-community"
+            name="account-group"
+            size={nw(24)}
+            color={THEME.avatarPlaceholderText}
+          />
         </View>
       )}
       <View style={styles.itemTextContainer}>
-        <Text variant="semibold14" color={THEME.textColorPrimary} numberOfLines={1}>
+        <Text
+          variant="semibold14"
+          color={THEME.textColorPrimary}
+          numberOfLines={1}>
           {groupName}
         </Text>
         {lastMessage?.content ? (
-          <Text variant="regular13" color={THEME.textColorSecondary} numberOfLines={1}>
-            {`${lastMessage.sender?.username || 'Someone'}: ${lastMessage.content}`}
+          <Text
+            variant="regular13"
+            color={THEME.textColorSecondary}
+            numberOfLines={1}>
+            {`${lastMessage.sender?.username || 'Someone'}: ${
+              lastMessage.content
+            }`}
           </Text>
         ) : (
           <Text variant="regular13Italic" color={THEME.textColorTertiary}>
@@ -140,9 +166,9 @@ const StudyGroupItemCard = React.memo(({item, onPress}) => {
       </View>
       <View style={styles.itemTrailingContainer}>
         {(lastMessage?.timestamp || item?.createdDate) && (
-            <Text variant="regular10" color={THEME.textColorTertiary}>
-                {formatDateforchat(lastMessage?.timestamp || item.createdDate)}
-            </Text>
+          <Text variant="regular10" color={THEME.textColorTertiary}>
+            {formatDateforchat(lastMessage?.timestamp || item.createdDate)}
+          </Text>
         )}
         {item?.unreadMessageCount > 0 && (
           <View style={styles.unreadBadge}>
@@ -156,7 +182,6 @@ const StudyGroupItemCard = React.memo(({item, onPress}) => {
   );
 });
 
-
 const Conversation = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const [initialScreenLoader, setInitialScreenLoader] = useState(true);
@@ -166,7 +191,8 @@ const Conversation = ({navigation, route}) => {
   const chatmodelRef = useRef(null);
 
   const [allConversationsFetched, setAllConversationsFetched] = useState(false);
-  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
+    useState(false);
   const [groupRequests, setGroupRequests] = useState([]);
   const conversationPage = useRef(1);
   const socketRef = useRef(null);
@@ -194,16 +220,18 @@ const Conversation = ({navigation, route}) => {
     }
   }, [route?.params?.from]);
 
-
+  useEffect(() => {
+    mixpanel.track(`Landed on Conversation Page`);
+  }, []);
   // --- Socket.IO Setup and Event Handling ---
   useEffect(() => {
     if (!userData?.token) {
-      console.warn("ConversationScreen: No user token, socket not connecting.");
+      console.warn('ConversationScreen: No user token, socket not connecting.');
       return;
     }
 
     // **IMPORTANT**: Verify this URL and namespace with your backend.
-    const socketInstance = io('http://192.168.1.8:3000/api/', {
+    const socketInstance = io('https://api.scaleupapp.club/api/', {
       auth: {token: userData.token},
       transports: ['websocket'],
       reconnectionAttempts: 5,
@@ -215,45 +243,71 @@ const Conversation = ({navigation, route}) => {
       // No specific room to join here, as this screen listens for updates to *any* relevant conversation/group
     });
 
-    socketInstance.on('conversationDetailUpdate', (updatedConvData) => {
+    socketInstance.on('conversationDetailUpdate', updatedConvData => {
       // console.log('Socket: conversationDetailUpdate', updatedConvData);
       setConversations(prevConvs => {
-        const index = prevConvs.findIndex(c => c.conversationId === updatedConvData.conversationId);
+        const index = prevConvs.findIndex(
+          c => c.conversationId === updatedConvData.conversationId,
+        );
         let newConvs;
-        if (index !== -1) { // Existing conversation updated
+        if (index !== -1) {
+          // Existing conversation updated
           const updatedItem = {...prevConvs[index], ...updatedConvData};
           newConvs = [...prevConvs];
           newConvs.splice(index, 1); // Remove old
           newConvs.unshift(updatedItem); // Add updated to top
-        } else { // New conversation
+        } else {
+          // New conversation
           newConvs = [updatedConvData, ...prevConvs];
         }
         return newConvs;
       });
     });
 
-    socketInstance.on('groupInfoUpdates', (updatedGroupData) => {
+    socketInstance.on('groupInfoUpdates', updatedGroupData => {
       // console.log('Socket: groupInfoUpdates', updatedGroupData);
       setStudyGroups(prevGroups => {
-        const index = prevGroups.findIndex(g => g._id === updatedGroupData.groupId); // Assuming groupId is the ID
+        const index = prevGroups.findIndex(
+          g => g._id === updatedGroupData.groupId,
+        ); // Assuming groupId is the ID
         let newGroups;
-        if (index !== -1) { // Existing group updated
-          const updatedItem = {...prevGroups[index], ...updatedGroupData, timestamp: updatedGroupData.createdDate}; // Map timestamp if needed
+        if (index !== -1) {
+          // Existing group updated
+          const updatedItem = {
+            ...prevGroups[index],
+            ...updatedGroupData,
+            timestamp: updatedGroupData.createdDate,
+          }; // Map timestamp if needed
           newGroups = [...prevGroups];
           newGroups.splice(index, 1);
           newGroups.unshift(updatedItem);
-        } else { // New group
+        } else {
+          // New group
           // If it's a new group not yet in the list, you might need to fetch its full details
           // or ensure the socket event provides enough info. For now, just adding it.
           // Consider fetching full group list if a new group appears that wasn't fetched initially.
-          newGroups = [{...updatedGroupData, _id: updatedGroupData.groupId, timestamp: updatedGroupData.createdDate}, ...prevGroups];
+          newGroups = [
+            {
+              ...updatedGroupData,
+              _id: updatedGroupData.groupId,
+              timestamp: updatedGroupData.createdDate,
+            },
+            ...prevGroups,
+          ];
         }
         return newGroups;
       });
     });
-    
-    socketInstance.on('disconnect', (reason) => console.log('ConversationScreen: Socket disconnected -', reason));
-    socketInstance.on('connect_error', (err) => console.error('ConversationScreen: Socket connection error -', err.message));
+
+    socketInstance.on('disconnect', reason =>
+      console.log('ConversationScreen: Socket disconnected -', reason),
+    );
+    socketInstance.on('connect_error', err =>
+      console.error(
+        'ConversationScreen: Socket connection error -',
+        err.message,
+      ),
+    );
 
     return () => {
       if (socketInstance) {
@@ -265,7 +319,6 @@ const Conversation = ({navigation, route}) => {
     // CRITICAL: Removed `conversations` and `studyGroups` from dependencies.
     // Socket connection should be stable, listeners handle updates.
   }, [userData?.token]);
-
 
   const fetchInitialConversations = async () => {
     conversationPage.current = 1; // Reset page for conversations
@@ -284,12 +337,17 @@ const Conversation = ({navigation, route}) => {
       const newConversations = data?.conversations || [];
 
       setConversations(prev =>
-        conversationPage.current === 1 ? newConversations : [...prev, ...newConversations],
+        conversationPage.current === 1
+          ? newConversations
+          : [...prev, ...newConversations],
       );
-      if (conversationPage.current >= data?.totalPages || newConversations.length === 0) {
+      if (
+        conversationPage.current >= data?.totalPages ||
+        newConversations.length === 0
+      ) {
         setAllConversationsFetched(true);
       }
-      if(newConversations.length > 0) {
+      if (newConversations.length > 0) {
         conversationPage.current += 1;
       }
     } catch (error) {
@@ -304,7 +362,8 @@ const Conversation = ({navigation, route}) => {
   const fetchStudyGroupsData = async () => {
     // Assuming study groups are not paginated for now
     // If they are, implement similar logic to fetchConversationsData
-    if (selectedTab === 1 && studyGroups.length === 0) setInitialScreenLoader(true);
+    if (selectedTab === 1 && studyGroups.length === 0)
+      setInitialScreenLoader(true);
     try {
       const {data} = await getStudyGroups();
       setStudyGroups(data || []);
@@ -312,7 +371,7 @@ const Conversation = ({navigation, route}) => {
       console.error('Error fetching study groups:', error);
       // showToast({ type: 'error', title: 'Failed to load groups' });
     } finally {
-       if (selectedTab === 1) setInitialScreenLoader(false);
+      if (selectedTab === 1) setInitialScreenLoader(false);
     }
   };
 
@@ -325,35 +384,50 @@ const Conversation = ({navigation, route}) => {
     }
   };
 
-  const handleTabSelect = useCallback((index) => {
-    setSelectedTab(index);
-    if (index === 0 && conversations.length === 0 && !allConversationsFetched) { // Chats tab
-      fetchInitialConversations();
-    } else if (index === 1 && studyGroups.length === 0) { // Study Groups tab
-      fetchStudyGroupsData();
-    }
-  }, [conversations.length, studyGroups.length, allConversationsFetched]);
-
+  const handleTabSelect = useCallback(
+    index => {
+      setSelectedTab(index);
+      if (
+        index === 0 &&
+        conversations.length === 0 &&
+        !allConversationsFetched
+      ) {
+        // Chats tab
+        fetchInitialConversations();
+      } else if (index === 1 && studyGroups.length === 0) {
+        // Study Groups tab
+        fetchStudyGroupsData();
+      }
+    },
+    [conversations.length, studyGroups.length, allConversationsFetched],
+  );
 
   const renderListItem = ({item}) => {
-    if (selectedTab === 0) { // Chats
+    if (selectedTab === 0) {
+      // Chats
       return (
         <ConversationItemCard
           item={item}
           onPress={() =>
             navigation.navigate(Routes.Chat, {
               chatId: item?.conversationId,
-              data: `${item?.members[0]?.firstname || ''} ${item?.members[0]?.lastname || item?.members[0]?.username || 'Chat'}`,
+              data: `${item?.members[0]?.firstname || ''} ${
+                item?.members[0]?.lastname ||
+                item?.members[0]?.username ||
+                'Chat'
+              }`,
             })
           }
         />
       );
-    } else { // Study Groups
+    } else {
+      // Study Groups
       return (
         <StudyGroupItemCard
           item={item}
           onPress={() =>
-            navigation.navigate(Routes.GroupChat, { // Assuming GroupChat route exists
+            navigation.navigate(Routes.GroupChat, {
+              // Assuming GroupChat route exists
               groupId: item?._id,
               data: item, // Pass group data for header, etc.
             })
@@ -363,26 +437,38 @@ const Conversation = ({navigation, route}) => {
     }
   };
 
-  const ListEmptyComponent = useMemo(() => (
-    <View style={styles.emptyListContainer}>
-      <PlatformImage source={images.nochat} resizeMode="contain" style={styles.emptyImage} />
-      <Text variant="semibold18" color={THEME.textColorPrimary} style={styles.emptyTitle}>
-        {selectedTab === 0 ? 'No Chats Yet' : 'No Study Groups Yet'}
-      </Text>
-      <Text variant="regular14" color={THEME.textColorSecondary} style={styles.emptySubtitle}>
-        {selectedTab === 0
-          ? 'Start a conversation and connect with fellow learners. It’s more fun learning together!'
-          : 'Join or create a study group to collaborate with others. Learning is better together!'}
-      </Text>
-      <Button
-        text={selectedTab === 0 ? 'Start a New Chat' : 'Create a Study Group'}
-        onPress={() => chatmodelRef.current?.present()}
-        style={styles.emptyButton}
-        textStyle={styles.emptyButtonText}
-      />
-    </View>
-  ), [selectedTab]);
-
+  const ListEmptyComponent = useMemo(
+    () => (
+      <View style={styles.emptyListContainer}>
+        <PlatformImage
+          source={images.nochat}
+          resizeMode="contain"
+          style={styles.emptyImage}
+        />
+        <Text
+          variant="semibold18"
+          color={THEME.textColorPrimary}
+          style={styles.emptyTitle}>
+          {selectedTab === 0 ? 'No Chats Yet' : 'No Study Groups Yet'}
+        </Text>
+        <Text
+          variant="regular14"
+          color={THEME.textColorSecondary}
+          style={styles.emptySubtitle}>
+          {selectedTab === 0
+            ? 'Start a conversation and connect with fellow learners. It’s more fun learning together!'
+            : 'Join or create a study group to collaborate with others. Learning is better together!'}
+        </Text>
+        <Button
+          text={selectedTab === 0 ? 'Start a New Chat' : 'Create a Study Group'}
+          onPress={() => chatmodelRef.current?.present()}
+          style={styles.emptyButton}
+          textStyle={styles.emptyButtonText}
+        />
+      </View>
+    ),
+    [selectedTab],
+  );
 
   const dataToDisplay = selectedTab === 0 ? conversations : studyGroups;
 
@@ -390,7 +476,9 @@ const Conversation = ({navigation, route}) => {
     return (
       <View style={styles.fullScreenLoaderContainer}>
         <ActivityIndicator size="large" color={THEME.fabColor} />
-        <Text variant="medium14" style={{marginTop: nh(10), color: THEME.textColorSecondary}}>
+        <Text
+          variant="medium14"
+          style={{marginTop: nh(10), color: THEME.textColorSecondary}}>
           Loading {selectedTab === 0 ? 'Conversations' : 'Study Groups'}...
         </Text>
       </View>
@@ -399,8 +487,13 @@ const Conversation = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={THEME.headerBackground} />
-      <Header title="Messages" /> {/* Changed title to Messages for clarity */}
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={THEME.headerBackground}
+      />
+      <Header title="Messages" />
+
+      {/* Changed title to Messages for clarity */}
 
       <View style={styles.contentWrapper}>
         {/* Removed layer1 & layer2 for flatter structure, apply bg to contentWrapper */}
@@ -413,21 +506,35 @@ const Conversation = ({navigation, route}) => {
         {selectedTab === 1 && groupRequests?.length > 0 && (
           <TouchableOpacity
             style={styles.pendingRequestBanner}
-            onPress={() => navigation.navigate(Routes.groupRequest, {data: groupRequests})}>
+            onPress={() =>
+              navigation.navigate(Routes.groupRequest, {data: groupRequests})
+            }>
             <Text variant="medium13" color={THEME.textColorPrimary}>
-              You have {groupRequests.length} study group request{groupRequests.length > 1 ? 's' : ''} pending.
+              You have {groupRequests.length} study group request
+              {groupRequests.length > 1 ? 's' : ''} pending.
             </Text>
-            <Icon type="material" name="keyboard-arrow-right" size={nw(22)} color={THEME.textColorPrimary} />
+            <Icon
+              type="material"
+              name="keyboard-arrow-right"
+              size={nw(22)}
+              color={THEME.textColorPrimary}
+            />
           </TouchableOpacity>
         )}
 
         <FlatList
           data={dataToDisplay}
           renderItem={renderListItem}
-          keyExtractor={item => selectedTab === 0 ? item.conversationId : item._id}
+          keyExtractor={item =>
+            selectedTab === 0 ? item.conversationId : item._id
+          }
           contentContainerStyle={styles.listContentContainer}
           onEndReached={() => {
-            if (selectedTab === 0 && !isLoadingMoreConversations && !allConversationsFetched) {
+            if (
+              selectedTab === 0 &&
+              !isLoadingMoreConversations &&
+              !allConversationsFetched
+            ) {
               fetchConversationsData();
             }
             // Add pagination for study groups if needed
@@ -435,7 +542,11 @@ const Conversation = ({navigation, route}) => {
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             isLoadingMoreConversations && selectedTab === 0 ? (
-              <ActivityIndicator style={{marginVertical: nh(15)}} size="small" color={THEME.fabColor} />
+              <ActivityIndicator
+                style={{marginVertical: nh(15)}}
+                size="small"
+                color={THEME.fabColor}
+              />
             ) : null
           }
           ListEmptyComponent={!initialScreenLoader ? ListEmptyComponent : null} // Show empty only after initial load attempt
@@ -445,8 +556,16 @@ const Conversation = ({navigation, route}) => {
         {/* FAB to open ChatModal */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => chatmodelRef.current?.present()}>
-          <Icon type="material-community" name="plus" size={nw(28)} color={COLORS.whiteFFFFFF} />
+          onPress={() => {
+            mixpanel.track(`Clicked on Chat plus`);
+            chatmodelRef.current?.present();
+          }}>
+          <Icon
+            type="material-community"
+            name="plus"
+            size={nw(28)}
+            color={COLORS.whiteFFFFFF}
+          />
         </TouchableOpacity>
       </View>
       <ChatModal

@@ -15,6 +15,7 @@ import {getHomePageData, getvideoPageData} from '../../services/apiService';
 import {throttle} from '../../helper/commonFunctions';
 import PostView from '../Home/Post';
 import Header from '../../components/Header';
+import mixpanel from '../../helper/mixpanelClient';
 
 const LearningVideo = () => {
   const [video, setVideo] = useState([]);
@@ -38,6 +39,7 @@ const LearningVideo = () => {
   }).current;
 
   useEffect(() => {
+    mixpanel.track('Landed Learning Video Page');
     videoPageData(1);
     setHasMore(true);
   }, []);

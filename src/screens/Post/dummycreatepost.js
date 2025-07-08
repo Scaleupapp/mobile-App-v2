@@ -305,8 +305,8 @@ const CreatePost = ({navigation}) => {
 
       if (isEditingDraft) {
         const endpoint = isDraft
-          ? `http://192.168.1.8:3000/api/content/${draftData.id}`
-          : `http://192.168.1.8:3000/api/content/publish/${draftData.id}`;
+          ? `https://api.scaleupapp.club/api/content/${draftData.id}`
+          : `https://api.scaleupapp.club/api/content/publish/${draftData.id}`;
 
         response = await axios.put(endpoint, formData, config);
 
@@ -317,7 +317,7 @@ const CreatePost = ({navigation}) => {
 
       } else {
         response = await axios.post(
-          'http://192.168.1.8:3000/api/content/create',
+          'https://api.scaleupapp.club/api/content/create',
           formData,
           config,
         );

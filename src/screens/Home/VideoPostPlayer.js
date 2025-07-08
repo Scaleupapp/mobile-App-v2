@@ -112,7 +112,7 @@ const processRefund = async () => {
   try {
     const contentId = premiumData?.contentId || premiumData?.id;
     const response = await axiosInstance.post(
-      'http://192.168.1.8:3000/api/content/request-refund',
+      'https://api.scaleupapp.club/api/content/request-refund',
       { 
         contentId,
         reason: 'User requested refund via video player'
@@ -346,7 +346,7 @@ const handleProceedUnlock = async () => {
     console.log('Order payload:', orderPayload);
     
     const orderResponse = await axiosInstance.post(
-      'http://192.168.1.8:3000/api/content/create-payment-order',
+      'https://api.scaleupapp.club/api/content/create-payment-order',
       orderPayload
     );
 
@@ -436,7 +436,7 @@ const handlePaymentSuccess = async (paymentData, orderId, contentId) => {
     console.log('Sending verification request...');
     
     const verificationResponse = await axiosInstance.post(
-      'http://192.168.1.8:3000/api/content/verify-payment',
+      'https://api.scaleupapp.club/api/content/verify-payment',
       verificationPayload
     );
 

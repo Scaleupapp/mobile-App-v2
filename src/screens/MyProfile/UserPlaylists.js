@@ -55,7 +55,7 @@ const UserPlaylists = () => {
   const fetchUserPlaylists = async () => {
     try {
       const response = await axios.get(
-        `http://192.168.1.8:3000/api/playlists?userId=${userId}`,
+        `https://api.scaleupapp.club/api/playlists?userId=${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -95,7 +95,7 @@ const UserPlaylists = () => {
   const fetchPostDetails = async (postId) => {
     try {
       const response = await axios.get(
-        `http://192.168.1.8:3000/api/content/post/${postId}`,
+        `https://api.scaleupapp.club/api/content/post/${postId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -131,7 +131,7 @@ const UserPlaylists = () => {
   const markPostAsViewed = async (playlistId, postId) => {
     try {
       await axios.post(
-        'http://192.168.1.8:3000/api/playlists/mark-viewed',
+        'https://api.scaleupapp.club/api/playlists/mark-viewed',
         {
           userId,
           playlistId,

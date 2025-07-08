@@ -163,7 +163,7 @@ export function formatAMPM(isoTimestamp) {
 }
 
 export function groupMessagesByDate(messages) {
-  const groupedMessages = messages.reduce((acc, message) => {
+  const groupedMessages = messages?.reduce((acc, message) => {
     // Extract the date part from the 'createdAt' field
     const createdAt = message?.createdAt || message?.timestamp;
     const date = new Date(createdAt).toISOString().split('T')[0];

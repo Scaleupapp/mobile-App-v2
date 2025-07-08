@@ -33,6 +33,7 @@ import {icons} from '../../assets/icons';
 import {useToast} from '../../components/CustomToast';
 import {navigationRef} from '../../../App';
 import {useIsFocused} from '@react-navigation/native';
+import mixpanel from '../../helper/mixpanelClient';
 
 const MyProfile = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -407,13 +408,19 @@ const MyProfile = ({navigation, route}) => {
                 <Button
                   text="Edit Profile"
                   width={nw(283)}
-                  onPress={() => navigation.navigate(Routes.EditProfile)}
+                  onPress={() => {
+                    mixpanel.track('Clicked on Edit Profile');
+                    navigation.navigate(Routes.EditProfile);
+                  }}
                 />
 
                 <Button
                   justIcon={'settings-sharp'}
                   width={50}
-                  onPress={() => navigation.navigate(Routes.Settings)}
+                  onPress={() => {
+                    mixpanel.track('Clicked on Setting Icon');
+                    navigation.navigate(Routes.Settings);
+                  }}
                 />
               </View>
             ) : (
@@ -432,9 +439,10 @@ const MyProfile = ({navigation, route}) => {
                     justIcon={'user-friends'}
                     icontype={'font-awesome-5'}
                     width={50}
-                    onPress={() =>
-                      navigation.navigate(Routes.InnerCircleRequest)
-                    }
+                    onPress={() => {
+                      mixpanel.track('Clicked on Inner Circle Icon');
+                      navigation.navigate(Routes.InnerCircleRequest);
+                    }}
                   />
                 )}
                 {profile?.presentInInnerCircle && (
@@ -442,7 +450,10 @@ const MyProfile = ({navigation, route}) => {
                     icontype="material-community"
                     justIcon={'chat-processing'}
                     width={50}
-                    onPress={() => createConvo(profile?.userId, profile)}
+                    onPress={() => {
+                      mixpanel.track('Clicked on Chat Icon');
+                      createConvo(profile?.userId, profile);
+                    }}
                   />
                 )}
               </View>

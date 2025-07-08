@@ -169,7 +169,7 @@ const checkPremiumAccess = async () => {
 
       // First attempt to get playlists, with auth token if available
       const playlistsResponse = await axios.get(
-        'http://192.168.1.8:3000/api/playlists/public',
+        'https://api.scaleupapp.club/api/playlists/public',
         {headers},
       );
 
@@ -334,13 +334,13 @@ const checkPremiumAccess = async () => {
       let response;
       try {
         response = await axios.get(
-          `http://192.168.1.8:3000/api/content/post/${postId}`,
+          `https://api.scaleupapp.club/api/content/post/${postId}`,
         );
       } catch (err) {
         // If that fails and we have a token, try with authentication
         if (currentToken) {
           response = await axios.get(
-            `http://192.168.1.8:3000/api/content/post/${postId}`,
+            `https://api.scaleupapp.club/api/content/post/${postId}`,
             {
               headers: {
                 Authorization: `Bearer ${currentToken}`,
@@ -376,7 +376,7 @@ const checkPremiumAccess = async () => {
         : {};
 
       const response = await axios.get(
-        `http://192.168.1.8:3000/api/playlists/public/${playlistId}`,
+        `https://api.scaleupapp.club/api/playlists/public/${playlistId}`,
       );
 
       const posts = response.data.items.map(item => item.postId);
@@ -568,7 +568,7 @@ const checkPremiumAccess = async () => {
     try {
       // First, check if the post is already in the playlist
       const checkResponse = await axios.get(
-        `http://192.168.1.8:3000/api/playlists/check?userId=${userId}&postId=${postId}`,
+        `https://api.scaleupapp.club/api/playlists/check?userId=${userId}&postId=${postId}`,
       );
 
       if (checkResponse.data.exists) {
@@ -586,7 +586,7 @@ const checkPremiumAccess = async () => {
       }
 
       // If not bookmarked, proceed with bookmarking
-      await axios.post('http://192.168.1.8:3000/api/playlists', {
+      await axios.post('https://api.scaleupapp.club/api/playlists', {
         userId, // Send userId in the body
         playlistName: 'My Playlist', // Optional: Customize the playlist name
         items: [{postId}], // Only send the postId, not the entire object

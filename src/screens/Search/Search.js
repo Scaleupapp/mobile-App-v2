@@ -31,6 +31,7 @@ import {navigationRef} from '../../../App';
 import Routes from '../../helper/routes';
 import {useToast} from '../../components/CustomToast';
 import {debounce} from '../../helper/commonFunctions';
+import mixpanel from '../../helper/mixpanelClient';
 
 // Enable LayoutAnimation for Android
 if (
@@ -43,22 +44,21 @@ if (
 // Simple Search Icon (relies on icons.search from assets/icons)
 const SearchIcon = ({size = nw(20), color = COLORS.grey777777}) => (
   <Image
-    source={icons.search} 
+    source={icons.search}
     style={{width: size, height: size, tintColor: color, marginRight: nw(10)}}
     resizeMode="contain"
   />
 );
 // Simple Clear Icon (relies on icons.close from assets/icons)
 const ClearIcon = ({size = nw(18), color = COLORS.grey777777, onPress}) => (
-    <TouchableOpacity onPress={onPress} style={{padding: nw(5)}}>
-        <Image
-            source={icons.close} 
-            style={{width: size, height: size, tintColor: color}}
-            resizeMode="contain"
-        />
-    </TouchableOpacity>
+  <TouchableOpacity onPress={onPress} style={{padding: nw(5)}}>
+    <Image
+      source={icons.close}
+      style={{width: size, height: size, tintColor: color}}
+      resizeMode="contain"
+    />
+  </TouchableOpacity>
 );
-
 
 const Search = () => {
   const {showToast} = useToast();
@@ -67,7 +67,6 @@ const Search = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const textInputRef = useRef(null);
-
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -94,22 +93,25 @@ const Search = () => {
   );
 
   useEffect(() => {
+    mixpanel.track('Landed on Search Page');
+  }, []);
+
+  useEffect(() => {
     debouncedSearch(searchText);
   }, [searchText, debouncedSearch]);
 
   const handleInputChange = text => {
     setSearchText(text);
   };
-  
+
   const clearSearch = () => {
     setSearchText('');
     setSearchResults([]);
     if (textInputRef.current) {
-        textInputRef.current.clear();
+      textInputRef.current.clear();
     }
     Keyboard.dismiss();
   };
-
 
   const navigateToUserProfile = userId => {
     navigationRef.navigate(Routes.OtherProfile, {
@@ -117,16 +119,23 @@ const Search = () => {
     });
   };
 
-  const handleFollowToggle = async (userToToggle) => {
-    const originalUser = searchResults.find(u => u.userId === userToToggle.userId);
+  const handleFollowToggle = async userToToggle => {
+    const originalUser = searchResults.find(
+      u => u.userId === userToToggle.userId,
+    );
     if (!originalUser) return;
 
     // Optimistic UI update
     const updatedResults = searchResults.map(user =>
       user.userId === userToToggle.userId
-        ? {...user, isFollowing: !user.isFollowing, // Toggle follow state
-           followersCount: user.isFollowing ? Math.max(0, (user.followersCount || 0) - 1) : (user.followersCount || 0) + 1} // Adjust follower count
-        : user
+        ? {
+            ...user,
+            isFollowing: !user.isFollowing, // Toggle follow state
+            followersCount: user.isFollowing
+              ? Math.max(0, (user.followersCount || 0) - 1)
+              : (user.followersCount || 0) + 1,
+          } // Adjust follower count
+        : user,
     );
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSearchResults(updatedResults);
@@ -138,12 +147,17 @@ const Search = () => {
       } else {
         response = await followUser(userToToggle.userId);
       }
-      showToast({type: 'success', title: response?.data?.message || (originalUser.isFollowing ? 'Unfollowed' : 'Followed')});
+      showToast({
+        type: 'success',
+        title:
+          response?.data?.message ||
+          (originalUser.isFollowing ? 'Unfollowed' : 'Followed'),
+      });
     } catch (error) {
       console.error('Follow/Unfollow error:', error);
       showToast({type: 'error', title: 'Action failed. Please try again.'});
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      debouncedSearch(searchText); 
+      debouncedSearch(searchText);
     }
   };
 
@@ -160,12 +174,16 @@ const Search = () => {
               resizeMode="cover"
               style={styles.profileImage}
               source={{uri: item?.profilePicture}}
-              onError={(e) => console.log("Failed to load image", e.nativeEvent.error)}
+              onError={e =>
+                console.log('Failed to load image', e.nativeEvent.error)
+              }
             />
           ) : (
             <View style={styles.profileImagePlaceholder}>
               <Text style={styles.profileInitial}>
-                {`${item?.firstname?.charAt(0) || ''}${item?.lastname?.charAt(0) || ''}`.toUpperCase()}
+                {`${item?.firstname?.charAt(0) || ''}${
+                  item?.lastname?.charAt(0) || ''
+                }`.toUpperCase()}
               </Text>
             </View>
           )}
@@ -177,33 +195,40 @@ const Search = () => {
               {item?.role === 'SME' && (
                 <Image
                   resizeMode="contain"
-                  tintColor={COLORS.yellowF5BE00} 
-                  source={require('../../assets/icons/medal-star.png')} 
+                  tintColor={COLORS.yellowF5BE00}
+                  source={require('../../assets/icons/medal-star.png')}
                   style={styles.smeMedal}
                 />
               )}
             </View>
             <Text style={styles.fullNameText} numberOfLines={1}>
-              {`${item?.firstname || ''} ${item?.lastname || ''}`.trim() || 'No name'}
+              {`${item?.firstname || ''} ${item?.lastname || ''}`.trim() ||
+                'No name'}
             </Text>
-             <View style={styles.statsRow}>
-                <Text style={styles.statText}>{item?.totalPosts || 0} Posts</Text>
-                <Text style={styles.statText}>·</Text>
-                <Text style={styles.statText}>{item?.followersCount || 0} Followers</Text>
-             </View>
+            <View style={styles.statsRow}>
+              <Text style={styles.statText}>{item?.totalPosts || 0} Posts</Text>
+              <Text style={styles.statText}>·</Text>
+              <Text style={styles.statText}>
+                {item?.followersCount || 0} Followers
+              </Text>
+            </View>
           </View>
         </View>
 
         <TouchableOpacity
           style={[
             styles.followButton,
-            item?.isFollowing ? styles.unfollowButton : styles.followButtonActive,
+            item?.isFollowing
+              ? styles.unfollowButton
+              : styles.followButtonActive,
           ]}
           onPress={() => handleFollowToggle(item)}>
           <Text
             style={[
               styles.followButtonText,
-              item?.isFollowing ? styles.unfollowButtonText : styles.followButtonActiveText,
+              item?.isFollowing
+                ? styles.unfollowButtonText
+                : styles.followButtonActiveText,
             ]}>
             {item?.isFollowing ? 'Unfollow' : 'Follow'}
           </Text>
@@ -213,13 +238,17 @@ const Search = () => {
   };
 
   const renderListEmptyComponent = () => {
-    if (isLoading && searchText.length > 1 && searchResults.length === 0) return null;
+    if (isLoading && searchText.length > 1 && searchResults.length === 0)
+      return null;
 
-    if (searchText.length > 1 && searchResults.length === 0 && !isLoading) { 
+    if (searchText.length > 1 && searchResults.length === 0 && !isLoading) {
       return (
         <View style={styles.emptyStateContainer}>
           {/* <Image source={require('../../assets/icons/search-big.png')} style={styles.emptyStateIcon} /> Removed */}
-          <Text style={[styles.emptyStateIconPlaceholder, {marginBottom: nh(20)}]}>🤔</Text> 
+          <Text
+            style={[styles.emptyStateIconPlaceholder, {marginBottom: nh(20)}]}>
+            🤔
+          </Text>
           <Text style={styles.emptyStateTitle}>No Results Found</Text>
           <Text style={styles.emptyStateSubtitle}>
             No users matched "{searchText}". Try a different search.
@@ -227,26 +256,34 @@ const Search = () => {
         </View>
       );
     }
-    if (searchText.length === 0 && !isLoading) { 
-         return (
-            <View style={styles.emptyStateContainer}>
-                 {/* <Image source={require('../../assets/icons/search-users.png')} style={styles.emptyStateIcon} /> Removed */}
-                 <Text style={[styles.emptyStateIconPlaceholder, {marginBottom: nh(20)}]}>👥</Text>
-                <Text style={styles.emptyStateTitle}>Search for People</Text>
-                <Text style={styles.emptyStateSubtitle}>Find friends, creators, and interesting accounts.</Text>
-            </View>
-         );
+    if (searchText.length === 0 && !isLoading) {
+      return (
+        <View style={styles.emptyStateContainer}>
+          {/* <Image source={require('../../assets/icons/search-users.png')} style={styles.emptyStateIcon} /> Removed */}
+          <Text
+            style={[styles.emptyStateIconPlaceholder, {marginBottom: nh(20)}]}>
+            👥
+          </Text>
+          <Text style={styles.emptyStateTitle}>Search for People</Text>
+          <Text style={styles.emptyStateSubtitle}>
+            Find friends, creators, and interesting accounts.
+          </Text>
+        </View>
+      );
     }
-    return null; 
+    return null;
   };
-
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.whiteFFFFFF} />
-      
+
       <View style={styles.searchContainer}>
-        <View style={[styles.textInputContainer, isFocused && styles.textInputContainerFocused]}>
+        <View
+          style={[
+            styles.textInputContainer,
+            isFocused && styles.textInputContainerFocused,
+          ]}>
           <SearchIcon />
           <TextInput
             ref={textInputRef}
@@ -267,8 +304,8 @@ const Search = () => {
 
       {isLoading && searchText.length > 1 && searchResults.length === 0 && (
         <View style={styles.loaderContainer}>
-            <ActivityIndicator size="large" color={COLORS.blue043142} />
-            <Text style={styles.loadingText}>Searching...</Text>
+          <ActivityIndicator size="large" color={COLORS.blue043142} />
+          <Text style={styles.loadingText}>Searching...</Text>
         </View>
       )}
 
@@ -279,7 +316,7 @@ const Search = () => {
         contentContainerStyle={styles.listContentContainer}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderListEmptyComponent}
-        keyboardShouldPersistTaps="handled" 
+        keyboardShouldPersistTaps="handled"
       />
     </SafeAreaView>
   );
@@ -292,7 +329,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: nw(16),
-    paddingTop: nh(15), 
+    paddingTop: nh(15),
     paddingBottom: nh(10),
     backgroundColor: COLORS.whiteFFFFFF,
     borderBottomWidth: 1,
@@ -301,25 +338,25 @@ const styles = StyleSheet.create({
   textInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.greyD6D6D6_light, 
+    backgroundColor: COLORS.greyD6D6D6_light,
     borderRadius: nw(12),
     paddingHorizontal: nw(12),
     height: nh(48),
     borderWidth: 1,
-    borderColor: COLORS.greyD6D6D6_light, 
+    borderColor: COLORS.greyD6D6D6_light,
   },
   textInputContainerFocused: {
-    borderColor: COLORS.blue043142, 
+    borderColor: COLORS.blue043142,
   },
   textInput: {
     flex: 1,
     fontSize: nw(15),
     color: COLORS.black333333,
-    marginLeft: nw(5), 
+    marginLeft: nw(5),
     height: '100%',
   },
   loaderContainer: {
-    flex: 1, 
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: nh(20),
@@ -332,24 +369,23 @@ const styles = StyleSheet.create({
   listContentContainer: {
     paddingHorizontal: nw(16),
     paddingTop: nh(10),
-    paddingBottom: nh(20), 
-    flexGrow: 1, 
+    paddingBottom: nh(20),
+    flexGrow: 1,
   },
   userCardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: nh(12),
-    backgroundColor: COLORS.whiteFFFFFF, 
+    backgroundColor: COLORS.whiteFFFFFF,
     marginBottom: nh(12),
     borderRadius: nw(10),
     paddingHorizontal: nw(12),
     shadowColor: COLORS.black333333,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-
   },
   lastUserCard: {
     // No specific style needed if marginBottom handles spacing
@@ -357,8 +393,8 @@ const styles = StyleSheet.create({
   userCardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, 
-    marginRight: nw(10), 
+    flex: 1,
+    marginRight: nw(10),
   },
   profileImage: {
     width: nw(50),
@@ -381,7 +417,7 @@ const styles = StyleSheet.create({
   },
   userInfo: {
     marginLeft: nw(12),
-    flex: 1, 
+    flex: 1,
   },
   usernameRow: {
     flexDirection: 'row',
@@ -440,14 +476,15 @@ const styles = StyleSheet.create({
     color: COLORS.black333333,
   },
   emptyStateContainer: {
-    flex: 1, 
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: nw(20),
   },
-  emptyStateIconPlaceholder: { // Style for the emoji placeholder
-      fontSize: nw(50), // Adjust size as needed
-      // No specific color needed for emoji unless you want to wrap it
+  emptyStateIconPlaceholder: {
+    // Style for the emoji placeholder
+    fontSize: nw(50), // Adjust size as needed
+    // No specific color needed for emoji unless you want to wrap it
   },
   emptyStateTitle: {
     fontSize: nw(18),
