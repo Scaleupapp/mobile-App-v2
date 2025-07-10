@@ -33,11 +33,12 @@ import {
   updateFlashcardDeckApi,
 } from '../../services/apiService';
 import {useToast} from '../../components/CustomToast';
+import mixpanel from '../../helper/mixpanelClient';
 
 const MyDecks = ({navigation}) => {
   const userData = useSelector(state => state?.userData);
   const {showToast} = useToast();
-  
+
   // State management
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,7 +53,7 @@ const MyDecks = ({navigation}) => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDeck, setSelectedDeck] = useState(null);
   const [showOptions, setShowOptions] = useState(false);
-  
+
   // Search timeout ref
   const searchTimeoutRef = useRef(null);
 
@@ -79,92 +80,94 @@ const MyDecks = ({navigation}) => {
   ];
 
   // Fetch user's decks with better error handling
-  const fetchDecks = useCallback(async (page = 1, isRefresh = false) => {
-    try {
-      console.log('🔍 Fetching decks - Page:', page, 'Refresh:', isRefresh);
-      
-      if (isRefresh) {
-        setRefreshing(true);
-        setCurrentPage(1);
-      } else if (page > 1) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+  const fetchDecks = useCallback(
+    async (page = 1, isRefresh = false) => {
+      try {
+        console.log('🔍 Fetching decks - Page:', page, 'Refresh:', isRefresh);
 
-      const params = {
-        page,
-        limit: 20,
-        ...(selectedSubject !== 'all' && {subject: selectedSubject}),
-        ...(searchQuery && {search: searchQuery}),
-      };
-      
-      console.log('📡 API Call params:', params);
-
-      const response = await getUserFlashcardDecksApi(params);
-      
-      console.log('📥 API Response:', {
-        success: response?.data?.success,
-        decksCount: response?.data?.decks?.length,
-        pagination: response?.data?.pagination,
-        fullResponse: response?.data
-      });
-
-      if (response?.data?.success) {
-        const newDecks = response.data.decks || [];
-        console.log('✅ Decks received:', newDecks.length);
-        
-        if (page === 1 || isRefresh) {
-          setDecks(newDecks);
-          console.log('🔄 Set new decks:', newDecks.length);
+        if (isRefresh) {
+          setRefreshing(true);
+          setCurrentPage(1);
+        } else if (page > 1) {
+          setLoadingMore(true);
         } else {
-          setDecks(prev => {
-            const updated = [...prev, ...newDecks];
-            console.log('➕ Added to existing decks. Total:', updated.length);
-            return updated;
+          setLoading(true);
+        }
+
+        const params = {
+          page,
+          limit: 20,
+          ...(selectedSubject !== 'all' && {subject: selectedSubject}),
+          ...(searchQuery && {search: searchQuery}),
+        };
+
+        console.log('📡 API Call params:', params);
+
+        const response = await getUserFlashcardDecksApi(params);
+
+        console.log('📥 API Response:', {
+          success: response?.data?.success,
+          decksCount: response?.data?.decks?.length,
+          pagination: response?.data?.pagination,
+          fullResponse: response?.data,
+        });
+
+        if (response?.data?.success) {
+          const newDecks = response.data.decks || [];
+          console.log('✅ Decks received:', newDecks.length);
+
+          if (page === 1 || isRefresh) {
+            setDecks(newDecks);
+            console.log('🔄 Set new decks:', newDecks.length);
+          } else {
+            setDecks(prev => {
+              const updated = [...prev, ...newDecks];
+              console.log('➕ Added to existing decks. Total:', updated.length);
+              return updated;
+            });
+          }
+
+          const pagination = response.data.pagination;
+          if (pagination) {
+            setHasMore(pagination.page < pagination.pages);
+            setCurrentPage(pagination.page);
+            console.log('📄 Pagination:', {
+              currentPage: pagination.page,
+              totalPages: pagination.pages,
+              hasMore: pagination.page < pagination.pages,
+            });
+          } else {
+            setHasMore(false);
+            console.log('❌ No pagination data');
+          }
+        } else {
+          console.log('❌ API response not successful:', response?.data);
+          showToast({
+            type: 'error',
+            title: 'API returned unsuccessful response',
           });
         }
-        
-        const pagination = response.data.pagination;
-        if (pagination) {
-          setHasMore(pagination.page < pagination.pages);
-          setCurrentPage(pagination.page);
-          console.log('📄 Pagination:', {
-            currentPage: pagination.page,
-            totalPages: pagination.pages,
-            hasMore: pagination.page < pagination.pages
-          });
-        } else {
-          setHasMore(false);
-          console.log('❌ No pagination data');
-        }
-      } else {
-        console.log('❌ API response not successful:', response?.data);
+      } catch (error) {
+        console.error('💥 Error fetching decks:', error);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.response?.status,
+          data: error.response?.data,
+        });
+
         showToast({
           type: 'error',
-          title: 'API returned unsuccessful response'
+          title: 'Failed to load decks',
+          message: error.response?.data?.message || error.message,
         });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
       }
-
-    } catch (error) {
-      console.error('💥 Error fetching decks:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-      
-      showToast({
-        type: 'error',
-        title: 'Failed to load decks',
-        message: error.response?.data?.message || error.message
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  }, [selectedSubject, searchQuery]);
+    },
+    [selectedSubject, searchQuery],
+  );
 
   // Apply local filtering and sorting
   const applyFiltersAndSort = useCallback(() => {
@@ -193,14 +196,14 @@ const MyDecks = ({navigation}) => {
   }, [decks, sortBy]);
 
   // Handle search with debounce
-  const handleSearch = useCallback((query) => {
+  const handleSearch = useCallback(query => {
     console.log('🔍 Search query:', query);
     setSearchQuery(query);
-    
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       console.log('⏰ Search timeout triggered, fetching new results');
       setCurrentPage(1);
@@ -211,7 +214,12 @@ const MyDecks = ({navigation}) => {
   // Load more decks
   const loadMoreDecks = useCallback(() => {
     if (loadingMore || !hasMore) {
-      console.log('⚠️ Skip load more - loading:', loadingMore, 'hasMore:', hasMore);
+      console.log(
+        '⚠️ Skip load more - loading:',
+        loadingMore,
+        'hasMore:',
+        hasMore,
+      );
       return;
     }
     console.log('📄 Loading more decks, current page:', currentPage);
@@ -219,7 +227,7 @@ const MyDecks = ({navigation}) => {
   }, [currentPage, hasMore, loadingMore, fetchDecks]);
 
   // Handle deck options
-  const handleDeckOptions = (deck) => {
+  const handleDeckOptions = deck => {
     console.log('⚙️ Opening options for deck:', deck.title);
     setSelectedDeck(deck);
     setShowOptions(true);
@@ -231,13 +239,13 @@ const MyDecks = ({navigation}) => {
     navigation.navigate(Routes.CreateDeck, {
       deckId: selectedDeck._id,
       deckData: selectedDeck,
-      isEdit: true
+      isEdit: true,
     });
   };
 
   const handleDeleteDeck = () => {
     setShowOptions(false);
-    
+
     Alert.alert(
       'Delete Deck',
       `Are you sure you want to delete "${selectedDeck?.title}"? This action cannot be undone.`,
@@ -250,54 +258,60 @@ const MyDecks = ({navigation}) => {
             try {
               console.log('🗑️ Deleting deck:', selectedDeck._id);
               await deleteFlashcardDeckApi(selectedDeck._id);
-              
+
               // Remove from local state
-              setDecks(prev => prev.filter(deck => deck._id !== selectedDeck._id));
-              
+              setDecks(prev =>
+                prev.filter(deck => deck._id !== selectedDeck._id),
+              );
+
               showToast({
                 type: 'success',
-                title: 'Deck deleted successfully'
+                title: 'Deck deleted successfully',
               });
             } catch (error) {
               console.error('Error deleting deck:', error);
               showToast({
                 type: 'error',
-                title: 'Failed to delete deck'
+                title: 'Failed to delete deck',
               });
             }
           },
         },
-      ]
+      ],
     );
   };
 
   const handleTogglePublic = async () => {
     setShowOptions(false);
-    
+
     try {
       console.log('🌐 Toggle public for deck:', selectedDeck?.title);
       const updatedData = {
-        isPublic: !selectedDeck.isPublic
+        isPublic: !selectedDeck.isPublic,
       };
-      
+
       await updateFlashcardDeckApi(selectedDeck._id, updatedData);
-      
+
       // Update local state
-      setDecks(prev => prev.map(deck => 
-        deck._id === selectedDeck._id 
-          ? {...deck, isPublic: !deck.isPublic}
-          : deck
-      ));
-      
+      setDecks(prev =>
+        prev.map(deck =>
+          deck._id === selectedDeck._id
+            ? {...deck, isPublic: !deck.isPublic}
+            : deck,
+        ),
+      );
+
       showToast({
         type: 'success',
-        title: `Deck ${!selectedDeck.isPublic ? 'made public' : 'made private'}`
+        title: `Deck ${
+          !selectedDeck.isPublic ? 'made public' : 'made private'
+        }`,
       });
     } catch (error) {
       console.error('Error toggling deck visibility:', error);
       showToast({
         type: 'error',
-        title: 'Failed to update deck visibility'
+        title: 'Failed to update deck visibility',
       });
     }
   };
@@ -307,7 +321,7 @@ const MyDecks = ({navigation}) => {
     useCallback(() => {
       console.log('🔄 Screen focused, fetching decks');
       fetchDecks(1, true);
-    }, [fetchDecks])
+    }, [fetchDecks]),
   );
 
   useEffect(() => {
@@ -347,28 +361,34 @@ const MyDecks = ({navigation}) => {
             </Pressable>
           )}
         </View>
-        
-        <Pressable style={styles.filterButton} onPress={() => setShowFilters(true)}>
+
+        <Pressable
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}>
           <Icon name="tune" size={20} color={COLORS.blue043142} />
         </Pressable>
       </View>
 
       {/* Quick filters */}
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.quickFiltersContainer}>
-        {subjectOptions.slice(0, 6).map((subject) => (
+        {subjectOptions.slice(0, 6).map(subject => (
           <Pressable
             key={subject.value}
             style={[
               styles.quickFilter,
-              selectedSubject === subject.value && styles.quickFilterSelected
+              selectedSubject === subject.value && styles.quickFilterSelected,
             ]}
             onPress={() => setSelectedSubject(subject.value)}>
-            <Text 
-              variant="medium12" 
-              color={selectedSubject === subject.value ? COLORS.whiteFFFFFF : COLORS.blue043142}>
+            <Text
+              variant="medium12"
+              color={
+                selectedSubject === subject.value
+                  ? COLORS.whiteFFFFFF
+                  : COLORS.blue043142
+              }>
               {subject.label}
             </Text>
           </Pressable>
@@ -380,9 +400,9 @@ const MyDecks = ({navigation}) => {
   // Render deck card with debug info
   const renderDeckCard = ({item: deck, index}) => {
     console.log(`🎴 Rendering deck ${index}:`, deck.title);
-    
+
     return (
-      <Pressable 
+      <Pressable
         style={styles.deckCard}
         onPress={() => {
           console.log('👆 Deck tapped:', deck.title);
@@ -390,24 +410,31 @@ const MyDecks = ({navigation}) => {
         }}>
         <View style={styles.deckCardHeader}>
           <View style={styles.deckCardInfo}>
-            <Text variant="semibold16" color={COLORS.blue043142} numberOfLines={2}>
+            <Text
+              variant="semibold16"
+              color={COLORS.blue043142}
+              numberOfLines={2}>
               {deck.title}
             </Text>
-            <Text variant="medium12" color={COLORS.grey777777} numberOfLines={2} style={styles.deckDescription}>
+            <Text
+              variant="medium12"
+              color={COLORS.grey777777}
+              numberOfLines={2}
+              style={styles.deckDescription}>
               {deck.description || 'No description'}
             </Text>
           </View>
-          
-          <Pressable 
+
+          <Pressable
             style={styles.optionsButton}
-            onPress={(e) => {
+            onPress={e => {
               e.stopPropagation();
               handleDeckOptions(deck);
             }}>
             <Icon name="more-vert" size={20} color={COLORS.grey777777} />
           </Pressable>
         </View>
-        
+
         <View style={styles.deckCardMeta}>
           <View style={styles.deckMetaItem}>
             <Icon name="style" size={16} color={COLORS.blue043142} />
@@ -415,14 +442,15 @@ const MyDecks = ({navigation}) => {
               {deck.cardCount || 0} cards
             </Text>
           </View>
-          
+
           <View style={styles.deckMetaItem}>
             <Icon name="category" size={16} color={COLORS.grey777777} />
             <Text variant="medium12" color={COLORS.grey777777}>
-              {deck.subject?.charAt(0).toUpperCase() + deck.subject?.slice(1) || 'General'}
+              {deck.subject?.charAt(0).toUpperCase() + deck.subject?.slice(1) ||
+                'General'}
             </Text>
           </View>
-          
+
           {deck.isPublic && (
             <View style={styles.deckMetaItem}>
               <Icon name="public" size={16} color={COLORS.green34A853} />
@@ -432,7 +460,7 @@ const MyDecks = ({navigation}) => {
             </View>
           )}
         </View>
-        
+
         {deck.tags && deck.tags.length > 0 && (
           <View style={styles.tagsContainer}>
             {deck.tags.slice(0, 3).map((tag, index) => (
@@ -449,21 +477,21 @@ const MyDecks = ({navigation}) => {
             )}
           </View>
         )}
-        
+
         <View style={styles.deckCardFooter}>
           <Text variant="medium11" color={COLORS.grey999999}>
             Updated {formatRelativeTime(deck.updatedAt)}
           </Text>
-          
+
           <View style={styles.deckActions}>
-            <Pressable 
+            <Pressable
               style={styles.quickAction}
-              onPress={(e) => {
+              onPress={e => {
                 e.stopPropagation();
                 console.log('📚 Study button tapped for:', deck.title);
                 navigation.navigate(Routes.FlashcardViewer, {
                   deckId: deck._id,
-                  studyMode: true
+                  studyMode: true,
                 });
               }}>
               <Icon name="school" size={16} color={COLORS.green34A853} />
@@ -494,29 +522,41 @@ const MyDecks = ({navigation}) => {
               <Icon name="close" size={24} color={COLORS.grey777777} />
             </Pressable>
           </View>
-          
+
           {/* Subject Filter */}
           <View style={styles.filterSection}>
-            <Text variant="semibold14" color={COLORS.blue043142} style={styles.filterSectionTitle}>
+            <Text
+              variant="semibold14"
+              color={COLORS.blue043142}
+              style={styles.filterSectionTitle}>
               Subject
             </Text>
             <View style={styles.filterOptionsGrid}>
-              {subjectOptions.map((subject) => (
+              {subjectOptions.map(subject => (
                 <Pressable
                   key={subject.value}
                   style={[
                     styles.filterOption,
-                    selectedSubject === subject.value && styles.filterOptionSelected
+                    selectedSubject === subject.value &&
+                      styles.filterOptionSelected,
                   ]}
                   onPress={() => setSelectedSubject(subject.value)}>
-                  <Icon 
-                    name={subject.icon} 
-                    size={16} 
-                    color={selectedSubject === subject.value ? COLORS.whiteFFFFFF : COLORS.grey777777} 
+                  <Icon
+                    name={subject.icon}
+                    size={16}
+                    color={
+                      selectedSubject === subject.value
+                        ? COLORS.whiteFFFFFF
+                        : COLORS.grey777777
+                    }
                   />
-                  <Text 
-                    variant="medium12" 
-                    color={selectedSubject === subject.value ? COLORS.whiteFFFFFF : COLORS.grey777777}
+                  <Text
+                    variant="medium12"
+                    color={
+                      selectedSubject === subject.value
+                        ? COLORS.whiteFFFFFF
+                        : COLORS.grey777777
+                    }
                     style={styles.filterOptionText}>
                     {subject.label}
                   </Text>
@@ -524,29 +564,40 @@ const MyDecks = ({navigation}) => {
               ))}
             </View>
           </View>
-          
+
           {/* Sort Options */}
           <View style={styles.filterSection}>
-            <Text variant="semibold14" color={COLORS.blue043142} style={styles.filterSectionTitle}>
+            <Text
+              variant="semibold14"
+              color={COLORS.blue043142}
+              style={styles.filterSectionTitle}>
               Sort By
             </Text>
             <View style={styles.sortOptionsContainer}>
-              {sortOptions.map((sort) => (
+              {sortOptions.map(sort => (
                 <Pressable
                   key={sort.value}
                   style={[
                     styles.sortOption,
-                    sortBy === sort.value && styles.sortOptionSelected
+                    sortBy === sort.value && styles.sortOptionSelected,
                   ]}
                   onPress={() => setSortBy(sort.value)}>
-                  <Icon 
-                    name={sort.icon} 
-                    size={16} 
-                    color={sortBy === sort.value ? COLORS.blue043142 : COLORS.grey777777} 
+                  <Icon
+                    name={sort.icon}
+                    size={16}
+                    color={
+                      sortBy === sort.value
+                        ? COLORS.blue043142
+                        : COLORS.grey777777
+                    }
                   />
-                  <Text 
-                    variant="medium12" 
-                    color={sortBy === sort.value ? COLORS.blue043142 : COLORS.grey777777}
+                  <Text
+                    variant="medium12"
+                    color={
+                      sortBy === sort.value
+                        ? COLORS.blue043142
+                        : COLORS.grey777777
+                    }
                     style={styles.sortOptionText}>
                     {sort.label}
                   </Text>
@@ -557,7 +608,7 @@ const MyDecks = ({navigation}) => {
               ))}
             </View>
           </View>
-          
+
           <Button
             text="Apply Filters"
             onPress={() => setShowFilters(false)}
@@ -585,41 +636,57 @@ const MyDecks = ({navigation}) => {
               <Icon name="close" size={20} color={COLORS.grey777777} />
             </Pressable>
           </View>
-          
+
           <Pressable style={styles.optionItem} onPress={handleEditDeck}>
             <Icon name="edit" size={20} color={COLORS.blue043142} />
-            <Text variant="medium14" color={COLORS.blue043142} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              style={styles.optionText}>
               Edit Deck
             </Text>
           </Pressable>
-          
+
           <Pressable style={styles.optionItem} onPress={handleTogglePublic}>
-            <Icon 
-              name={selectedDeck?.isPublic ? 'lock' : 'public'} 
-              size={20} 
-              color={COLORS.blue043142} 
+            <Icon
+              name={selectedDeck?.isPublic ? 'lock' : 'public'}
+              size={20}
+              color={COLORS.blue043142}
             />
-            <Text variant="medium14" color={COLORS.blue043142} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              style={styles.optionText}>
               Make {selectedDeck?.isPublic ? 'Private' : 'Public'}
             </Text>
           </Pressable>
-          
-          <Pressable style={styles.optionItem} onPress={() => {
-            setShowOptions(false);
-            navigation.navigate(Routes.UploadDocument, {
-              deckId: selectedDeck._id,
-              deckTitle: selectedDeck.title
-            });
-          }}>
+
+          <Pressable
+            style={styles.optionItem}
+            onPress={() => {
+              setShowOptions(false);
+              navigation.navigate(Routes.UploadDocument, {
+                deckId: selectedDeck._id,
+                deckTitle: selectedDeck.title,
+              });
+            }}>
             <Icon name="cloud-upload" size={20} color={COLORS.blue043142} />
-            <Text variant="medium14" color={COLORS.blue043142} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              style={styles.optionText}>
               Add from Document
             </Text>
           </Pressable>
-          
-          <Pressable style={[styles.optionItem, styles.dangerOption]} onPress={handleDeleteDeck}>
+
+          <Pressable
+            style={[styles.optionItem, styles.dangerOption]}
+            onPress={handleDeleteDeck}>
             <Icon name="delete" size={20} color={COLORS.redEA4335} />
-            <Text variant="medium14" color={COLORS.redEA4335} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.redEA4335}
+              style={styles.optionText}>
               Delete Deck
             </Text>
           </Pressable>
@@ -629,13 +696,13 @@ const MyDecks = ({navigation}) => {
   );
 
   // Helper functions
-  const formatRelativeTime = (date) => {
+  const formatRelativeTime = date => {
     if (!date) return 'Unknown';
-    
+
     const now = new Date();
     const diffMs = now - new Date(date);
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return 'today';
     if (diffDays === 1) return 'yesterday';
     if (diffDays < 7) return `${diffDays} days ago`;
@@ -648,9 +715,12 @@ const MyDecks = ({navigation}) => {
     console.log('🔄 Showing loading state');
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-        <Header 
-          title="My Decks" 
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <Header
+          title="My Decks"
           onBackPress={() => navigation.goBack()}
           showBackButton={true}
           rightIcon={true}
@@ -659,7 +729,10 @@ const MyDecks = ({navigation}) => {
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.blue043142} />
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.loadingText}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.loadingText}>
             Loading your decks...
           </Text>
         </View>
@@ -671,10 +744,13 @@ const MyDecks = ({navigation}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-      
-      <Header 
-        title="My Decks" 
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+
+      <Header
+        title="My Decks"
         onBackPress={() => navigation.goBack()}
         showBackButton={true}
         rightIcon={true}
@@ -684,11 +760,11 @@ const MyDecks = ({navigation}) => {
 
       <View style={styles.content}>
         {renderSearchAndFilters()}
-        
+
         <FlatList
           data={filteredDecks}
           renderItem={renderDeckCard}
-          keyExtractor={(item) => item._id}
+          keyExtractor={item => item._id}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -705,19 +781,29 @@ const MyDecks = ({navigation}) => {
             return (
               <View style={styles.emptyContainer}>
                 <Icon name="style" size={64} color={COLORS.greyBBBBBB} />
-                <Text variant="medium18" color={COLORS.grey777777} style={styles.emptyTitle}>
-                  {searchQuery || selectedSubject !== 'all' ? 'No decks found' : 'No decks yet'}
+                <Text
+                  variant="medium18"
+                  color={COLORS.grey777777}
+                  style={styles.emptyTitle}>
+                  {searchQuery || selectedSubject !== 'all'
+                    ? 'No decks found'
+                    : 'No decks yet'}
                 </Text>
-                <Text variant="medium12" color={COLORS.grey999999} style={styles.emptyDescription}>
-                  {searchQuery || selectedSubject !== 'all' 
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey999999}
+                  style={styles.emptyDescription}>
+                  {searchQuery || selectedSubject !== 'all'
                     ? 'Try adjusting your search or filters'
-                    : 'Create your first flashcard deck to get started'
-                  }
+                    : 'Create your first flashcard deck to get started'}
                 </Text>
-                {(!searchQuery && selectedSubject === 'all') && (
+                {!searchQuery && selectedSubject === 'all' && (
                   <Button
                     text="Create Your First Deck"
-                    onPress={() => navigation.navigate(Routes.CreateDeck)}
+                    onPress={() => {
+                      mixpanel.track(`Click on Create Your First Deck Button`);
+                      navigation.navigate(Routes.CreateDeck);
+                    }}
                     style={styles.createFirstButton}
                     icon="add"
                     iconColor={COLORS.whiteFFFFFF}
@@ -726,11 +812,14 @@ const MyDecks = ({navigation}) => {
               </View>
             );
           }}
-          ListFooterComponent={() => 
+          ListFooterComponent={() =>
             loadingMore ? (
               <View style={styles.loadingMoreContainer}>
                 <ActivityIndicator size="small" color={COLORS.blue043142} />
-                <Text variant="medium12" color={COLORS.grey777777} style={styles.loadingMoreText}>
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey777777}
+                  style={styles.loadingMoreText}>
                   Loading more decks...
                 </Text>
               </View>
@@ -738,7 +827,7 @@ const MyDecks = ({navigation}) => {
           }
           contentContainerStyle={[
             styles.listContainer,
-            filteredDecks.length === 0 && styles.listContainerEmpty
+            filteredDecks.length === 0 && styles.listContainerEmpty,
           ]}
         />
       </View>
@@ -767,7 +856,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.greyF8F8F8,
   },
-  
+
   // Search and Filters
   searchContainer: {
     backgroundColor: COLORS.whiteFFFFFF,
@@ -815,7 +904,7 @@ const styles = StyleSheet.create({
   quickFilterSelected: {
     backgroundColor: COLORS.blue043142,
   },
-  
+
   // Deck Cards
   listContainer: {
     padding: nw(16),
@@ -887,7 +976,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(8),
     paddingVertical: nh(4),
   },
-  
+
   // Empty State
   emptyContainer: {
     flex: 1,
@@ -907,7 +996,7 @@ const styles = StyleSheet.create({
   createFirstButton: {
     width: nw(200),
   },
-  
+
   // Loading More
   loadingMoreContainer: {
     paddingVertical: nh(16),
@@ -916,7 +1005,7 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     marginTop: nh(8),
   },
-  
+
   // Modals
   modalOverlay: {
     flex: 1,
@@ -965,7 +1054,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
   },
-  
+
   // Filter Modal
   filterSection: {
     marginBottom: nh(20),
@@ -1012,7 +1101,7 @@ const styles = StyleSheet.create({
   applyFiltersButton: {
     marginTop: nh(8),
   },
-  
+
   // Options Modal
   optionItem: {
     flexDirection: 'row',

@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {API} from './apiConstent';
-import {logoutUser} from '../helper/commonFunctions';
 
 const axiosInstance = axios.create({
   // MODIFIED: I see your previous file used API.BASE_URL.

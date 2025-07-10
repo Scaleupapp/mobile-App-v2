@@ -59,111 +59,126 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
 
   // Enhanced subject metadata for higher education
   const subjectMeta = {
-    mathematics: { icon: 'calculate', color: '#2563EB', name: 'Mathematics' },
-    physics: { icon: 'science', color: '#059669', name: 'Physics' },
-    chemistry: { icon: 'biotech', color: '#DC2626', name: 'Chemistry' },
-    biology: { icon: 'eco', color: '#7C3AED', name: 'Biology' },
-    computer_science: { icon: 'computer', color: '#0891B2', name: 'Computer Science' },
-    english: { icon: 'menu-book', color: '#EA580C', name: 'English' },
-    economics: { icon: 'trending-up', color: '#BE185D', name: 'Economics' },
-    management: { icon: 'business', color: '#059669', name: 'Management' },
-    mechanical_engineering: { icon: 'engineering', color: '#7C2D12', name: 'Mechanical Engineering' },
-    electrical_engineering: { icon: 'electrical-services', color: '#BE123C', name: 'Electrical Engineering' },
-    custom: { icon: 'tune', color: '#6366F1', name: 'Custom Subject' },
+    mathematics: {icon: 'calculate', color: '#2563EB', name: 'Mathematics'},
+    physics: {icon: 'science', color: '#059669', name: 'Physics'},
+    chemistry: {icon: 'biotech', color: '#DC2626', name: 'Chemistry'},
+    biology: {icon: 'eco', color: '#7C3AED', name: 'Biology'},
+    computer_science: {
+      icon: 'computer',
+      color: '#0891B2',
+      name: 'Computer Science',
+    },
+    english: {icon: 'menu-book', color: '#EA580C', name: 'English'},
+    economics: {icon: 'trending-up', color: '#BE185D', name: 'Economics'},
+    management: {icon: 'business', color: '#059669', name: 'Management'},
+    mechanical_engineering: {
+      icon: 'engineering',
+      color: '#7C2D12',
+      name: 'Mechanical Engineering',
+    },
+    electrical_engineering: {
+      icon: 'electrical-services',
+      color: '#BE123C',
+      name: 'Electrical Engineering',
+    },
+    custom: {icon: 'tune', color: '#6366F1', name: 'Custom Subject'},
   };
 
   // Available subjects for filtering
   const subjects = [
-    { id: 'all', name: 'All Subjects' },
-    { id: 'mathematics', name: 'Mathematics' },
-    { id: 'physics', name: 'Physics' },
-    { id: 'chemistry', name: 'Chemistry' },
-    { id: 'biology', name: 'Biology' },
-    { id: 'computer_science', name: 'Computer Science' },
-    { id: 'english', name: 'English' },
-    { id: 'economics', name: 'Economics' },
-    { id: 'management', name: 'Management' },
-    { id: 'mechanical_engineering', name: 'Mechanical Eng.' },
-    { id: 'electrical_engineering', name: 'Electrical Eng.' },
+    {id: 'all', name: 'All Subjects'},
+    {id: 'mathematics', name: 'Mathematics'},
+    {id: 'physics', name: 'Physics'},
+    {id: 'chemistry', name: 'Chemistry'},
+    {id: 'biology', name: 'Biology'},
+    {id: 'computer_science', name: 'Computer Science'},
+    {id: 'english', name: 'English'},
+    {id: 'economics', name: 'Economics'},
+    {id: 'management', name: 'Management'},
+    {id: 'mechanical_engineering', name: 'Mechanical Eng.'},
+    {id: 'electrical_engineering', name: 'Electrical Eng.'},
   ];
 
   // Status options
   const statusOptions = [
-    { id: 'all', name: 'All Sessions', icon: 'list' },
-    { id: 'completed', name: 'Completed', icon: 'check-circle' },
-    { id: 'archived', name: 'Archived', icon: 'archive' },
-    { id: 'paused', name: 'Paused', icon: 'pause' },
-    { id: 'active', name: 'Active', icon: 'play-arrow' },
+    {id: 'all', name: 'All Sessions', icon: 'list'},
+    {id: 'completed', name: 'Completed', icon: 'check-circle'},
+    {id: 'archived', name: 'Archived', icon: 'archive'},
+    {id: 'paused', name: 'Paused', icon: 'pause'},
+    {id: 'active', name: 'Active', icon: 'play-arrow'},
   ];
 
   // Time range options
   const timeRanges = [
-    { id: 'all', name: 'All Time', icon: 'date-range' },
-    { id: 'today', name: 'Today', icon: 'today' },
-    { id: 'week', name: 'This Week', icon: 'view-week' },
-    { id: 'month', name: 'This Month', icon: 'calendar-month' },
-    { id: 'quarter', name: 'Last 3 Months', icon: 'calendar-view-month' },
+    {id: 'all', name: 'All Time', icon: 'date-range'},
+    {id: 'today', name: 'Today', icon: 'today'},
+    {id: 'week', name: 'This Week', icon: 'view-week'},
+    {id: 'month', name: 'This Month', icon: 'calendar-month'},
+    {id: 'quarter', name: 'Last 3 Months', icon: 'calendar-view-month'},
   ];
 
   // Get syllabus display name
-  const getSyllabusDisplayName = (syllabus) => {
+  const getSyllabusDisplayName = syllabus => {
     const syllabusMap = {
-      'jee_main': 'JEE Main',
-      'jee_advanced': 'JEE Advanced',
-      'neet': 'NEET UG',
-      'gate': 'GATE',
-      'cat': 'CAT',
-      'mat': 'MAT',
-      'gmat': 'GMAT',
-      'gre': 'GRE',
-      'upsc': 'UPSC',
-      'ssc': 'SSC',
-      'undergraduate': 'Undergraduate',
-      'postgraduate': 'Post Graduate',
-      'mba': 'MBA',
-      'tech_interviews': 'Tech Interviews',
+      jee_main: 'JEE Main',
+      jee_advanced: 'JEE Advanced',
+      neet: 'NEET UG',
+      gate: 'GATE',
+      cat: 'CAT',
+      mat: 'MAT',
+      gmat: 'GMAT',
+      gre: 'GRE',
+      upsc: 'UPSC',
+      ssc: 'SSC',
+      undergraduate: 'Undergraduate',
+      postgraduate: 'Post Graduate',
+      mba: 'MBA',
+      tech_interviews: 'Tech Interviews',
     };
     return syllabusMap[syllabus] || syllabus.replace('_', ' ').toUpperCase();
   };
 
   // Load session history
-  const loadSessions = useCallback(async (pageNum = 1, showLoader = true) => {
-    try {
-      if (showLoader && pageNum === 1) setLoading(true);
-      if (pageNum > 1) setLoadingMore(true);
+  const loadSessions = useCallback(
+    async (pageNum = 1, showLoader = true) => {
+      try {
+        if (showLoader && pageNum === 1) setLoading(true);
+        if (pageNum > 1) setLoadingMore(true);
 
-      const params = {
-        page: pageNum,
-        limit: 20,
-        ...(selectedSubject !== 'all' && { subject: selectedSubject }),
-        ...(selectedStatus !== 'all' && { status: selectedStatus }),
-      };
+        const params = {
+          page: pageNum,
+          limit: 20,
+          ...(selectedSubject !== 'all' && {subject: selectedSubject}),
+          ...(selectedStatus !== 'all' && {status: selectedStatus}),
+        };
 
-      const response = await aiStudyBuddyGetSessionHistoryApi(params);
-      
-      const newSessions = response.data.sessions || [];
-      
-      if (pageNum === 1) {
-        setSessions(newSessions);
-        setPage(1);
-      } else {
-        setSessions(prev => [...prev, ...newSessions]);
+        const response = await aiStudyBuddyGetSessionHistoryApi(params);
+
+        const newSessions = response.data.sessions || [];
+
+        if (pageNum === 1) {
+          setSessions(newSessions);
+          setPage(1);
+        } else {
+          setSessions(prev => [...prev, ...newSessions]);
+        }
+
+        setHasMore(newSessions.length === 20);
+        setPage(pageNum);
+      } catch (error) {
+        console.error('Load session history error:', error);
+        showToast({
+          message: 'Failed to load session history. Please try again.',
+          type: 'error',
+        });
+      } finally {
+        if (showLoader && pageNum === 1) setLoading(false);
+        if (pageNum > 1) setLoadingMore(false);
+        setRefreshing(false);
       }
-      
-      setHasMore(newSessions.length === 20);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Load session history error:', error);
-      showToast({
-        message: 'Failed to load session history. Please try again.',
-        type: 'error',
-      });
-    } finally {
-      if (showLoader && pageNum === 1) setLoading(false);
-      if (pageNum > 1) setLoadingMore(false);
-      setRefreshing(false);
-    }
-  }, [selectedSubject, selectedStatus, showToast]);
+    },
+    [selectedSubject, selectedStatus, showToast],
+  );
 
   // Filter sessions based on search and time range
   useEffect(() => {
@@ -173,16 +188,24 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(session => {
-        const subject = subjectMeta[session.subject]?.name.toLowerCase() || session.subject.toLowerCase();
-        const topics = session.topicsDiscussed?.join(' ').toLowerCase() || 
-                      session.learningContext?.topicsDiscussed?.join(' ').toLowerCase() || '';
-        const goals = session.learningGoals?.join(' ').toLowerCase() ||
-                     session.learningContext?.learningGoals?.join(' ').toLowerCase() || '';
-        
-        return subject.includes(query) || 
-               topics.includes(query) || 
-               goals.includes(query) ||
-               session.syllabus?.toLowerCase().includes(query);
+        const subject =
+          subjectMeta[session.subject]?.name.toLowerCase() ||
+          session.subject.toLowerCase();
+        const topics =
+          session.topicsDiscussed?.join(' ').toLowerCase() ||
+          session.learningContext?.topicsDiscussed?.join(' ').toLowerCase() ||
+          '';
+        const goals =
+          session.learningGoals?.join(' ').toLowerCase() ||
+          session.learningContext?.learningGoals?.join(' ').toLowerCase() ||
+          '';
+
+        return (
+          subject.includes(query) ||
+          topics.includes(query) ||
+          goals.includes(query) ||
+          session.syllabus?.toLowerCase().includes(query)
+        );
       });
     }
 
@@ -206,8 +229,8 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
           break;
       }
 
-      filtered = filtered.filter(session => 
-        new Date(session.startedAt) >= filterDate
+      filtered = filtered.filter(
+        session => new Date(session.startedAt) >= filterDate,
       );
     }
 
@@ -234,7 +257,7 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadSessions();
-    }, [loadSessions])
+    }, [loadSessions]),
   );
 
   // Apply filters
@@ -254,11 +277,11 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   };
 
   // Get relative time string
-  const getRelativeTime = (dateString) => {
+  const getRelativeTime = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    
+
     if (diffInDays === 0) return 'Today';
     if (diffInDays === 1) return 'Yesterday';
     if (diffInDays < 7) return `${diffInDays}d ago`;
@@ -268,15 +291,17 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   };
 
   // Get session duration
-  const getSessionDuration = (session) => {
+  const getSessionDuration = session => {
     if (!session.startedAt) return 'Unknown';
-    
+
     const start = new Date(session.startedAt);
-    const end = session.completedAt ? new Date(session.completedAt) : new Date(session.lastMessageAt);
+    const end = session.completedAt
+      ? new Date(session.completedAt)
+      : new Date(session.lastMessageAt);
     const durationMs = end - start;
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -284,36 +309,38 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   };
 
   // View session details
-  const viewSessionDetails = (session) => {
+  const viewSessionDetails = session => {
     navigation.navigate(Routes.AIStudyBuddySessionDetails, {
       sessionId: session.sessionId,
     });
   };
 
   // Restart similar session
-  const restartSimilarSession = (session) => {
+  const restartSimilarSession = session => {
     navigation.navigate(Routes.AIStudyBuddyNewSession, {
       preselectedSubject: session.subject,
       preselectedSyllabus: session.syllabus,
-      initialQuery: `Continue learning about ${session.topicsDiscussed?.slice(-1)[0] || 
-                    session.learningContext?.topicsDiscussed?.slice(-1)[0] || 
-                    session.subject}`,
+      initialQuery: `Continue learning about ${
+        session.topicsDiscussed?.slice(-1)[0] ||
+        session.learningContext?.topicsDiscussed?.slice(-1)[0] ||
+        session.subject
+      }`,
     });
   };
 
   // Restore session (unarchive)
-  const restoreSession = async (session) => {
+  const restoreSession = async session => {
     try {
       await aiStudyBuddyUpdateSessionApi(session.sessionId, {
         action: 'unarchive',
       });
 
       // Update local state
-      setSessions(prev => prev.map(s => 
-        s.sessionId === session.sessionId 
-          ? { ...s, status: 'active' }
-          : s
-      ));
+      setSessions(prev =>
+        prev.map(s =>
+          s.sessionId === session.sessionId ? {...s, status: 'active'} : s,
+        ),
+      );
 
       showToast({
         message: 'Session restored to active',
@@ -328,12 +355,12 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   };
 
   // Delete session permanently
-  const deleteSession = async (session) => {
+  const deleteSession = async session => {
     Alert.alert(
       'Delete Session',
       'Are you sure you want to permanently delete this session? This action cannot be undone.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {text: 'Cancel', style: 'cancel'},
         {
           text: 'Delete',
           style: 'destructive',
@@ -342,7 +369,9 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
               await aiStudyBuddyDeleteSessionApi(session.sessionId, true);
 
               // Remove from local state
-              setSessions(prev => prev.filter(s => s.sessionId !== session.sessionId));
+              setSessions(prev =>
+                prev.filter(s => s.sessionId !== session.sessionId),
+              );
 
               showToast({
                 message: 'Session deleted permanently',
@@ -356,7 +385,7 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -373,26 +402,41 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
           onChangeText={setSearchQuery}
         />
         {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery('')} style={styles.clearSearchButton}>
+          <Pressable
+            onPress={() => setSearchQuery('')}
+            style={styles.clearSearchButton}>
             <Icon name="close" size={18} color="#9CA3AF" />
           </Pressable>
         )}
       </View>
-      
+
       <Pressable
-        style={[styles.filterButton, {
-          backgroundColor: (selectedSubject !== 'all' || selectedStatus !== 'all' || selectedTimeRange !== 'all') 
-            ? '#2563EB15' : '#F8FAFC'
-        }]}
-        onPress={() => setShowFilters(true)}
-      >
-        <Icon 
-          name="tune" 
-          size={20} 
-          color={(selectedSubject !== 'all' || selectedStatus !== 'all' || selectedTimeRange !== 'all') 
-            ? '#2563EB' : '#64748B'} 
+        style={[
+          styles.filterButton,
+          {
+            backgroundColor:
+              selectedSubject !== 'all' ||
+              selectedStatus !== 'all' ||
+              selectedTimeRange !== 'all'
+                ? '#2563EB15'
+                : '#F8FAFC',
+          },
+        ]}
+        onPress={() => setShowFilters(true)}>
+        <Icon
+          name="tune"
+          size={20}
+          color={
+            selectedSubject !== 'all' ||
+            selectedStatus !== 'all' ||
+            selectedTimeRange !== 'all'
+              ? '#2563EB'
+              : '#64748B'
+          }
         />
-        {(selectedSubject !== 'all' || selectedStatus !== 'all' || selectedTimeRange !== 'all') && (
+        {(selectedSubject !== 'all' ||
+          selectedStatus !== 'all' ||
+          selectedTimeRange !== 'all') && (
           <View style={styles.filterActiveBadge} />
         )}
       </Pressable>
@@ -400,23 +444,23 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   );
 
   // Render session item with enhanced design
-  const renderSessionItem = ({ item: session, index }) => {
-    const subject = subjectMeta[session.subject] || { 
-      icon: 'school', 
-      color: '#64748B', 
-      name: session.subject 
+  const renderSessionItem = ({item: session, index}) => {
+    const subject = subjectMeta[session.subject] || {
+      icon: 'school',
+      color: '#64748B',
+      name: session.subject,
     };
-    
+
     const isCompleted = session.status === 'completed';
     const isArchived = session.status === 'archived';
     const isPaused = session.status === 'paused';
     const isActive = session.status === 'active';
 
     const statusConfig = {
-      completed: { color: '#10B981', bgColor: '#10B98115', icon: 'check-circle' },
-      archived: { color: '#64748B', bgColor: '#64748B15', icon: 'archive' },
-      paused: { color: '#F59E0B', bgColor: '#F59E0B15', icon: 'pause' },
-      active: { color: '#2563EB', bgColor: '#2563EB15', icon: 'play-arrow' },
+      completed: {color: '#10B981', bgColor: '#10B98115', icon: 'check-circle'},
+      archived: {color: '#64748B', bgColor: '#64748B15', icon: 'archive'},
+      paused: {color: '#F59E0B', bgColor: '#F59E0B15', icon: 'pause'},
+      active: {color: '#2563EB', bgColor: '#2563EB15', icon: 'play-arrow'},
     };
 
     const status = statusConfig[session.status] || statusConfig.active;
@@ -424,19 +468,20 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
     return (
       <View style={styles.sessionCard}>
         <Pressable
-          style={[styles.sessionCardContent, (isArchived || isPaused) && styles.inactiveSession]}
-          onPress={() => viewSessionDetails(session)}
-        >
+          style={[
+            styles.sessionCardContent,
+            (isArchived || isPaused) && styles.inactiveSession,
+          ]}
+          onPress={() => viewSessionDetails(session)}>
           {/* Header */}
           <View style={styles.sessionHeader}>
             <View style={styles.sessionMainInfo}>
               <LinearGradient
                 colors={[subject.color, subject.color + 'DD']}
-                style={styles.subjectIcon}
-              >
+                style={styles.subjectIcon}>
                 <Icon name={subject.icon} size={18} color="white" />
               </LinearGradient>
-              
+
               <View style={styles.sessionDetails}>
                 <Text style={styles.subjectName}>{subject.name}</Text>
                 <View style={styles.sessionMeta}>
@@ -454,13 +499,17 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.sessionStatusArea}>
-              <Text style={styles.timeAgo}>{getRelativeTime(session.startedAt)}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: status.bgColor }]}>
+              <Text style={styles.timeAgo}>
+                {getRelativeTime(session.startedAt)}
+              </Text>
+              <View
+                style={[styles.statusBadge, {backgroundColor: status.bgColor}]}>
                 <Icon name={status.icon} size={10} color={status.color} />
-                <Text style={[styles.statusText, { color: status.color }]}>
-                  {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                <Text style={[styles.statusText, {color: status.color}]}>
+                  {session.status.charAt(0).toUpperCase() +
+                    session.status.slice(1)}
                 </Text>
               </View>
             </View>
@@ -469,25 +518,35 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
           {/* Content Preview */}
           <View style={styles.sessionContent}>
             <Text style={styles.sessionSummary} numberOfLines={2}>
-              {session.topicsDiscussed?.slice(-2).join(', ') || 
-               session.learningContext?.topicsDiscussed?.slice(-2).join(', ') || 
-               'General discussion'}
+              {session.topicsDiscussed?.slice(-2).join(', ') ||
+                session.learningContext?.topicsDiscussed
+                  ?.slice(-2)
+                  .join(', ') ||
+                'General discussion'}
             </Text>
-            
+
             <View style={styles.sessionStats}>
               <View style={styles.statItem}>
                 <Icon name="chat" size={12} color="#9CA3AF" />
-                <Text style={styles.statText}>{session.messageCount || 0} messages</Text>
+                <Text style={styles.statText}>
+                  {session.messageCount || 0} messages
+                </Text>
               </View>
               <View style={styles.statItem}>
                 <Icon name="schedule" size={12} color="#9CA3AF" />
-                <Text style={styles.statText}>{getSessionDuration(session)}</Text>
+                <Text style={styles.statText}>
+                  {getSessionDuration(session)}
+                </Text>
               </View>
-              {(session.topicsDiscussed?.length > 0 || session.learningContext?.topicsDiscussed?.length > 0) && (
+              {(session.topicsDiscussed?.length > 0 ||
+                session.learningContext?.topicsDiscussed?.length > 0) && (
                 <View style={styles.statItem}>
                   <Icon name="lightbulb" size={12} color="#9CA3AF" />
                   <Text style={styles.statText}>
-                    {session.topicsDiscussed?.length || session.learningContext?.topicsDiscussed?.length || 0} topics
+                    {session.topicsDiscussed?.length ||
+                      session.learningContext?.topicsDiscussed?.length ||
+                      0}{' '}
+                    topics
                   </Text>
                 </View>
               )}
@@ -495,13 +554,30 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
           </View>
 
           {/* Learning Goals Preview */}
-          {(session.learningGoals?.length > 0 || session.learningContext?.learningGoals?.length > 0) && (
+          {(session.learningGoals?.length > 0 ||
+            session.learningContext?.learningGoals?.length > 0) && (
             <View style={styles.goalsPreview}>
               <Icon name="flag" size={12} color={subject.color} />
               <Text style={styles.goalsText} numberOfLines={1}>
-                {(session.learningGoals || session.learningContext?.learningGoals || []).slice(0, 2).join(', ')}
-                {(session.learningGoals || session.learningContext?.learningGoals || []).length > 2 && 
-                 ` +${(session.learningGoals || session.learningContext?.learningGoals || []).length - 2} more`}
+                {(
+                  session.learningGoals ||
+                  session.learningContext?.learningGoals ||
+                  []
+                )
+                  .slice(0, 2)
+                  .join(', ')}
+                {(
+                  session.learningGoals ||
+                  session.learningContext?.learningGoals ||
+                  []
+                ).length > 2 &&
+                  ` +${
+                    (
+                      session.learningGoals ||
+                      session.learningContext?.learningGoals ||
+                      []
+                    ).length - 2
+                  } more`}
               </Text>
             </View>
           )}
@@ -510,9 +586,8 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Pressable
-            style={[styles.actionButton, { backgroundColor: subject.color }]}
-            onPress={() => viewSessionDetails(session)}
-          >
+            style={[styles.actionButton, {backgroundColor: subject.color}]}
+            onPress={() => viewSessionDetails(session)}>
             <Icon name="info-outline" size={14} color="white" />
             <Text style={styles.actionButtonText}>Details</Text>
           </Pressable>
@@ -520,24 +595,21 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
           <View style={styles.secondaryActions}>
             <Pressable
               style={styles.iconButton}
-              onPress={() => restartSimilarSession(session)}
-            >
+              onPress={() => restartSimilarSession(session)}>
               <Icon name="refresh" size={16} color="#64748B" />
             </Pressable>
 
             {isArchived && (
               <Pressable
-                style={[styles.iconButton, { backgroundColor: '#10B98115' }]}
-                onPress={() => restoreSession(session)}
-              >
+                style={[styles.iconButton, {backgroundColor: '#10B98115'}]}
+                onPress={() => restoreSession(session)}>
                 <Icon name="unarchive" size={16} color="#10B981" />
               </Pressable>
             )}
 
             <Pressable
-              style={[styles.iconButton, { backgroundColor: '#EF444415' }]}
-              onPress={() => deleteSession(session)}
-            >
+              style={[styles.iconButton, {backgroundColor: '#EF444415'}]}
+              onPress={() => deleteSession(session)}>
               <Icon name="delete-outline" size={16} color="#EF4444" />
             </Pressable>
           </View>
@@ -553,29 +625,35 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
         <View style={styles.filterModal}>
           <View style={styles.filterHeader}>
             <Text style={styles.filterTitle}>Filter Sessions</Text>
-            <Pressable onPress={() => setShowFilters(false)} style={styles.closeButton}>
+            <Pressable
+              onPress={() => setShowFilters(false)}
+              style={styles.closeButton}>
               <Icon name="close" size={24} color="#64748B" />
             </Pressable>
           </View>
 
-          <ScrollView style={styles.filterContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.filterContent}
+            showsVerticalScrollIndicator={false}>
             {/* Subject Filter */}
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Subject</Text>
               <View style={styles.filterOptions}>
-                {subjects.map((subject) => (
+                {subjects.map(subject => (
                   <Pressable
                     key={subject.id}
                     style={[
                       styles.filterOption,
-                      selectedSubject === subject.id && styles.selectedFilterOption,
+                      selectedSubject === subject.id &&
+                        styles.selectedFilterOption,
                     ]}
-                    onPress={() => setSelectedSubject(subject.id)}
-                  >
-                    <Text style={[
-                      styles.filterOptionText,
-                      selectedSubject === subject.id && styles.selectedFilterOptionText,
-                    ]}>
+                    onPress={() => setSelectedSubject(subject.id)}>
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedSubject === subject.id &&
+                          styles.selectedFilterOptionText,
+                      ]}>
                       {subject.name}
                     </Text>
                   </Pressable>
@@ -587,20 +665,26 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Status</Text>
               <View style={styles.filterOptions}>
-                {statusOptions.map((status) => (
+                {statusOptions.map(status => (
                   <Pressable
                     key={status.id}
                     style={[
                       styles.filterOption,
-                      selectedStatus === status.id && styles.selectedFilterOption,
+                      selectedStatus === status.id &&
+                        styles.selectedFilterOption,
                     ]}
-                    onPress={() => setSelectedStatus(status.id)}
-                  >
-                    <Icon name={status.icon} size={14} color={selectedStatus === status.id ? 'white' : '#64748B'} />
-                    <Text style={[
-                      styles.filterOptionText,
-                      selectedStatus === status.id && styles.selectedFilterOptionText,
-                    ]}>
+                    onPress={() => setSelectedStatus(status.id)}>
+                    <Icon
+                      name={status.icon}
+                      size={14}
+                      color={selectedStatus === status.id ? 'white' : '#64748B'}
+                    />
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedStatus === status.id &&
+                          styles.selectedFilterOptionText,
+                      ]}>
                       {status.name}
                     </Text>
                   </Pressable>
@@ -612,20 +696,28 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
             <View style={styles.filterSection}>
               <Text style={styles.filterSectionTitle}>Time Range</Text>
               <View style={styles.filterOptions}>
-                {timeRanges.map((range) => (
+                {timeRanges.map(range => (
                   <Pressable
                     key={range.id}
                     style={[
                       styles.filterOption,
-                      selectedTimeRange === range.id && styles.selectedFilterOption,
+                      selectedTimeRange === range.id &&
+                        styles.selectedFilterOption,
                     ]}
-                    onPress={() => setSelectedTimeRange(range.id)}
-                  >
-                    <Icon name={range.icon} size={14} color={selectedTimeRange === range.id ? 'white' : '#64748B'} />
-                    <Text style={[
-                      styles.filterOptionText,
-                      selectedTimeRange === range.id && styles.selectedFilterOptionText,
-                    ]}>
+                    onPress={() => setSelectedTimeRange(range.id)}>
+                    <Icon
+                      name={range.icon}
+                      size={14}
+                      color={
+                        selectedTimeRange === range.id ? 'white' : '#64748B'
+                      }
+                    />
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedTimeRange === range.id &&
+                          styles.selectedFilterOptionText,
+                      ]}>
                       {range.name}
                     </Text>
                   </Pressable>
@@ -641,8 +733,7 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
             <Pressable style={styles.applyButton} onPress={applyFilters}>
               <LinearGradient
                 colors={['#2563EB', '#1D4ED8']}
-                style={styles.applyButtonGradient}
-              >
+                style={styles.applyButtonGradient}>
                 <Text style={styles.applyButtonText}>Apply Filters</Text>
               </LinearGradient>
             </Pressable>
@@ -654,15 +745,19 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
 
   // Render empty state
   const renderEmptyState = () => {
-    const isFiltered = searchQuery || selectedSubject !== 'all' || selectedStatus !== 'all' || selectedTimeRange !== 'all';
-    
+    const isFiltered =
+      searchQuery ||
+      selectedSubject !== 'all' ||
+      selectedStatus !== 'all' ||
+      selectedTimeRange !== 'all';
+
     return (
       <View style={styles.emptyContainer}>
         <View style={styles.emptyIconContainer}>
-          <Icon 
-            name={isFiltered ? 'search-off' : 'history'} 
-            size={48} 
-            color="#D1D5DB" 
+          <Icon
+            name={isFiltered ? 'search-off' : 'history'}
+            size={48}
+            color="#D1D5DB"
           />
         </View>
         <Text style={styles.emptyTitle}>
@@ -670,30 +765,26 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
         </Text>
         <Text style={styles.emptyMessage}>
           {isFiltered
-            ? 'Try adjusting your search or filters to find what you\'re looking for.'
-            : 'Your past conversations will appear here. Start a new session to begin learning!'
-          }
+            ? "Try adjusting your search or filters to find what you're looking for."
+            : 'Your past conversations will appear here. Start a new session to begin learning!'}
         </Text>
-        
+
         {isFiltered ? (
           <Pressable style={styles.emptyButton} onPress={clearFilters}>
             <LinearGradient
               colors={['#64748B', '#475569']}
-              style={styles.emptyButtonGradient}
-            >
+              style={styles.emptyButtonGradient}>
               <Icon name="clear-all" size={20} color="white" />
               <Text style={styles.emptyButtonText}>Clear Filters</Text>
             </LinearGradient>
           </Pressable>
         ) : (
-          <Pressable 
-            style={styles.emptyButton} 
-            onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}
-          >
+          <Pressable
+            style={styles.emptyButton}
+            onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}>
             <LinearGradient
               colors={['#2563EB', '#1D4ED8']}
-              style={styles.emptyButtonGradient}
-            >
+              style={styles.emptyButtonGradient}>
               <Icon name="add" size={20} color="white" />
               <Text style={styles.emptyButtonText}>Start New Session</Text>
             </LinearGradient>
@@ -708,9 +799,14 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
     if (filteredSessions.length === 0) return null;
 
     const totalSessions = filteredSessions.length;
-    const totalMessages = filteredSessions.reduce((sum, s) => sum + (s.messageCount || 0), 0);
+    const totalMessages = filteredSessions.reduce(
+      (sum, s) => sum + (s.messageCount || 0),
+      0,
+    );
     const uniqueSubjects = new Set(filteredSessions.map(s => s.subject)).size;
-    const completedSessions = filteredSessions.filter(s => s.status === 'completed').length;
+    const completedSessions = filteredSessions.filter(
+      s => s.status === 'completed',
+    ).length;
 
     return (
       <View style={styles.statsHeader}>
@@ -743,7 +839,9 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
         <Header title="Session History" showBackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.loadingText}>Loading your session history...</Text>
+          <Text style={styles.loadingText}>
+            Loading your session history...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -752,17 +850,18 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      
-      <Header 
+
+      <Header
         title="Session History"
         showBackButton
         rightComponent={
           <Pressable
             style={styles.headerButton}
-            onPress={() => setShowFilters(true)}
-          >
+            onPress={() => setShowFilters(true)}>
             <Icon name="tune" size={24} color="#374151" />
-            {(selectedSubject !== 'all' || selectedStatus !== 'all' || selectedTimeRange !== 'all') && (
+            {(selectedSubject !== 'all' ||
+              selectedStatus !== 'all' ||
+              selectedTimeRange !== 'all') && (
               <View style={styles.headerFilterBadge} />
             )}
           </Pressable>
@@ -783,7 +882,7 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
           <FlatList
             data={filteredSessions}
             renderItem={renderSessionItem}
-            keyExtractor={(item) => item.sessionId}
+            keyExtractor={item => item.sessionId}
             contentContainerStyle={styles.sessionsList}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -795,7 +894,9 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
               loadingMore ? (
                 <View style={styles.loadingMore}>
                   <ActivityIndicator size="small" color="#2563EB" />
-                  <Text style={styles.loadingMoreText}>Loading more sessions...</Text>
+                  <Text style={styles.loadingMoreText}>
+                    Loading more sessions...
+                  </Text>
                 </View>
               ) : null
             }
@@ -863,7 +964,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -885,7 +986,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     position: 'relative',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -911,7 +1012,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: nw(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
@@ -942,7 +1043,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
@@ -1113,6 +1214,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    minHeight: nh(500),
     maxHeight: screenHeight * 0.8,
   },
   filterHeader: {
