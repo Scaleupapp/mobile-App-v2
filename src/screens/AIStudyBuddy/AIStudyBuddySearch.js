@@ -36,7 +36,7 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const AIStudyBuddySearch = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const {showToast} = useToast();
-  
+
   const {initialQuery = ''} = route.params || {};
 
   // State
@@ -65,19 +65,23 @@ const AIStudyBuddySearch = ({navigation, route}) => {
   const loadAllSessions = async () => {
     try {
       const [activeResponse, historyResponse] = await Promise.all([
-        aiStudyBuddyGetActiveSessionsApi().catch(() => ({ data: { activeSessions: [] } })),
-        aiStudyBuddyGetSessionHistoryApi({ limit: 100 }).catch(() => ({ data: { sessions: [] } })),
+        aiStudyBuddyGetActiveSessionsApi().catch(() => ({
+          data: {activeSessions: []},
+        })),
+        aiStudyBuddyGetSessionHistoryApi({limit: 100}).catch(() => ({
+          data: {sessions: []},
+        })),
       ]);
 
       const activeSessions = activeResponse.data.activeSessions || [];
       const historySessions = historyResponse.data.sessions || [];
-      
+
       // Combine and deduplicate sessions
       const allSessionsMap = new Map();
       [...activeSessions, ...historySessions].forEach(session => {
         allSessionsMap.set(session.sessionId, session);
       });
-      
+
       setAllSessions(Array.from(allSessionsMap.values()));
     } catch (error) {
       console.error('Error loading sessions:', error);
@@ -86,11 +90,11 @@ const AIStudyBuddySearch = ({navigation, route}) => {
 
   const performSearch = async (query = searchQuery) => {
     if (!query.trim()) return;
-  
+
     try {
       setLoading(true);
       setHasSearched(true);
-  
+
       // Prepare API parameters - aligned with backend expectations
       const searchParams = {
         query: query.trim(),
@@ -99,19 +103,20 @@ const AIStudyBuddySearch = ({navigation, route}) => {
         // Apply filters only if they're not 'all'
         subject: filters.subject !== 'all' ? filters.subject : undefined,
         dateRange: filters.dateRange !== 'all' ? filters.dateRange : undefined,
-        messageType: filters.messageType !== 'all' ? filters.messageType : undefined,
+        messageType:
+          filters.messageType !== 'all' ? filters.messageType : undefined,
       };
-  
+
       // Remove undefined values to keep params clean
-      Object.keys(searchParams).forEach(key => 
-        searchParams[key] === undefined && delete searchParams[key]
+      Object.keys(searchParams).forEach(
+        key => searchParams[key] === undefined && delete searchParams[key],
       );
-  
+
       console.log('Searching with params:', searchParams);
-  
+
       // Call the actual search API
       const response = await aiStudyBuddySearchMessagesApi(searchParams);
-      
+
       if (response.data && response.data.success) {
         // Use the API results directly
         setSearchResults(response.data.results || []);
@@ -120,16 +125,15 @@ const AIStudyBuddySearch = ({navigation, route}) => {
         console.log('API search failed, falling back to client-side search');
         await performClientSideSearch(query);
       }
-  
     } catch (error) {
       console.error('Search API error:', error);
-      
+
       // Graceful fallback to client-side search
       showToast({
         message: 'Using offline search...',
         type: 'info',
       });
-      
+
       await performClientSideSearch(query);
     } finally {
       setLoading(false);
@@ -143,7 +147,7 @@ const AIStudyBuddySearch = ({navigation, route}) => {
     searchInputRef.current?.focus();
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now - date);
@@ -185,19 +189,22 @@ const AIStudyBuddySearch = ({navigation, route}) => {
           </Pressable>
         )}
       </View>
-      
+
       <View style={styles.searchActions}>
         <Pressable
           style={[
             styles.filterButton,
-            getActiveFilterCount() > 0 && styles.filterButtonActive
+            getActiveFilterCount() > 0 && styles.filterButtonActive,
           ]}
-          onPress={() => setShowFilters(true)}
-        >
-          <Icon 
-            name="tune" 
-            size={18} 
-            color={getActiveFilterCount() > 0 ? COLORS.whiteFFFFFF : COLORS.grey777777} 
+          onPress={() => setShowFilters(true)}>
+          <Icon
+            name="tune"
+            size={18}
+            color={
+              getActiveFilterCount() > 0
+                ? COLORS.whiteFFFFFF
+                : COLORS.grey777777
+            }
           />
           {getActiveFilterCount() > 0 && (
             <View style={styles.filterBadge}>
@@ -207,7 +214,7 @@ const AIStudyBuddySearch = ({navigation, route}) => {
             </View>
           )}
         </Pressable>
-        
+
         <Button
           text="Search"
           onPress={() => performSearch()}
@@ -215,6 +222,7 @@ const AIStudyBuddySearch = ({navigation, route}) => {
           backgroundColor={COLORS.blue043142}
           disabled={!searchQuery.trim()}
           loading={loading}
+          width={nw(290)}
         />
       </View>
     </View>
@@ -222,25 +230,23 @@ const AIStudyBuddySearch = ({navigation, route}) => {
 
   const renderSearchResult = ({item}) => {
     const isSession = item.messageType === 'session';
-    
+
     return (
       <Pressable
         style={styles.resultCard}
-        onPress={() => navigation.navigate(Routes.AIStudyBuddyChat, {
-          sessionId: item.sessionId,
-        })}
-      >
+        onPress={() =>
+          navigation.navigate(Routes.AIStudyBuddyChat, {
+            sessionId: item.sessionId,
+          })
+        }>
         <View style={styles.resultHeader}>
           <View style={styles.resultMeta}>
-            <View style={[
-              styles.messageTypeIcon,
-              { backgroundColor: COLORS.blue043142 }
-            ]}>
-              <Icon 
-                name="school" 
-                size={12} 
-                color="white" 
-              />
+            <View
+              style={[
+                styles.messageTypeIcon,
+                {backgroundColor: COLORS.blue043142},
+              ]}>
+              <Icon name="school" size={12} color="white" />
             </View>
             <View style={styles.resultInfo}>
               <Text variant="semibold13" color={COLORS.grey333333}>
@@ -251,13 +257,17 @@ const AIStudyBuddySearch = ({navigation, route}) => {
               </Text>
             </View>
           </View>
-          
+
           {item.userInteraction?.bookmarked && (
             <Icon name="bookmark" size={16} color={COLORS.yellowF5BE00} />
           )}
         </View>
 
-        <Text variant="regular14" color={COLORS.grey333333} style={styles.resultContent} numberOfLines={3}>
+        <Text
+          variant="regular14"
+          color={COLORS.grey333333}
+          style={styles.resultContent}
+          numberOfLines={3}>
           {item.content}
         </Text>
 
@@ -286,7 +296,10 @@ const AIStudyBuddySearch = ({navigation, route}) => {
       return (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={COLORS.blue043142} />
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.centerText}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.centerText}>
             Searching...
           </Text>
         </View>
@@ -297,10 +310,16 @@ const AIStudyBuddySearch = ({navigation, route}) => {
       return (
         <View style={styles.centerContainer}>
           <Icon name="search" size={64} color={COLORS.grey999999} />
-          <Text variant="semibold16" color={COLORS.grey333333} style={styles.centerTitle}>
+          <Text
+            variant="semibold16"
+            color={COLORS.grey333333}
+            style={styles.centerTitle}>
             Search Your Conversations
           </Text>
-          <Text variant="regular14" color={COLORS.grey777777} style={styles.centerDescription}>
+          <Text
+            variant="regular14"
+            color={COLORS.grey777777}
+            style={styles.centerDescription}>
             Find any message, topic, or concept from your study sessions
           </Text>
         </View>
@@ -311,10 +330,16 @@ const AIStudyBuddySearch = ({navigation, route}) => {
       return (
         <View style={styles.centerContainer}>
           <Icon name="search-off" size={64} color={COLORS.grey999999} />
-          <Text variant="semibold16" color={COLORS.grey333333} style={styles.centerTitle}>
+          <Text
+            variant="semibold16"
+            color={COLORS.grey333333}
+            style={styles.centerTitle}>
             No Results Found
           </Text>
-          <Text variant="regular14" color={COLORS.grey777777} style={styles.centerDescription}>
+          <Text
+            variant="regular14"
+            color={COLORS.grey777777}
+            style={styles.centerDescription}>
             Try different keywords or adjust your filters
           </Text>
           <Button
@@ -330,10 +355,14 @@ const AIStudyBuddySearch = ({navigation, route}) => {
 
     return (
       <View style={styles.resultsContainer}>
-        <Text variant="medium14" color={COLORS.grey777777} style={styles.resultsHeader}>
-          Found {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
+        <Text
+          variant="medium14"
+          color={COLORS.grey777777}
+          style={styles.resultsHeader}>
+          Found {searchResults.length} result
+          {searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
         </Text>
-        
+
         <FlatList
           data={searchResults}
           renderItem={renderSearchResult}
@@ -351,8 +380,8 @@ const AIStudyBuddySearch = ({navigation, route}) => {
       visible={showFilters}
       transparent
       animationType="slide"
-      onRequestClose={() => setShowFilters(false)}
-    >
+      // style={{height: 400}}
+      onRequestClose={() => setShowFilters(false)}>
       <View style={styles.modalOverlay}>
         <View style={styles.filterModal}>
           <View style={styles.filterHeader}>
@@ -367,22 +396,34 @@ const AIStudyBuddySearch = ({navigation, route}) => {
           <ScrollView style={styles.filterContent}>
             {/* Subject Filter */}
             <View style={styles.filterSection}>
-              <Text variant="semibold14" color={COLORS.grey333333} style={styles.filterLabel}>
+              <Text
+                variant="semibold14"
+                color={COLORS.grey333333}
+                style={styles.filterLabel}>
                 Subject
               </Text>
-              {['all', 'Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science'].map(subject => (
+              {[
+                'all',
+                'Mathematics',
+                'Physics',
+                'Chemistry',
+                'Biology',
+                'Computer Science',
+              ].map(subject => (
                 <Pressable
                   key={subject}
                   style={[
                     styles.filterOption,
                     filters.subject === subject && styles.filterOptionActive,
                   ]}
-                  onPress={() => setFilters(prev => ({ ...prev, subject }))}
-                >
-                  <Text variant="medium13" style={[
-                    styles.filterOptionText,
-                    filters.subject === subject && styles.filterOptionTextActive,
-                  ]}>
+                  onPress={() => setFilters(prev => ({...prev, subject}))}>
+                  <Text
+                    variant="medium13"
+                    style={[
+                      styles.filterOptionText,
+                      filters.subject === subject &&
+                        styles.filterOptionTextActive,
+                    ]}>
                     {subject === 'all' ? 'All Subjects' : subject}
                   </Text>
                   {filters.subject === subject && (
@@ -394,27 +435,35 @@ const AIStudyBuddySearch = ({navigation, route}) => {
 
             {/* Date Range Filter */}
             <View style={styles.filterSection}>
-              <Text variant="semibold14" color={COLORS.grey333333} style={styles.filterLabel}>
+              <Text
+                variant="semibold14"
+                color={COLORS.grey333333}
+                style={styles.filterLabel}>
                 Time Period
               </Text>
               {[
-                { value: 'all', label: 'All Time' },
-                { value: 'today', label: 'Today' },
-                { value: 'week', label: 'This Week' },
-                { value: 'month', label: 'This Month' },
+                {value: 'all', label: 'All Time'},
+                {value: 'today', label: 'Today'},
+                {value: 'week', label: 'This Week'},
+                {value: 'month', label: 'This Month'},
               ].map(option => (
                 <Pressable
                   key={option.value}
                   style={[
                     styles.filterOption,
-                    filters.dateRange === option.value && styles.filterOptionActive,
+                    filters.dateRange === option.value &&
+                      styles.filterOptionActive,
                   ]}
-                  onPress={() => setFilters(prev => ({ ...prev, dateRange: option.value }))}
-                >
-                  <Text variant="medium13" style={[
-                    styles.filterOptionText,
-                    filters.dateRange === option.value && styles.filterOptionTextActive,
-                  ]}>
+                  onPress={() =>
+                    setFilters(prev => ({...prev, dateRange: option.value}))
+                  }>
+                  <Text
+                    variant="medium13"
+                    style={[
+                      styles.filterOptionText,
+                      filters.dateRange === option.value &&
+                        styles.filterOptionTextActive,
+                    ]}>
                     {option.label}
                   </Text>
                   {filters.dateRange === option.value && (
@@ -426,26 +475,34 @@ const AIStudyBuddySearch = ({navigation, route}) => {
 
             {/* Message Type Filter */}
             <View style={styles.filterSection}>
-              <Text variant="semibold14" color={COLORS.grey333333} style={styles.filterLabel}>
+              <Text
+                variant="semibold14"
+                color={COLORS.grey333333}
+                style={styles.filterLabel}>
                 Message Type
               </Text>
               {[
-                { value: 'all', label: 'All Messages' },
-                { value: 'user', label: 'My Questions' },
-                { value: 'ai', label: 'AI Responses' },
+                {value: 'all', label: 'All Messages'},
+                {value: 'user', label: 'My Questions'},
+                {value: 'ai', label: 'AI Responses'},
               ].map(option => (
                 <Pressable
                   key={option.value}
                   style={[
                     styles.filterOption,
-                    filters.messageType === option.value && styles.filterOptionActive,
+                    filters.messageType === option.value &&
+                      styles.filterOptionActive,
                   ]}
-                  onPress={() => setFilters(prev => ({ ...prev, messageType: option.value }))}
-                >
-                  <Text variant="medium13" style={[
-                    styles.filterOptionText,
-                    filters.messageType === option.value && styles.filterOptionTextActive,
-                  ]}>
+                  onPress={() =>
+                    setFilters(prev => ({...prev, messageType: option.value}))
+                  }>
+                  <Text
+                    variant="medium13"
+                    style={[
+                      styles.filterOptionText,
+                      filters.messageType === option.value &&
+                        styles.filterOptionTextActive,
+                    ]}>
                     {option.label}
                   </Text>
                   {filters.messageType === option.value && (
@@ -459,11 +516,13 @@ const AIStudyBuddySearch = ({navigation, route}) => {
           <View style={styles.filterActions}>
             <Button
               text="Clear Filters"
-              onPress={() => setFilters({
-                subject: 'all',
-                dateRange: 'all',
-                messageType: 'all',
-              })}
+              onPress={() =>
+                setFilters({
+                  subject: 'all',
+                  dateRange: 'all',
+                  messageType: 'all',
+                })
+              }
               style={styles.filterActionButton}
               backgroundColor={COLORS.greyF7F7F7}
               textColor={COLORS.grey777777}
@@ -488,11 +547,8 @@ const AIStudyBuddySearch = ({navigation, route}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.whiteFFFFFF} barStyle="dark-content" />
-      
-      <Header 
-        title="Search"
-        showBackButton
-      />
+
+      <Header title="Search" showBackButton />
 
       <View style={styles.content}>
         {renderSearchInput()}
@@ -567,7 +623,7 @@ const styles = StyleSheet.create({
   searchButton: {
     paddingHorizontal: nw(8),
     paddingVertical: nh(8),
-    maxWidth: nw(20), // Fixed small width
+    // maxWidth: nw(20), // Fixed small width
   },
 
   // Center States
@@ -657,11 +713,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    height: 500,
   },
   filterModal: {
     backgroundColor: COLORS.whiteFFFFFF,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    minHeight: nh(500),
     maxHeight: screenHeight * 0.7,
   },
   filterHeader: {

@@ -35,12 +35,12 @@ import {useToast} from '../../components/CustomToast';
 const CreateDeck = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
   const {showToast} = useToast();
-  
+
   // Get edit mode parameters from navigation
   const isEdit = route.params?.isEdit || false;
   const deckId = route.params?.deckId;
   const deckData = route.params?.deckData;
-  
+
   // Form state with proper initialization
   const [formData, setFormData] = useState({
     title: '',
@@ -49,11 +49,11 @@ const CreateDeck = ({navigation, route}) => {
     tags: [],
     isPublic: false,
   });
-  
+
   const [tagInput, setTagInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  
+
   // Refs for input focus management
   const titleRef = useRef(null);
   const descriptionRef = useRef(null);
@@ -63,7 +63,7 @@ const CreateDeck = ({navigation, route}) => {
   useEffect(() => {
     if (isEdit && deckData) {
       console.log('Populating edit form with:', deckData);
-      
+
       setFormData({
         title: deckData.title || '',
         description: deckData.description || '',
@@ -91,7 +91,7 @@ const CreateDeck = ({navigation, route}) => {
   // **ENHANCED: Form validation**
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.title.trim()) {
       newErrors.title = 'Deck title is required';
     } else if (formData.title.trim().length < 3) {
@@ -99,7 +99,7 @@ const CreateDeck = ({navigation, route}) => {
     } else if (formData.title.length > 100) {
       newErrors.title = 'Title must be less than 100 characters';
     }
-    
+
     if (!formData.subject) {
       newErrors.subject = 'Please select a subject';
     }
@@ -107,7 +107,7 @@ const CreateDeck = ({navigation, route}) => {
     if (formData.description && formData.description.length > 500) {
       newErrors.description = 'Description must be less than 500 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -115,7 +115,7 @@ const CreateDeck = ({navigation, route}) => {
   // Handle form input changes
   const handleInputChange = (field, value) => {
     setFormData(prev => ({...prev, [field]: value}));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({...prev, [field]: null}));
@@ -123,7 +123,7 @@ const CreateDeck = ({navigation, route}) => {
   };
 
   // Handle subject selection
-  const handleSubjectSelect = (subject) => {
+  const handleSubjectSelect = subject => {
     handleInputChange('subject', subject);
   };
 
@@ -133,31 +133,33 @@ const CreateDeck = ({navigation, route}) => {
     if (tag && !formData.tags.includes(tag) && formData.tags.length < 5) {
       setFormData(prev => ({
         ...prev,
-        tags: [...prev.tags, tag]
+        tags: [...prev.tags, tag],
       }));
       setTagInput('');
     }
   };
 
-  const removeTag = (tagToRemove) => {
+  const removeTag = tagToRemove => {
     setFormData(prev => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter(tag => tag !== tagToRemove),
     }));
   };
 
   // **ENHANCED: Handle form submission for both create and update**
   const handleSubmit = async () => {
+    let btn = isEdit ? 'Update Deck' : 'Create Deck';
+    mixpanel.track(`Click on final ${btn} Button`);
     if (!validateForm()) {
       showToast({
         type: 'error',
-        title: 'Please fix the errors and try again'
+        title: 'Please fix the errors and try again',
       });
       return;
     }
 
     setLoading(true);
-    
+
     try {
       const payload = {
         title: formData.title.trim(),
@@ -166,12 +168,12 @@ const CreateDeck = ({navigation, route}) => {
         tags: formData.tags,
         isPublic: formData.isPublic,
         subjectDetails: {
-          level: 'intermediate' // Default level
-        }
+          level: 'intermediate', // Default level
+        },
       };
 
       let response;
-      
+
       if (isEdit) {
         // Update existing deck
         response = await updateFlashcardDeckApi(deckId, payload);
@@ -179,14 +181,18 @@ const CreateDeck = ({navigation, route}) => {
         // Create new deck
         response = await createFlashcardDeckApi(payload);
       }
-      
+
       if (response?.data?.success) {
         showToast({
           type: 'success',
-          title: isEdit ? 'Deck updated successfully!' : 'Deck created successfully!',
-          message: isEdit ? 'Your changes have been saved' : 'You can now add flashcards to your deck'
+          title: isEdit
+            ? 'Deck updated successfully!'
+            : 'Deck created successfully!',
+          message: isEdit
+            ? 'Your changes have been saved'
+            : 'You can now add flashcards to your deck',
         });
-        
+
         if (isEdit) {
           // Go back to deck details
           navigation.goBack();
@@ -194,7 +200,7 @@ const CreateDeck = ({navigation, route}) => {
           // Navigate to the newly created deck
           navigation.navigate(Routes.DeckDetails, {
             deckId: response.data.deck._id,
-            isNewDeck: true
+            isNewDeck: true,
           });
         }
       }
@@ -203,7 +209,7 @@ const CreateDeck = ({navigation, route}) => {
       showToast({
         type: 'error',
         title: isEdit ? 'Failed to update deck' : 'Failed to create deck',
-        message: error?.response?.data?.message || 'Please try again'
+        message: error?.response?.data?.message || 'Please try again',
       });
     } finally {
       setLoading(false);
@@ -213,22 +219,30 @@ const CreateDeck = ({navigation, route}) => {
   // Render subject selection
   const renderSubjectGrid = () => (
     <View style={styles.subjectGrid}>
-      {subjects.map((subject) => (
+      {subjects.map(subject => (
         <Pressable
           key={subject.value}
           style={[
             styles.subjectCard,
-            formData.subject === subject.value && styles.subjectCardSelected
+            formData.subject === subject.value && styles.subjectCardSelected,
           ]}
           onPress={() => handleSubjectSelect(subject.value)}>
           <Icon
             name={subject.icon}
             size={24}
-            color={formData.subject === subject.value ? COLORS.whiteFFFFFF : COLORS.blue043142}
+            color={
+              formData.subject === subject.value
+                ? COLORS.whiteFFFFFF
+                : COLORS.blue043142
+            }
           />
           <Text
             variant="medium12"
-            color={formData.subject === subject.value ? COLORS.whiteFFFFFF : COLORS.blue043142}
+            color={
+              formData.subject === subject.value
+                ? COLORS.whiteFFFFFF
+                : COLORS.blue043142
+            }
             style={styles.subjectLabel}>
             {subject.label}
           </Text>
@@ -243,10 +257,13 @@ const CreateDeck = ({navigation, route}) => {
       <Text variant="semibold14" color={COLORS.blue043142} style={styles.label}>
         Tags (Optional)
       </Text>
-      <Text variant="medium12" color={COLORS.grey777777} style={styles.labelDescription}>
+      <Text
+        variant="medium12"
+        color={COLORS.grey777777}
+        style={styles.labelDescription}>
         Add up to 5 tags to help organize your deck
       </Text>
-      
+
       <View style={styles.tagInputContainer}>
         <TextInput
           ref={tagRef}
@@ -259,30 +276,38 @@ const CreateDeck = ({navigation, route}) => {
           returnKeyType="done"
           onSubmitEditing={addTag}
         />
-        <Pressable 
-          style={[styles.addTagButton, !tagInput.trim() && styles.addTagButtonDisabled]}
+        <Pressable
+          style={[
+            styles.addTagButton,
+            !tagInput.trim() && styles.addTagButtonDisabled,
+          ]}
           onPress={addTag}
           disabled={!tagInput.trim() || formData.tags.length >= 5}>
           <Icon name="add" size={20} color={COLORS.whiteFFFFFF} />
         </Pressable>
       </View>
-      
+
       {formData.tags.length > 0 && (
         <View style={styles.tagsContainer}>
-          {formData.tags.map((tag) => (
+          {formData.tags.map(tag => (
             <View key={tag} style={styles.tagChip}>
               <Text variant="medium12" color={COLORS.blue043142}>
                 {tag}
               </Text>
-              <Pressable onPress={() => removeTag(tag)} style={styles.removeTagButton}>
+              <Pressable
+                onPress={() => removeTag(tag)}
+                style={styles.removeTagButton}>
                 <Icon name="close" size={16} color={COLORS.blue043142} />
               </Pressable>
             </View>
           ))}
         </View>
       )}
-      
-      <Text variant="regular12" color={COLORS.grey777777} style={styles.helperText}>
+
+      <Text
+        variant="regular12"
+        color={COLORS.grey777777}
+        style={styles.helperText}>
         {formData.tags.length}/5 tags added
       </Text>
     </View>
@@ -290,8 +315,11 @@ const CreateDeck = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+
       <Header
         title={isEdit ? 'Edit Deck' : 'Create New Deck'}
         onBackPress={() => navigation.goBack()}
@@ -299,40 +327,48 @@ const CreateDeck = ({navigation, route}) => {
         rightComponent={
           <Pressable onPress={handleSubmit} disabled={loading}>
             <Text variant="semibold16" color={COLORS.blue043142}>
-              {loading ? 'Saving...' : (isEdit ? 'Update' : 'Create')}
+              {loading ? 'Saving...' : isEdit ? 'Update' : 'Create'}
             </Text>
           </Pressable>
         }
       />
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        
         <View style={styles.layer1}>
           <View style={styles.layer2}>
-            <ScrollView 
+            <ScrollView
               style={styles.scrollView}
               showsVerticalScrollIndicator={false}
               keyboardShouldPersistTaps="handled">
-              
               {/* Form Header */}
               <View style={styles.formHeader}>
                 <Icon name="style" size={48} color={COLORS.blue043142} />
-                <Text variant="semibold18" color={COLORS.blue043142} style={styles.formTitle}>
-                  {isEdit ? 'Edit Your Flashcard Deck' : 'Create Your Flashcard Deck'}
+                <Text
+                  variant="semibold18"
+                  color={COLORS.blue043142}
+                  style={styles.formTitle}>
+                  {isEdit
+                    ? 'Edit Your Flashcard Deck'
+                    : 'Create Your Flashcard Deck'}
                 </Text>
-                <Text variant="medium14" color={COLORS.grey777777} style={styles.formDescription}>
-                  {isEdit 
+                <Text
+                  variant="medium14"
+                  color={COLORS.grey777777}
+                  style={styles.formDescription}>
+                  {isEdit
                     ? 'Update your deck details and settings'
-                    : 'Start by giving your deck a name and selecting the subject'
-                  }
+                    : 'Start by giving your deck a name and selecting the subject'}
                 </Text>
               </View>
 
               {/* Deck Title */}
               <View style={styles.inputSection}>
-                <Text variant="semibold14" color={COLORS.blue043142} style={styles.label}>
+                <Text
+                  variant="semibold14"
+                  color={COLORS.blue043142}
+                  style={styles.label}>
                   Deck Title *
                 </Text>
                 <TextInput
@@ -341,59 +377,88 @@ const CreateDeck = ({navigation, route}) => {
                   placeholder="Enter deck title (e.g., React.js Fundamentals)"
                   placeholderTextColor={COLORS.grey999999}
                   value={formData.title}
-                  onChangeText={(value) => handleInputChange('title', value)}
+                  onChangeText={value => handleInputChange('title', value)}
                   maxLength={100}
                   returnKeyType="next"
                   onSubmitEditing={() => descriptionRef.current?.focus()}
                 />
                 {errors.title && (
-                  <Text variant="medium12" color={COLORS.redEA4335} style={styles.errorText}>
+                  <Text
+                    variant="medium12"
+                    color={COLORS.redEA4335}
+                    style={styles.errorText}>
                     {errors.title}
                   </Text>
                 )}
-                <Text variant="regular12" color={COLORS.grey777777} style={styles.helperText}>
+                <Text
+                  variant="regular12"
+                  color={COLORS.grey777777}
+                  style={styles.helperText}>
                   {formData.title.length}/100 characters
                 </Text>
               </View>
 
               {/* Description */}
               <View style={styles.inputSection}>
-                <Text variant="semibold14" color={COLORS.blue043142} style={styles.label}>
+                <Text
+                  variant="semibold14"
+                  color={COLORS.blue043142}
+                  style={styles.label}>
                   Description (Optional)
                 </Text>
                 <TextInput
                   ref={descriptionRef}
-                  style={[styles.textArea, errors.description && styles.inputError]}
+                  style={[
+                    styles.textArea,
+                    errors.description && styles.inputError,
+                  ]}
                   placeholder="Describe what this deck covers..."
                   placeholderTextColor={COLORS.grey999999}
                   value={formData.description}
-                  onChangeText={(value) => handleInputChange('description', value)}
+                  onChangeText={value =>
+                    handleInputChange('description', value)
+                  }
                   maxLength={500}
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
                 />
                 {errors.description && (
-                  <Text variant="medium12" color={COLORS.redEA4335} style={styles.errorText}>
+                  <Text
+                    variant="medium12"
+                    color={COLORS.redEA4335}
+                    style={styles.errorText}>
                     {errors.description}
                   </Text>
                 )}
-                <Text variant="regular12" color={COLORS.grey777777} style={styles.helperText}>
+                <Text
+                  variant="regular12"
+                  color={COLORS.grey777777}
+                  style={styles.helperText}>
                   {formData.description.length}/500 characters
                 </Text>
               </View>
 
               {/* Subject Selection */}
               <View style={styles.inputSection}>
-                <Text variant="semibold14" color={COLORS.blue043142} style={styles.label}>
+                <Text
+                  variant="semibold14"
+                  color={COLORS.blue043142}
+                  style={styles.label}>
                   Subject *
                 </Text>
-                <Text variant="medium12" color={COLORS.grey777777} style={styles.labelDescription}>
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey777777}
+                  style={styles.labelDescription}>
                   Choose the subject that best fits your deck
                 </Text>
                 {renderSubjectGrid()}
                 {errors.subject && (
-                  <Text variant="medium12" color={COLORS.redEA4335} style={styles.errorText}>
+                  <Text
+                    variant="medium12"
+                    color={COLORS.redEA4335}
+                    style={styles.errorText}>
                     {errors.subject}
                   </Text>
                 )}
@@ -404,33 +469,42 @@ const CreateDeck = ({navigation, route}) => {
 
               {/* Privacy Settings */}
               <View style={styles.inputSection}>
-                <Text variant="semibold14" color={COLORS.blue043142} style={styles.label}>
+                <Text
+                  variant="semibold14"
+                  color={COLORS.blue043142}
+                  style={styles.label}>
                   Privacy Settings
                 </Text>
                 <View style={styles.privacyOption}>
                   <View style={styles.privacyContent}>
-                    <Icon 
-                      name={formData.isPublic ? 'public' : 'lock'} 
-                      size={20} 
-                      color={COLORS.blue043142} 
+                    <Icon
+                      name={formData.isPublic ? 'public' : 'lock'}
+                      size={20}
+                      color={COLORS.blue043142}
                     />
                     <View style={styles.privacyText}>
                       <Text variant="medium14" color={COLORS.blue043142}>
                         {formData.isPublic ? 'Public Deck' : 'Private Deck'}
                       </Text>
                       <Text variant="medium12" color={COLORS.grey777777}>
-                        {formData.isPublic 
+                        {formData.isPublic
                           ? 'Others can discover and study your deck'
-                          : 'Only you can access this deck'
-                        }
+                          : 'Only you can access this deck'}
                       </Text>
                     </View>
                   </View>
                   <Switch
                     value={formData.isPublic}
-                    onValueChange={(value) => handleInputChange('isPublic', value)}
-                    trackColor={{false: COLORS.greyE5E5E5, true: COLORS.blue043142 + '30'}}
-                    thumbColor={formData.isPublic ? COLORS.blue043142 : COLORS.whiteFFFFFF}
+                    onValueChange={value =>
+                      handleInputChange('isPublic', value)
+                    }
+                    trackColor={{
+                      false: COLORS.greyE5E5E5,
+                      true: COLORS.blue043142 + '30',
+                    }}
+                    thumbColor={
+                      formData.isPublic ? COLORS.blue043142 : COLORS.whiteFFFFFF
+                    }
                   />
                 </View>
               </View>
@@ -442,7 +516,15 @@ const CreateDeck = ({navigation, route}) => {
             {/* Create/Update Button */}
             <View style={styles.buttonContainer}>
               <Button
-                text={loading ? (isEdit ? 'Updating Deck...' : 'Creating Deck...') : (isEdit ? 'Update Deck' : 'Create Deck')}
+                text={
+                  loading
+                    ? isEdit
+                      ? 'Updating Deck...'
+                      : 'Creating Deck...'
+                    : isEdit
+                    ? 'Update Deck'
+                    : 'Create Deck'
+                }
                 onPress={handleSubmit}
                 disabled={loading}
                 style={styles.createButton}
@@ -450,10 +532,10 @@ const CreateDeck = ({navigation, route}) => {
                 iconColor={COLORS.whiteFFFFFF}
               />
               {loading && (
-                <ActivityIndicator 
-                  size="small" 
-                  color={COLORS.whiteFFFFFF} 
-                  style={styles.loadingIndicator} 
+                <ActivityIndicator
+                  size="small"
+                  color={COLORS.whiteFFFFFF}
+                  style={styles.loadingIndicator}
                 />
               )}
             </View>

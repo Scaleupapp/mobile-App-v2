@@ -40,20 +40,25 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
   const {showToast} = useToast();
 
   // Route params
-  const {preselectedSubject, preselectedSyllabus, comeFromQuiz} = route.params || {};
+  const {preselectedSubject, preselectedSyllabus, comeFromQuiz} =
+    route.params || {};
 
   // State management
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [quotaInfo, setQuotaInfo] = useState(null);
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Form state
-  const [selectedSubject, setSelectedSubject] = useState(preselectedSubject || '');
-  const [selectedSyllabus, setSelectedSyllabus] = useState(preselectedSyllabus || '');
+  const [selectedSubject, setSelectedSubject] = useState(
+    preselectedSubject || '',
+  );
+  const [selectedSyllabus, setSelectedSyllabus] = useState(
+    preselectedSyllabus || '',
+  );
   const [selectedGrade, setSelectedGrade] = useState('');
   const [initialQuery, setInitialQuery] = useState('');
-  
+
   // Custom fields
   const [customSubject, setCustomSubject] = useState('');
   const [customSyllabus, setCustomSyllabus] = useState('');
@@ -62,59 +67,65 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
 
   // Enhanced subject data focused on higher education and competitive exams
   const subjectData = [
-    { 
-      id: 'mathematics', 
-      name: 'Mathematics', 
-      icon: 'calculate', 
+    {
+      id: 'mathematics',
+      name: 'Mathematics',
+      icon: 'calculate',
       color: '#2563EB',
       description: 'Calculus, Linear Algebra, Differential Equations',
-      syllabi: ['jee_main', 'jee_advanced', 'gate', 'undergraduate', 'postgraduate'],
-      examTypes: ['JEE', 'GATE', 'Engineering']
+      syllabi: [
+        'jee_main',
+        'jee_advanced',
+        'gate',
+        'undergraduate',
+        'postgraduate',
+      ],
+      examTypes: ['JEE', 'GATE', 'Engineering'],
     },
-    { 
-      id: 'physics', 
-      name: 'Physics', 
-      icon: 'science', 
+    {
+      id: 'physics',
+      name: 'Physics',
+      icon: 'science',
       color: '#059669',
       description: 'Mechanics, Thermodynamics, Quantum Physics',
       syllabi: ['jee_main', 'jee_advanced', 'neet', 'gate', 'undergraduate'],
-      examTypes: ['JEE', 'NEET', 'GATE']
+      examTypes: ['JEE', 'NEET', 'GATE'],
     },
-    { 
-      id: 'chemistry', 
-      name: 'Chemistry', 
-      icon: 'biotech', 
+    {
+      id: 'chemistry',
+      name: 'Chemistry',
+      icon: 'biotech',
       color: '#DC2626',
       description: 'Organic, Inorganic, Physical Chemistry',
       syllabi: ['jee_main', 'jee_advanced', 'neet', 'gate', 'undergraduate'],
-      examTypes: ['JEE', 'NEET', 'GATE']
+      examTypes: ['JEE', 'NEET', 'GATE'],
     },
-    { 
-      id: 'biology', 
-      name: 'Biology', 
-      icon: 'eco', 
+    {
+      id: 'biology',
+      name: 'Biology',
+      icon: 'eco',
       color: '#7C3AED',
       description: 'Molecular Biology, Genetics, Biotechnology',
       syllabi: ['neet', 'undergraduate', 'postgraduate'],
-      examTypes: ['NEET', 'Medical', 'Research']
+      examTypes: ['NEET', 'Medical', 'Research'],
     },
-    { 
-      id: 'computer_science', 
-      name: 'Computer Science', 
-      icon: 'computer', 
+    {
+      id: 'computer_science',
+      name: 'Computer Science',
+      icon: 'computer',
       color: '#0891B2',
       description: 'Algorithms, Data Structures, System Design',
       syllabi: ['gate', 'undergraduate', 'postgraduate', 'tech_interviews'],
-      examTypes: ['GATE', 'Tech Jobs', 'MS/PhD']
+      examTypes: ['GATE', 'Tech Jobs', 'MS/PhD'],
     },
-    { 
-      id: 'english', 
-      name: 'English', 
-      icon: 'menu-book', 
+    {
+      id: 'english',
+      name: 'English',
+      icon: 'menu-book',
       color: '#EA580C',
       description: 'Literature, Writing, Communication Skills',
       syllabi: ['cat', 'upsc', 'undergraduate', 'gre_gmat'],
-      examTypes: ['CAT', 'UPSC', 'GRE/GMAT']
+      examTypes: ['CAT', 'UPSC', 'GRE/GMAT'],
     },
     {
       id: 'economics',
@@ -123,7 +134,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       color: '#BE185D',
       description: 'Microeconomics, Macroeconomics, Econometrics',
       syllabi: ['cat', 'upsc', 'undergraduate', 'postgraduate'],
-      examTypes: ['CAT', 'UPSC', 'MBA']
+      examTypes: ['CAT', 'UPSC', 'MBA'],
     },
     {
       id: 'management',
@@ -132,7 +143,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       color: '#059669',
       description: 'Strategy, Operations, Marketing, Finance',
       syllabi: ['cat', 'mat', 'undergraduate', 'mba'],
-      examTypes: ['CAT', 'MBA', 'Corporate']
+      examTypes: ['CAT', 'MBA', 'Corporate'],
     },
     {
       id: 'mechanical_engineering',
@@ -141,7 +152,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       color: '#7C2D12',
       description: 'Thermodynamics, Mechanics, Manufacturing',
       syllabi: ['gate', 'undergraduate', 'postgraduate'],
-      examTypes: ['GATE', 'PSU', 'Engineering']
+      examTypes: ['GATE', 'PSU', 'Engineering'],
     },
     {
       id: 'electrical_engineering',
@@ -150,7 +161,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       color: '#BE123C',
       description: 'Circuit Analysis, Power Systems, Electronics',
       syllabi: ['gate', 'undergraduate', 'postgraduate'],
-      examTypes: ['GATE', 'PSU', 'Engineering']
+      examTypes: ['GATE', 'PSU', 'Engineering'],
     },
     {
       id: 'custom',
@@ -159,47 +170,67 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       color: '#6366F1',
       description: 'Define your own subject and curriculum',
       syllabi: ['custom'],
-      examTypes: ['Flexible', 'Any Topic']
+      examTypes: ['Flexible', 'Any Topic'],
     },
   ];
 
   // Enhanced syllabus data focused on higher education and competitive exams
   const syllabusData = {
-    'jee_main': 'JEE Main',
-    'jee_advanced': 'JEE Advanced',
-    'neet': 'NEET UG',
-    'gate': 'GATE',
-    'cat': 'CAT',
-    'mat': 'MAT',
-    'gmat': 'GMAT',
-    'gre': 'GRE',
-    'gre_gmat': 'GRE/GMAT',
-    'upsc': 'UPSC',
-    'ssc': 'SSC',
-    'bank_po': 'Bank PO',
-    'undergraduate': 'Undergraduate',
-    'postgraduate': 'Post Graduate',
-    'mba': 'MBA',
-    'tech_interviews': 'Tech Interviews',
-    'ca_foundation': 'CA Foundation',
-    'ca_intermediate': 'CA Intermediate',
-    'cs_executive': 'CS Executive',
-    'custom': 'Custom Curriculum'
+    jee_main: 'JEE Main',
+    jee_advanced: 'JEE Advanced',
+    neet: 'NEET UG',
+    gate: 'GATE',
+    cat: 'CAT',
+    mat: 'MAT',
+    gmat: 'GMAT',
+    gre: 'GRE',
+    gre_gmat: 'GRE/GMAT',
+    upsc: 'UPSC',
+    ssc: 'SSC',
+    bank_po: 'Bank PO',
+    undergraduate: 'Undergraduate',
+    postgraduate: 'Post Graduate',
+    mba: 'MBA',
+    tech_interviews: 'Tech Interviews',
+    ca_foundation: 'CA Foundation',
+    ca_intermediate: 'CA Intermediate',
+    cs_executive: 'CS Executive',
+    custom: 'Custom Curriculum',
   };
 
   // Level/Grade data focused on higher education
   const gradeData = [
-    { id: 'undergraduate', name: 'Undergraduate', icon: 'school', description: 'Bachelor\'s degree level' },
-    { id: 'postgraduate', name: 'Post Graduate', icon: 'account-balance', description: 'Master\'s degree level' },
-    { id: 'entrance_prep', name: 'Entrance Prep', icon: 'emoji-events', description: 'Competitive exam preparation' },
-    { id: 'professional', name: 'Professional', icon: 'work', description: 'Working professional' },
+    {
+      id: 'undergraduate',
+      name: 'Undergraduate',
+      icon: 'school',
+      description: "Bachelor's degree level",
+    },
+    {
+      id: 'postgraduate',
+      name: 'Post Graduate',
+      icon: 'account-balance',
+      description: "Master's degree level",
+    },
+    {
+      id: 'entrance_prep',
+      name: 'Entrance Prep',
+      icon: 'emoji-events',
+      description: 'Competitive exam preparation',
+    },
+    {
+      id: 'professional',
+      name: 'Professional',
+      icon: 'work',
+      description: 'Working professional',
+    },
   ];
 
   // Step configuration
   const steps = [
-    { id: 1, title: 'Subject', description: 'Choose your subject' },
-    { id: 2, title: 'Curriculum', description: 'Select syllabus' },
-    { id: 3, title: 'Ready', description: 'Start learning' },
+    {id: 1, title: 'Subject', description: 'Choose your subject'},
+    {id: 2, title: 'Curriculum', description: 'Select syllabus'},
+    {id: 3, title: 'Ready', description: 'Start learning'},
   ];
 
   // Load initial data
@@ -210,9 +241,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [quotaResponse] = await Promise.all([
-        aiStudyBuddyGetQuotaApi(),
-      ]);
+      const [quotaResponse] = await Promise.all([aiStudyBuddyGetQuotaApi()]);
       setQuotaInfo(quotaResponse.data.quota);
     } catch (error) {
       console.error('Load data error:', error);
@@ -232,20 +261,22 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
   };
 
   // Validate current step
-  const isStepValid = (step) => {
+  const isStepValid = step => {
     switch (step) {
-      case 1: 
+      case 1:
         if (selectedSubject === 'custom') {
           return customSubject.trim() !== '';
         }
         return selectedSubject !== '';
-      case 2: 
+      case 2:
         if (selectedSubject === 'custom') {
           return customSyllabus.trim() !== '';
         }
         return selectedSyllabus !== '';
-      case 3: return true;
-      default: return false;
+      case 3:
+        return true;
+      default:
+        return false;
     }
   };
 
@@ -265,9 +296,11 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
 
   // Create session
   const createSession = async () => {
-    const finalSubject = selectedSubject === 'custom' ? customSubject : selectedSubject;
-    const finalSyllabus = selectedSyllabus === 'custom' ? customSyllabus : selectedSyllabus;
-    
+    const finalSubject =
+      selectedSubject === 'custom' ? customSubject : selectedSubject;
+    const finalSyllabus =
+      selectedSyllabus === 'custom' ? customSyllabus : selectedSyllabus;
+
     if (!finalSubject || !finalSyllabus) {
       showToast({
         message: 'Please complete all required selections',
@@ -284,13 +317,14 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         syllabus: finalSyllabus,
         grade: selectedGrade,
         initialQuery: initialQuery.trim(),
-        customTopics: customTopics.trim(),
-        studyGoals: studyGoals.trim(),
+        // customTopics: customTopics.trim(),
+        // studyGoals: studyGoals.trim(),
         learningGoals: [],
       };
+      console.log('🚀 ~ createSession ~ payload:', payload);
 
       const response = await aiStudyBuddyInitSessionApi(payload);
-      
+
       if (response.data.success) {
         navigation.replace(Routes.AIStudyBuddyChat, {
           sessionId: response.data.session.sessionId,
@@ -307,18 +341,19 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       }
     } catch (error) {
       console.error('Create session error:', error);
-      
+
       if (isAiStudyBuddyQuotaExceeded(error)) {
         Alert.alert(
           'Daily Limit Reached',
-          'You\'ve used all your questions for today. Your quota will reset at midnight.',
+          "You've used all your questions for today. Your quota will reset at midnight.",
           [
-            { text: 'OK' },
-            { 
-              text: 'View Quota', 
-              onPress: () => navigation.navigate(Routes.AIStudyBuddyQuotaStatus) 
+            {text: 'OK'},
+            {
+              text: 'View Quota',
+              onPress: () =>
+                navigation.navigate(Routes.AIStudyBuddyQuotaStatus),
             },
-          ]
+          ],
         );
       } else {
         showToast({
@@ -337,39 +372,48 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       <View style={styles.progressBar}>
         {steps.map((step, index) => (
           <View key={step.id} style={styles.progressStep}>
-            <View style={[
-              styles.progressDot,
-              {
-                backgroundColor: currentStep >= step.id ? '#2563EB' : '#E5E7EB',
-              }
-            ]}>
+            <View
+              style={[
+                styles.progressDot,
+                {
+                  backgroundColor:
+                    currentStep >= step.id ? '#2563EB' : '#E5E7EB',
+                },
+              ]}>
               {currentStep > step.id ? (
                 <Icon name="check" size={12} color="white" />
               ) : (
-                <Text style={[
-                  styles.progressNumber,
-                  { color: currentStep >= step.id ? 'white' : '#9CA3AF' }
-                ]}>
+                <Text
+                  style={[
+                    styles.progressNumber,
+                    {color: currentStep >= step.id ? 'white' : '#9CA3AF'},
+                  ]}>
                   {step.id}
                 </Text>
               )}
             </View>
             {index < steps.length - 1 && (
-              <View style={[
-                styles.progressLine,
-                { backgroundColor: currentStep > step.id ? '#2563EB' : '#E5E7EB' }
-              ]} />
+              <View
+                style={[
+                  styles.progressLine,
+                  {
+                    backgroundColor:
+                      currentStep > step.id ? '#2563EB' : '#E5E7EB',
+                  },
+                ]}
+              />
             )}
           </View>
         ))}
       </View>
       <View style={styles.progressLabels}>
-        {steps.map((step) => (
+        {steps.map(step => (
           <View key={step.id} style={styles.progressLabel}>
-            <Text style={[
-              styles.progressTitle,
-              { color: currentStep >= step.id ? '#2563EB' : '#9CA3AF' }
-            ]}>
+            <Text
+              style={[
+                styles.progressTitle,
+                {color: currentStep >= step.id ? '#2563EB' : '#9CA3AF'},
+              ]}>
               {step.title}
             </Text>
           </View>
@@ -387,27 +431,27 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
 
     return (
       <View style={styles.quotaContainer}>
-      <Text style={styles.quotaTitle}>Questions Remaining Today</Text>
-      <View style={styles.progressBarBackground}>
-        <View
-          style={[
-            styles.progressBarFill,
-            {
-              width: `${(remaining/total)*100}%`,
-              backgroundColor:
-                remaining > 5
-                  ? '#10B981'
-                  : remaining > 2
-                  ? '#F59E0B'
-                  : '#EF4444',
-            },
-          ]}
-        />
+        <Text style={styles.quotaTitle}>Questions Remaining Today</Text>
+        <View style={styles.progressBarBackground}>
+          <View
+            style={[
+              styles.progressBarFill,
+              {
+                width: `${(remaining / total) * 100}%`,
+                backgroundColor:
+                  remaining > 5
+                    ? '#10B981'
+                    : remaining > 2
+                    ? '#F59E0B'
+                    : '#EF4444',
+              },
+            ]}
+          />
+        </View>
+        <Text style={styles.quotaText}>
+          {remaining} / {total}
+        </Text>
       </View>
-      <Text style={styles.quotaText}>
-        {remaining} / {total}
-      </Text>
-    </View>
     );
   };
 
@@ -425,9 +469,9 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         </View>
 
         <View style={styles.subjectsGrid}>
-          {subjectData.map((subject) => {
+          {subjectData.map(subject => {
             const isSelected = selectedSubject === subject.id;
-            
+
             return (
               <Pressable
                 key={subject.id}
@@ -444,24 +488,27 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
                     setCustomSyllabus('');
                     setCustomTopics('');
                   }
-                }}
-              >
+                }}>
                 <LinearGradient
-                  colors={isSelected ? [subject.color, subject.color + 'CC'] : ['#F8FAFC', '#F1F5F9']}
-                  style={styles.subjectGradient}
-                >
-                  <Icon 
-                    name={subject.icon} 
-                    size={28} 
-                    color={isSelected ? 'white' : subject.color} 
+                  colors={
+                    isSelected
+                      ? [subject.color, subject.color + 'CC']
+                      : ['#F8FAFC', '#F1F5F9']
+                  }
+                  style={styles.subjectGradient}>
+                  <Icon
+                    name={subject.icon}
+                    size={28}
+                    color={isSelected ? 'white' : subject.color}
                   />
                 </LinearGradient>
-                
+
                 <View style={styles.subjectInfo}>
-                  <Text style={[
-                    styles.subjectName,
-                    { color: isSelected ? subject.color : '#111827' }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.subjectName,
+                      {color: isSelected ? subject.color : '#111827'},
+                    ]}>
                     {subject.name}
                   </Text>
                   <Text style={styles.subjectDescription}>
@@ -469,8 +516,14 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
                   </Text>
                   <View style={styles.examTags}>
                     {subject.examTypes.map((exam, index) => (
-                      <View key={index} style={[styles.examTag, { backgroundColor: subject.color + '15' }]}>
-                        <Text style={[styles.examTagText, { color: subject.color }]}>
+                      <View
+                        key={index}
+                        style={[
+                          styles.examTag,
+                          {backgroundColor: subject.color + '15'},
+                        ]}>
+                        <Text
+                          style={[styles.examTagText, {color: subject.color}]}>
                           {exam}
                         </Text>
                       </View>
@@ -479,7 +532,11 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
                 </View>
 
                 {isSelected && (
-                  <View style={[styles.selectedIndicator, { backgroundColor: subject.color }]}>
+                  <View
+                    style={[
+                      styles.selectedIndicator,
+                      {backgroundColor: subject.color},
+                    ]}>
                     <Icon name="check" size={16} color="white" />
                   </View>
                 )}
@@ -521,7 +578,10 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         <View style={styles.stepHeader}>
           <Text style={styles.stepTitle}>Select Your Curriculum</Text>
           <Text style={styles.stepSubtitle}>
-            Choose the syllabus for {selectedSubject === 'custom' ? customSubject || 'your subject' : selectedSubjectData?.name}
+            Choose the syllabus for{' '}
+            {selectedSubject === 'custom'
+              ? customSubject || 'your subject'
+              : selectedSubjectData?.name}
           </Text>
         </View>
 
@@ -529,69 +589,121 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
           {availableSyllabi.map((syllabusId, index) => {
             const isSelected = selectedSyllabus === syllabusId;
             const syllabusName = syllabusData[syllabusId] || syllabusId;
-            
+
             return (
               <Pressable
                 key={syllabusId}
                 style={[
                   styles.syllabusCard,
                   isSelected && styles.selectedSyllabusCard,
-                  { borderColor: isSelected ? selectedSubjectData?.color : '#E5E7EB' }
+                  {
+                    borderColor: isSelected
+                      ? selectedSubjectData?.color
+                      : '#E5E7EB',
+                  },
                 ]}
-                onPress={() => setSelectedSyllabus(syllabusId)}
-              >
+                onPress={() => setSelectedSyllabus(syllabusId)}>
                 <View style={styles.syllabusContent}>
-                  <View style={[
-                    styles.syllabusIcon,
-                    { backgroundColor: isSelected ? selectedSubjectData?.color + '15' : '#F8FAFC' }
-                  ]}>
-                    <Icon 
-                      name={syllabusId.includes('jee') ? 'engineering' : 
-                            syllabusId.includes('neet') ? 'local-hospital' :
-                            syllabusId.includes('gate') ? 'computer' :
-                            syllabusId.includes('cat') || syllabusId.includes('mat') ? 'business' :
-                            syllabusId.includes('gre') || syllabusId.includes('gmat') ? 'flight-takeoff' :
-                            syllabusId.includes('upsc') || syllabusId.includes('ssc') ? 'account-balance' :
-                            syllabusId.includes('undergraduate') ? 'school' :
-                            syllabusId.includes('postgraduate') ? 'school' :
-                            syllabusId.includes('mba') ? 'business-center' :
-                            syllabusId.includes('tech') ? 'code' :
-                            syllabusId.includes('custom') ? 'tune' :
-                            'book'} 
-                      size={20} 
-                      color={isSelected ? selectedSubjectData?.color : '#64748B'} 
+                  <View
+                    style={[
+                      styles.syllabusIcon,
+                      {
+                        backgroundColor: isSelected
+                          ? selectedSubjectData?.color + '15'
+                          : '#F8FAFC',
+                      },
+                    ]}>
+                    <Icon
+                      name={
+                        syllabusId.includes('jee')
+                          ? 'engineering'
+                          : syllabusId.includes('neet')
+                          ? 'local-hospital'
+                          : syllabusId.includes('gate')
+                          ? 'computer'
+                          : syllabusId.includes('cat') ||
+                            syllabusId.includes('mat')
+                          ? 'business'
+                          : syllabusId.includes('gre') ||
+                            syllabusId.includes('gmat')
+                          ? 'flight-takeoff'
+                          : syllabusId.includes('upsc') ||
+                            syllabusId.includes('ssc')
+                          ? 'account-balance'
+                          : syllabusId.includes('undergraduate')
+                          ? 'school'
+                          : syllabusId.includes('postgraduate')
+                          ? 'school'
+                          : syllabusId.includes('mba')
+                          ? 'business-center'
+                          : syllabusId.includes('tech')
+                          ? 'code'
+                          : syllabusId.includes('custom')
+                          ? 'tune'
+                          : 'book'
+                      }
+                      size={20}
+                      color={
+                        isSelected ? selectedSubjectData?.color : '#64748B'
+                      }
                     />
                   </View>
-                  
+
                   <View style={styles.syllabusTextContainer}>
-                    <Text style={[
-                      styles.syllabusName,
-                      { color: isSelected ? selectedSubjectData?.color : '#111827' }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.syllabusName,
+                        {
+                          color: isSelected
+                            ? selectedSubjectData?.color
+                            : '#111827',
+                        },
+                      ]}>
                       {syllabusName}
                     </Text>
                     <Text style={styles.syllabusDescription}>
-                      {syllabusId.includes('jee') ? 'Engineering Entrance' :
-                       syllabusId.includes('neet') ? 'Medical Entrance' :
-                       syllabusId.includes('gate') ? 'Post Graduate Entrance' :
-                       syllabusId.includes('cat') || syllabusId.includes('mat') ? 'Management Entrance' :
-                       syllabusId.includes('gre') || syllabusId.includes('gmat') ? 'International Exam' :
-                       syllabusId.includes('upsc') ? 'Civil Services' :
-                       syllabusId.includes('ssc') ? 'Staff Selection' :
-                       syllabusId.includes('bank') ? 'Banking Exam' :
-                       syllabusId.includes('undergraduate') ? 'Bachelor\'s Level' :
-                       syllabusId.includes('postgraduate') ? 'Master\'s Level' :
-                       syllabusId.includes('mba') ? 'Business Administration' :
-                       syllabusId.includes('tech') ? 'Technical Interview' :
-                       syllabusId.includes('ca') ? 'Chartered Accountancy' :
-                       syllabusId.includes('cs') ? 'Company Secretary' :
-                       syllabusId.includes('custom') ? 'Custom Study' :
-                       'Academic Course'}
+                      {syllabusId.includes('jee')
+                        ? 'Engineering Entrance'
+                        : syllabusId.includes('neet')
+                        ? 'Medical Entrance'
+                        : syllabusId.includes('gate')
+                        ? 'Post Graduate Entrance'
+                        : syllabusId.includes('cat') ||
+                          syllabusId.includes('mat')
+                        ? 'Management Entrance'
+                        : syllabusId.includes('gre') ||
+                          syllabusId.includes('gmat')
+                        ? 'International Exam'
+                        : syllabusId.includes('upsc')
+                        ? 'Civil Services'
+                        : syllabusId.includes('ssc')
+                        ? 'Staff Selection'
+                        : syllabusId.includes('bank')
+                        ? 'Banking Exam'
+                        : syllabusId.includes('undergraduate')
+                        ? "Bachelor's Level"
+                        : syllabusId.includes('postgraduate')
+                        ? "Master's Level"
+                        : syllabusId.includes('mba')
+                        ? 'Business Administration'
+                        : syllabusId.includes('tech')
+                        ? 'Technical Interview'
+                        : syllabusId.includes('ca')
+                        ? 'Chartered Accountancy'
+                        : syllabusId.includes('cs')
+                        ? 'Company Secretary'
+                        : syllabusId.includes('custom')
+                        ? 'Custom Study'
+                        : 'Academic Course'}
                     </Text>
                   </View>
 
                   {isSelected && (
-                    <View style={[styles.syllabusCheck, { backgroundColor: selectedSubjectData?.color }]}>
+                    <View
+                      style={[
+                        styles.syllabusCheck,
+                        {backgroundColor: selectedSubjectData?.color},
+                      ]}>
                       <Icon name="check" size={14} color="white" />
                     </View>
                   )}
@@ -604,7 +716,9 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         {/* Custom Syllabus Input */}
         {selectedSubject === 'custom' && selectedSyllabus === 'custom' && (
           <View style={styles.customInputSection}>
-            <Text style={styles.customInputLabel}>Enter Your Curriculum/Context</Text>
+            <Text style={styles.customInputLabel}>
+              Enter Your Curriculum/Context
+            </Text>
             <TextInput
               style={styles.customInput}
               placeholder="e.g., University course, Self-study, Research project, etc."
@@ -622,7 +736,9 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         {/* Custom Topics Input */}
         {selectedSubject === 'custom' && selectedSyllabus === 'custom' && (
           <View style={styles.customInputSection}>
-            <Text style={styles.customInputLabel}>Specific Topics (Optional)</Text>
+            <Text style={styles.customInputLabel}>
+              Specific Topics (Optional)
+            </Text>
             <TextInput
               style={[styles.customInput, styles.multilineInput]}
               placeholder="e.g., Machine Learning algorithms, Cognitive psychology theories, Victorian literature..."
@@ -641,38 +757,48 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         <View style={styles.gradeSection}>
           <Text style={styles.gradeSectionTitle}>Level (Optional)</Text>
           <View style={styles.gradeContainer}>
-            {gradeData.map((grade) => {
+            {gradeData.map(grade => {
               const isSelected = selectedGrade === grade.id;
-              
+              console.log(isSelected, 'isSelected');
+
               return (
                 <Pressable
                   key={grade.id}
                   style={[
                     styles.gradeChip,
                     isSelected && styles.selectedGradeChip,
-                    { 
-                      backgroundColor: isSelected ? selectedSubjectData?.color : '#F8FAFC',
-                      borderColor: isSelected ? selectedSubjectData?.color : '#E5E7EB'
-                    }
+                    {
+                      backgroundColor: isSelected
+                        ? selectedSubjectData?.color
+                        : '#F8FAFC',
+                      borderColor: isSelected
+                        ? selectedSubjectData?.color
+                        : '#E5E7EB',
+                    },
                   ]}
-                  onPress={() => setSelectedGrade(isSelected ? '' : grade.id)}
-                >
-                  <Icon 
-                    name={grade.icon} 
-                    size={16} 
-                    color={isSelected ? 'white' : '#64748B'} 
+                  onPress={() => setSelectedGrade(isSelected ? '' : grade.id)}>
+                  <Icon
+                    name={grade.icon}
+                    size={16}
+                    color={isSelected ? 'white' : '#64748B'}
                   />
                   <View style={styles.gradeTextContainer}>
-                    <Text style={[
-                      styles.gradeText,
-                      { color: isSelected ? 'white' : '#64748B' }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.gradeText,
+                        {color: isSelected ? 'white' : '#64748B'},
+                      ]}>
                       {grade.name}
                     </Text>
-                    <Text style={[
-                      styles.gradeDescription,
-                      { color: isSelected ? 'rgba(255,255,255,0.8)' : '#9CA3AF' }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.gradeDescription,
+                        {
+                          color: isSelected
+                            ? 'rgba(255,255,255,0.8)'
+                            : '#9CA3AF',
+                        },
+                      ]}>
                       {grade.description}
                     </Text>
                   </View>
@@ -694,12 +820,26 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
     return (
       <View style={styles.stepContainer}>
         <View style={styles.readyHeader}>
-          <View style={[styles.readyIcon, { backgroundColor: selectedSubjectData?.color + '15' || '#6366F115' }]}>
-            <Icon name="auto-awesome" size={32} color={selectedSubjectData?.color || '#6366F1'} />
+          <View
+            style={[
+              styles.readyIcon,
+              {
+                backgroundColor:
+                  selectedSubjectData?.color + '15' || '#6366F115',
+              },
+            ]}>
+            <Icon
+              name="auto-awesome"
+              size={32}
+              color={selectedSubjectData?.color || '#6366F1'}
+            />
           </View>
           <Text style={styles.readyTitle}>All Set!</Text>
           <Text style={styles.readySubtitle}>
-            You're ready to start learning {selectedSubject === 'custom' ? customSubject || 'your subject' : selectedSubjectData?.name}
+            You're ready to start learning{' '}
+            {selectedSubject === 'custom'
+              ? customSubject || 'your subject'
+              : selectedSubjectData?.name}
           </Text>
         </View>
 
@@ -709,17 +849,21 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
             <View style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Subject</Text>
               <Text style={styles.summaryValue}>
-                {selectedSubject === 'custom' ? customSubject || 'Custom Subject' : selectedSubjectData?.name}
+                {selectedSubject === 'custom'
+                  ? customSubject || 'Custom Subject'
+                  : selectedSubjectData?.name}
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.summaryItem}>
             <Icon name="book" size={20} color="#64748B" />
             <View style={styles.summaryText}>
               <Text style={styles.summaryLabel}>Curriculum</Text>
               <Text style={styles.summaryValue}>
-                {selectedSyllabus === 'custom' ? customSyllabus || 'Custom Curriculum' : syllabusData[selectedSyllabus]}
+                {selectedSyllabus === 'custom'
+                  ? customSyllabus || 'Custom Curriculum'
+                  : syllabusData[selectedSyllabus]}
               </Text>
             </View>
           </View>
@@ -763,7 +907,9 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
 
         {/* Enhanced initial question section with study goals for custom */}
         <View style={styles.initialQuerySection}>
-          <Text style={styles.initialQueryTitle}>Start with a question (Optional)</Text>
+          <Text style={styles.initialQueryTitle}>
+            Start with a question (Optional)
+          </Text>
           <TextInput
             style={styles.initialQueryInput}
             placeholder="e.g., Explain quadratic equations, Help with organic chemistry..."
@@ -779,7 +925,9 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         {/* Study Goals for Custom Subject */}
         {selectedSubject === 'custom' && (
           <View style={styles.studyGoalsSection}>
-            <Text style={styles.studyGoalsTitle}>What do you want to achieve? (Optional)</Text>
+            <Text style={styles.studyGoalsTitle}>
+              What do you want to achieve? (Optional)
+            </Text>
             <TextInput
               style={[styles.customInput, styles.multilineInput]}
               placeholder="e.g., Prepare for exam, understand concepts, solve problems, research project..."
@@ -797,30 +945,43 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         {/* Quick suggestions - different for custom vs predefined */}
         <View style={styles.suggestionsSection}>
           <Text style={styles.suggestionsTitle}>
-            {selectedSubject === 'custom' ? 'General Suggestions:' : 'Popular Questions:'}
+            {selectedSubject === 'custom'
+              ? 'General Suggestions:'
+              : 'Popular Questions:'}
           </Text>
           <View style={styles.suggestionsGrid}>
-            {selectedSubject === 'custom' ? [
-              'Explain the fundamentals',
-              'How do I get started?',
-              'What are the key concepts?',
-              'Give me an overview'
-            ] : [
-              'Explain step by step',
-              'Give practice problems',
-              'Key formulas',
-              'Solve this type'
-            ].map((suggestion, index) => (
-              <Pressable
-                key={index}
-                style={[styles.suggestionChip, { borderColor: selectedSubjectData?.color + '40' || '#6366F140' }]}
-                onPress={() => setInitialQuery(suggestion)}
-              >
-                <Text style={[styles.suggestionText, { color: selectedSubjectData?.color || '#6366F1' }]}>
-                  {suggestion}
-                </Text>
-              </Pressable>
-            ))}
+            {selectedSubject === 'custom'
+              ? [
+                  'Explain the fundamentals',
+                  'How do I get started?',
+                  'What are the key concepts?',
+                  'Give me an overview',
+                ]
+              : [
+                  'Explain step by step',
+                  'Give practice problems',
+                  'Key formulas',
+                  'Solve this type',
+                ].map((suggestion, index) => (
+                  <Pressable
+                    key={index}
+                    style={[
+                      styles.suggestionChip,
+                      {
+                        borderColor:
+                          selectedSubjectData?.color + '40' || '#6366F140',
+                      },
+                    ]}
+                    onPress={() => setInitialQuery(suggestion)}>
+                    <Text
+                      style={[
+                        styles.suggestionText,
+                        {color: selectedSubjectData?.color || '#6366F1'},
+                      ]}>
+                      {suggestion}
+                    </Text>
+                  </Pressable>
+                ))}
           </View>
         </View>
       </View>
@@ -834,7 +995,9 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.loadingText}>Setting up your study session...</Text>
+          <Text style={styles.loadingText}>
+            Setting up your study session...
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -843,28 +1006,26 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      
-      <Header 
+
+      <Header
         title="New Study Session"
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {/* Progress Indicator */}
         {renderProgressIndicator()}
 
         {/* Quota Status */}
         {renderQuotaStatus()}
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           {/* Step Content */}
           {renderSubjectSelection()}
           {renderSyllabusSelection()}
@@ -875,10 +1036,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         <View style={styles.bottomContainer}>
           <View style={styles.navigationButtons}>
             {currentStep > 1 && (
-              <Pressable
-                style={styles.backButton}
-                onPress={prevStep}
-              >
+              <Pressable style={styles.backButton} onPress={prevStep}>
                 <Icon name="arrow-back" size={20} color="#64748B" />
                 <Text style={styles.backButtonText}>Back</Text>
               </Pressable>
@@ -888,35 +1046,36 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
               <Pressable
                 style={[
                   styles.nextButton,
-                  { 
-                    backgroundColor: isStepValid(currentStep) ? '#2563EB' : '#D1D5DB',
+                  {
+                    backgroundColor: isStepValid(currentStep)
+                      ? '#2563EB'
+                      : '#D1D5DB',
                     flex: currentStep === 1 ? 1 : 0,
-                  }
+                  },
                 ]}
                 onPress={nextStep}
-                disabled={!isStepValid(currentStep)}
-              >
-                <Text style={[
-                  styles.nextButtonText,
-                  { color: isStepValid(currentStep) ? 'white' : '#9CA3AF' }
-                ]}>
+                disabled={!isStepValid(currentStep)}>
+                <Text
+                  style={[
+                    styles.nextButtonText,
+                    {color: isStepValid(currentStep) ? 'white' : '#9CA3AF'},
+                  ]}>
                   Continue
                 </Text>
-                <Icon 
-                  name="arrow-forward" 
-                  size={20} 
-                  color={isStepValid(currentStep) ? 'white' : '#9CA3AF'} 
+                <Icon
+                  name="arrow-forward"
+                  size={20}
+                  color={isStepValid(currentStep) ? 'white' : '#9CA3AF'}
                 />
               </Pressable>
             ) : (
               <Pressable
                 style={[
                   styles.startButton,
-                  { backgroundColor: creating ? '#93C5FD' : '#2563EB' }
+                  {backgroundColor: creating ? '#93C5FD' : '#2563EB'},
                 ]}
                 onPress={createSession}
-                disabled={creating}
-              >
+                disabled={creating}>
                 {creating ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
@@ -1074,7 +1233,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#F1F5F9',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
@@ -1171,7 +1330,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.03,
     shadowRadius: 3,
     elevation: 1,
@@ -1241,7 +1400,7 @@ const styles = StyleSheet.create({
   },
   selectedGradeChip: {
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
