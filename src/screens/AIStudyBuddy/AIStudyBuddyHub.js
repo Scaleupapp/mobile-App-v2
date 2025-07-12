@@ -165,56 +165,51 @@ const AIStudyBuddyHub = ({navigation}) => {
   ];
 
   // Load initial data
-  const loadData = useCallback(
-    async (showLoader = true) => {
-      try {
-        if (showLoader) setLoading(true);
+  const loadData = useCallback(async (showLoader = true) => {
+    try {
+      if (showLoader) setLoading(true);
 
-        // Fetch all required data in parallel
-        const [quotaResponse, sessionsResponse, analyticsResponse] =
-          await Promise.all([
-            aiStudyBuddyGetQuotaApi().catch(() => ({data: {quota: null}})),
-            aiStudyBuddyGetActiveSessionsApi().catch(() => ({
-              data: {activeSessions: []},
-            })),
-            aiStudyBuddyGetAnalyticsApi('7d').catch(() => ({
-              data: {analytics: null},
-            })),
-          ]);
+      // Fetch all required data in parallel
+      const [quotaResponse, sessionsResponse, analyticsResponse] =
+        await Promise.all([
+          aiStudyBuddyGetQuotaApi().catch(() => ({data: {quota: null}})),
+          aiStudyBuddyGetActiveSessionsApi().catch(() => ({
+            data: {activeSessions: []},
+          })),
+          aiStudyBuddyGetAnalyticsApi('7d').catch(() => ({
+            data: {analytics: null},
+          })),
+        ]);
 
-        setQuotaInfo(quotaResponse.data.quota);
-        setActiveSessions(sessionsResponse.data.activeSessions || []);
+      setQuotaInfo(quotaResponse.data.quota);
+      setActiveSessions(sessionsResponse.data.activeSessions || []);
 
-        // Set analytics data
-        if (analyticsResponse.data.analytics) {
-          const analytics = analyticsResponse.data.analytics;
-          setWeeklyStats({
-            questionsAsked: analytics.overview?.totalMessages || 0,
-            topicsExplored: analytics.topicsExplored?.length || 0,
-            timeSpent: Math.round(
-              (analytics.overview?.totalStudyTime || 0) / 60,
-            ),
-            streak: analytics.overview?.currentStreak || 0,
-          });
-        }
-
-        // Calculate today's stats if analytics not available
-        if (!analyticsResponse.data.analytics) {
-          calculateTodayStats(sessionsResponse.data.activeSessions);
-        }
-      } catch (error) {
-        console.error('Load data error:', error);
-        showToast({
-          message: formatAiStudyBuddyError(error),
-          type: 'error',
+      // Set analytics data
+      if (analyticsResponse.data.analytics) {
+        const analytics = analyticsResponse.data.analytics;
+        setWeeklyStats({
+          questionsAsked: analytics.overview?.totalMessages || 0,
+          topicsExplored: analytics.topicsExplored?.length || 0,
+          timeSpent: Math.round((analytics.overview?.totalStudyTime || 0) / 60),
+          streak: analytics.overview?.currentStreak || 0,
         });
-      } finally {
-        if (showLoader) setLoading(false);
-        setRefreshing(false);
       }
-    },
-    [showToast],
-  );
+
+      // Calculate today's stats if analytics not available
+      if (!analyticsResponse.data.analytics) {
+        calculateTodayStats(sessionsResponse.data.activeSessions);
+      }
+    } catch (error) {
+      console.error('Load data error:', error);
+      showToast({
+        title: formatAiStudyBuddyError(error),
+        type: 'error',
+      });
+    } finally {
+      if (showLoader) setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   // Calculate today's learning stats (fallback)
   const calculateTodayStats = sessions => {

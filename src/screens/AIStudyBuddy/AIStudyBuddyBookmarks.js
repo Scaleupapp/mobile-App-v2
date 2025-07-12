@@ -174,7 +174,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
               }
 
               showToast({
-                message:
+                title:
                   'Showing sample bookmarks. Start bookmarking to see your saved messages!',
                 type: 'info',
               });
@@ -197,7 +197,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
             }
 
             showToast({
-              message: 'Unable to load bookmarks. Showing sample data.',
+              title: 'Unable to load bookmarks. Showing sample data.',
               type: 'info',
             });
           }
@@ -219,7 +219,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
         }
 
         showToast({
-          message: 'Failed to load bookmarks. Please try again.',
+          title: 'Failed to load bookmarks. Please try again.',
           type: 'error',
         });
       } finally {
@@ -321,7 +321,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
           safeArray(prev).filter(b => b.messageId !== messageId),
         );
         showToast({
-          message: 'Demo bookmark removed',
+          title: 'Demo bookmark removed',
           type: 'success',
         });
         return;
@@ -335,12 +335,12 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
       );
 
       showToast({
-        message: 'Bookmark removed',
+        title: 'Bookmark removed',
         type: 'success',
       });
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
@@ -523,7 +523,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
             onPress={() => {
               if (item.messageId.startsWith('demo_')) {
                 showToast({
-                  message:
+                  title:
                     'This is a demo bookmark. Start a real conversation to bookmark messages!',
                   type: 'info',
                 });
@@ -542,7 +542,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
             style={styles.actionButton}
             onPress={() => {
               showToast({
-                message: 'Sharing coming soon!',
+                title: 'Sharing coming soon!',
                 type: 'info',
               });
             }}>

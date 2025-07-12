@@ -246,7 +246,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
     } catch (error) {
       console.error('Load data error:', error);
       showToast({
-        message: 'Failed to load data. Please try again.',
+        title: 'Failed to load data. Please try again.',
         type: 'error',
       });
     } finally {
@@ -303,7 +303,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
 
     if (!finalSubject || !finalSyllabus) {
       showToast({
-        message: 'Please complete all required selections',
+        title: 'Please complete all required selections',
         type: 'error',
       });
       return;
@@ -315,12 +315,15 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
       const payload = {
         subject: finalSubject,
         syllabus: finalSyllabus,
-        grade: selectedGrade,
+
         initialQuery: initialQuery.trim(),
         // customTopics: customTopics.trim(),
         // studyGoals: studyGoals.trim(),
         learningGoals: [],
       };
+      if (selectedGrade) {
+        payload.grade = selectedGrade;
+      }
       console.log('🚀 ~ createSession ~ payload:', payload);
 
       const response = await aiStudyBuddyInitSessionApi(payload);
@@ -335,7 +338,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         });
 
         showToast({
-          message: 'Study session started! Ask me anything.',
+          title: 'Study session started! Ask me anything.',
           type: 'success',
         });
       }
@@ -357,7 +360,7 @@ const AIStudyBuddyNewSession = ({navigation, route}) => {
         );
       } else {
         showToast({
-          message: formatAiStudyBuddyError(error),
+          title: formatAiStudyBuddyError(error),
           type: 'error',
         });
       }

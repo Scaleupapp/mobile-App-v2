@@ -50,7 +50,8 @@ const AIStudyBuddyChat = ({navigation, route}) => {
   const {showToast} = useToast();
 
   // Route params
-  const {sessionId, subject, syllabus, isNewSession, initialQuery} = route.params;
+  const {sessionId, subject, syllabus, isNewSession, initialQuery} =
+    route.params;
 
   // Refs
   const flatListRef = useRef(null);
@@ -70,29 +71,32 @@ const AIStudyBuddyChat = ({navigation, route}) => {
 
   // Quick suggestions for new sessions
   const quickSuggestions = [
-    "Explain this concept step by step",
-    "Give me practice problems", 
-    "What are the key points to remember?",
-    "How does this relate to real life?",
-    "Create flashcards for this topic",
+    'Explain this concept step by step',
+    'Give me practice problems',
+    'What are the key points to remember?',
+    'How does this relate to real life?',
+    'Create flashcards for this topic',
   ];
 
   // Create a simple AI response for demo purposes
-  const createSimpleAIResponse = (userMessage) => {
+  const createSimpleAIResponse = userMessage => {
     const responses = [
       `Great question about ${subject}! Let me help you understand this concept better.`,
       `That's an interesting point. In ${subject}, this topic is quite important because...`,
       `I'd be happy to explain that! This is a fundamental concept in ${subject}.`,
       `Excellent question! Let me break this down step by step for you.`,
-      `That's a very thoughtful question. In the context of ${subject}, here's what you need to know...`
+      `That's a very thoughtful question. In the context of ${subject}, here's what you need to know...`,
     ];
-    
-    const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-    
+
+    const randomResponse =
+      responses[Math.floor(Math.random() * responses.length)];
+
     return {
       messageId: 'ai_' + Date.now(),
       messageType: 'ai',
-      content: randomResponse + ` 
+      content:
+        randomResponse +
+        ` 
 
 I understand you're asking about: "${userMessage}"
 
@@ -122,41 +126,44 @@ Would you like me to help you with practice problems or explain any specific par
   };
 
   // Load conversation history
-  const loadMessages = useCallback(async (pageNum = 1, showLoader = true) => {
-    try {
-      if (showLoader && pageNum === 1) setLoading(true);
+  const loadMessages = useCallback(
+    async (pageNum = 1, showLoader = true) => {
+      try {
+        if (showLoader && pageNum === 1) setLoading(true);
 
-      const [historyResponse, quotaResponse] = await Promise.all([
-        aiStudyBuddyGetHistoryApi(sessionId, { page: pageNum, limit: 20 }),
-        aiStudyBuddyGetQuotaApi(),
-      ]);
+        const [historyResponse, quotaResponse] = await Promise.all([
+          aiStudyBuddyGetHistoryApi(sessionId, {page: pageNum, limit: 20}),
+          aiStudyBuddyGetQuotaApi(),
+        ]);
 
-      const newMessages = historyResponse.data.messages || [];
-      setQuotaInfo(quotaResponse.data.quota);
+        const newMessages = historyResponse.data.messages || [];
+        setQuotaInfo(quotaResponse.data.quota);
 
-      if (pageNum === 1) {
-        setMessages(newMessages.reverse());
-        
-        // Show welcome message for new sessions
-        if (isNewSession && newMessages.length === 0) {
-          addWelcomeMessage();
+        if (pageNum === 1) {
+          setMessages(newMessages.reverse());
+
+          // Show welcome message for new sessions
+          if (isNewSession && newMessages.length === 0) {
+            addWelcomeMessage();
+          }
+        } else {
+          setMessages(prev => [...newMessages.reverse(), ...prev]);
         }
-      } else {
-        setMessages(prev => [...newMessages.reverse(), ...prev]);
-      }
 
-      setHasMore(newMessages.length === 20);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Load messages error:', error);
-      showToast({
-        message: 'Failed to load conversation. Please try again.',
-        type: 'error',
-      });
-    } finally {
-      if (showLoader && pageNum === 1) setLoading(false);
-    }
-  }, [sessionId, isNewSession, showToast]);
+        setHasMore(newMessages.length === 20);
+        setPage(pageNum);
+      } catch (error) {
+        console.error('Load messages error:', error);
+        showToast({
+          title: 'Failed to load conversation. Please try again.',
+          type: 'error',
+        });
+      } finally {
+        if (showLoader && pageNum === 1) setLoading(false);
+      }
+    },
+    [sessionId, isNewSession, showToast],
+  );
 
   // Add welcome message for new sessions
   const addWelcomeMessage = () => {
@@ -196,7 +203,7 @@ Let's start learning! 🚀`,
   useFocusEffect(
     useCallback(() => {
       loadMessages();
-    }, [loadMessages])
+    }, [loadMessages]),
   );
 
   // Send initial query if provided
@@ -224,7 +231,7 @@ Let's start learning! 🚀`,
           duration: 600,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   };
 
@@ -237,29 +244,34 @@ Let's start learning! 🚀`,
 
   // Send message - ROBUST VERSION WITH GRACEFUL FALLBACK
   const sendMessage = async (messageText = inputText.trim()) => {
+    console.log('🚀 ~ sendMessage ~ messageText:', messageText);
+
     if (!messageText) return;
 
     // Validate sessionId exists
     if (!sessionId) {
       showToast({
-        message: 'Session ID is missing. Please start a new session.',
+        title: 'Session ID is missing. Please start a new session.',
         type: 'error',
       });
       return;
     }
 
     // Validate message
-    const validation = validateAiStudyBuddyMessage({ message: messageText });
+    const validation = validateAiStudyBuddyMessage({message: messageText});
     if (!validation.isValid) {
       showToast({
-        message: validation.errors[0],
+        title: validation.errors[0],
         type: 'error',
       });
       return;
     }
 
     // Check quota
-    if (quotaInfo?.dailyQuota?.remaining <= 0 && quotaInfo?.subscriptionType !== 'pro') {
+    if (
+      quotaInfo?.dailyQuota?.remaining <= 0 &&
+      quotaInfo?.subscriptionType !== 'pro'
+    ) {
       setShowQuotaModal(true);
       return;
     }
@@ -273,7 +285,7 @@ Let's start learning! 🚀`,
         messageType: 'user',
         content: messageText,
         sentAt: new Date().toISOString(),
-        contentAnalysis: { topics: [] },
+        contentAnalysis: {topics: []},
         userInteraction: {},
       };
 
@@ -282,7 +294,7 @@ Let's start learning! 🚀`,
 
       // Scroll to bottom
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flatListRef.current?.scrollToEnd({animated: true});
       }, 100);
 
       // Start AI typing animation
@@ -300,7 +312,7 @@ Let's start learning! 🚀`,
         if (response.data && response.data.success) {
           // Handle successful backend response
           const responseData = response.data;
-          
+
           if (responseData.quotaInfo) {
             setQuotaInfo(responseData.quotaInfo);
           }
@@ -315,8 +327,8 @@ Let's start learning! 🚀`,
               messageType: 'ai',
               content: responseData.message,
               sentAt: new Date().toISOString(),
-              contentAnalysis: { topics: [subject] },
-              userInteraction: { bookmarked: false, reaction: null },
+              contentAnalysis: {topics: [subject]},
+              userInteraction: {bookmarked: false, reaction: null},
             };
             setMessages(prev => [...prev, aiMessage]);
           }
@@ -324,16 +336,20 @@ Let's start learning! 🚀`,
           throw new Error('Backend response indicates failure');
         }
       } catch (backendError) {
-        console.warn('Backend API failed, using fallback response:', backendError);
-        
+        console.warn(
+          'Backend API failed, using fallback response:',
+          backendError,
+        );
+
         // GRACEFUL FALLBACK: Create a helpful AI response locally
         const fallbackAIResponse = createSimpleAIResponse(messageText);
-        
+
         setMessages(prev => [...prev, fallbackAIResponse]);
-        
+
         // Show a subtle warning to the user
         showToast({
-          message: 'Using offline mode. Full AI features temporarily unavailable.',
+          title:
+            'Using offline mode. Full AI features temporarily unavailable.',
           type: 'warning',
         });
 
@@ -345,28 +361,29 @@ Let's start learning! 🚀`,
               ...prev.dailyQuota,
               remaining: prev.dailyQuota.remaining - 1,
               used: prev.dailyQuota.used + 1,
-            }
+            },
           }));
         }
       }
 
       // Scroll to bottom
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flatListRef.current?.scrollToEnd({animated: true});
       }, 200);
-
     } catch (error) {
       console.error('Send message error:', error);
-      
+
       // Remove user message on complete failure
-      setMessages(prev => prev.filter(msg => msg.messageId !== userMessage.messageId));
+      setMessages(prev =>
+        prev.filter(msg => msg.messageId !== userMessage.messageId),
+      );
       setInputText(messageText); // Restore input text
-      
+
       if (isAiStudyBuddyQuotaExceeded(error)) {
         setShowQuotaModal(true);
       } else {
         showToast({
-          message: 'Failed to send message. Please try again.',
+          title: 'Failed to send message. Please try again.',
           type: 'error',
         });
       }
@@ -379,103 +396,126 @@ Let's start learning! 🚀`,
   // Handle message reaction
   const handleReaction = async (messageId, reaction) => {
     try {
-      await aiStudyBuddyReactToMessageApi(messageId, { reaction });
-      
+      await aiStudyBuddyReactToMessageApi(messageId, {reaction});
+
       // Update local state
-      setMessages(prev => prev.map(msg => 
-        msg.messageId === messageId 
-          ? { ...msg, userInteraction: { ...msg.userInteraction, reaction } }
-          : msg
-      ));
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.messageId === messageId
+            ? {...msg, userInteraction: {...msg.userInteraction, reaction}}
+            : msg,
+        ),
+      );
 
       showToast({
-        message: 'Feedback submitted!',
+        title: 'Feedback submitted!',
         type: 'success',
       });
     } catch (error) {
       // Update locally even if backend fails
-      setMessages(prev => prev.map(msg => 
-        msg.messageId === messageId 
-          ? { ...msg, userInteraction: { ...msg.userInteraction, reaction } }
-          : msg
-      ));
-      
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.messageId === messageId
+            ? {...msg, userInteraction: {...msg.userInteraction, reaction}}
+            : msg,
+        ),
+      );
+
       showToast({
-        message: 'Feedback recorded locally',
+        title: 'Feedback recorded locally',
         type: 'info',
       });
     }
   };
 
   // Toggle bookmark
-  const toggleBookmark = async (messageId) => {
+  const toggleBookmark = async messageId => {
     try {
       const response = await aiStudyBuddyToggleBookmarkApi(messageId);
-      
+
       // Update local state
-      setMessages(prev => prev.map(msg => 
-        msg.messageId === messageId 
-          ? { ...msg, userInteraction: { ...msg.userInteraction, bookmarked: response.data.bookmarked } }
-          : msg
-      ));
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.messageId === messageId
+            ? {
+                ...msg,
+                userInteraction: {
+                  ...msg.userInteraction,
+                  bookmarked: response.data.bookmarked,
+                },
+              }
+            : msg,
+        ),
+      );
 
       showToast({
-        message: response.data.bookmarked ? 'Message bookmarked!' : 'Bookmark removed',
+        title: response.data.bookmarked
+          ? 'Message bookmarked!'
+          : 'Bookmark removed',
         type: 'success',
       });
     } catch (error) {
       // Toggle locally even if backend fails
-      setMessages(prev => prev.map(msg => 
-        msg.messageId === messageId 
-          ? { ...msg, userInteraction: { ...msg.userInteraction, bookmarked: !msg.userInteraction?.bookmarked } }
-          : msg
-      ));
-      
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.messageId === messageId
+            ? {
+                ...msg,
+                userInteraction: {
+                  ...msg.userInteraction,
+                  bookmarked: !msg.userInteraction?.bookmarked,
+                },
+              }
+            : msg,
+        ),
+      );
+
       showToast({
-        message: 'Bookmark updated locally',
+        title: 'Bookmark updated locally',
         type: 'info',
       });
     }
   };
 
   // Render message item
-  const renderMessage = ({ item: message }) => {
+  const renderMessage = ({item: message}) => {
     const isUser = message.messageType === 'user';
     const isAI = message.messageType === 'ai';
-    
+
     return (
-      <View style={[
-        styles.messageContainer,
-        isUser ? styles.userMessageContainer : styles.aiMessageContainer,
-      ]}>
+      <View
+        style={[
+          styles.messageContainer,
+          isUser ? styles.userMessageContainer : styles.aiMessageContainer,
+        ]}>
         {isAI && (
           <View style={styles.aiAvatar}>
             <Icon name="smart-toy" size={18} color="white" />
           </View>
         )}
-        
-        <View style={[
-          styles.messageBubble,
-          isUser ? styles.userBubble : styles.aiBubble,
-        ]}>
-          <Text style={[
-            styles.messageText,
-            { color: isUser ? 'white' : '#111827' }
+
+        <View
+          style={[
+            styles.messageBubble,
+            isUser ? styles.userBubble : styles.aiBubble,
           ]}>
+          <Text
+            style={[styles.messageText, {color: isUser ? 'white' : '#111827'}]}>
             {message.content}
           </Text>
-          
-          <Text style={[
-            styles.messageTime,
-            { color: isUser ? 'rgba(255,255,255,0.7)' : '#9CA3AF' }
-          ]}>
-            {new Date(message.sentAt).toLocaleTimeString([], { 
-              hour: '2-digit', 
-              minute: '2-digit' 
+
+          <Text
+            style={[
+              styles.messageTime,
+              {color: isUser ? 'rgba(255,255,255,0.7)' : '#9CA3AF'},
+            ]}>
+            {new Date(message.sentAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
             })}
           </Text>
         </View>
-        
+
         {isUser && (
           <View style={styles.userAvatar}>
             <Text style={styles.userAvatarText}>
@@ -483,40 +523,51 @@ Let's start learning! 🚀`,
             </Text>
           </View>
         )}
-        
+
         {/* AI Message Actions */}
         {isAI && (
           <View style={styles.messageActions}>
             <Pressable
               style={styles.actionButton}
-              onPress={() => handleReaction(message.messageId, 'helpful')}
-            >
-              <Icon 
-                name="thumb-up" 
-                size={14} 
-                color={message.userInteraction?.reaction === 'helpful' ? '#10B981' : '#9CA3AF'} 
+              onPress={() => handleReaction(message.messageId, 'helpful')}>
+              <Icon
+                name="thumb-up"
+                size={14}
+                color={
+                  message.userInteraction?.reaction === 'helpful'
+                    ? '#10B981'
+                    : '#9CA3AF'
+                }
               />
             </Pressable>
-            
+
             <Pressable
               style={styles.actionButton}
-              onPress={() => handleReaction(message.messageId, 'not_helpful')}
-            >
-              <Icon 
-                name="thumb-down" 
-                size={14} 
-                color={message.userInteraction?.reaction === 'not_helpful' ? '#EF4444' : '#9CA3AF'} 
+              onPress={() => handleReaction(message.messageId, 'not_helpful')}>
+              <Icon
+                name="thumb-down"
+                size={14}
+                color={
+                  message.userInteraction?.reaction === 'not_helpful'
+                    ? '#EF4444'
+                    : '#9CA3AF'
+                }
               />
             </Pressable>
-            
+
             <Pressable
               style={styles.actionButton}
-              onPress={() => toggleBookmark(message.messageId)}
-            >
-              <Icon 
-                name={message.userInteraction?.bookmarked ? "bookmark" : "bookmark-border"} 
-                size={14} 
-                color={message.userInteraction?.bookmarked ? '#3B82F6' : '#9CA3AF'} 
+              onPress={() => toggleBookmark(message.messageId)}>
+              <Icon
+                name={
+                  message.userInteraction?.bookmarked
+                    ? 'bookmark'
+                    : 'bookmark-border'
+                }
+                size={14}
+                color={
+                  message.userInteraction?.bookmarked ? '#3B82F6' : '#9CA3AF'
+                }
               />
             </Pressable>
           </View>
@@ -535,10 +586,7 @@ Let's start learning! 🚀`,
           <Icon name="smart-toy" size={18} color="white" />
         </View>
         <View style={styles.typingBubble}>
-          <Animated.View style={[
-            styles.typingDots,
-            { opacity: typingAnimRef }
-          ]}>
+          <Animated.View style={[styles.typingDots, {opacity: typingAnimRef}]}>
             <View style={styles.typingDot} />
             <View style={styles.typingDot} />
             <View style={styles.typingDot} />
@@ -560,8 +608,7 @@ Let's start learning! 🚀`,
             <Pressable
               key={index}
               style={styles.suggestionChip}
-              onPress={() => sendMessage(suggestion)}
-            >
+              onPress={() => sendMessage(suggestion)}>
               <Text style={styles.suggestionText}>{suggestion}</Text>
             </Pressable>
           ))}
@@ -578,12 +625,13 @@ Let's start learning! 🚀`,
           <Icon name="schedule" size={48} color="#F59E0B" />
           <Text style={styles.modalTitle}>Daily Limit Reached</Text>
           <Text style={styles.modalMessage}>
-            You've used all your questions for today. Your quota resets at midnight.
+            You've used all your questions for today. Your quota resets at
+            midnight.
           </Text>
           <Text style={styles.modalTime}>
             Resets in {getAiStudyBuddyTimeUntilReset() || '24 hours'}
           </Text>
-          
+
           <View style={styles.modalActions}>
             <Button
               title="OK"
@@ -612,23 +660,28 @@ Let's start learning! 🚀`,
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      
-      <Header 
+
+      <Header
         title={subject}
         showBackButton
-        subtitle={quotaInfo ? `${quotaInfo.dailyQuota?.remaining || 0}/${quotaInfo.dailyQuota?.limit || 5} questions left` : ''}
+        subtitle={
+          quotaInfo
+            ? `${quotaInfo.dailyQuota?.remaining || 0}/${
+                quotaInfo.dailyQuota?.limit || 5
+              } questions left`
+            : ''
+        }
       />
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.chatContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}>
         <FlatList
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.messageId}
+          keyExtractor={item => item.messageId}
           style={styles.messagesList}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
@@ -638,9 +691,15 @@ Let's start learning! 🚀`,
             }
           }}
           onEndReachedThreshold={0.1}
-          ListHeaderComponent={hasMore ? (
-            <ActivityIndicator size="small" color="#3B82F6" style={styles.loadMoreIndicator} />
-          ) : null}
+          ListHeaderComponent={
+            hasMore ? (
+              <ActivityIndicator
+                size="small"
+                color="#3B82F6"
+                style={styles.loadMoreIndicator}
+              />
+            ) : null
+          }
           ListFooterComponent={
             <View>
               {renderQuickSuggestions()}
@@ -669,8 +728,7 @@ Let's start learning! 🚀`,
                 (!inputText.trim() || sending) && styles.sendButtonDisabled,
               ]}
               onPress={() => sendMessage()}
-              disabled={!inputText.trim() || sending}
-            >
+              disabled={!inputText.trim() || sending}>
               {sending ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (

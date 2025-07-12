@@ -90,6 +90,7 @@ import Routes from '../../helper/routes';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import mixpanel from '../../helper/mixpanelClient';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {APP_FONTS} from '../../assets/fonts';
 
 // Helper for responsive scaling
 const {width: DEVICE_WIDTH, height: DEVICE_HEIGHT} = Dimensions.get('window');
@@ -1407,12 +1408,36 @@ const QuizList = ({navigation, route}) => {
                     size={22}
                     color={COLORS.whiteFFFFFF}
                   />
-                  <Text
-                    variant="semibold12"
-                    color={COLORS.whiteFFFFFF}
-                    style={{marginLeft: 4}}>
-                    Dashboard
-                  </Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      marginLeft: 4,
+                    }}>
+                    <Text variant="semibold12" color={COLORS.whiteFFFFFF}>
+                      Dashboard
+                    </Text>
+                    <View
+                      style={{
+                        backgroundColor: '#28a745',
+                        borderRadius: 10,
+                        paddingHorizontal: 4,
+                        // marginLeft: 6,
+                        paddingVertical: 1,
+                        position: 'absolute',
+                        right: -20,
+                        top: -15,
+                      }}>
+                      <Text
+                        style={{
+                          color: 'white',
+                          fontSize: 8,
+                          fontFamily: APP_FONTS.PoppinsBold,
+                        }}>
+                        New
+                      </Text>
+                    </View>
+                  </View>
                 </TouchableOpacity>
               </View>
             }
