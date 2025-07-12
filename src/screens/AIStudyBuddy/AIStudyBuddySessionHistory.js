@@ -168,7 +168,7 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
       } catch (error) {
         console.error('Load session history error:', error);
         showToast({
-          message: 'Failed to load session history. Please try again.',
+          title: 'Failed to load session history. Please try again.',
           type: 'error',
         });
       } finally {
@@ -343,12 +343,12 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
       );
 
       showToast({
-        message: 'Session restored to active',
+        title: 'Session restored to active',
         type: 'success',
       });
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
@@ -374,12 +374,12 @@ const AIStudyBuddySessionHistory = ({navigation}) => {
               );
 
               showToast({
-                message: 'Session deleted permanently',
+                title: 'Session deleted permanently',
                 type: 'success',
               });
             } catch (error) {
               showToast({
-                message: formatAiStudyBuddyError(error),
+                title: formatAiStudyBuddyError(error),
                 type: 'error',
               });
             }

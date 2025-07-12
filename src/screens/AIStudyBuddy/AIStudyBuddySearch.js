@@ -130,7 +130,7 @@ const AIStudyBuddySearch = ({navigation, route}) => {
 
       // Graceful fallback to client-side search
       showToast({
-        message: 'Using offline search...',
+        title: 'Using offline search...',
         type: 'info',
       });
 

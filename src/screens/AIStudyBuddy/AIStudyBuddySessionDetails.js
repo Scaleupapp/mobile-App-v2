@@ -58,42 +58,53 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
 
   // Enhanced subject metadata with consistent colors
   const subjectMeta = {
-    mathematics: { icon: 'calculate', color: COLORS.blue043142, name: 'Mathematics' },
-    physics: { icon: 'science', color: COLORS.green34A853, name: 'Physics' },
-    chemistry: { icon: 'biotech', color: COLORS.redEA4335, name: 'Chemistry' },
-    biology: { icon: 'eco', color: COLORS.yellowF5BE00, name: 'Biology' },
-    computer_science: { icon: 'computer', color: COLORS.blue043142, name: 'Computer Science' },
-    english: { icon: 'menu-book', color: COLORS.green34A853, name: 'English' },
+    mathematics: {
+      icon: 'calculate',
+      color: COLORS.blue043142,
+      name: 'Mathematics',
+    },
+    physics: {icon: 'science', color: COLORS.green34A853, name: 'Physics'},
+    chemistry: {icon: 'biotech', color: COLORS.redEA4335, name: 'Chemistry'},
+    biology: {icon: 'eco', color: COLORS.yellowF5BE00, name: 'Biology'},
+    computer_science: {
+      icon: 'computer',
+      color: COLORS.blue043142,
+      name: 'Computer Science',
+    },
+    english: {icon: 'menu-book', color: COLORS.green34A853, name: 'English'},
   };
 
   // Load session details
-  const loadSessionDetails = useCallback(async (showLoader = true) => {
-    try {
-      if (showLoader) setLoading(true);
+  const loadSessionDetails = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) setLoading(true);
 
-      const response = await aiStudyBuddyGetSessionDetailsApi(sessionId);
-      
-      if (response.data.success) {
-        setSession(response.data.session);
-        setMessageAnalytics(response.data.messageAnalytics);
-        setIntegrationData(response.data.integrationData);
+        const response = await aiStudyBuddyGetSessionDetailsApi(sessionId);
 
-        // Start entrance animations
-        if (showLoader) {
-          startEntranceAnimations();
+        if (response.data.success) {
+          setSession(response.data.session);
+          setMessageAnalytics(response.data.messageAnalytics);
+          setIntegrationData(response.data.integrationData);
+
+          // Start entrance animations
+          if (showLoader) {
+            startEntranceAnimations();
+          }
         }
+      } catch (error) {
+        console.error('Load session details error:', error);
+        showToast({
+          title: 'Failed to load session details. Please try again.',
+          type: 'error',
+        });
+      } finally {
+        if (showLoader) setLoading(false);
+        setRefreshing(false);
       }
-    } catch (error) {
-      console.error('Load session details error:', error);
-      showToast({
-        message: 'Failed to load session details. Please try again.',
-        type: 'error',
-      });
-    } finally {
-      if (showLoader) setLoading(false);
-      setRefreshing(false);
-    }
-  }, [sessionId, showToast]);
+    },
+    [sessionId, showToast],
+  );
 
   // Start entrance animations
   const startEntranceAnimations = () => {
@@ -122,7 +133,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   useFocusEffect(
     useCallback(() => {
       loadSessionDetails();
-    }, [loadSessionDetails])
+    }, [loadSessionDetails]),
   );
 
   // Continue session
@@ -136,25 +147,30 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   };
 
   // Update session status
-  const updateSessionStatus = async (action) => {
+  const updateSessionStatus = async action => {
     try {
-      await aiStudyBuddyUpdateSessionApi(sessionId, { action });
-      
+      await aiStudyBuddyUpdateSessionApi(sessionId, {action});
+
       // Update local state
       setSession(prev => ({
         ...prev,
-        status: action === 'pause' ? 'paused' : 
-               action === 'resume' ? 'active' : 
-               action === 'complete' ? 'completed' : prev.status
+        status:
+          action === 'pause'
+            ? 'paused'
+            : action === 'resume'
+            ? 'active'
+            : action === 'complete'
+            ? 'completed'
+            : prev.status,
       }));
 
       showToast({
-        message: `Session ${action}d successfully`,
+        title: `Session ${action}d successfully`,
         type: 'success',
       });
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
@@ -166,7 +182,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
       'Delete Session',
       'Are you sure you want to permanently delete this session? This action cannot be undone.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {text: 'Cancel', style: 'cancel'},
         {
           text: 'Delete',
           style: 'destructive',
@@ -174,19 +190,19 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
             try {
               await aiStudyBuddyDeleteSessionApi(sessionId, true);
               showToast({
-                message: 'Session deleted successfully',
+                title: 'Session deleted successfully',
                 type: 'success',
               });
               navigation.goBack();
             } catch (error) {
               showToast({
-                message: formatAiStudyBuddyError(error),
+                title: formatAiStudyBuddyError(error),
                 type: 'error',
               });
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -194,7 +210,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   const exportSession = async (format = 'pdf') => {
     try {
       setExporting(true);
-      
+
       const response = await aiStudyBuddyExportConversationApi(sessionId, {
         format,
         includeAnalytics: true,
@@ -202,10 +218,10 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
 
       if (response.data.success) {
         showToast({
-          message: `Conversation exported as ${format.toUpperCase()}`,
+          title: `Conversation exported as ${format.toUpperCase()}`,
           type: 'success',
         });
-        
+
         // Here you could implement download or sharing logic
         if (response.data.exportUrl) {
           Share.share({
@@ -217,7 +233,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
       }
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     } finally {
@@ -231,14 +247,18 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
       const response = await aiStudyBuddyGenerateFlashcardsApi(sessionId, {
         cardCount: 15,
         topics: session.learningContext?.topicsDiscussed || [],
+        sessionId: sessionId,
+        deckName: session?.subject,
       });
 
       if (response.data.success) {
         showToast({
-          message: `Created ${response.data.flashcards?.length || 15} flashcards!`,
+          title: `Created ${
+            response.data.flashcards?.length || 15
+          } flashcards!`,
           type: 'success',
         });
-        
+
         // Navigate to flashcard deck if available
         if (response.data.deck?.deckId) {
           navigation.navigate(Routes.DeckDetails, {
@@ -249,7 +269,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
       }
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
@@ -262,14 +282,18 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
         questionCount: 10,
         topics: session.learningContext?.topicsDiscussed || [],
         difficulty: 'mixed',
+        sessionId: sessionId,
+        quizTitle: session.subject,
       });
 
       if (response.data.success) {
         showToast({
-          message: `Created quiz with ${response.data.questions?.length || 10} questions!`,
+          title: `Created quiz with ${
+            response.data.questions?.length || 10
+          } questions!`,
           type: 'success',
         });
-        
+
         // Navigate to quiz if available
         if (response.data.quiz?.quizId) {
           navigation.navigate(Routes.QuizScreen, {
@@ -280,18 +304,18 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
       }
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
   };
 
   // Get relative time string
-  const getRelativeTime = (dateString) => {
+  const getRelativeTime = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now - date) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
     if (diffInHours < 48) return 'Yesterday';
@@ -301,13 +325,15 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   // Get session duration
   const getSessionDuration = () => {
     if (!session.startedAt) return 'Unknown';
-    
+
     const start = new Date(session.startedAt);
-    const end = session.completedAt ? new Date(session.completedAt) : new Date();
+    const end = session.completedAt
+      ? new Date(session.completedAt)
+      : new Date();
     const durationMs = end - start;
     const hours = Math.floor(durationMs / (1000 * 60 * 60));
     const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -315,12 +341,16 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   };
 
   // Get status color
-  const getStatusColor = (status) => {
+  const getStatusColor = status => {
     switch (status) {
-      case 'active': return COLORS.green34A853;
-      case 'paused': return COLORS.yellowF5BE00;
-      case 'completed': return COLORS.blue043142;
-      default: return COLORS.grey777777;
+      case 'active':
+        return COLORS.green34A853;
+      case 'paused':
+        return COLORS.yellowF5BE00;
+      case 'completed':
+        return COLORS.blue043142;
+      default:
+        return COLORS.grey777777;
     }
   };
 
@@ -328,48 +358,64 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   const renderSessionHeader = () => {
     if (!session) return null;
 
-    const subject = subjectMeta[session.subject] || { 
-      icon: 'school', 
-      color: COLORS.blue043142, 
-      name: session.subject 
+    const subject = subjectMeta[session.subject] || {
+      icon: 'school',
+      color: COLORS.blue043142,
+      name: session.subject,
     };
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.modernHeaderContainer,
           {
             opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
-          }
-        ]}
-      >
+            transform: [{scale: scaleAnim}],
+          },
+        ]}>
         {/* Clean white card with subject accent */}
         <View style={styles.modernHeaderCard}>
           {/* Top accent bar */}
-          <View style={[styles.accentBar, { backgroundColor: subject.color }]} />
-          
+          <View style={[styles.accentBar, {backgroundColor: subject.color}]} />
+
           {/* Header content */}
           <View style={styles.modernHeaderContent}>
             {/* Subject info row */}
             <View style={styles.subjectRow}>
-              <View style={[styles.modernIconContainer, { backgroundColor: subject.color + '15' }]}>
+              <View
+                style={[
+                  styles.modernIconContainer,
+                  {backgroundColor: subject.color + '15'},
+                ]}>
                 <Icon name={subject.icon} size={24} color={subject.color} />
               </View>
-              
+
               <View style={styles.subjectInfo}>
-                <Text variant="semibold18" color={COLORS.grey333333} style={styles.modernSubjectTitle}>
+                <Text
+                  variant="semibold18"
+                  color={COLORS.grey333333}
+                  style={styles.modernSubjectTitle}>
                   {subject.name}
                 </Text>
-                <Text variant="medium13" color={COLORS.grey777777} style={styles.modernSubjectSubtitle}>
+                <Text
+                  variant="medium13"
+                  color={COLORS.grey777777}
+                  style={styles.modernSubjectSubtitle}>
                   {session.syllabus?.replace('_', ' ').toUpperCase()}
                   {session.grade && ` • Grade ${session.grade}`}
                 </Text>
               </View>
 
-              <View style={[styles.modernStatusBadge, { backgroundColor: getStatusColor(session.status) }]}>
+              <View
+                style={[
+                  styles.modernStatusBadge,
+                  {backgroundColor: getStatusColor(session.status)},
+                ]}>
                 <View style={styles.statusDot} />
-                <Text variant="medium10" color={COLORS.whiteFFFFFF} style={styles.modernStatusText}>
+                <Text
+                  variant="medium10"
+                  color={COLORS.whiteFFFFFF}
+                  style={styles.modernStatusText}>
                   {session.status.toUpperCase()}
                 </Text>
               </View>
@@ -377,11 +423,12 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
 
             {/* Session metrics row */}
             <View style={styles.metricsRow}>
- 
-              
               <View style={styles.metricItem}>
                 <Icon name="chat" size={16} color={COLORS.grey777777} />
-                <Text variant="medium12" color={COLORS.grey777777} style={styles.metricText}>
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey777777}
+                  style={styles.metricText}>
                   {session.messageCount || 0} messages
                 </Text>
               </View>
@@ -424,28 +471,41 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
     ];
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.statsSection,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: Animated.multiply(fadeAnim, -10) }],
-          }
-        ]}
-      >
-        <Text variant="semibold16" color={COLORS.grey333333} style={styles.sectionTitle}>
+            transform: [{translateY: Animated.multiply(fadeAnim, -10)}],
+          },
+        ]}>
+        <Text
+          variant="semibold16"
+          color={COLORS.grey333333}
+          style={styles.sectionTitle}>
           Session Overview
         </Text>
         <View style={styles.statsGrid}>
           {stats.map((stat, index) => (
             <View key={index} style={styles.statCard}>
-              <View style={[styles.statIconContainer, { backgroundColor: stat.color + '15' }]}>
+              <View
+                style={[
+                  styles.statIconContainer,
+                  {backgroundColor: stat.color + '15'},
+                ]}>
                 <Icon name={stat.icon} size={18} color={stat.color} />
               </View>
-              <Text variant="semibold18" color={COLORS.grey333333} style={styles.statValue}>
+              <Text
+                variant="semibold18"
+                color={COLORS.grey333333}
+                style={styles.statValue}>
                 {stat.value}
               </Text>
-              <Text variant="medium11" color={COLORS.grey777777} style={styles.statLabel} numberOfLines={1}>
+              <Text
+                variant="medium11"
+                color={COLORS.grey777777}
+                style={styles.statLabel}
+                numberOfLines={1}>
                 {stat.label}
               </Text>
             </View>
@@ -460,16 +520,18 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
     if (!session?.learningContext?.learningGoals?.length) return null;
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.contentSection,
           {
             opacity: fadeAnim,
-            transform: [{ translateY: Animated.multiply(fadeAnim, -5) }],
-          }
-        ]}
-      >
-        <Text variant="semibold16" color={COLORS.grey333333} style={styles.sectionTitle}>
+            transform: [{translateY: Animated.multiply(fadeAnim, -5)}],
+          },
+        ]}>
+        <Text
+          variant="semibold16"
+          color={COLORS.grey333333}
+          style={styles.sectionTitle}>
           Learning Goals
         </Text>
         <View style={styles.contentCard}>
@@ -478,7 +540,11 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
               <View style={styles.goalIconContainer}>
                 <Icon name="flag" size={14} color={COLORS.green34A853} />
               </View>
-              <Text variant="medium13" color={COLORS.grey333333} style={styles.goalText} numberOfLines={2}>
+              <Text
+                variant="medium13"
+                color={COLORS.grey333333}
+                style={styles.goalText}
+                numberOfLines={2}>
                 {goal}
               </Text>
             </View>
@@ -493,21 +559,27 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
     if (!session?.learningContext?.topicsDiscussed?.length) return null;
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.contentSection,
           {
             opacity: fadeAnim,
-          }
-        ]}
-      >
-        <Text variant="semibold16" color={COLORS.grey333333} style={styles.sectionTitle}>
+          },
+        ]}>
+        <Text
+          variant="semibold16"
+          color={COLORS.grey333333}
+          style={styles.sectionTitle}>
           Topics Covered
         </Text>
         <View style={styles.topicsContainer}>
           {session.learningContext.topicsDiscussed.map((topic, index) => (
             <View key={index} style={styles.topicChip}>
-              <Text variant="medium11" color={COLORS.whiteFFFFFF} style={styles.topicText} numberOfLines={1}>
+              <Text
+                variant="medium11"
+                color={COLORS.whiteFFFFFF}
+                style={styles.topicText}
+                numberOfLines={1}>
                 {topic}
               </Text>
             </View>
@@ -556,18 +628,20 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
     ];
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.actionsSection,
           {
             opacity: fadeAnim,
-          }
-        ]}
-      >
-        <Text variant="semibold16" color={COLORS.grey333333} style={styles.sectionTitle}>
+          },
+        ]}>
+        <Text
+          variant="semibold16"
+          color={COLORS.grey333333}
+          style={styles.sectionTitle}>
           Quick Actions
         </Text>
-        
+
         {/* Primary Actions */}
         <View style={styles.primaryActionsContainer}>
           {primaryActions.map((action, index) => (
@@ -575,43 +649,59 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
               key={index}
               style={[
                 styles.primaryActionButton,
-                { backgroundColor: action.primary ? action.color : COLORS.whiteFFFFFF }
+                {
+                  backgroundColor: action.primary
+                    ? action.color
+                    : COLORS.whiteFFFFFF,
+                },
               ]}
               onPress={action.onPress}
-              android_ripple={{ color: action.color + '30' }}
-            >
-              <View style={[
-                styles.actionIconContainer,
-                { backgroundColor: action.primary ? 'rgba(255,255,255,0.2)' : action.color + '15' }
-              ]}>
-                <Icon 
-                  name={action.icon} 
-                  size={20} 
-                  color={action.primary ? COLORS.whiteFFFFFF : action.color} 
+              android_ripple={{color: action.color + '30'}}>
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  {
+                    backgroundColor: action.primary
+                      ? 'rgba(255,255,255,0.2)'
+                      : action.color + '15',
+                  },
+                ]}>
+                <Icon
+                  name={action.icon}
+                  size={20}
+                  color={action.primary ? COLORS.whiteFFFFFF : action.color}
                 />
               </View>
               <View style={styles.actionTextContainer}>
-                <Text 
-                  variant="semibold14" 
-                  color={action.primary ? COLORS.whiteFFFFFF : COLORS.grey333333}
+                <Text
+                  variant="semibold14"
+                  color={
+                    action.primary ? COLORS.whiteFFFFFF : COLORS.grey333333
+                  }
                   style={styles.actionTitle}
-                  numberOfLines={1}
-                >
+                  numberOfLines={1}>
                   {action.title}
                 </Text>
                 {action.subtitle && (
-                  <Text 
-                    variant="regular11" 
-                    color={action.primary ? 'rgba(255,255,255,0.8)' : COLORS.grey777777}
+                  <Text
+                    variant="regular11"
+                    color={
+                      action.primary
+                        ? 'rgba(255,255,255,0.8)'
+                        : COLORS.grey777777
+                    }
                     style={styles.actionSubtitle}
-                    numberOfLines={1}
-                  >
+                    numberOfLines={1}>
                     {action.subtitle}
                   </Text>
                 )}
               </View>
               {action.primary && (
-                <Icon name="arrow-forward" size={16} color={COLORS.whiteFFFFFF} />
+                <Icon
+                  name="arrow-forward"
+                  size={16}
+                  color={COLORS.whiteFFFFFF}
+                />
               )}
             </Pressable>
           ))}
@@ -622,22 +712,23 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
           {secondaryActions.map((action, index) => (
             <Pressable
               key={index}
-              style={[styles.secondaryActionButton, { borderColor: action.color + '30' }]}
+              style={[
+                styles.secondaryActionButton,
+                {borderColor: action.color + '30'},
+              ]}
               onPress={action.onPress}
               disabled={action.loading}
-              android_ripple={{ color: action.color + '20' }}
-            >
+              android_ripple={{color: action.color + '20'}}>
               {action.loading ? (
                 <ActivityIndicator size="small" color={action.color} />
               ) : (
                 <Icon name={action.icon} size={18} color={action.color} />
               )}
-              <Text 
-                variant="medium12" 
-                color={action.color} 
+              <Text
+                variant="medium12"
+                color={action.color}
                 style={styles.secondaryActionText}
-                numberOfLines={1}
-              >
+                numberOfLines={1}>
                 {action.title}
               </Text>
             </Pressable>
@@ -653,7 +744,8 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
 
     const canPause = session.status === 'active';
     const canResume = session.status === 'paused';
-    const canComplete = session.status === 'active' || session.status === 'paused';
+    const canComplete =
+      session.status === 'active' || session.status === 'paused';
 
     const managementActions = [];
 
@@ -693,15 +785,17 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
     });
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.managementSection,
           {
             opacity: fadeAnim,
-          }
-        ]}
-      >
-        <Text variant="semibold16" color={COLORS.grey333333} style={styles.sectionTitle}>
+          },
+        ]}>
+        <Text
+          variant="semibold16"
+          color={COLORS.grey333333}
+          style={styles.sectionTitle}>
           Session Management
         </Text>
         <View style={styles.managementCard}>
@@ -710,19 +804,17 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
               key={index}
               style={[
                 styles.managementButton,
-                { backgroundColor: action.color + '10' },
-                action.dangerous && styles.dangerousButton
+                {backgroundColor: action.color + '10'},
+                action.dangerous && styles.dangerousButton,
               ]}
               onPress={action.action}
-              android_ripple={{ color: action.color + '20' }}
-            >
+              android_ripple={{color: action.color + '20'}}>
               <Icon name={action.icon} size={18} color={action.color} />
-              <Text 
-                variant="medium13" 
-                color={action.color} 
+              <Text
+                variant="medium13"
+                color={action.color}
                 style={styles.managementButtonText}
-                numberOfLines={1}
-              >
+                numberOfLines={1}>
                 {action.title}
               </Text>
             </Pressable>
@@ -735,11 +827,17 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor={COLORS.whiteFFFFFF} barStyle="dark-content" />
+        <StatusBar
+          backgroundColor={COLORS.whiteFFFFFF}
+          barStyle="dark-content"
+        />
         <Header title="Session Details" showBackButton />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.blue043142} />
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.loadingText}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.loadingText}>
             Loading session details...
           </Text>
         </View>
@@ -750,14 +848,23 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   if (!session) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor={COLORS.whiteFFFFFF} barStyle="dark-content" />
+        <StatusBar
+          backgroundColor={COLORS.whiteFFFFFF}
+          barStyle="dark-content"
+        />
         <Header title="Session Details" showBackButton />
         <View style={styles.errorContainer}>
           <Icon name="error-outline" size={64} color={COLORS.redEA4335} />
-          <Text variant="semibold18" color={COLORS.grey333333} style={styles.errorTitle}>
+          <Text
+            variant="semibold18"
+            color={COLORS.grey333333}
+            style={styles.errorTitle}>
             Session Not Found
           </Text>
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.errorMessage}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.errorMessage}>
             This session may have been deleted or doesn't exist.
           </Text>
           <Button
@@ -774,16 +881,15 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.whiteFFFFFF} barStyle="dark-content" />
-      
-      <Header 
+
+      <Header
         title="Session Details"
         showBackButton
         rightComponent={
           <Pressable
             style={styles.headerButton}
             onPress={() => exportSession('pdf')}
-            disabled={exporting}
-          >
+            disabled={exporting}>
             {exporting ? (
               <ActivityIndicator size="small" color={COLORS.grey333333} />
             ) : (
@@ -799,8 +905,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
+        }>
         {/* Session Header */}
         {renderSessionHeader()}
 
@@ -882,7 +987,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
@@ -894,7 +999,7 @@ const styles = StyleSheet.create({
   modernHeaderContent: {
     padding: nw(20),
   },
-  
+
   // Subject info section
   subjectRow: {
     flexDirection: 'row',
@@ -938,7 +1043,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.5,
   },
-  
+
   // Metrics section
   metricsRow: {
     flexDirection: 'row',
@@ -986,7 +1091,7 @@ const styles = StyleSheet.create({
     minHeight: nh(80),
     justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -1018,7 +1123,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: nw(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
@@ -1076,7 +1181,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(16),
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 3,
@@ -1131,7 +1236,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: nw(12),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,

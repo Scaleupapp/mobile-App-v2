@@ -49,42 +49,57 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
 
   // Enhanced subject metadata for higher education
   const subjectMeta = {
-    mathematics: { icon: 'calculate', color: '#2563EB', name: 'Mathematics' },
-    physics: { icon: 'science', color: '#059669', name: 'Physics' },
-    chemistry: { icon: 'biotech', color: '#DC2626', name: 'Chemistry' },
-    biology: { icon: 'eco', color: '#7C3AED', name: 'Biology' },
-    computer_science: { icon: 'computer', color: '#0891B2', name: 'Computer Science' },
-    english: { icon: 'menu-book', color: '#EA580C', name: 'English' },
-    economics: { icon: 'trending-up', color: '#BE185D', name: 'Economics' },
-    management: { icon: 'business', color: '#059669', name: 'Management' },
-    mechanical_engineering: { icon: 'engineering', color: '#7C2D12', name: 'Mechanical Engineering' },
-    electrical_engineering: { icon: 'electrical-services', color: '#BE123C', name: 'Electrical Engineering' },
-    custom: { icon: 'tune', color: '#6366F1', name: 'Custom Subject' },
+    mathematics: {icon: 'calculate', color: '#2563EB', name: 'Mathematics'},
+    physics: {icon: 'science', color: '#059669', name: 'Physics'},
+    chemistry: {icon: 'biotech', color: '#DC2626', name: 'Chemistry'},
+    biology: {icon: 'eco', color: '#7C3AED', name: 'Biology'},
+    computer_science: {
+      icon: 'computer',
+      color: '#0891B2',
+      name: 'Computer Science',
+    },
+    english: {icon: 'menu-book', color: '#EA580C', name: 'English'},
+    economics: {icon: 'trending-up', color: '#BE185D', name: 'Economics'},
+    management: {icon: 'business', color: '#059669', name: 'Management'},
+    mechanical_engineering: {
+      icon: 'engineering',
+      color: '#7C2D12',
+      name: 'Mechanical Engineering',
+    },
+    electrical_engineering: {
+      icon: 'electrical-services',
+      color: '#BE123C',
+      name: 'Electrical Engineering',
+    },
+    custom: {icon: 'tune', color: '#6366F1', name: 'Custom Subject'},
   };
 
   // Load sessions
-  const loadSessions = useCallback(async (showLoader = true) => {
-    try {
-      if (showLoader) setLoading(true);
+  const loadSessions = useCallback(
+    async (showLoader = true) => {
+      try {
+        if (showLoader) setLoading(true);
 
-      const [sessionsResponse, quotaResponse] = await Promise.all([
-        aiStudyBuddyGetActiveSessionsApi(),
-        aiStudyBuddyGetQuotaApi(),
-      ]);
+        const [sessionsResponse, quotaResponse] = await Promise.all([
+          aiStudyBuddyGetActiveSessionsApi(),
+          aiStudyBuddyGetQuotaApi(),
+        ]);
 
-      setSessions(sessionsResponse.data.activeSessions || []);
-      setQuotaInfo(quotaResponse.data.quota);
-    } catch (error) {
-      console.error('Load sessions error:', error);
-      showToast({
-        message: 'Failed to load sessions. Please try again.',
-        type: 'error',
-      });
-    } finally {
-      if (showLoader) setLoading(false);
-      setRefreshing(false);
-    }
-  }, [showToast]);
+        setSessions(sessionsResponse.data.activeSessions || []);
+        setQuotaInfo(quotaResponse.data.quota);
+      } catch (error) {
+        console.error('Load sessions error:', error);
+        showToast({
+          title: 'Failed to load sessions. Please try again.',
+          type: 'error',
+        });
+      } finally {
+        if (showLoader) setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [showToast],
+  );
 
   // Refresh data
   const onRefresh = useCallback(() => {
@@ -96,7 +111,7 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadSessions();
-    }, [loadSessions])
+    }, []),
   );
 
   // Filter sessions based on selected filter
@@ -109,20 +124,24 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
             const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
             return lastMessageTime > oneDayAgo;
           })
-          .sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+          .sort(
+            (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt),
+          );
       case 'paused':
         return sessions.filter(session => session.status === 'paused');
       default:
-        return sessions.sort((a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt));
+        return sessions.sort(
+          (a, b) => new Date(b.lastMessageAt) - new Date(a.lastMessageAt),
+        );
     }
   };
 
   // Get relative time string
-  const getRelativeTime = (dateString) => {
+  const getRelativeTime = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now - date) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
     if (diffInHours < 48) return 'Yesterday';
@@ -130,7 +149,7 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   };
 
   // Continue session
-  const continueSession = (session) => {
+  const continueSession = session => {
     navigation.navigate(Routes.AIStudyBuddyChat, {
       sessionId: session.sessionId,
       subject: session.subject,
@@ -140,40 +159,42 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   };
 
   // Pause/Resume session
-  const toggleSessionStatus = async (session) => {
+  const toggleSessionStatus = async session => {
     try {
       const newStatus = session.status === 'paused' ? 'resume' : 'pause';
-      
+
       await aiStudyBuddyUpdateSessionApi(session.sessionId, {
         action: newStatus,
       });
 
       // Update local state
-      setSessions(prev => prev.map(s => 
-        s.sessionId === session.sessionId 
-          ? { ...s, status: newStatus === 'resume' ? 'active' : 'paused' }
-          : s
-      ));
+      setSessions(prev =>
+        prev.map(s =>
+          s.sessionId === session.sessionId
+            ? {...s, status: newStatus === 'resume' ? 'active' : 'paused'}
+            : s,
+        ),
+      );
 
       showToast({
-        message: `Session ${newStatus === 'resume' ? 'resumed' : 'paused'}`,
+        title: `Session ${newStatus === 'resume' ? 'resumed' : 'paused'}`,
         type: 'success',
       });
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
   };
 
   // Archive session
-  const archiveSession = async (session) => {
+  const archiveSession = async session => {
     Alert.alert(
       'Archive Session',
       'Are you sure you want to archive this session? You can still access it in your session history.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {text: 'Cancel', style: 'cancel'},
         {
           text: 'Archive',
           style: 'destructive',
@@ -184,7 +205,9 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
               });
 
               // Remove from local state
-              setSessions(prev => prev.filter(s => s.sessionId !== session.sessionId));
+              setSessions(prev =>
+                prev.filter(s => s.sessionId !== session.sessionId),
+              );
 
               showToast({
                 message: 'Session archived',
@@ -192,40 +215,40 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
               });
             } catch (error) {
               showToast({
-                message: formatAiStudyBuddyError(error),
+                title: formatAiStudyBuddyError(error),
                 type: 'error',
               });
             }
           },
         },
-      ]
+      ],
     );
   };
 
   // View session details
-  const viewSessionDetails = (session) => {
+  const viewSessionDetails = session => {
     navigation.navigate(Routes.AIStudyBuddySessionDetails, {
       sessionId: session.sessionId,
     });
   };
 
   // Get syllabus display name
-  const getSyllabusDisplayName = (syllabus) => {
+  const getSyllabusDisplayName = syllabus => {
     const syllabusMap = {
-      'jee_main': 'JEE Main',
-      'jee_advanced': 'JEE Advanced',
-      'neet': 'NEET UG',
-      'gate': 'GATE',
-      'cat': 'CAT',
-      'mat': 'MAT',
-      'gmat': 'GMAT',
-      'gre': 'GRE',
-      'upsc': 'UPSC',
-      'ssc': 'SSC',
-      'undergraduate': 'Undergraduate',
-      'postgraduate': 'Post Graduate',
-      'mba': 'MBA',
-      'tech_interviews': 'Tech Interviews',
+      jee_main: 'JEE Main',
+      jee_advanced: 'JEE Advanced',
+      neet: 'NEET UG',
+      gate: 'GATE',
+      cat: 'CAT',
+      mat: 'MAT',
+      gmat: 'GMAT',
+      gre: 'GRE',
+      upsc: 'UPSC',
+      ssc: 'SSC',
+      undergraduate: 'Undergraduate',
+      postgraduate: 'Post Graduate',
+      mba: 'MBA',
+      tech_interviews: 'Tech Interviews',
     };
     return syllabusMap[syllabus] || syllabus.replace('_', ' ').toUpperCase();
   };
@@ -240,11 +263,16 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
     return (
       <View style={styles.quotaContainer}>
         <LinearGradient
-          colors={remaining > 5 ? ['#10B981', '#059669'] : remaining > 2 ? ['#F59E0B', '#D97706'] : ['#EF4444', '#DC2626']}
+          colors={
+            remaining > 5
+              ? ['#10B981', '#059669']
+              : remaining > 2
+              ? ['#F59E0B', '#D97706']
+              : ['#EF4444', '#DC2626']
+          }
           style={styles.quotaCard}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-        >
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}>
           <Icon name="quiz" size={18} color="white" />
           <Text style={styles.quotaText}>
             {remaining} of {total} questions remaining today
@@ -257,47 +285,70 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   // Render filter tabs
   const renderFilterTabs = () => {
     const filters = [
-      { id: 'all', label: 'All', icon: 'list', count: sessions.length },
-      { id: 'recent', label: 'Recent', icon: 'schedule', count: sessions.filter(s => {
-        const lastMessageTime = new Date(s.lastMessageAt);
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        return lastMessageTime > oneDayAgo;
-      }).length },
-      { id: 'paused', label: 'Paused', icon: 'pause', count: sessions.filter(s => s.status === 'paused').length },
+      {id: 'all', label: 'All', icon: 'list', count: sessions.length},
+      {
+        id: 'recent',
+        label: 'Recent',
+        icon: 'schedule',
+        count: sessions.filter(s => {
+          const lastMessageTime = new Date(s.lastMessageAt);
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          return lastMessageTime > oneDayAgo;
+        }).length,
+      },
+      {
+        id: 'paused',
+        label: 'Paused',
+        icon: 'pause',
+        count: sessions.filter(s => s.status === 'paused').length,
+      },
     ];
 
     return (
       <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersContent}>
-          {filters.map((filter) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filtersContent}>
+          {filters.map(filter => (
             <Pressable
               key={filter.id}
               style={[
                 styles.filterTab,
                 selectedFilter === filter.id && styles.activeFilterTab,
               ]}
-              onPress={() => setSelectedFilter(filter.id)}
-            >
-              <Icon 
-                name={filter.icon} 
-                size={16} 
-                color={selectedFilter === filter.id ? '#FFFFFF' : '#64748B'} 
+              onPress={() => setSelectedFilter(filter.id)}>
+              <Icon
+                name={filter.icon}
+                size={16}
+                color={selectedFilter === filter.id ? '#FFFFFF' : '#64748B'}
               />
-              <Text style={[
-                styles.filterTabText,
-                selectedFilter === filter.id && styles.activeFilterTabText,
-              ]}>
+              <Text
+                style={[
+                  styles.filterTabText,
+                  selectedFilter === filter.id && styles.activeFilterTabText,
+                ]}>
                 {filter.label}
               </Text>
               {filter.count > 0 && (
-                <View style={[
-                  styles.filterBadge,
-                  { backgroundColor: selectedFilter === filter.id ? 'rgba(255,255,255,0.3)' : '#E5E7EB' }
-                ]}>
-                  <Text style={[
-                    styles.filterBadgeText,
-                    { color: selectedFilter === filter.id ? 'white' : '#64748B' }
+                <View
+                  style={[
+                    styles.filterBadge,
+                    {
+                      backgroundColor:
+                        selectedFilter === filter.id
+                          ? 'rgba(255,255,255,0.3)'
+                          : '#E5E7EB',
+                    },
                   ]}>
+                  <Text
+                    style={[
+                      styles.filterBadgeText,
+                      {
+                        color:
+                          selectedFilter === filter.id ? 'white' : '#64748B',
+                      },
+                    ]}>
                     {filter.count}
                   </Text>
                 </View>
@@ -310,34 +361,33 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   };
 
   // Render session item
-  const renderSessionItem = ({ item: session, index }) => {
-    const subject = subjectMeta[session.subject] || { 
-      icon: 'school', 
-      color: '#64748B', 
-      name: session.subject 
+  const renderSessionItem = ({item: session, index}) => {
+    const subject = subjectMeta[session.subject] || {
+      icon: 'school',
+      color: '#64748B',
+      name: session.subject,
     };
-    
+
     const isPaused = session.status === 'paused';
-    const lastTopic = session.topicsDiscussed?.slice(-1)[0] || 
-                     session.learningContext?.topicsDiscussed?.slice(-1)[0] || 
-                     'General discussion';
+    const lastTopic =
+      session.topicsDiscussed?.slice(-1)[0] ||
+      session.learningContext?.topicsDiscussed?.slice(-1)[0] ||
+      'General discussion';
 
     return (
       <View style={styles.sessionCard}>
         <Pressable
           style={[styles.sessionCardContent, isPaused && styles.pausedSession]}
-          onPress={() => continueSession(session)}
-        >
+          onPress={() => continueSession(session)}>
           {/* Header */}
           <View style={styles.sessionHeader}>
             <View style={styles.sessionMainInfo}>
               <LinearGradient
                 colors={[subject.color, subject.color + 'DD']}
-                style={styles.subjectIcon}
-              >
+                style={styles.subjectIcon}>
                 <Icon name={subject.icon} size={20} color="white" />
               </LinearGradient>
-              
+
               <View style={styles.sessionDetails}>
                 <Text style={styles.subjectName}>{subject.name}</Text>
                 <View style={styles.sessionMeta}>
@@ -355,9 +405,11 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.sessionStatus}>
-              <Text style={styles.timeAgo}>{getRelativeTime(session.lastMessageAt)}</Text>
+              <Text style={styles.timeAgo}>
+                {getRelativeTime(session.lastMessageAt)}
+              </Text>
               {isPaused && (
                 <View style={styles.pausedBadge}>
                   <Icon name="pause" size={10} color="#F59E0B" />
@@ -372,24 +424,30 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
             <Text style={styles.lastTopic} numberOfLines={1}>
               {lastTopic}
             </Text>
-            
+
             <View style={styles.sessionStats}>
               <View style={styles.statItem}>
                 <Icon name="chat" size={14} color="#9CA3AF" />
-                <Text style={styles.statText}>{session.messageCount || 0} messages</Text>
+                <Text style={styles.statText}>
+                  {session.messageCount || 0} messages
+                </Text>
               </View>
-              
+
               {session.topicsDiscussed?.length > 0 && (
                 <View style={styles.statItem}>
                   <Icon name="lightbulb" size={14} color="#9CA3AF" />
-                  <Text style={styles.statText}>{session.topicsDiscussed.length} topics</Text>
+                  <Text style={styles.statText}>
+                    {session.topicsDiscussed.length} topics
+                  </Text>
                 </View>
               )}
-              
+
               {session.studyTime && (
                 <View style={styles.statItem}>
                   <Icon name="schedule" size={14} color="#9CA3AF" />
-                  <Text style={styles.statText}>{Math.round(session.studyTime / 60)}min</Text>
+                  <Text style={styles.statText}>
+                    {Math.round(session.studyTime / 60)}min
+                  </Text>
                 </View>
               )}
             </View>
@@ -409,9 +467,12 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Pressable
-            style={[styles.actionButton, styles.continueButton, { backgroundColor: subject.color }]}
-            onPress={() => continueSession(session)}
-          >
+            style={[
+              styles.actionButton,
+              styles.continueButton,
+              {backgroundColor: subject.color},
+            ]}
+            onPress={() => continueSession(session)}>
             <Icon name="play-arrow" size={16} color="white" />
             <Text style={styles.continueButtonText}>Continue</Text>
           </Pressable>
@@ -419,26 +480,23 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
           <View style={styles.secondaryActions}>
             <Pressable
               style={styles.iconButton}
-              onPress={() => toggleSessionStatus(session)}
-            >
-              <Icon 
-                name={isPaused ? "play-arrow" : "pause"} 
-                size={18} 
-                color="#64748B" 
+              onPress={() => toggleSessionStatus(session)}>
+              <Icon
+                name={isPaused ? 'play-arrow' : 'pause'}
+                size={18}
+                color="#64748B"
               />
             </Pressable>
 
             <Pressable
               style={styles.iconButton}
-              onPress={() => viewSessionDetails(session)}
-            >
+              onPress={() => viewSessionDetails(session)}>
               <Icon name="info-outline" size={18} color="#64748B" />
             </Pressable>
 
             <Pressable
               style={styles.iconButton}
-              onPress={() => archiveSession(session)}
-            >
+              onPress={() => archiveSession(session)}>
               <Icon name="archive" size={18} color="#64748B" />
             </Pressable>
           </View>
@@ -453,17 +511,19 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
       all: {
         icon: 'chat-bubble-outline',
         title: 'No Active Sessions',
-        message: 'Start a new conversation with your AI Study Buddy to begin learning!',
+        message:
+          'Start a new conversation with your AI Study Buddy to begin learning!',
       },
       recent: {
         icon: 'schedule',
         title: 'No Recent Sessions',
-        message: 'You haven\'t had any study sessions in the last 24 hours.',
+        message: "You haven't had any study sessions in the last 24 hours.",
       },
       paused: {
         icon: 'pause-circle-outline',
         title: 'No Paused Sessions',
-        message: 'All your sessions are currently active or have been completed.',
+        message:
+          'All your sessions are currently active or have been completed.',
       },
     };
 
@@ -476,16 +536,14 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
         </View>
         <Text style={styles.emptyTitle}>{config.title}</Text>
         <Text style={styles.emptyMessage}>{config.message}</Text>
-        
+
         {selectedFilter === 'all' && (
           <Pressable
             style={styles.emptyButton}
-            onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}
-          >
+            onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}>
             <LinearGradient
               colors={['#2563EB', '#1D4ED8']}
-              style={styles.emptyButtonGradient}
-            >
+              style={styles.emptyButtonGradient}>
               <Icon name="add" size={20} color="white" />
               <Text style={styles.emptyButtonText}>Start New Session</Text>
             </LinearGradient>
@@ -499,8 +557,12 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   const renderStatsHeader = () => {
     if (sessions.length === 0) return null;
 
-    const totalMessages = sessions.reduce((sum, s) => sum + (s.messageCount || 0), 0);
-    const totalTopics = new Set(sessions.flatMap(s => s.topicsDiscussed || [])).size;
+    const totalMessages = sessions.reduce(
+      (sum, s) => sum + (s.messageCount || 0),
+      0,
+    );
+    const totalTopics = new Set(sessions.flatMap(s => s.topicsDiscussed || []))
+      .size;
     const activeCount = sessions.filter(s => s.status !== 'paused').length;
 
     return (
@@ -545,15 +607,14 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      
-      <Header 
+
+      <Header
         title="Study Sessions"
         showBackButton
         rightComponent={
           <Pressable
             style={styles.headerButton}
-            onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}
-          >
+            onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}>
             <Icon name="add" size={24} color="#374151" />
           </Pressable>
         }
@@ -576,7 +637,7 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
           <FlatList
             data={filteredSessions}
             renderItem={renderSessionItem}
-            keyExtractor={(item) => item.sessionId}
+            keyExtractor={item => item.sessionId}
             contentContainerStyle={styles.sessionsList}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -590,12 +651,10 @@ const AIStudyBuddyActiveSessions = ({navigation}) => {
       {sessions.length > 0 && (
         <Pressable
           style={styles.fab}
-          onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}
-        >
+          onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}>
           <LinearGradient
             colors={['#2563EB', '#1D4ED8']}
-            style={styles.fabGradient}
-          >
+            style={styles.fabGradient}>
             <Icon name="add" size={24} color="white" />
           </LinearGradient>
         </Pressable>
@@ -659,7 +718,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: nw(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
@@ -735,7 +794,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 2,
@@ -955,7 +1014,7 @@ const styles = StyleSheet.create({
     right: nw(16),
     borderRadius: nw(28),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
