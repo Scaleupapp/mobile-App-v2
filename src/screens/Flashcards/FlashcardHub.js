@@ -31,6 +31,7 @@ import {
   getDueCardsCountApi,
 } from '../../services/apiService';
 import {useToast} from '../../components/CustomToast';
+import mixpanel from '../../helper/mixpanelClient';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -55,10 +56,25 @@ const FlashcardHub = ({navigation}) => {
   // Get current time greeting
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return { text: 'Good Morning', icon: 'wb-sunny', color: COLORS.yellowF5BE00 };
-    if (hour < 17) return { text: 'Good Afternoon', icon: 'wb-sunny', color: COLORS.yellowF5BE00 };
-    if (hour < 20) return { text: 'Good Evening', icon: 'wb-twilight', color: COLORS.blue043142 };
-    return { text: 'Good Night', icon: 'nights-stay', color: COLORS.blue043142 };
+    if (hour < 12)
+      return {
+        text: 'Good Morning',
+        icon: 'wb-sunny',
+        color: COLORS.yellowF5BE00,
+      };
+    if (hour < 17)
+      return {
+        text: 'Good Afternoon',
+        icon: 'wb-sunny',
+        color: COLORS.yellowF5BE00,
+      };
+    if (hour < 20)
+      return {
+        text: 'Good Evening',
+        icon: 'wb-twilight',
+        color: COLORS.blue043142,
+      };
+    return {text: 'Good Night', icon: 'nights-stay', color: COLORS.blue043142};
   };
 
   // Get motivational message based on user's activity
@@ -66,31 +82,31 @@ const FlashcardHub = ({navigation}) => {
     if (recentDecks.length === 0) {
       return "Let's start your learning journey! 🚀";
     }
-    
+
     if (overallStats.totalDueCards > 20) {
       return "You've got this! Time to ace those reviews! 💪";
     }
-    
+
     if (overallStats.totalDueCards > 0) {
-      return "Ready to level up your knowledge? 📚";
+      return 'Ready to level up your knowledge? 📚';
     }
-    
+
     if (overallStats.totalNewCards > 10) {
-      return "Exciting new content awaits! 🌟";
+      return 'Exciting new content awaits! 🌟';
     }
-    
-    return "Keep up the amazing work! 🎉";
+
+    return 'Keep up the amazing work! 🎉';
   };
 
   // Fetch due cards for all decks
-  const fetchDueCardsForDecks = async (decks) => {
+  const fetchDueCardsForDecks = async decks => {
     const dueCardsData = {};
     let totalDue = 0;
     let totalNew = 0;
     let needsAttention = 0;
-    
+
     await Promise.all(
-      decks.map(async (deck) => {
+      decks.map(async deck => {
         try {
           const response = await getDueCardsCountApi(deck._id);
           if (response?.data?.success) {
@@ -98,13 +114,19 @@ const FlashcardHub = ({navigation}) => {
             dueCardsData[deck._id] = data;
             totalDue += data.dueCards || 0;
             totalNew += data.newCards || 0;
-            
-            if ((data.dueCards > 5) || (data.studyProgress < 50 && data.totalCards > 0)) {
+
+            if (
+              data.dueCards > 5 ||
+              (data.studyProgress < 50 && data.totalCards > 0)
+            ) {
               needsAttention++;
             }
           }
         } catch (error) {
-          console.error(`Error fetching due cards for deck ${deck._id}:`, error);
+          console.error(
+            `Error fetching due cards for deck ${deck._id}:`,
+            error,
+          );
           dueCardsData[deck._id] = {
             totalCards: deck.cardCount || 0,
             dueCards: 0,
@@ -112,9 +134,9 @@ const FlashcardHub = ({navigation}) => {
             studyProgress: 0,
           };
         }
-      })
+      }),
     );
-    
+
     setDeckDueCards(dueCardsData);
     setOverallStats(prev => ({
       ...prev,
@@ -125,73 +147,67 @@ const FlashcardHub = ({navigation}) => {
   };
 
   // Fetch dashboard data with intelligent caching
-  const fetchDashboardData = useCallback(async (isRefresh = false, forceRefresh = false) => {
-    try {
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetchTimeRef.current;
-      const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  const fetchDashboardData = useCallback(
+    async (isRefresh = false, forceRefresh = false) => {
+      try {
+        const now = Date.now();
+        const timeSinceLastFetch = now - lastFetchTimeRef.current;
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-      // Skip fetching if data was recently loaded and it's not a forced refresh
-      if (!forceRefresh && !isRefresh && dataLoadedRef.current && timeSinceLastFetch < CACHE_DURATION) {
-        return;
-      }
-
-      if (isRefresh) setRefreshing(true);
-      else if (!dataLoadedRef.current) setLoading(true);
-
-      const decksResponse = await getUserFlashcardDecksApi({
-        page: 1,
-        limit: 6,
-      });
-
-      if (decksResponse?.data?.success) {
-        const decks = decksResponse.data.decks || [];
-        setRecentDecks(decks);
-        setOverallStats(prev => ({
-          ...prev,
-          totalDecks: decksResponse.data.pagination?.total || 0,
-        }));
-
-        if (decks.length > 0) {
-          await fetchDueCardsForDecks(decks);
+        // Skip fetching if data was recently loaded and it's not a forced refresh
+        if (
+          !forceRefresh &&
+          !isRefresh &&
+          dataLoadedRef.current &&
+          timeSinceLastFetch < CACHE_DURATION
+        ) {
+          return;
         }
 
-        // Mark data as loaded and update timestamp
-        dataLoadedRef.current = true;
-        lastFetchTimeRef.current = now;
-      }
+        if (isRefresh) setRefreshing(true);
+        else if (!dataLoadedRef.current) setLoading(true);
 
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to load data',
-        message: 'Please check your connection and try again',
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [showToast]);
+        const decksResponse = await getUserFlashcardDecksApi({
+          page: 1,
+          limit: 6,
+        });
+
+        if (decksResponse?.data?.success) {
+          const decks = decksResponse.data.decks || [];
+          setRecentDecks(decks);
+          setOverallStats(prev => ({
+            ...prev,
+            totalDecks: decksResponse.data.pagination?.total || 0,
+          }));
+
+          if (decks.length > 0) {
+            await fetchDueCardsForDecks(decks);
+          }
+
+          // Mark data as loaded and update timestamp
+          dataLoadedRef.current = true;
+          lastFetchTimeRef.current = now;
+        }
+      } catch (error) {
+        console.error('Dashboard fetch error:', error);
+        showToast({
+          type: 'error',
+          title: 'Failed to load data',
+          message: 'Please check your connection and try again',
+        });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [showToast],
+  );
 
   // Use useFocusEffect with intelligent refresh logic
   useFocusEffect(
     useCallback(() => {
-      // Only fetch if data hasn't been loaded yet
-      if (!dataLoadedRef.current) {
-        fetchDashboardData(false, true);
-      } else {
-        // Just update the greeting and motivational message without API calls
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastFetchTimeRef.current;
-        const STALE_DURATION = 10 * 60 * 1000; // 10 minutes
-        
-        // Only refresh if data is stale
-        if (timeSinceLastFetch > STALE_DURATION) {
-          fetchDashboardData(false, true);
-        }
-      }
-    }, [])
+      fetchDashboardData();
+    }, [fetchDashboardData]),
   );
 
   // Separate effect for initial load
@@ -210,42 +226,60 @@ const FlashcardHub = ({navigation}) => {
   const renderBeautifulHeader = () => {
     const greeting = getTimeGreeting();
     const motivationalMsg = getMotivationalMessage();
-    
+
     return (
       <View style={styles.headerContainer}>
         {/* Background Gradient Effect */}
         <View style={styles.headerBackground}>
           <View style={styles.gradientOverlay} />
-          
+
           {/* Decorative Elements */}
           <View style={styles.decorativeElements}>
             <View style={[styles.floatingIcon, styles.floatingIcon1]}>
-              <Icon name="auto-awesome" size={16} color={COLORS.whiteFFFFFF + '40'} />
+              <Icon
+                name="auto-awesome"
+                size={16}
+                color={COLORS.whiteFFFFFF + '40'}
+              />
             </View>
             <View style={[styles.floatingIcon, styles.floatingIcon2]}>
               <Icon name="school" size={20} color={COLORS.whiteFFFFFF + '30'} />
             </View>
             <View style={[styles.floatingIcon, styles.floatingIcon3]}>
-              <Icon name="psychology" size={14} color={COLORS.whiteFFFFFF + '25'} />
+              <Icon
+                name="psychology"
+                size={14}
+                color={COLORS.whiteFFFFFF + '25'}
+              />
             </View>
           </View>
-          
+
           {/* Header Content */}
           <View style={styles.headerContent}>
             {/* Top Row */}
             <View style={styles.headerTopRow}>
               <View style={styles.greetingSection}>
                 <View style={styles.greetingRow}>
-                  <Icon name={greeting.icon} size={24} color={COLORS.whiteFFFFFF} />
-                  <Text variant="medium16" color={COLORS.whiteFFFFFF} style={styles.greetingText}>
+                  <Icon
+                    name={greeting.icon}
+                    size={24}
+                    color={COLORS.whiteFFFFFF}
+                  />
+                  <Text
+                    variant="medium16"
+                    color={COLORS.whiteFFFFFF}
+                    style={styles.greetingText}>
                     {greeting.text}
                   </Text>
                 </View>
-                <Text variant="bold28" color={COLORS.whiteFFFFFF} style={styles.userName}>
+                <Text
+                  variant="bold28"
+                  color={COLORS.whiteFFFFFF}
+                  style={styles.userName}>
                   {userData?.username || 'Student'}! 👋
                 </Text>
               </View>
-              
+
               {/* Quick Stats Badge */}
               {recentDecks.length > 0 && (
                 <View style={styles.quickStatsBadge}>
@@ -257,45 +291,67 @@ const FlashcardHub = ({navigation}) => {
                       {overallStats.totalDecks === 1 ? 'Deck' : 'Decks'}
                     </Text>
                   </View>
-                  {(overallStats.totalDueCards > 0 || overallStats.totalNewCards > 0) && (
+                  {(overallStats.totalDueCards > 0 ||
+                    overallStats.totalNewCards > 0) && (
                     <View style={styles.activityIndicator}>
-                      <Icon name="radio-button-checked" size={8} color={COLORS.yellowF5BE00} />
+                      <Icon
+                        name="radio-button-checked"
+                        size={8}
+                        color={COLORS.yellowF5BE00}
+                      />
                       <Text variant="medium9" color={COLORS.whiteFFFFFF + 'CC'}>
-                        {overallStats.totalDueCards + overallStats.totalNewCards} active
+                        {overallStats.totalDueCards +
+                          overallStats.totalNewCards}{' '}
+                        active
                       </Text>
                     </View>
                   )}
                 </View>
               )}
             </View>
-            
+
             {/* Motivational Message */}
             <View style={styles.motivationalSection}>
-              <Text variant="medium16" color={COLORS.whiteFFFFFF + 'DD'} style={styles.motivationalText}>
+              <Text
+                variant="medium16"
+                color={COLORS.whiteFFFFFF + 'DD'}
+                style={styles.motivationalText}>
                 {motivationalMsg}
               </Text>
             </View>
-            
+
             {/* Quick Action Buttons */}
             <View style={styles.headerActions}>
-              <Pressable style={styles.primaryHeaderAction} onPress={handleCreateDeck}>
+              <Pressable
+                style={styles.primaryHeaderAction}
+                onPress={handleCreateDeck}>
                 <Icon name="add" size={20} color={COLORS.blue043142} />
                 <Text variant="semibold14" color={COLORS.blue043142}>
                   Create Deck
                 </Text>
               </Pressable>
-              
+
               {recentDecks.length > 0 && (
-                <Pressable style={styles.secondaryHeaderAction} onPress={handleUploadDocument}>
-                  <Icon name="cloud-upload" size={18} color={COLORS.whiteFFFFFF} />
+                <Pressable
+                  style={styles.secondaryHeaderAction}
+                  onPress={handleUploadDocument}>
+                  <Icon
+                    name="cloud-upload"
+                    size={18}
+                    color={COLORS.whiteFFFFFF}
+                  />
                   <Text variant="medium12" color={COLORS.whiteFFFFFF}>
                     Upload
                   </Text>
                 </Pressable>
               )}
-              
+
               {recentDecks.length > 0 && (
-                <Pressable style={styles.secondaryHeaderAction} onPress={() => navigation.navigate(Routes.FlashcardAnalytics)}>
+                <Pressable
+                  style={styles.secondaryHeaderAction}
+                  onPress={() =>
+                    navigation.navigate(Routes.FlashcardAnalytics)
+                  }>
                   <Icon name="analytics" size={18} color={COLORS.whiteFFFFFF} />
                   <Text variant="medium12" color={COLORS.whiteFFFFFF}>
                     Analytics
@@ -321,7 +377,7 @@ const FlashcardHub = ({navigation}) => {
         actionText: 'Start Reviewing',
       };
     }
-    
+
     if (overallStats.totalNewCards > 10) {
       return {
         title: '✨ Ready to Learn',
@@ -332,11 +388,13 @@ const FlashcardHub = ({navigation}) => {
         actionText: 'Start Learning',
       };
     }
-    
+
     if (overallStats.decksNeedingAttention > 0) {
       return {
         title: '⚡ Boost Performance',
-        subtitle: `${overallStats.decksNeedingAttention} deck${overallStats.decksNeedingAttention > 1 ? 's' : ''} need attention`,
+        subtitle: `${overallStats.decksNeedingAttention} deck${
+          overallStats.decksNeedingAttention > 1 ? 's' : ''
+        } need attention`,
         icon: 'trending-up',
         color: COLORS.yellowF5BE00,
         bgColor: COLORS.yellowF5BE00 + '15',
@@ -345,14 +403,19 @@ const FlashcardHub = ({navigation}) => {
     }
 
     return {
-  title: '🎉 All Caught Up!',
-  subtitle: 'Amazing work! Your study game is absolutely on point',
-  icon: 'check-circle',
-  color: COLORS.green34A853,
-  bgColor: 'linear-gradient(135deg, ' + COLORS.green34A853 + '15, ' + COLORS.yellowF5BE00 + '10)',
-  actionText: 'Keep Crushing It!',
-  celebration: true, // Add this flag
-};
+      title: '🎉 All Caught Up!',
+      subtitle: 'Amazing work! Your study game is absolutely on point',
+      icon: 'check-circle',
+      color: COLORS.green34A853,
+      bgColor:
+        'linear-gradient(135deg, ' +
+        COLORS.green34A853 +
+        '15, ' +
+        COLORS.yellowF5BE00 +
+        '10)',
+      actionText: 'Keep Crushing It!',
+      celebration: true, // Add this flag
+    };
   };
 
   // Enhanced overview stats
@@ -364,41 +427,47 @@ const FlashcardHub = ({navigation}) => {
     return (
       <View style={styles.overviewContainer}>
         {/* Enhanced Priority Card */}
-        {/* Enhanced Priority Card */}
-<View style={[
-  styles.priorityCard, 
-  { backgroundColor: recommendation.bgColor },
-  recommendation.celebration && styles.celebrationCard
-]}>
-  <View style={styles.priorityCardHeader}>
-    <View style={styles.priorityCardLeft}>
-      <Text variant="semibold18" color={COLORS.blue043142}>
-        {recommendation.title}
-      </Text>
-      <Text variant="medium14" color={COLORS.grey666666} style={styles.prioritySubtitle}>
-        {recommendation.subtitle}
-      </Text>
-    </View>
-    <View style={[
-      styles.priorityIconCircle, 
-      { backgroundColor: recommendation.color },
-      recommendation.celebration && styles.celebrationIcon
-    ]}>
-      <Icon name={recommendation.icon} size={24} color={COLORS.whiteFFFFFF} />
-    </View>
-  </View>
-  
-  <Pressable style={[
-    styles.priorityAction, 
-    { backgroundColor: recommendation.color },
-    recommendation.celebration && styles.celebrationAction
-  ]}>
-    <Text variant="semibold14" color={COLORS.whiteFFFFFF}>
-      {recommendation.actionText}
-    </Text>
-    <Icon name="arrow-forward" size={16} color={COLORS.whiteFFFFFF} />
-  </Pressable>
-</View>
+        <View
+          style={[
+            styles.priorityCard,
+            {backgroundColor: recommendation.bgColor},
+          ]}>
+          <View style={styles.priorityCardHeader}>
+            <View style={styles.priorityCardLeft}>
+              <Text variant="semibold18" color={COLORS.blue043142}>
+                {recommendation.title}
+              </Text>
+              <Text
+                variant="medium14"
+                color={COLORS.grey666666}
+                style={styles.prioritySubtitle}>
+                {recommendation.subtitle}
+              </Text>
+            </View>
+            <View
+              style={[
+                styles.priorityIconCircle,
+                {backgroundColor: recommendation.color},
+              ]}>
+              <Icon
+                name={recommendation.icon}
+                size={24}
+                color={COLORS.whiteFFFFFF}
+              />
+            </View>
+          </View>
+
+          <Pressable
+            style={[
+              styles.priorityAction,
+              {backgroundColor: recommendation.color},
+            ]}>
+            <Text variant="semibold14" color={COLORS.whiteFFFFFF}>
+              {recommendation.actionText}
+            </Text>
+            <Icon name="arrow-forward" size={16} color={COLORS.whiteFFFFFF} />
+          </Pressable>
+        </View>
 
         {/* Enhanced Stats Grid */}
         <View style={styles.enhancedStatsGrid}>
@@ -413,10 +482,14 @@ const FlashcardHub = ({navigation}) => {
               Total Decks
             </Text>
           </View>
-          
+
           {overallStats.totalDueCards > 0 && (
             <View style={styles.statCard}>
-              <View style={[styles.statCardIcon, { backgroundColor: COLORS.redEA4335 + '15' }]}>
+              <View
+                style={[
+                  styles.statCardIcon,
+                  {backgroundColor: COLORS.redEA4335 + '15'},
+                ]}>
                 <Icon name="schedule" size={20} color={COLORS.redEA4335} />
               </View>
               <Text variant="bold20" color={COLORS.redEA4335}>
@@ -427,11 +500,19 @@ const FlashcardHub = ({navigation}) => {
               </Text>
             </View>
           )}
-          
+
           {overallStats.totalNewCards > 0 && (
             <View style={styles.statCard}>
-              <View style={[styles.statCardIcon, { backgroundColor: COLORS.green34A853 + '15' }]}>
-                <Icon name="auto-awesome" size={20} color={COLORS.green34A853} />
+              <View
+                style={[
+                  styles.statCardIcon,
+                  {backgroundColor: COLORS.green34A853 + '15'},
+                ]}>
+                <Icon
+                  name="auto-awesome"
+                  size={20}
+                  color={COLORS.green34A853}
+                />
               </View>
               <Text variant="bold20" color={COLORS.green34A853}>
                 {overallStats.totalNewCards}
@@ -457,29 +538,34 @@ const FlashcardHub = ({navigation}) => {
 
     const hasActivity = dueData.dueCards > 0 || dueData.newCards > 0;
     const progressPercentage = Math.round(dueData.studyProgress || 0);
-    const needsAttention = dueData.dueCards > 5 || (dueData.studyProgress < 50 && dueData.totalCards > 0);
+    const needsAttention =
+      dueData.dueCards > 5 ||
+      (dueData.studyProgress < 50 && dueData.totalCards > 0);
 
     return (
-      <Pressable 
+      <Pressable
         style={[
           styles.enhancedDeckCard,
-          needsAttention && styles.deckCardNeedsAttention
+          needsAttention && styles.deckCardNeedsAttention,
         ]}
         onPress={() => handleDeckPress(item)}>
-        
         {/* Enhanced Header */}
         <View style={styles.enhancedDeckHeader}>
           <View style={styles.deckIconContainer}>
             <Icon name="style" size={20} color={COLORS.blue043142} />
           </View>
           <View style={styles.deckInfoExpanded}>
-            <Text variant="semibold16" color={COLORS.blue043142} numberOfLines={2}>
+            <Text
+              variant="semibold16"
+              color={COLORS.blue043142}
+              numberOfLines={2}>
               {item.title || 'Untitled Deck'}
             </Text>
             <View style={styles.deckMetaRow}>
               <View style={styles.subjectChip}>
                 <Text variant="medium10" color={COLORS.blue043142}>
-                  {item.subject?.charAt(0).toUpperCase() + item.subject?.slice(1) || 'General'}
+                  {item.subject?.charAt(0).toUpperCase() +
+                    item.subject?.slice(1) || 'General'}
                 </Text>
               </View>
               <Text variant="medium12" color={COLORS.grey777777}>
@@ -532,11 +618,11 @@ const FlashcardHub = ({navigation}) => {
           <View style={styles.enhancedProgressSection}>
             <View style={styles.progressBarContainer}>
               <View style={styles.progressBarTrack}>
-                <View 
+                <View
                   style={[
                     styles.progressBarFill,
-                    { width: `${Math.min(progressPercentage, 100)}%` }
-                  ]} 
+                    {width: `${Math.min(progressPercentage, 100)}%`},
+                  ]}
                 />
               </View>
               <Text variant="medium10" color={COLORS.grey777777}>
@@ -548,10 +634,10 @@ const FlashcardHub = ({navigation}) => {
 
         {/* Enhanced Action Buttons */}
         <View style={styles.enhancedDeckActions}>
-          <Pressable 
+          <Pressable
             style={[
               styles.enhancedStudyButton,
-              hasActivity && styles.studyButtonUrgent
+              hasActivity && styles.studyButtonUrgent,
             ]}
             onPress={() => handleStudyDeck(item)}>
             <Icon name="play-arrow" size={16} color={COLORS.whiteFFFFFF} />
@@ -559,12 +645,16 @@ const FlashcardHub = ({navigation}) => {
               {hasActivity ? 'Study Now' : 'Study'}
             </Text>
           </Pressable>
-          
-          <Pressable style={styles.enhancedBrowseButton} onPress={() => handleBrowseDeck(item)}>
+
+          <Pressable
+            style={styles.enhancedBrowseButton}
+            onPress={() => handleBrowseDeck(item)}>
             <Icon name="visibility" size={16} color={COLORS.blue043142} />
           </Pressable>
-          
-          <Pressable style={styles.enhancedBrowseButton} onPress={() => navigateToCramMode(item)}>
+
+          <Pressable
+            style={styles.enhancedBrowseButton}
+            onPress={() => navigateToCramMode(item)}>
             <Icon name="flash-on" size={16} color={COLORS.redEA4335} />
           </Pressable>
         </View>
@@ -572,7 +662,7 @@ const FlashcardHub = ({navigation}) => {
     );
   };
 
-  const navigateToCramMode = (deck) => {
+  const navigateToCramMode = deck => {
     navigation.navigate(Routes.CramMode, {
       deckId: deck._id,
       deckTitle: deck.title,
@@ -580,8 +670,11 @@ const FlashcardHub = ({navigation}) => {
   };
 
   // Action handlers
-  const handleCreateDeck = () => navigation.navigate(Routes.CreateDeck);
-  
+  const handleCreateDeck = () => {
+    mixpanel.track(`Click on Create Deck Button`);
+    navigation.navigate(Routes.CreateDeck);
+  };
+
   const handleUploadDocument = () => {
     if (recentDecks.length === 0) {
       Alert.alert(
@@ -590,7 +683,7 @@ const FlashcardHub = ({navigation}) => {
         [
           {text: 'Cancel', style: 'cancel'},
           {text: 'Create Deck', onPress: handleCreateDeck},
-        ]
+        ],
       );
       return;
     }
@@ -598,19 +691,34 @@ const FlashcardHub = ({navigation}) => {
   };
 
   const handleViewAllDecks = () => navigation.navigate(Routes.MyDecks);
-  const handleDeckPress = (deck) => navigation.navigate(Routes.DeckDetails, {deckId: deck._id});
-  const handleStudyDeck = (deck) => navigation.navigate(Routes.FlashcardViewer, {deckId: deck._id, studyMode: true});
-  const handleBrowseDeck = (deck) => navigation.navigate(Routes.FlashcardViewer, {deckId: deck._id, studyMode: false});
+  const handleDeckPress = deck =>
+    navigation.navigate(Routes.DeckDetails, {deckId: deck._id});
+  const handleStudyDeck = deck =>
+    navigation.navigate(Routes.FlashcardViewer, {
+      deckId: deck._id,
+      studyMode: true,
+    });
+  const handleBrowseDeck = deck =>
+    navigation.navigate(Routes.FlashcardViewer, {
+      deckId: deck._id,
+      studyMode: false,
+    });
 
   // Loading state
   if (loading && !refreshing) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={COLORS.blue043142} />
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={COLORS.blue043142}
+        />
         <View style={styles.loadingContainer}>
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color={COLORS.blue043142} />
-            <Text variant="medium14" color={COLORS.grey777777} style={styles.loadingText}>
+            <Text
+              variant="medium14"
+              color={COLORS.grey777777}
+              style={styles.loadingText}>
               Loading your flashcards...
             </Text>
           </View>
@@ -622,7 +730,7 @@ const FlashcardHub = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.blue043142} />
-      
+
       {renderBeautifulHeader()}
 
       <View style={styles.contentContainer}>
@@ -636,7 +744,6 @@ const FlashcardHub = ({navigation}) => {
               tintColor={COLORS.blue043142}
             />
           }>
-          
           {/* Enhanced Overview Stats */}
           {renderEnhancedOverview()}
 
@@ -644,18 +751,26 @@ const FlashcardHub = ({navigation}) => {
           <View style={styles.decksSection}>
             <View style={styles.sectionHeader}>
               <Text variant="semibold20" color={COLORS.blue043142}>
-                {recentDecks.length === 0 ? '🎯 Get Started' : '📚 Your Study Decks'}
+                {recentDecks.length === 0
+                  ? '🎯 Get Started'
+                  : '📚 Your Study Decks'}
               </Text>
               {recentDecks.length > 0 && overallStats.totalDecks > 6 && (
-                <Pressable onPress={handleViewAllDecks} style={styles.viewAllButton}>
+                <Pressable
+                  onPress={handleViewAllDecks}
+                  style={styles.viewAllButton}>
                   <Text variant="medium14" color={COLORS.blue043142}>
                     View All
                   </Text>
-                  <Icon name="arrow-forward" size={16} color={COLORS.blue043142} />
+                  <Icon
+                    name="arrow-forward"
+                    size={16}
+                    color={COLORS.blue043142}
+                  />
                 </Pressable>
               )}
             </View>
-            
+
             {recentDecks.length > 0 ? (
               <FlatList
                 data={recentDecks}
@@ -668,15 +783,26 @@ const FlashcardHub = ({navigation}) => {
             ) : (
               <View style={styles.enhancedEmptyState}>
                 <View style={styles.emptyStateIcon}>
-                  <Icon name="auto-awesome" size={48} color={COLORS.blue043142} />
+                  <Icon
+                    name="auto-awesome"
+                    size={48}
+                    color={COLORS.blue043142}
+                  />
                 </View>
-                <Text variant="bold22" color={COLORS.blue043142} style={styles.emptyStateTitle}>
+                <Text
+                  variant="bold22"
+                  color={COLORS.blue043142}
+                  style={styles.emptyStateTitle}>
                   Start Your Learning Journey
                 </Text>
-                <Text variant="medium14" color={COLORS.grey666666} style={styles.emptyStateDescription}>
-                  Create your first flashcard deck and unlock the power of spaced repetition learning
+                <Text
+                  variant="medium14"
+                  color={COLORS.grey666666}
+                  style={styles.emptyStateDescription}>
+                  Create your first flashcard deck and unlock the power of
+                  spaced repetition learning
                 </Text>
-                
+
                 <View style={styles.emptyStateActions}>
                   <Button
                     text="Create Your First Deck"
@@ -685,7 +811,12 @@ const FlashcardHub = ({navigation}) => {
                     icon="add"
                     iconColor={COLORS.whiteFFFFFF}
                   />
-                  <Pressable style={styles.emptyStateSecondary} onPress={() => navigation.navigate(Routes.PublicDecks)}>
+                  <Pressable
+                    style={styles.emptyStateSecondary}
+                    onPress={() => {
+                      mixpanel.track(`Click on Create Deck Button`);
+                      navigation.navigate(Routes.PublicDecks);
+                    }}>
                     <Icon name="explore" size={18} color={COLORS.blue043142} />
                     <Text variant="medium14" color={COLORS.blue043142}>
                       Explore Public Decks
@@ -702,7 +833,6 @@ const FlashcardHub = ({navigation}) => {
     </SafeAreaView>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -888,25 +1018,25 @@ const styles = StyleSheet.create({
     gap: nw(12),
   },
   celebrationCard: {
-  borderWidth: 2,
-  borderColor: COLORS.green34A853 + '30',
-  elevation: 4,
-  shadowOpacity: 0.15,
-},
-celebrationIcon: {
-  elevation: 2,
-  shadowColor: COLORS.green34A853,
-  shadowOffset: {width: 0, height: 2},
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-},
-celebrationAction: {
-  elevation: 2,
-  shadowColor: COLORS.green34A853,
-  shadowOffset: {width: 0, height: 2},
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-},
+    borderWidth: 2,
+    borderColor: COLORS.green34A853 + '30',
+    elevation: 4,
+    shadowOpacity: 0.15,
+  },
+  celebrationIcon: {
+    elevation: 2,
+    shadowColor: COLORS.green34A853,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  celebrationAction: {
+    elevation: 2,
+    shadowColor: COLORS.green34A853,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
   statCard: {
     flex: 1,
     backgroundColor: COLORS.whiteFFFFFF,

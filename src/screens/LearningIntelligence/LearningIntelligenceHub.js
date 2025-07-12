@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   StyleSheet,
@@ -8,8 +8,8 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -17,19 +17,20 @@ import LinearGradient from 'react-native-linear-gradient';
 // Components & Services
 import Text from '../../components/Text';
 import Header from '../../components/Header';
-import { COLORS } from '../../helper/colors';
+import {COLORS} from '../../helper/colors';
 
 // Import existing tab components
 import FocusAreasTab from './tabs/FocusAreasTab';
 import KnowledgeVaultTab from './tabs/KnowledgeVaultTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
+import mixpanel from '../../helper/mixpanelClient';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 const nw = percentage => (width * percentage) / 100;
 const nh = percentage => (height * percentage) / 100;
 
 // Enhanced Skeleton Loading Component
-const SkeletonLoader = ({ type = 'focus' }) => {
+const SkeletonLoader = ({type = 'focus'}) => {
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -45,7 +46,7 @@ const SkeletonLoader = ({ type = 'focus' }) => {
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     ).start();
   }, []);
 
@@ -57,7 +58,8 @@ const SkeletonLoader = ({ type = 'focus' }) => {
   const renderFocusAreasSkeleton = () => (
     <View style={styles.skeletonContainer}>
       {/* Quota Card Skeleton */}
-      <Animated.View style={[styles.skeletonCard, styles.quotaCardSkeleton, { opacity }]}>
+      <Animated.View
+        style={[styles.skeletonCard, styles.quotaCardSkeleton, {opacity}]}>
         <View style={styles.skeletonRow}>
           <View style={styles.skeletonCircle} />
           <View style={styles.skeletonTextLong} />
@@ -67,12 +69,12 @@ const SkeletonLoader = ({ type = 'focus' }) => {
 
       {/* Area Cards Skeleton */}
       {[1, 2, 3].map((_, index) => (
-        <Animated.View 
-          key={index} 
+        <Animated.View
+          key={index}
           style={[
-            styles.skeletonCard, 
-            styles.areaCardSkeleton, 
-            { opacity, marginTop: 12 }
+            styles.skeletonCard,
+            styles.areaCardSkeleton,
+            {opacity, marginTop: 12},
           ]}>
           <View style={styles.skeletonRow}>
             <View style={styles.skeletonTextMedium} />
@@ -93,7 +95,7 @@ const SkeletonLoader = ({ type = 'focus' }) => {
   const renderKnowledgeVaultSkeleton = () => (
     <View style={styles.skeletonContainer}>
       {/* Stats Skeleton */}
-      <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      <Animated.View style={[styles.skeletonCard, {opacity}]}>
         <View style={styles.skeletonStatsGrid}>
           {[1, 2, 3, 4].map((_, index) => (
             <View key={index} style={styles.skeletonStatCard}>
@@ -105,13 +107,17 @@ const SkeletonLoader = ({ type = 'focus' }) => {
       </Animated.View>
 
       {/* Search Bar Skeleton */}
-      <Animated.View style={[styles.skeletonSearchBar, { opacity }]} />
+      <Animated.View style={[styles.skeletonSearchBar, {opacity}]} />
 
       {/* Explanation Cards Skeleton */}
       {[1, 2].map((_, index) => (
-        <Animated.View 
-          key={index} 
-          style={[styles.skeletonCard, styles.explanationCardSkeleton, { opacity }]}>
+        <Animated.View
+          key={index}
+          style={[
+            styles.skeletonCard,
+            styles.explanationCardSkeleton,
+            {opacity},
+          ]}>
           <View style={styles.skeletonRow}>
             <View style={styles.skeletonTextMedium} />
             <View style={styles.skeletonCircle} />
@@ -126,7 +132,7 @@ const SkeletonLoader = ({ type = 'focus' }) => {
   const renderAnalyticsSkeleton = () => (
     <View style={styles.skeletonContainer}>
       {/* Stats Overview Skeleton */}
-      <Animated.View style={[styles.skeletonCard, { opacity }]}>
+      <Animated.View style={[styles.skeletonCard, {opacity}]}>
         <View style={styles.skeletonStatsGrid}>
           {[1, 2, 3, 4].map((_, index) => (
             <View key={index} style={styles.skeletonStatCard}>
@@ -139,9 +145,9 @@ const SkeletonLoader = ({ type = 'focus' }) => {
 
       {/* Sections Skeleton */}
       {[1, 2, 3].map((_, index) => (
-        <Animated.View 
-          key={index} 
-          style={[styles.skeletonCard, { opacity, marginTop: 12 }]}>
+        <Animated.View
+          key={index}
+          style={[styles.skeletonCard, {opacity, marginTop: 12}]}>
           <View style={styles.skeletonRow}>
             <View style={styles.skeletonTextMedium} />
             <View style={styles.skeletonTextShort} />
@@ -170,7 +176,7 @@ const SkeletonLoader = ({ type = 'focus' }) => {
 };
 
 // Tab Button Component with enhanced feedback
-const TabButton = ({ title, icon, isActive, onPress, index, isLoading }) => {
+const TabButton = ({title, icon, isActive, onPress, index, isLoading}) => {
   const scaleAnim = useRef(new Animated.Value(isActive ? 1 : 0.95)).current;
   const fadeAnim = useRef(new Animated.Value(isActive ? 1 : 0.7)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
@@ -198,7 +204,7 @@ const TabButton = ({ title, icon, isActive, onPress, index, isLoading }) => {
           toValue: 1,
           duration: 1000,
           useNativeDriver: true,
-        })
+        }),
       ).start();
     } else {
       spinAnim.setValue(0);
@@ -212,10 +218,14 @@ const TabButton = ({ title, icon, isActive, onPress, index, isLoading }) => {
 
   const getIconName = () => {
     switch (icon) {
-      case 'focus': return 'locate';
-      case 'vault': return 'library';
-      case 'analytics': return 'analytics';
-      default: return 'help-circle';
+      case 'focus':
+        return 'locate';
+      case 'vault':
+        return 'library';
+      case 'analytics':
+        return 'analytics';
+      default:
+        return 'help-circle';
     }
   };
 
@@ -229,7 +239,7 @@ const TabButton = ({ title, icon, isActive, onPress, index, isLoading }) => {
         style={[
           styles.tabButtonContent,
           {
-            transform: [{ scale: scaleAnim }],
+            transform: [{scale: scaleAnim}],
             opacity: fadeAnim,
           },
         ]}>
@@ -239,14 +249,10 @@ const TabButton = ({ title, icon, isActive, onPress, index, isLoading }) => {
             style={styles.activeTabBackground}
           />
         )}
-        
+
         {isLoading && isActive ? (
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <Ionicons
-              name="refresh"
-              size={20}
-              color={COLORS.blue043142}
-            />
+          <Animated.View style={{transform: [{rotate: spin}]}}>
+            <Ionicons name="refresh" size={20} color={COLORS.blue043142} />
           </Animated.View>
         ) : (
           <Ionicons
@@ -255,24 +261,22 @@ const TabButton = ({ title, icon, isActive, onPress, index, isLoading }) => {
             color={isActive ? COLORS.blue043142 : COLORS.grey777777}
           />
         )}
-        
+
         <Text
           variant={isActive ? 'semibold12' : 'regular12'}
           color={isActive ? COLORS.blue043142 : COLORS.grey777777}
           style={styles.tabButtonText}>
           {title}
         </Text>
-        {isActive && (
-          <View style={styles.activeIndicator} />
-        )}
+        {isActive && <View style={styles.activeIndicator} />}
       </Animated.View>
     </TouchableOpacity>
   );
 };
 
-// Enhanced Tab Content Container - Modified to keep content mounted
-const TabContentContainer = ({ children, isVisible, isLoading, tabType, tabIndex }) => {
-  const fadeAnim = useRef(new Animated.Value(isVisible ? 1 : 0)).current;
+// Enhanced Tab Content Container
+const TabContentContainer = ({children, isLoading, tabType}) => {
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (isVisible) {
@@ -291,7 +295,7 @@ const TabContentContainer = ({ children, isVisible, isLoading, tabType, tabIndex
   }, [isVisible]);
 
   return (
-    <Animated.View 
+    <Animated.View
       style={[
         styles.tabContentContainer,
         {
@@ -301,13 +305,15 @@ const TabContentContainer = ({ children, isVisible, isLoading, tabType, tabIndex
           left: 0,
           right: 0,
           bottom: 0,
-        }
+        },
       ]}
       pointerEvents={isVisible ? 'auto' : 'none'}>
       {isLoading ? (
         <SkeletonLoader type={tabType} />
       ) : (
-        children
+        <Animated.View style={[{flex: 1}, {opacity: fadeAnim}]}>
+          {children}
+        </Animated.View>
       )}
     </Animated.View>
   );
@@ -330,9 +336,24 @@ const LearningIntelligenceHub = () => {
   const mountAnim = useRef(new Animated.Value(0)).current;
 
   const tabs = [
-    { title: 'Focus Areas', icon: 'focus', component: FocusAreasTab, type: 'focus' },
-    { title: 'Knowledge Vault', icon: 'vault', component: KnowledgeVaultTab, type: 'vault' },
-    { title: 'Analytics', icon: 'analytics', component: AnalyticsTab, type: 'analytics' },
+    {
+      title: 'Focus Areas',
+      icon: 'focus',
+      component: FocusAreasTab,
+      type: 'focus',
+    },
+    {
+      title: 'Knowledge Vault',
+      icon: 'vault',
+      component: KnowledgeVaultTab,
+      type: 'vault',
+    },
+    {
+      title: 'Analytics',
+      icon: 'analytics',
+      component: AnalyticsTab,
+      type: 'analytics',
+    },
   ];
 
   // Entrance animation
@@ -346,21 +367,23 @@ const LearningIntelligenceHub = () => {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Initialize the first tab on screen focus
-      if (!tabsInitialized[0]) {
-        setLoadingStates(prev => ({ ...prev, 0: true }));
-        
+      // Don't reset to first tab if user was already on this screen
+      // Just ensure the current tab is properly initialized
+      if (!tabsInitialized[activeTab]) {
+        setLoadingStates(prev => ({...prev, [activeTab]: true}));
+
+        // Simulate initialization delay for better UX
         const timer = setTimeout(() => {
-          setLoadingStates(prev => ({ ...prev, 0: false }));
-          setTabsInitialized(prev => ({ ...prev, 0: true }));
-        }, 1000);
+          setLoadingStates(prev => ({...prev, [activeTab]: false}));
+          setTabsInitialized(prev => ({...prev, [activeTab]: true}));
+        }, 1000); // Reduced from potential longer loading
 
         return () => clearTimeout(timer);
       }
-    }, [tabsInitialized])
+    }, [activeTab, tabsInitialized]),
   );
 
-  const handleTabPress = (index) => {
+  const handleTabPress = index => {
     if (index === activeTab || loadingStates[index]) return;
 
     // Immediate tab switch
@@ -375,11 +398,12 @@ const LearningIntelligenceHub = () => {
 
     // Initialize tab if not already done
     if (!tabsInitialized[index]) {
-      setLoadingStates(prev => ({ ...prev, [index]: true }));
-      
+      setLoadingStates(prev => ({...prev, [index]: true}));
+
+      // Simulate loading time (you can adjust this based on actual API calls)
       const timer = setTimeout(() => {
-        setLoadingStates(prev => ({ ...prev, [index]: false }));
-        setTabsInitialized(prev => ({ ...prev, [index]: true }));
+        setLoadingStates(prev => ({...prev, [index]: false}));
+        setTabsInitialized(prev => ({...prev, [index]: true}));
       }, 800);
     }
   };
@@ -391,7 +415,7 @@ const LearningIntelligenceHub = () => {
       const isVisible = activeTab === index;
       const isLoading = loadingStates[index];
       const isInitialized = tabsInitialized[index];
-      
+
       return (
         <TabContentContainer
           key={index}
@@ -407,22 +431,27 @@ const LearningIntelligenceHub = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
       <Header title="🧠 Learning Intelligence" />
-      
+
       {/* Enhanced Tab Navigation */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.tabContainer,
           {
             opacity: mountAnim,
-            transform: [{
-              translateY: mountAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-20, 0],
-              })
-            }]
-          }
+            transform: [
+              {
+                translateY: mountAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [-20, 0],
+                }),
+              },
+            ],
+          },
         ]}>
         <View style={styles.tabWrapper}>
           {tabs.map((tab, index) => (
@@ -432,36 +461,44 @@ const LearningIntelligenceHub = () => {
               icon={tab.icon}
               isActive={activeTab === index}
               isLoading={loadingStates[index]}
-              onPress={() => handleTabPress(index)}
+              onPress={() => {
+                mixpanel.track(`Click on tab ${tab?.title}`);
+                handleTabPress(index);
+              }}
               index={index}
             />
           ))}
         </View>
-        
+
         {/* Loading Indicator */}
         {Object.values(loadingStates).some(loading => loading) && (
           <View style={styles.globalLoadingIndicator}>
             <View style={styles.loadingDot} />
-            <Text variant="regular11" color={COLORS.blue043142} style={{ marginLeft: 6 }}>
+            <Text
+              variant="regular11"
+              color={COLORS.blue043142}
+              style={{marginLeft: 6}}>
               Loading insights...
             </Text>
           </View>
         )}
       </Animated.View>
 
-      {/* Enhanced Tab Content - Now renders all tabs */}
-      <Animated.View 
+      {/* Enhanced Tab Content */}
+      <Animated.View
         style={[
           styles.tabContent,
           {
             opacity: mountAnim,
-            transform: [{
-              translateY: mountAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [30, 0],
-              })
-            }]
-          }
+            transform: [
+              {
+                translateY: mountAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [30, 0],
+                }),
+              },
+            ],
+          },
         ]}>
         {renderAllTabs()}
       </Animated.View>
@@ -518,7 +555,7 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: COLORS.blue043142,
-    transform: [{ translateX: -2 }],
+    transform: [{translateX: -2}],
   },
   globalLoadingIndicator: {
     flexDirection: 'row',
@@ -554,7 +591,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.08,
         shadowRadius: 8,
       },
@@ -652,7 +689,7 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
+        shadowOffset: {width: 0, height: 1},
         shadowOpacity: 0.05,
         shadowRadius: 4,
       },

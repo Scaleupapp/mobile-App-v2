@@ -1254,11 +1254,13 @@ export const aiStudyBuddyInitSessionApi = (payload: {
 // Send message in session
 export const aiStudyBuddySendMessageApi = (sessionId: string, payload: {
   message: string;
+  sessionId?:any;
   attachments?: Array<{
     type: 'image' | 'code' | 'formula' | 'diagram' | 'file';
     url?: string;
     filename?: string;
     metadata?: any;
+   
   }>;
 }) => {
   return axiosInstance.post(
@@ -1440,7 +1442,9 @@ export const aiStudyBuddyGenerateFlashcardsApi = (sessionId: string, payload: {
   cardCount?: number;
   deckName?: string;
   topics?: string[];
+  sessionId?: string
 }) => {
+  console.log(payload,sessionId,'helll')
   return axiosInstance.post(
     API.AI_STUDY_BUDDY_GENERATE_FLASHCARDS.replace(':sessionId', sessionId),
     payload
@@ -1453,7 +1457,10 @@ export const aiStudyBuddyGenerateQuizApi = (sessionId: string, payload: {
   quizTitle?: string;
   topics?: string[];
   difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
+  sessionId: string
 }) => {
+  console.log(payload);
+  
   return axiosInstance.post(
     API.AI_STUDY_BUDDY_GENERATE_QUIZ.replace(':sessionId', sessionId),
     payload

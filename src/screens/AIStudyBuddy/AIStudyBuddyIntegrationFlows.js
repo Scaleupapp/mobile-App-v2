@@ -46,7 +46,7 @@ const AIStudyBuddyIntegrationFlows = ({
   const [activeFlow, setActiveFlow] = useState(null); // 'flashcards' | 'quiz' | null
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(1); // 1: options, 2: generating, 3: success
-  
+
   // Flashcard generation state
   const [flashcardOptions, setFlashcardOptions] = useState({
     cardCount: 10,
@@ -121,18 +121,24 @@ const AIStudyBuddyIntegrationFlows = ({
 
       const payload = {
         cardCount: flashcardOptions.cardCount,
-        deckName: flashcardOptions.deckName || `${sessionData?.subject || 'Study'} Flashcards`,
+        deckName:
+          flashcardOptions.deckName ||
+          `${sessionData?.subject || 'Study'} Flashcards`,
         topics: flashcardOptions.topics,
+        sessionId: sessionId,
       };
 
-      const response = await aiStudyBuddyGenerateFlashcardsApi(sessionId, payload);
-      
+      const response = await aiStudyBuddyGenerateFlashcardsApi(
+        sessionId,
+        payload,
+      );
+
       if (response.data.success) {
         setGeneratedContent(response.data);
         setStep(3);
-        
+
         showToast({
-          message: `Generated ${response.data.cardsCreated} flashcards successfully!`,
+          title: `Generated ${response.data.cardsCreated} flashcards successfully!`,
           type: 'success',
         });
 
@@ -141,7 +147,7 @@ const AIStudyBuddyIntegrationFlows = ({
       }
     } catch (error) {
       console.error('Generate flashcards error:', error);
-      
+
       if (isAiStudyBuddyUpgradeRequired(error)) {
         showUpgradeModal('flashcard generation');
       } else {
@@ -164,19 +170,21 @@ const AIStudyBuddyIntegrationFlows = ({
 
       const payload = {
         questionCount: quizOptions.questionCount,
-        quizTitle: quizOptions.quizTitle || `${sessionData?.subject || 'Study'} Quiz`,
+        quizTitle:
+          quizOptions.quizTitle || `${sessionData?.subject || 'Study'} Quiz`,
         topics: quizOptions.topics,
         difficulty: quizOptions.difficulty,
+        sessionId: sessionId,
       };
 
       const response = await aiStudyBuddyGenerateQuizApi(sessionId, payload);
-      
+
       if (response.data.success) {
         setGeneratedContent(response.data);
         setStep(3);
-        
+
         showToast({
-          message: `Generated ${response.data.questionsCreated} questions successfully!`,
+          title: `Generated ${response.data.questionsCreated} questions successfully!`,
           type: 'success',
         });
 
@@ -185,12 +193,12 @@ const AIStudyBuddyIntegrationFlows = ({
       }
     } catch (error) {
       console.error('Generate quiz error:', error);
-      
+
       if (isAiStudyBuddyUpgradeRequired(error)) {
         showUpgradeModal('quiz generation');
       } else {
         showToast({
-          message: formatAiStudyBuddyError(error),
+          title: formatAiStudyBuddyError(error),
           type: 'error',
         });
       }
@@ -201,17 +209,17 @@ const AIStudyBuddyIntegrationFlows = ({
   };
 
   // Show upgrade modal
-  const showUpgradeModal = (feature) => {
+  const showUpgradeModal = feature => {
     Alert.alert(
       'Upgrade to Pro',
       `${feature} is a Pro feature. Upgrade to unlock unlimited access.`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Upgrade Now', 
-          onPress: () => navigation.navigate(Routes.AIStudyBuddyUpgrade)
-        }
-      ]
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Upgrade Now',
+          onPress: () => navigation.navigate(Routes.AIStudyBuddyUpgrade),
+        },
+      ],
     );
   };
 
@@ -228,17 +236,15 @@ const AIStudyBuddyIntegrationFlows = ({
     return (
       <View style={styles.floatingButtons}>
         <Pressable
-          style={[styles.floatingButton, { backgroundColor: '#6366F1' }]}
-          onPress={() => setActiveFlow('flashcards')}
-        >
+          style={[styles.floatingButton, {backgroundColor: '#6366F1'}]}
+          onPress={() => setActiveFlow('flashcards')}>
           <Icon name="style" size={20} color="white" />
           <Text style={styles.floatingButtonText}>Flashcards</Text>
         </Pressable>
 
         <Pressable
-          style={[styles.floatingButton, { backgroundColor: '#10B981' }]}
-          onPress={() => setActiveFlow('quiz')}
-        >
+          style={[styles.floatingButton, {backgroundColor: '#10B981'}]}
+          onPress={() => setActiveFlow('quiz')}>
           <Icon name="quiz" size={20} color="white" />
           <Text style={styles.floatingButtonText}>Quiz</Text>
         </Pressable>
@@ -253,13 +259,14 @@ const AIStudyBuddyIntegrationFlows = ({
         <View style={styles.headerContent}>
           <LinearGradient
             colors={['#6366F1', '#8B5CF6']}
-            style={styles.headerIcon}
-          >
+            style={styles.headerIcon}>
             <Icon name="style" size={24} color="white" />
           </LinearGradient>
           <View style={styles.headerText}>
             <Text style={styles.modalTitle}>Generate Flashcards</Text>
-            <Text style={styles.modalSubtitle}>Create flashcards from this conversation</Text>
+            <Text style={styles.modalSubtitle}>
+              Create flashcards from this conversation
+            </Text>
           </View>
         </View>
         <Pressable style={styles.closeButton} onPress={closeModal}>
@@ -267,7 +274,9 @@ const AIStudyBuddyIntegrationFlows = ({
         </Pressable>
       </View>
 
-      <ScrollView style={styles.optionsContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.optionsContent}
+        showsVerticalScrollIndicator={false}>
         {/* Card Count */}
         <View style={styles.optionGroup}>
           <Text style={styles.optionLabel}>Number of Cards</Text>
@@ -277,14 +286,18 @@ const AIStudyBuddyIntegrationFlows = ({
                 key={count}
                 style={[
                   styles.countOption,
-                  flashcardOptions.cardCount === count && styles.countOptionActive
+                  flashcardOptions.cardCount === count &&
+                    styles.countOptionActive,
                 ]}
-                onPress={() => setFlashcardOptions(prev => ({ ...prev, cardCount: count }))}
-              >
-                <Text style={[
-                  styles.countText,
-                  flashcardOptions.cardCount === count && styles.countTextActive
-                ]}>
+                onPress={() =>
+                  setFlashcardOptions(prev => ({...prev, cardCount: count}))
+                }>
+                <Text
+                  style={[
+                    styles.countText,
+                    flashcardOptions.cardCount === count &&
+                      styles.countTextActive,
+                  ]}>
                   {count}
                 </Text>
               </Pressable>
@@ -299,7 +312,9 @@ const AIStudyBuddyIntegrationFlows = ({
             style={styles.textInput}
             placeholder={`${sessionData?.subject || 'Study'} Flashcards`}
             value={flashcardOptions.deckName}
-            onChangeText={(text) => setFlashcardOptions(prev => ({ ...prev, deckName: text }))}
+            onChangeText={text =>
+              setFlashcardOptions(prev => ({...prev, deckName: text}))
+            }
             maxLength={50}
           />
         </View>
@@ -316,21 +331,23 @@ const AIStudyBuddyIntegrationFlows = ({
                 key={index}
                 style={[
                   styles.topicChip,
-                  flashcardOptions.topics.includes(topic) && styles.topicChipActive
+                  flashcardOptions.topics.includes(topic) &&
+                    styles.topicChipActive,
                 ]}
                 onPress={() => {
                   setFlashcardOptions(prev => ({
                     ...prev,
                     topics: prev.topics.includes(topic)
                       ? prev.topics.filter(t => t !== topic)
-                      : [...prev.topics, topic]
+                      : [...prev.topics, topic],
                   }));
-                }}
-              >
-                <Text style={[
-                  styles.topicChipText,
-                  flashcardOptions.topics.includes(topic) && styles.topicChipTextActive
-                ]}>
+                }}>
+                <Text
+                  style={[
+                    styles.topicChipText,
+                    flashcardOptions.topics.includes(topic) &&
+                      styles.topicChipTextActive,
+                  ]}>
                   {topic}
                 </Text>
               </Pressable>
@@ -364,13 +381,14 @@ const AIStudyBuddyIntegrationFlows = ({
         <View style={styles.headerContent}>
           <LinearGradient
             colors={['#10B981', '#059669']}
-            style={styles.headerIcon}
-          >
+            style={styles.headerIcon}>
             <Icon name="quiz" size={24} color="white" />
           </LinearGradient>
           <View style={styles.headerText}>
             <Text style={styles.modalTitle}>Generate Quiz</Text>
-            <Text style={styles.modalSubtitle}>Create a quiz from this conversation</Text>
+            <Text style={styles.modalSubtitle}>
+              Create a quiz from this conversation
+            </Text>
           </View>
         </View>
         <Pressable style={styles.closeButton} onPress={closeModal}>
@@ -378,7 +396,9 @@ const AIStudyBuddyIntegrationFlows = ({
         </Pressable>
       </View>
 
-      <ScrollView style={styles.optionsContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.optionsContent}
+        showsVerticalScrollIndicator={false}>
         {/* Question Count */}
         <View style={styles.optionGroup}>
           <Text style={styles.optionLabel}>Number of Questions</Text>
@@ -388,14 +408,18 @@ const AIStudyBuddyIntegrationFlows = ({
                 key={count}
                 style={[
                   styles.countOption,
-                  quizOptions.questionCount === count && styles.countOptionActive
+                  quizOptions.questionCount === count &&
+                    styles.countOptionActive,
                 ]}
-                onPress={() => setQuizOptions(prev => ({ ...prev, questionCount: count }))}
-              >
-                <Text style={[
-                  styles.countText,
-                  quizOptions.questionCount === count && styles.countTextActive
-                ]}>
+                onPress={() =>
+                  setQuizOptions(prev => ({...prev, questionCount: count}))
+                }>
+                <Text
+                  style={[
+                    styles.countText,
+                    quizOptions.questionCount === count &&
+                      styles.countTextActive,
+                  ]}>
                   {count}
                 </Text>
               </Pressable>
@@ -410,7 +434,9 @@ const AIStudyBuddyIntegrationFlows = ({
             style={styles.textInput}
             placeholder={`${sessionData?.subject || 'Study'} Quiz`}
             value={quizOptions.quizTitle}
-            onChangeText={(text) => setQuizOptions(prev => ({ ...prev, quizTitle: text }))}
+            onChangeText={text =>
+              setQuizOptions(prev => ({...prev, quizTitle: text}))
+            }
             maxLength={50}
           />
         </View>
@@ -420,10 +446,10 @@ const AIStudyBuddyIntegrationFlows = ({
           <Text style={styles.optionLabel}>Difficulty Level</Text>
           <View style={styles.difficultyOptions}>
             {[
-              { value: 'easy', label: 'Easy', color: '#10B981' },
-              { value: 'medium', label: 'Medium', color: '#F59E0B' },
-              { value: 'hard', label: 'Hard', color: '#EF4444' },
-              { value: 'mixed', label: 'Mixed', color: '#6366F1' },
+              {value: 'easy', label: 'Easy', color: '#10B981'},
+              {value: 'medium', label: 'Medium', color: '#F59E0B'},
+              {value: 'hard', label: 'Hard', color: '#EF4444'},
+              {value: 'mixed', label: 'Mixed', color: '#6366F1'},
             ].map(option => (
               <Pressable
                 key={option.value}
@@ -431,15 +457,19 @@ const AIStudyBuddyIntegrationFlows = ({
                   styles.difficultyOption,
                   quizOptions.difficulty === option.value && [
                     styles.difficultyOptionActive,
-                    { borderColor: option.color }
-                  ]
+                    {borderColor: option.color},
+                  ],
                 ]}
-                onPress={() => setQuizOptions(prev => ({ ...prev, difficulty: option.value }))}
-              >
-                <Text style={[
-                  styles.difficultyText,
-                  quizOptions.difficulty === option.value && { color: option.color }
-                ]}>
+                onPress={() =>
+                  setQuizOptions(prev => ({...prev, difficulty: option.value}))
+                }>
+                <Text
+                  style={[
+                    styles.difficultyText,
+                    quizOptions.difficulty === option.value && {
+                      color: option.color,
+                    },
+                  ]}>
                   {option.label}
                 </Text>
               </Pressable>
@@ -459,21 +489,22 @@ const AIStudyBuddyIntegrationFlows = ({
                 key={index}
                 style={[
                   styles.topicChip,
-                  quizOptions.topics.includes(topic) && styles.topicChipActive
+                  quizOptions.topics.includes(topic) && styles.topicChipActive,
                 ]}
                 onPress={() => {
                   setQuizOptions(prev => ({
                     ...prev,
                     topics: prev.topics.includes(topic)
                       ? prev.topics.filter(t => t !== topic)
-                      : [...prev.topics, topic]
+                      : [...prev.topics, topic],
                   }));
-                }}
-              >
-                <Text style={[
-                  styles.topicChipText,
-                  quizOptions.topics.includes(topic) && styles.topicChipTextActive
-                ]}>
+                }}>
+                <Text
+                  style={[
+                    styles.topicChipText,
+                    quizOptions.topics.includes(topic) &&
+                      styles.topicChipTextActive,
+                  ]}>
                   {topic}
                 </Text>
               </Pressable>
@@ -504,15 +535,21 @@ const AIStudyBuddyIntegrationFlows = ({
   const renderGeneratingState = () => (
     <View style={styles.generatingContainer}>
       <LinearGradient
-        colors={activeFlow === 'flashcards' ? ['#6366F1', '#8B5CF6'] : ['#10B981', '#059669']}
-        style={styles.generatingContent}
-      >
+        colors={
+          activeFlow === 'flashcards'
+            ? ['#6366F1', '#8B5CF6']
+            : ['#10B981', '#059669']
+        }
+        style={styles.generatingContent}>
         <ActivityIndicator size="large" color="white" />
         <Text style={styles.generatingTitle}>
-          {activeFlow === 'flashcards' ? 'Generating Flashcards...' : 'Generating Quiz...'}
+          {activeFlow === 'flashcards'
+            ? 'Generating Flashcards...'
+            : 'Generating Quiz...'}
         </Text>
         <Text style={styles.generatingSubtitle}>
-          Our AI is analyzing your conversation and creating personalized content
+          Our AI is analyzing your conversation and creating personalized
+          content
         </Text>
       </LinearGradient>
     </View>
@@ -523,35 +560,45 @@ const AIStudyBuddyIntegrationFlows = ({
     <View style={styles.successContainer}>
       <View style={styles.successContent}>
         <LinearGradient
-          colors={activeFlow === 'flashcards' ? ['#6366F1', '#8B5CF6'] : ['#10B981', '#059669']}
-          style={styles.successIcon}
-        >
+          colors={
+            activeFlow === 'flashcards'
+              ? ['#6366F1', '#8B5CF6']
+              : ['#10B981', '#059669']
+          }
+          style={styles.successIcon}>
           <Icon name="check" size={32} color="white" />
         </LinearGradient>
 
         <Text style={styles.successTitle}>
-          {activeFlow === 'flashcards' ? 'Flashcards Created!' : 'Quiz Created!'}
+          {activeFlow === 'flashcards'
+            ? 'Flashcards Created!'
+            : 'Quiz Created!'}
         </Text>
 
         <Text style={styles.successDescription}>
-          {activeFlow === 'flashcards' 
-            ? `Successfully generated ${generatedContent?.cardsCreated || 0} flashcards`
-            : `Successfully generated ${generatedContent?.questionsCreated || 0} questions`
-          }
+          {activeFlow === 'flashcards'
+            ? `Successfully generated ${
+                generatedContent?.cardsCreated || 0
+              } flashcards`
+            : `Successfully generated ${
+                generatedContent?.questionsCreated || 0
+              } questions`}
         </Text>
 
         <View style={styles.successActions}>
           <Button
-            title={activeFlow === 'flashcards' ? 'Study Flashcards' : 'Take Quiz'}
+            title={
+              activeFlow === 'flashcards' ? 'Study Flashcards' : 'Take Quiz'
+            }
             onPress={() => {
               closeModal();
               if (activeFlow === 'flashcards') {
                 navigation.navigate(Routes.DeckDetails, {
-                  deckId: generatedContent?.deckId
+                  deckId: generatedContent?.deckId,
                 });
               } else {
                 navigation.navigate(Routes.QuizScreen, {
-                  quizId: generatedContent?.quizId
+                  quizId: generatedContent?.quizId,
                 });
               }
             }}
@@ -573,7 +620,9 @@ const AIStudyBuddyIntegrationFlows = ({
   const renderModalContent = () => {
     switch (step) {
       case 1:
-        return activeFlow === 'flashcards' ? renderFlashcardOptions() : renderQuizOptions();
+        return activeFlow === 'flashcards'
+          ? renderFlashcardOptions()
+          : renderQuizOptions();
       case 2:
         return renderGeneratingState();
       case 3:
@@ -593,20 +642,18 @@ const AIStudyBuddyIntegrationFlows = ({
         visible={activeFlow !== null}
         transparent
         animationType="none"
-        onRequestClose={closeModal}
-      >
+        onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalBackground} onPress={closeModal} />
-          
+
           <Animated.View
             style={[
               styles.modalContainer,
               {
                 opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
+                transform: [{translateY: slideAnim}],
               },
-            ]}
-          >
+            ]}>
             {renderModalContent()}
           </Animated.View>
         </View>
@@ -631,7 +678,7 @@ const styles = StyleSheet.create({
     paddingVertical: nh(12),
     borderRadius: 25,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,

@@ -34,6 +34,8 @@ import {
   aiStudyBuddyToggleBookmarkApi,
   formatAiStudyBuddyError,
 } from '../../services/apiService';
+import {color} from 'react-native-elements/dist/helpers';
+import mixpanel from '../../helper/mixpanelClient';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -64,7 +66,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
   const [topics, setTopics] = useState([]);
 
   // FIX: Safe array helper function
-  const safeArray = (arr) => Array.isArray(arr) ? arr : [];
+  const safeArray = arr => (Array.isArray(arr) ? arr : []);
 
   // FIX: Get default bookmarks data
   const getDefaultBookmarksData = () => [
@@ -72,137 +74,161 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
       messageId: 'demo_1',
       sessionId: 'session_1',
       sessionSubject: 'Mathematics',
-      content: 'Quadratic equations can be solved using the quadratic formula: x = (-b ± √(b²-4ac)) / 2a. This formula works for any quadratic equation in the form ax² + bx + c = 0.',
-      bookmarkedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+      content:
+        'Quadratic equations can be solved using the quadratic formula: x = (-b ± √(b²-4ac)) / 2a. This formula works for any quadratic equation in the form ax² + bx + c = 0.',
+      bookmarkedAt: new Date(
+        Date.now() - 2 * 24 * 60 * 60 * 1000,
+      ).toISOString(), // 2 days ago
       topics: ['Algebra', 'Quadratic Equations', 'Formula'],
     },
     {
       messageId: 'demo_2',
       sessionId: 'session_2',
       sessionSubject: 'Physics',
-      content: 'Newton\'s first law states that an object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.',
-      bookmarkedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-      topics: ['Newton\'s Laws', 'Motion', 'Forces'],
+      content:
+        "Newton's first law states that an object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced force.",
+      bookmarkedAt: new Date(
+        Date.now() - 5 * 24 * 60 * 60 * 1000,
+      ).toISOString(), // 5 days ago
+      topics: ["Newton's Laws", 'Motion', 'Forces'],
     },
     {
       messageId: 'demo_3',
       sessionId: 'session_3',
       sessionSubject: 'Chemistry',
-      content: 'The periodic table is organized by atomic number, which represents the number of protons in an atom\'s nucleus. Elements in the same group share similar chemical properties.',
-      bookmarkedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 1 week ago
+      content:
+        "The periodic table is organized by atomic number, which represents the number of protons in an atom's nucleus. Elements in the same group share similar chemical properties.",
+      bookmarkedAt: new Date(
+        Date.now() - 7 * 24 * 60 * 60 * 1000,
+      ).toISOString(), // 1 week ago
       topics: ['Periodic Table', 'Atomic Structure', 'Elements'],
     },
   ];
 
   // Load bookmarks
-  const loadBookmarks = useCallback(async (pageNum = 1, showLoader = true) => {
-    try {
-      if (showLoader && pageNum === 1) setLoading(true);
-
-      const params = {
-        page: pageNum,
-        limit: 20,
-        subject: selectedSubject !== 'all' ? selectedSubject : undefined,
-        topic: selectedTopic !== 'all' ? selectedTopic : undefined,
-      };
-
-      // FIX: Add try-catch for API call with fallback
+  const loadBookmarks = useCallback(
+    async (pageNum = 1, showLoader = true) => {
       try {
-        const response = await aiStudyBuddyGetBookmarksApi(params);
-        
-        if (response.data && response.data.success) {
-          const newBookmarks = safeArray(response.data.bookmarks || response.data.bookmarkedMessages);
-          
-          if (pageNum === 1) {
-            setBookmarks(newBookmarks);
+        if (showLoader && pageNum === 1) setLoading(true);
+
+        const params = {
+          page: pageNum,
+          limit: 20,
+          subject: selectedSubject !== 'all' ? selectedSubject : undefined,
+          topic: selectedTopic !== 'all' ? selectedTopic : undefined,
+        };
+
+        // FIX: Add try-catch for API call with fallback
+        try {
+          const response = await aiStudyBuddyGetBookmarksApi(params);
+
+          if (response.data && response.data.success) {
+            const newBookmarks = safeArray(
+              response.data.bookmarks || response.data.bookmarkedMessages,
+            );
+
+            if (pageNum === 1) {
+              setBookmarks(newBookmarks);
+            } else {
+              setBookmarks(prev => [...safeArray(prev), ...newBookmarks]);
+            }
+
+            setHasMore(newBookmarks.length === 20);
+            setPage(pageNum);
+
+            // Extract unique subjects and topics for filters
+            if (pageNum === 1) {
+              const uniqueSubjects = [
+                ...new Set(
+                  newBookmarks.map(b => b.sessionSubject).filter(Boolean),
+                ),
+              ];
+              const uniqueTopics = [
+                ...new Set(
+                  newBookmarks
+                    .flatMap(b => safeArray(b.topics))
+                    .filter(Boolean),
+                ),
+              ];
+              setSubjects(uniqueSubjects);
+              setTopics(uniqueTopics);
+            }
+
+            // Start entrance animations
+            if (showLoader && pageNum === 1) {
+              startEntranceAnimations();
+            }
           } else {
-            setBookmarks(prev => [...safeArray(prev), ...newBookmarks]);
-          }
+            // If API returns success but no bookmarks, use demo data
+            if (pageNum === 1) {
+              const demoData = getDefaultBookmarksData();
+              setBookmarks(demoData);
+              setHasMore(false);
 
-          setHasMore(newBookmarks.length === 20);
-          setPage(pageNum);
+              // Set demo filter options
+              setSubjects(['Mathematics', 'Physics', 'Chemistry']);
+              setTopics(['Algebra', "Newton's Laws", 'Periodic Table']);
 
-          // Extract unique subjects and topics for filters
-          if (pageNum === 1) {
-            const uniqueSubjects = [...new Set(newBookmarks.map(b => b.sessionSubject).filter(Boolean))];
-            const uniqueTopics = [...new Set(newBookmarks.flatMap(b => safeArray(b.topics)).filter(Boolean))];
-            setSubjects(uniqueSubjects);
-            setTopics(uniqueTopics);
-          }
+              if (showLoader) {
+                startEntranceAnimations();
+              }
 
-          // Start entrance animations
-          if (showLoader && pageNum === 1) {
-            startEntranceAnimations();
+              showToast({
+                title:
+                  'Showing sample bookmarks. Start bookmarking to see your saved messages!',
+                type: 'info',
+              });
+            }
           }
-        } else {
-          // If API returns success but no bookmarks, use demo data
+        } catch (apiError) {
+          console.warn('Bookmarks API failed, using demo data:', apiError);
+
           if (pageNum === 1) {
             const demoData = getDefaultBookmarksData();
             setBookmarks(demoData);
             setHasMore(false);
-            
+
             // Set demo filter options
             setSubjects(['Mathematics', 'Physics', 'Chemistry']);
-            setTopics(['Algebra', 'Newton\'s Laws', 'Periodic Table']);
-            
+            setTopics(['Algebra', "Newton's Laws", 'Periodic Table']);
+
             if (showLoader) {
               startEntranceAnimations();
             }
-            
+
             showToast({
-              message: 'Showing sample bookmarks. Start bookmarking to see your saved messages!',
+              title: 'Unable to load bookmarks. Showing sample data.',
               type: 'info',
             });
           }
         }
-      } catch (apiError) {
-        console.warn('Bookmarks API failed, using demo data:', apiError);
-        
+      } catch (error) {
+        console.error('Load bookmarks error:', error);
+
+        // Set fallback data on any error
         if (pageNum === 1) {
           const demoData = getDefaultBookmarksData();
           setBookmarks(demoData);
           setHasMore(false);
-          
-          // Set demo filter options
           setSubjects(['Mathematics', 'Physics', 'Chemistry']);
-          setTopics(['Algebra', 'Newton\'s Laws', 'Periodic Table']);
-          
+          setTopics(['Algebra', "Newton's Laws", 'Periodic Table']);
+
           if (showLoader) {
             startEntranceAnimations();
           }
-          
-          showToast({
-            message: 'Unable to load bookmarks. Showing sample data.',
-            type: 'info',
-          });
         }
-      }
 
-    } catch (error) {
-      console.error('Load bookmarks error:', error);
-      
-      // Set fallback data on any error
-      if (pageNum === 1) {
-        const demoData = getDefaultBookmarksData();
-        setBookmarks(demoData);
-        setHasMore(false);
-        setSubjects(['Mathematics', 'Physics', 'Chemistry']);
-        setTopics(['Algebra', 'Newton\'s Laws', 'Periodic Table']);
-        
-        if (showLoader) {
-          startEntranceAnimations();
-        }
+        showToast({
+          title: 'Failed to load bookmarks. Please try again.',
+          type: 'error',
+        });
+      } finally {
+        if (showLoader && pageNum === 1) setLoading(false);
+        setRefreshing(false);
       }
-      
-      showToast({
-        message: 'Failed to load bookmarks. Please try again.',
-        type: 'error',
-      });
-    } finally {
-      if (showLoader && pageNum === 1) setLoading(false);
-      setRefreshing(false);
-    }
-  }, [selectedSubject, selectedTopic, showToast]);
+    },
+    [selectedSubject, selectedTopic, showToast],
+  );
 
   // Start entrance animations
   const startEntranceAnimations = () => {
@@ -232,23 +258,33 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
         const content = bookmark.content || '';
         const topics = safeArray(bookmark.topics);
         const subject = bookmark.sessionSubject || '';
-        
-        return content.toLowerCase().includes(query) ||
-               topics.some(topic => topic.toLowerCase().includes(query)) ||
-               subject.toLowerCase().includes(query);
+
+        return (
+          content.toLowerCase().includes(query) ||
+          topics.some(topic => topic.toLowerCase().includes(query)) ||
+          subject.toLowerCase().includes(query)
+        );
       });
     }
 
     // Apply sorting
     switch (sortBy) {
       case 'recent':
-        filtered.sort((a, b) => new Date(b.bookmarkedAt || 0) - new Date(a.bookmarkedAt || 0));
+        filtered.sort(
+          (a, b) =>
+            new Date(b.bookmarkedAt || 0) - new Date(a.bookmarkedAt || 0),
+        );
         break;
       case 'oldest':
-        filtered.sort((a, b) => new Date(a.bookmarkedAt || 0) - new Date(b.bookmarkedAt || 0));
+        filtered.sort(
+          (a, b) =>
+            new Date(a.bookmarkedAt || 0) - new Date(b.bookmarkedAt || 0),
+        );
         break;
       case 'subject':
-        filtered.sort((a, b) => (a.sessionSubject || '').localeCompare(b.sessionSubject || ''));
+        filtered.sort((a, b) =>
+          (a.sessionSubject || '').localeCompare(b.sessionSubject || ''),
+        );
         break;
     }
 
@@ -273,43 +309,47 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadBookmarks();
-    }, [loadBookmarks])
+    }, [loadBookmarks]),
   );
 
   // Toggle bookmark
-  const toggleBookmark = async (messageId) => {
+  const toggleBookmark = async messageId => {
     try {
       // FIX: Handle demo data removal
       if (messageId.startsWith('demo_')) {
-        setBookmarks(prev => safeArray(prev).filter(b => b.messageId !== messageId));
+        setBookmarks(prev =>
+          safeArray(prev).filter(b => b.messageId !== messageId),
+        );
         showToast({
-          message: 'Demo bookmark removed',
+          title: 'Demo bookmark removed',
           type: 'success',
         });
         return;
       }
 
       await aiStudyBuddyToggleBookmarkApi(messageId);
-      
+
       // Remove from local state
-      setBookmarks(prev => safeArray(prev).filter(b => b.messageId !== messageId));
-      
+      setBookmarks(prev =>
+        safeArray(prev).filter(b => b.messageId !== messageId),
+      );
+
       showToast({
-        message: 'Bookmark removed',
+        title: 'Bookmark removed',
         type: 'success',
       });
     } catch (error) {
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     }
   };
 
   // FIX: Format date with null check
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     if (!dateString) return 'Unknown date';
-    
+
     try {
       const date = new Date(dateString);
       const now = new Date();
@@ -326,16 +366,16 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
   };
 
   // Get subject icon and color
-  const getSubjectStyle = (subject) => {
+  const getSubjectStyle = subject => {
     const styles = {
-      mathematics: { icon: 'calculate', color: '#6366F1' },
-      physics: { icon: 'science', color: '#06B6D4' },
-      chemistry: { icon: 'biotech', color: '#10B981' },
-      biology: { icon: 'eco', color: '#EF4444' },
-      computer_science: { icon: 'computer', color: '#8B5CF6' },
-      english: { icon: 'menu-book', color: '#EC4899' },
+      mathematics: {icon: 'calculate', color: '#6366F1'},
+      physics: {icon: 'science', color: '#06B6D4'},
+      chemistry: {icon: 'biotech', color: '#10B981'},
+      biology: {icon: 'eco', color: '#EF4444'},
+      computer_science: {icon: 'computer', color: '#8B5CF6'},
+      english: {icon: 'menu-book', color: '#EC4899'},
     };
-    return styles[subject?.toLowerCase()] || { icon: 'book', color: '#6B7280' };
+    return styles[subject?.toLowerCase()] || {icon: 'book', color: '#6B7280'};
   };
 
   // Render search header
@@ -356,11 +396,10 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
           </Pressable>
         )}
       </View>
-      
+
       <Pressable
         style={styles.filterButton}
-        onPress={() => setShowFilters(true)}
-      >
+        onPress={() => setShowFilters(true)}>
         <Icon name="tune" size={20} color="#374151" />
       </Pressable>
     </View>
@@ -371,9 +410,9 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
     <View style={styles.sortContainer}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {[
-          { value: 'recent', label: 'Most Recent' },
-          { value: 'oldest', label: 'Oldest First' },
-          { value: 'subject', label: 'By Subject' },
+          {value: 'recent', label: 'Most Recent'},
+          {value: 'oldest', label: 'Oldest First'},
+          {value: 'subject', label: 'By Subject'},
         ].map(option => (
           <Pressable
             key={option.value}
@@ -381,12 +420,12 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
               styles.sortOption,
               sortBy === option.value && styles.sortOptionActive,
             ]}
-            onPress={() => setSortBy(option.value)}
-          >
-            <Text style={[
-              styles.sortText,
-              sortBy === option.value && styles.sortTextActive,
-            ]}>
+            onPress={() => setSortBy(option.value)}>
+            <Text
+              style={[
+                styles.sortText,
+                sortBy === option.value && styles.sortTextActive,
+              ]}>
               {option.label}
             </Text>
           </Pressable>
@@ -408,14 +447,17 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
           styles.bookmarkCard,
           {
             opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
+            transform: [{scale: scaleAnim}],
           },
-        ]}
-      >
+        ]}>
         {/* Header */}
         <View style={styles.bookmarkHeader}>
           <View style={styles.bookmarkInfo}>
-            <View style={[styles.subjectIcon, { backgroundColor: subjectStyle.color }]}>
+            <View
+              style={[
+                styles.subjectIcon,
+                {backgroundColor: subjectStyle.color},
+              ]}>
               <Icon name={subjectStyle.icon} size={16} color="white" />
             </View>
             <View style={styles.headerText}>
@@ -427,11 +469,10 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
               </Text>
             </View>
           </View>
-          
+
           <Pressable
             style={styles.bookmarkAction}
-            onPress={() => toggleBookmark(item.messageId)}
-          >
+            onPress={() => toggleBookmark(item.messageId)}>
             <Icon name="bookmark" size={20} color="#F59E0B" />
           </Pressable>
         </View>
@@ -440,18 +481,16 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
         <View style={styles.bookmarkContent}>
           <Text
             style={styles.contentText}
-            numberOfLines={isExpanded ? undefined : 3}
-          >
+            numberOfLines={isExpanded ? undefined : 3}>
             {content}
           </Text>
-          
+
           {content.length > 150 && (
             <Pressable
               style={styles.expandButton}
-              onPress={() => setExpandedBookmark(
-                isExpanded ? null : item.messageId
-              )}
-            >
+              onPress={() =>
+                setExpandedBookmark(isExpanded ? null : item.messageId)
+              }>
               <Text style={styles.expandText}>
                 {isExpanded ? 'Show less' : 'Read more'}
               </Text>
@@ -484,7 +523,8 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
             onPress={() => {
               if (item.messageId.startsWith('demo_')) {
                 showToast({
-                  message: 'This is a demo bookmark. Start a real conversation to bookmark messages!',
+                  title:
+                    'This is a demo bookmark. Start a real conversation to bookmark messages!',
                   type: 'info',
                 });
                 return;
@@ -493,23 +533,21 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
                 sessionId: item.sessionId,
                 messageId: item.messageId,
               });
-            }}
-          >
+            }}>
             <Icon name="chat" size={16} color="#6366F1" />
             <Text style={styles.actionText}>View Conversation</Text>
           </Pressable>
-          
+
           <Pressable
             style={styles.actionButton}
             onPress={() => {
               showToast({
-                message: 'Sharing coming soon!',
+                title: 'Sharing coming soon!',
                 type: 'info',
               });
-            }}
-          >
+            }}>
             <Icon name="share" size={16} color="#6B7280" />
-            <Text style={[styles.actionText, { color: '#6B7280' }]}>Share</Text>
+            <Text style={[styles.actionText, {color: '#6B7280'}]}>Share</Text>
           </Pressable>
         </View>
       </Animated.View>
@@ -522,8 +560,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
       visible={showFilters}
       transparent
       animationType="slide"
-      onRequestClose={() => setShowFilters(false)}
-    >
+      onRequestClose={() => setShowFilters(false)}>
       <View style={styles.modalOverlay}>
         <View style={styles.filterModal}>
           <View style={styles.filterHeader}>
@@ -543,16 +580,17 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
                     styles.filterOption,
                     selectedSubject === 'all' && styles.filterOptionActive,
                   ]}
-                  onPress={() => setSelectedSubject('all')}
-                >
-                  <Text style={[
-                    styles.filterOptionText,
-                    selectedSubject === 'all' && styles.filterOptionTextActive,
-                  ]}>
+                  onPress={() => setSelectedSubject('all')}>
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedSubject === 'all' &&
+                        styles.filterOptionTextActive,
+                    ]}>
                     All Subjects
                   </Text>
                 </Pressable>
-                
+
                 {safeArray(subjects).map(subject => (
                   <Pressable
                     key={subject}
@@ -560,12 +598,13 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
                       styles.filterOption,
                       selectedSubject === subject && styles.filterOptionActive,
                     ]}
-                    onPress={() => setSelectedSubject(subject)}
-                  >
-                    <Text style={[
-                      styles.filterOptionText,
-                      selectedSubject === subject && styles.filterOptionTextActive,
-                    ]}>
+                    onPress={() => setSelectedSubject(subject)}>
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        selectedSubject === subject &&
+                          styles.filterOptionTextActive,
+                      ]}>
                       {subject}
                     </Text>
                   </Pressable>
@@ -582,33 +621,36 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
                     styles.filterOption,
                     selectedTopic === 'all' && styles.filterOptionActive,
                   ]}
-                  onPress={() => setSelectedTopic('all')}
-                >
-                  <Text style={[
-                    styles.filterOptionText,
-                    selectedTopic === 'all' && styles.filterOptionTextActive,
-                  ]}>
+                  onPress={() => setSelectedTopic('all')}>
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedTopic === 'all' && styles.filterOptionTextActive,
+                    ]}>
                     All Topics
                   </Text>
                 </Pressable>
-                
-                {safeArray(topics).slice(0, 10).map(topic => (
-                  <Pressable
-                    key={topic}
-                    style={[
-                      styles.filterOption,
-                      selectedTopic === topic && styles.filterOptionActive,
-                    ]}
-                    onPress={() => setSelectedTopic(topic)}
-                  >
-                    <Text style={[
-                      styles.filterOptionText,
-                      selectedTopic === topic && styles.filterOptionTextActive,
-                    ]}>
-                      {topic}
-                    </Text>
-                  </Pressable>
-                ))}
+
+                {safeArray(topics)
+                  .slice(0, 10)
+                  .map(topic => (
+                    <Pressable
+                      key={topic}
+                      style={[
+                        styles.filterOption,
+                        selectedTopic === topic && styles.filterOptionActive,
+                      ]}
+                      onPress={() => setSelectedTopic(topic)}>
+                      <Text
+                        style={[
+                          styles.filterOptionText,
+                          selectedTopic === topic &&
+                            styles.filterOptionTextActive,
+                        ]}>
+                        {topic}
+                      </Text>
+                    </Pressable>
+                  ))}
               </View>
             </View>
           </ScrollView>
@@ -640,20 +682,22 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
   // Render empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <LinearGradient
-        colors={['#6366F1', '#8B5CF6']}
-        style={styles.emptyIcon}
-      >
+      <LinearGradient colors={['#6366F1', '#8B5CF6']} style={styles.emptyIcon}>
         <Icon name="bookmark-border" size={32} color="white" />
       </LinearGradient>
       <Text style={styles.emptyTitle}>No Bookmarks Yet</Text>
       <Text style={styles.emptyDescription}>
-        Start bookmarking important messages in your AI Study Buddy conversations to save them here
+        Start bookmarking important messages in your AI Study Buddy
+        conversations to save them here
       </Text>
       <Button
-        title="Start Learning"
-        onPress={() => navigation.navigate(Routes.AIStudyBuddyHub)}
+        text="Start Learning"
+        onPress={() => {
+          mixpanel.track('Clicked on start Learning');
+          navigation.navigate(Routes.AIStudyBuddyHub);
+        }}
         style={styles.emptyButton}
+        // textStyle={{color: COLORS.whiteFFFFFF}}
       />
     </View>
   );
@@ -678,8 +722,8 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-      
-      <Header 
+
+      <Header
         title="Bookmarks"
         showBackButton
         rightComponent={
@@ -699,10 +743,9 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
             styles.content,
             {
               opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
+              transform: [{scale: scaleAnim}],
             },
-          ]}
-        >
+          ]}>
           {/* Search Header */}
           {renderSearchHeader()}
 
@@ -713,7 +756,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
           <FlatList
             data={filteredBookmarks}
             renderItem={renderBookmarkItem}
-            keyExtractor={(item) => item.messageId || `bookmark_${Math.random()}`}
+            keyExtractor={item => item.messageId || `bookmark_${Math.random()}`}
             style={styles.bookmarksList}
             contentContainerStyle={styles.bookmarksContent}
             showsVerticalScrollIndicator={false}
@@ -724,9 +767,9 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
             onEndReachedThreshold={0.1}
             ListFooterComponent={
               hasMore && !loading ? (
-                <ActivityIndicator 
-                  size="small" 
-                  color="#6366F1" 
+                <ActivityIndicator
+                  size="small"
+                  color="#6366F1"
                   style={styles.loadMoreIndicator}
                 />
               ) : null
@@ -835,7 +878,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: nw(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,

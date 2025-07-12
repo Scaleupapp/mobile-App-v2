@@ -87,7 +87,7 @@ import LearningVault from './screens/LearningVault/LearningVault';
 import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
 import TopicInsight from './screens/TopicInsight/TopicInsight';
 import LearningIntelligenceHub from './screens/LearningIntelligence/LearningIntelligenceHub';
-import FlashcardHub from './screens/Flashcards/FlashcardHub'; 
+import FlashcardHub from './screens/Flashcards/FlashcardHub';
 import CreateDeck from './screens/Flashcards/CreateDeck';
 import UploadDocument from './screens/Flashcards/UploadDocument';
 import DeckDetails from './screens/Flashcards/DeckDetails';
@@ -98,7 +98,7 @@ import FlashcardAnalytics from './screens/Flashcards/FlashcardAnalytics';
 import MyDecks from './screens/Flashcards/MyDecks';
 import StudySummary from './screens/Flashcards/StudySummary';
 import CramMode from './screens/Flashcards/CramMode';
-import CramFlashcardViewer from './screens/Flashcards/CramFlashcardViewer.js';  
+import CramFlashcardViewer from './screens/Flashcards/CramFlashcardViewer.js';
 import AIStudyBuddyHub from './screens/AIStudyBuddy/AIStudyBuddyHub';
 import AIStudyBuddyNewSession from './screens/AIStudyBuddy/AIStudyBuddyNewSession';
 import AIStudyBuddyChat from './screens/AIStudyBuddy/AIStudyBuddyChat';
@@ -108,6 +108,7 @@ import AIStudyBuddySessionHistory from './screens/AIStudyBuddy/AIStudyBuddySessi
 import AIStudyBuddyAnalytics from './screens/AIStudyBuddy/AIStudyBuddyAnalytics';
 import AIStudyBuddyBookmarks from './screens/AIStudyBuddy/AIStudyBuddyBookmarks';
 import AIStudyBuddySearch from './screens/AIStudyBuddy/AIStudyBuddySearch';
+import {APP_FONTS} from './assets/fonts/index.js';
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -159,7 +160,8 @@ const LoginNavigator = ({route}) => {
 
 const TabNavigator = props => {
   const initialRouteName = props?.route?.params?.route || 'MainHome';
-  const setBottomIcon = (img, focused) => {
+
+  const setBottomIcon = (img, focused, tabname) => {
     if (focused)
       return (
         <View
@@ -198,6 +200,29 @@ const TabNavigator = props => {
       );
     return (
       <View style={{marginTop: nh(isAndroid ? 10 : 15)}}>
+        {tabname == 'create' ? (
+          <View
+            style={{
+              backgroundColor: 'orange',
+              borderRadius: 10,
+              paddingHorizontal: 4,
+              // marginLeft: 6,
+              paddingVertical: 1,
+              position: 'absolute',
+              right: -10,
+              top: -10,
+              zIndex: 1,
+            }}>
+            <Text
+              style={{
+                color: 'white',
+                fontSize: 8,
+                fontFamily: APP_FONTS.PoppinsBold,
+              }}>
+              New
+            </Text>
+          </View>
+        ) : null}
         <Image
           source={img}
           style={{height: nw(30), width: nw(30)}}
@@ -248,7 +273,7 @@ const TabNavigator = props => {
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Home', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.home1 : icons.home2, focused),
+            setBottomIcon(focused ? icons.home1 : icons.home2, focused, 'home'),
         }}
       />
       <Tab.Screen
@@ -258,7 +283,11 @@ const TabNavigator = props => {
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Search', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.search1 : icons.search2, focused),
+            setBottomIcon(
+              focused ? icons.search1 : icons.search2,
+              focused,
+              'search',
+            ),
         }}
       />
       <Tab.Screen
@@ -268,7 +297,7 @@ const TabNavigator = props => {
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Create', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.add1 : icons.add2, focused),
+            setBottomIcon(focused ? icons.add1 : icons.add2, focused, 'create'),
         }}
       />
       <Tab.Screen
@@ -278,7 +307,11 @@ const TabNavigator = props => {
           headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Flashcard', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.book1 : icons.book2, focused),
+            setBottomIcon(
+              focused ? icons.book1 : icons.book2,
+              focused,
+              'Flashcard',
+            ),
         }}
       />
       {/* <Tab.Screen
@@ -300,6 +333,7 @@ const TabNavigator = props => {
             setBottomIcon(
               focused ? icons.quizActive : icons.quizInactive,
               focused,
+              'Quiz',
             ),
         }}
       />
@@ -670,125 +704,125 @@ export const RootNavigator = () => {
         options={{headerShown: false}}
       />
       <Stack.Screen
-          name={Routes.AreasOfImprovement}
-          component={AreasOfImprovement}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.TopicInsight}
-          component={TopicInsight}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.LearningIntelligenceHub}
-          component={LearningIntelligenceHub}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.FlashcardHub}
-          component={FlashcardHub}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.CreateDeck}
-          component={CreateDeck}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.UploadDocument}
-          component={UploadDocument}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.DeckDetails}
-          component={DeckDetails}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.FlashcardViewer}
-          component={FlashcardViewer}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.PublicDecks}
-          component={BrowsePublicDecks}
-          options={{headerShown: false}}
-        />  
-        <Stack.Screen
-          name={Routes.AddEditCard}
-          component={AddEditCard}
-          options={{headerShown: false}}
-        />
-          <Stack.Screen
-          name={Routes.FlashcardAnalytics}
-          component={FlashcardAnalytics}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.MyDecks}
-          component={MyDecks}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.StudySummary}
-          component={StudySummary}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.CramMode}
-          component={CramMode}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.CramFlashcardViewer}
-          component={CramFlashcardViewer}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyHub}
-          component={AIStudyBuddyHub}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyNewSession}
-          component={AIStudyBuddyNewSession}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyChat}
-          component={AIStudyBuddyChat}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen 
-          name={Routes.AIStudyBuddyActiveSessions} 
-          component={AIStudyBuddyActiveSessions} 
-          options={{headerShown: false}} 
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddySessionDetails}
-          component={AIStudyBuddySessionDetails}
-          options={{headerShown: false}}
-        />    
-        <Stack.Screen
-          name={Routes.AIStudyBuddySessionHistory}
-          component={AIStudyBuddySessionHistory}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyAnalytics}
-          component={AIStudyBuddyAnalytics}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyBookmarks}
-          component={AIStudyBuddyBookmarks}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddySearchMessages}
-          component={AIStudyBuddySearch}
-          options={{headerShown: false}}
-        />
+        name={Routes.AreasOfImprovement}
+        component={AreasOfImprovement}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.TopicInsight}
+        component={TopicInsight}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.LearningIntelligenceHub}
+        component={LearningIntelligenceHub}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.FlashcardHub}
+        component={FlashcardHub}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CreateDeck}
+        component={CreateDeck}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.UploadDocument}
+        component={UploadDocument}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.DeckDetails}
+        component={DeckDetails}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.FlashcardViewer}
+        component={FlashcardViewer}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.PublicDecks}
+        component={BrowsePublicDecks}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AddEditCard}
+        component={AddEditCard}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.FlashcardAnalytics}
+        component={FlashcardAnalytics}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.MyDecks}
+        component={MyDecks}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.StudySummary}
+        component={StudySummary}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CramMode}
+        component={CramMode}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.CramFlashcardViewer}
+        component={CramFlashcardViewer}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddyHub}
+        component={AIStudyBuddyHub}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddyNewSession}
+        component={AIStudyBuddyNewSession}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddyChat}
+        component={AIStudyBuddyChat}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddyActiveSessions}
+        component={AIStudyBuddyActiveSessions}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddySessionDetails}
+        component={AIStudyBuddySessionDetails}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddySessionHistory}
+        component={AIStudyBuddySessionHistory}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddyAnalytics}
+        component={AIStudyBuddyAnalytics}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddyBookmarks}
+        component={AIStudyBuddyBookmarks}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name={Routes.AIStudyBuddySearchMessages}
+        component={AIStudyBuddySearch}
+        options={{headerShown: false}}
+      />
     </Stack.Navigator>
   );
 };

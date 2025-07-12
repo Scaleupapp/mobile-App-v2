@@ -31,6 +31,7 @@ import {
   aiStudyBuddyGetAnalyticsApi,
   formatAiStudyBuddyError,
 } from '../../services/apiService';
+import mixpanel from '../../helper/mixpanelClient';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -52,23 +53,94 @@ const AIStudyBuddyHub = ({navigation}) => {
 
   // Enhanced subject data for Indian competitive exams and higher education
   const competitiveExamSubjects = [
-    { id: 'mathematics', name: 'Mathematics', icon: 'calculate', color: '#2563EB', gradient: ['#2563EB', '#1D4ED8'] },
-    { id: 'physics', name: 'Physics', icon: 'science', color: '#059669', gradient: ['#059669', '#047857'] },
-    { id: 'chemistry', name: 'Chemistry', icon: 'biotech', color: '#DC2626', gradient: ['#DC2626', '#B91C1C'] },
-    { id: 'biology', name: 'Biology', icon: 'eco', color: '#7C3AED', gradient: ['#7C3AED', '#6D28D9'] },
-    { id: 'english', name: 'English', icon: 'menu-book', color: '#EA580C', gradient: ['#EA580C', '#C2410C'] },
-    { id: 'computer_science', name: 'Computer Science', icon: 'computer', color: '#0891B2', gradient: ['#0891B2', '#0E7490'] },
-    { id: 'economics', name: 'Economics', icon: 'trending-up', color: '#BE185D', gradient: ['#BE185D', '#A21CAF'] },
-    { id: 'accountancy', name: 'Accountancy', icon: 'account-balance', color: '#059669', gradient: ['#059669', '#047857'] },
-    { id: 'history', name: 'History', icon: 'history-edu', color: '#B45309', gradient: ['#B45309', '#92400E'] },
-    { id: 'geography', name: 'Geography', icon: 'public', color: '#065F46', gradient: ['#065F46', '#064E3B'] },
-    { id: 'political_science', name: 'Political Science', icon: 'gavel', color: '#7C2D12', gradient: ['#7C2D12', '#6B2410'] },
-    { id: 'psychology', name: 'Psychology', icon: 'psychology', color: '#BE123C', gradient: ['#BE123C', '#A21CAF'] },
+    {
+      id: 'mathematics',
+      name: 'Mathematics',
+      icon: 'calculate',
+      color: '#2563EB',
+      gradient: ['#2563EB', '#1D4ED8'],
+    },
+    {
+      id: 'physics',
+      name: 'Physics',
+      icon: 'science',
+      color: '#059669',
+      gradient: ['#059669', '#047857'],
+    },
+    {
+      id: 'chemistry',
+      name: 'Chemistry',
+      icon: 'biotech',
+      color: '#DC2626',
+      gradient: ['#DC2626', '#B91C1C'],
+    },
+    {
+      id: 'biology',
+      name: 'Biology',
+      icon: 'eco',
+      color: '#7C3AED',
+      gradient: ['#7C3AED', '#6D28D9'],
+    },
+    {
+      id: 'english',
+      name: 'English',
+      icon: 'menu-book',
+      color: '#EA580C',
+      gradient: ['#EA580C', '#C2410C'],
+    },
+    {
+      id: 'computer_science',
+      name: 'Computer Science',
+      icon: 'computer',
+      color: '#0891B2',
+      gradient: ['#0891B2', '#0E7490'],
+    },
+    {
+      id: 'economics',
+      name: 'Economics',
+      icon: 'trending-up',
+      color: '#BE185D',
+      gradient: ['#BE185D', '#A21CAF'],
+    },
+    {
+      id: 'accountancy',
+      name: 'Accountancy',
+      icon: 'account-balance',
+      color: '#059669',
+      gradient: ['#059669', '#047857'],
+    },
+    {
+      id: 'history',
+      name: 'History',
+      icon: 'history-edu',
+      color: '#B45309',
+      gradient: ['#B45309', '#92400E'],
+    },
+    {
+      id: 'geography',
+      name: 'Geography',
+      icon: 'public',
+      color: '#065F46',
+      gradient: ['#065F46', '#064E3B'],
+    },
+    {
+      id: 'political_science',
+      name: 'Political Science',
+      icon: 'gavel',
+      color: '#7C2D12',
+      gradient: ['#7C2D12', '#6B2410'],
+    },
+    {
+      id: 'psychology',
+      name: 'Psychology',
+      icon: 'psychology',
+      color: '#BE123C',
+      gradient: ['#BE123C', '#A21CAF'],
+    },
   ];
 
   // Quick actions (reduced as requested)
   const quickActions = [
-   
     {
       id: 'bookmarks',
       title: 'Bookmarks',
@@ -98,15 +170,20 @@ const AIStudyBuddyHub = ({navigation}) => {
       if (showLoader) setLoading(true);
 
       // Fetch all required data in parallel
-      const [quotaResponse, sessionsResponse, analyticsResponse] = await Promise.all([
-        aiStudyBuddyGetQuotaApi().catch(() => ({ data: { quota: null } })),
-        aiStudyBuddyGetActiveSessionsApi().catch(() => ({ data: { activeSessions: [] } })),
-        aiStudyBuddyGetAnalyticsApi('7d').catch(() => ({ data: { analytics: null } })),
-      ]);
+      const [quotaResponse, sessionsResponse, analyticsResponse] =
+        await Promise.all([
+          aiStudyBuddyGetQuotaApi().catch(() => ({data: {quota: null}})),
+          aiStudyBuddyGetActiveSessionsApi().catch(() => ({
+            data: {activeSessions: []},
+          })),
+          aiStudyBuddyGetAnalyticsApi('7d').catch(() => ({
+            data: {analytics: null},
+          })),
+        ]);
 
       setQuotaInfo(quotaResponse.data.quota);
       setActiveSessions(sessionsResponse.data.activeSessions || []);
-      
+
       // Set analytics data
       if (analyticsResponse.data.analytics) {
         const analytics = analyticsResponse.data.analytics;
@@ -122,35 +199,46 @@ const AIStudyBuddyHub = ({navigation}) => {
       if (!analyticsResponse.data.analytics) {
         calculateTodayStats(sessionsResponse.data.activeSessions);
       }
-
     } catch (error) {
       console.error('Load data error:', error);
       showToast({
-        message: formatAiStudyBuddyError(error),
+        title: formatAiStudyBuddyError(error),
         type: 'error',
       });
     } finally {
       if (showLoader) setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast]);
+  }, []);
 
   // Calculate today's learning stats (fallback)
-  const calculateTodayStats = (sessions) => {
+  const calculateTodayStats = sessions => {
     const today = new Date().toDateString();
-    const todaySessions = sessions?.filter(s => 
-      new Date(s.lastMessageAt).toDateString() === today
-    ) || [];
+    const todaySessions =
+      sessions?.filter(
+        s => new Date(s.lastMessageAt).toDateString() === today,
+      ) || [];
 
     const stats = {
-      questionsAsked: todaySessions.reduce((sum, s) => sum + (s.messageCount || 0), 0),
-      topicsExplored: new Set(todaySessions.flatMap(s => s.topicsDiscussed || [])).size,
-      timeSpent: Math.round(todaySessions.reduce((sum, s) => {
-        if (s.startedAt && s.lastMessageAt) {
-          return sum + (new Date(s.lastMessageAt) - new Date(s.startedAt)) / (1000 * 60 * 60);
-        }
-        return sum;
-      }, 0)),
+      questionsAsked: todaySessions.reduce(
+        (sum, s) => sum + (s.messageCount || 0),
+        0,
+      ),
+      topicsExplored: new Set(
+        todaySessions.flatMap(s => s.topicsDiscussed || []),
+      ).size,
+      timeSpent: Math.round(
+        todaySessions.reduce((sum, s) => {
+          if (s.startedAt && s.lastMessageAt) {
+            return (
+              sum +
+              (new Date(s.lastMessageAt) - new Date(s.startedAt)) /
+                (1000 * 60 * 60)
+            );
+          }
+          return sum;
+        }, 0),
+      ),
       streak: 1,
     };
 
@@ -167,7 +255,7 @@ const AIStudyBuddyHub = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       loadData();
-    }, [loadData])
+    }, [loadData]),
   );
 
   // Get appropriate greeting based on time
@@ -188,18 +276,20 @@ const AIStudyBuddyHub = ({navigation}) => {
         <LinearGradient
           colors={['#1E40AF', '#3B82F6']}
           style={styles.heroGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}>
           <View style={styles.heroContent}>
-            <Text style={styles.greetingText}>{greeting}, {firstName}! 👋</Text>
+            <Text style={styles.greetingText}>
+              {greeting}, {firstName}! 👋
+            </Text>
             <Text style={styles.motivationText}>Ready to ace your exams?</Text>
-            
+
             {/* Main CTA Button */}
             <Pressable
               style={styles.mainCTAButton}
-              onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}
-            >
+              onPress={() =>
+                navigation.navigate(Routes.AIStudyBuddyNewSession)
+              }>
               <Icon name="chat" size={20} color="#1E40AF" />
               <Text style={styles.ctaText}>Start Learning</Text>
               <Icon name="arrow-forward" size={16} color="#1E40AF" />
@@ -212,7 +302,11 @@ const AIStudyBuddyHub = ({navigation}) => {
 
   // Render compact stats section
   const renderStatsSection = () => {
-    if (!weeklyStats.questionsAsked && !weeklyStats.topicsExplored && !weeklyStats.timeSpent) {
+    if (
+      !weeklyStats.questionsAsked &&
+      !weeklyStats.topicsExplored &&
+      !weeklyStats.timeSpent
+    ) {
       return null;
     }
 
@@ -243,7 +337,8 @@ const AIStudyBuddyHub = ({navigation}) => {
         <View style={styles.statsGrid}>
           {stats.map((stat, index) => (
             <View key={index} style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: stat.color + '15' }]}>
+              <View
+                style={[styles.statIcon, {backgroundColor: stat.color + '15'}]}>
                 <Icon name={stat.icon} size={16} color={stat.color} />
               </View>
               <Text style={styles.statValue}>{stat.value}</Text>
@@ -274,17 +369,22 @@ const AIStudyBuddyHub = ({navigation}) => {
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.progressContainer}>
             <View style={styles.progressTrack}>
-              <View 
+              <View
                 style={[
-                  styles.progressBar, 
-                  { 
+                  styles.progressBar,
+                  {
                     width: `${percentage}%`,
-                    backgroundColor: remaining > 2 ? '#2563EB' : remaining > 0 ? '#DC2626' : '#EF4444'
-                  }
-                ]} 
+                    backgroundColor:
+                      remaining > 2
+                        ? '#2563EB'
+                        : remaining > 0
+                        ? '#DC2626'
+                        : '#EF4444',
+                  },
+                ]}
               />
             </View>
           </View>
@@ -297,13 +397,19 @@ const AIStudyBuddyHub = ({navigation}) => {
   const renderQuickActions = () => (
     <View style={styles.quickActionsSection}>
       <View style={styles.quickActionsGrid}>
-        {quickActions.map((action) => (
+        {quickActions.map(action => (
           <Pressable
             key={action.id}
             style={styles.quickActionCard}
-            onPress={() => navigation.navigate(action.route)}
-          >
-            <View style={[styles.quickActionIcon, { backgroundColor: action.color + '15' }]}>
+            onPress={() => {
+              mixpanel.track(`Clicked on ${action.title}`);
+              navigation.navigate(action.route);
+            }}>
+            <View
+              style={[
+                styles.quickActionIcon,
+                {backgroundColor: action.color + '15'},
+              ]}>
               <Icon name={action.icon} size={18} color={action.color} />
             </View>
             <Text style={styles.quickActionTitle}>{action.title}</Text>
@@ -315,19 +421,20 @@ const AIStudyBuddyHub = ({navigation}) => {
 
   // Render enhanced subjects section for Indian students
   const renderSubjectsSection = () => {
-    const renderSubjectItem = ({ item, index }) => (
+    const renderSubjectItem = ({item, index}) => (
       <Pressable
         style={styles.subjectCard}
-        onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession, {
-          preselectedSubject: item.id,
-        })}
-      >
+        onPress={() => {
+          mixpanel.track(`Clicked on subject ${item.name}`);
+          navigation.navigate(Routes.AIStudyBuddyNewSession, {
+            preselectedSubject: item.id,
+          });
+        }}>
         <LinearGradient
           colors={item.gradient}
           style={styles.subjectGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}>
           <Icon name={item.icon} size={20} color="white" />
         </LinearGradient>
         <Text style={styles.subjectName}>{item.name}</Text>
@@ -338,19 +445,18 @@ const AIStudyBuddyHub = ({navigation}) => {
       <View style={styles.subjectsSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Study Subjects</Text>
-          <Pressable 
+          <Pressable
             onPress={() => navigation.navigate(Routes.AIStudyBuddyNewSession)}
-            style={styles.viewAllButton}
-          >
+            style={styles.viewAllButton}>
             <Text style={styles.viewAllText}>View All</Text>
             <Icon name="arrow-forward" size={14} color="#2563EB" />
           </Pressable>
         </View>
-        
+
         <FlatList
           data={competitiveExamSubjects}
           renderItem={renderSubjectItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.subjectsList}
@@ -367,9 +473,7 @@ const AIStudyBuddyHub = ({navigation}) => {
           <Text style={styles.sectionTitle}>Recent Sessions</Text>
           <View style={styles.emptyConversations}>
             <Icon name="chat-bubble-outline" size={40} color="#9CA3AF" />
-            <Text style={styles.emptyConversationsText}>
-              No sessions yet
-            </Text>
+            <Text style={styles.emptyConversationsText}>No sessions yet</Text>
             <Text style={styles.emptyConversationsSubtext}>
               Start your first study session to see it here
             </Text>
@@ -384,34 +488,43 @@ const AIStudyBuddyHub = ({navigation}) => {
       <View style={styles.conversationsSection}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Continue Learning</Text>
-          <Pressable 
-            onPress={() => navigation.navigate(Routes.AIStudyBuddySessionHistory)}
-            style={styles.viewAllButton}
-          >
+          <Pressable
+            onPress={() =>
+              navigation.navigate(Routes.AIStudyBuddySessionHistory)
+            }
+            style={styles.viewAllButton}>
             <Text style={styles.viewAllText}>View All</Text>
             <Icon name="arrow-forward" size={14} color="#2563EB" />
           </Pressable>
         </View>
-        
+
         <View style={styles.conversationsList}>
           {recentSessions.map((session, index) => {
-            const subject = competitiveExamSubjects.find(s => s.id === session.subject);
-            const lastTopic = session.topicsDiscussed?.slice(-1)[0] || 'General discussion';
-            
+            const subject = competitiveExamSubjects.find(
+              s => s.id === session.subject,
+            );
+            const lastTopic =
+              session.topicsDiscussed?.slice(-1)[0] || 'General discussion';
+
             return (
               <Pressable
                 key={session.sessionId}
                 style={styles.conversationCard}
-                onPress={() => navigation.navigate(Routes.AIStudyBuddyChat, {
-                  sessionId: session.sessionId,
-                  subject: session.subject,
-                })}
-              >
-                <View style={[styles.conversationIcon, { backgroundColor: subject?.color + '15' || '#2563EB15' }]}>
-                  <Icon 
-                    name={subject?.icon || 'school'} 
-                    size={16} 
-                    color={subject?.color || '#2563EB'} 
+                onPress={() =>
+                  navigation.navigate(Routes.AIStudyBuddyChat, {
+                    sessionId: session.sessionId,
+                    subject: session.subject,
+                  })
+                }>
+                <View
+                  style={[
+                    styles.conversationIcon,
+                    {backgroundColor: subject?.color + '15' || '#2563EB15'},
+                  ]}>
+                  <Icon
+                    name={subject?.icon || 'school'}
+                    size={16}
+                    color={subject?.color || '#2563EB'}
                   />
                 </View>
                 <View style={styles.conversationInfo}>
@@ -435,11 +548,11 @@ const AIStudyBuddyHub = ({navigation}) => {
   };
 
   // Get relative time string
-  const getRelativeTime = (dateString) => {
+  const getRelativeTime = dateString => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = (now - date) / (1000 * 60 * 60);
-    
+
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${Math.floor(diffInHours)}h ago`;
     return date.toLocaleDateString();
@@ -461,23 +574,22 @@ const AIStudyBuddyHub = ({navigation}) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#1E40AF" barStyle="light-content" />
-      
+
       {/* Header */}
-      <Header 
+      <Header
         title="AI Study Buddy"
         showBackButton={false}
         backgroundColor="#FFFFFF"
         titleColor="#111827"
       />
-      
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
         {renderHeroSection()}
 
@@ -527,7 +639,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: nh(24),
   },
-  
+
   // Hero Section - Better spacing to prevent cutoff
   heroSection: {
     marginHorizontal: nw(8),
@@ -536,14 +648,13 @@ const styles = StyleSheet.create({
   },
   heroGradient: {
     paddingVertical: nh(28),
-    
+
     borderRadius: 16,
     minHeight: nh(240),
   },
   heroContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    
   },
   greetingText: {
     fontSize: 18,
@@ -592,6 +703,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: nh(12),
+    marginHorizontal: nw(16),
   },
   viewAllButton: {
     flexDirection: 'row',
@@ -614,7 +726,7 @@ const styles = StyleSheet.create({
     padding: nw(12),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
@@ -650,7 +762,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: nw(16),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
@@ -704,7 +816,7 @@ const styles = StyleSheet.create({
     padding: nw(16),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
@@ -764,7 +876,7 @@ const styles = StyleSheet.create({
     padding: nw(24),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
@@ -791,7 +903,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.03,
     shadowRadius: 2,
     elevation: 1,
