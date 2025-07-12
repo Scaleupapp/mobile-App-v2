@@ -104,10 +104,10 @@ const QuotaCard = ({ quotaInfo, onRefresh }) => {
       <View style={styles.quotaProgress}>
         <View style={styles.quotaNumbers}>
           <Text variant="bold20" color={quotaColor}>
-            {remaining}
+            {remaining}<Text variant="regular14" color={COLORS.grey777777}>/{quotaInfo.limit}</Text>
           </Text>
-          <Text variant="regular12" color={COLORS.grey777777}>
-            / {quotaInfo.limit} left
+          <Text variant="regular11" color={COLORS.grey777777}>
+            remaining
           </Text>
         </View>
         
@@ -140,6 +140,94 @@ const QuotaCard = ({ quotaInfo, onRefresh }) => {
     </View>
   );
 };
+
+// Updated styles for better alignment
+const quotaCardStyles = StyleSheet.create({
+  quotaCard: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  quotaHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  quotaInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1, // Added flex: 1 to take available space
+  },
+  quotaIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: COLORS.blue043142 + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  quotaTextContainer: {
+    flex: 1,
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: COLORS.greyF7F7F7,
+    alignItems: 'center', // Added for proper icon centering
+    justifyContent: 'center', // Added for proper icon centering
+    width: 32, // Fixed width
+    height: 32, // Fixed height
+  },
+  quotaProgress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  quotaNumbers: {
+    alignItems: 'center',
+    minWidth: 60,
+  },
+  progressContainer: {
+    flex: 1,
+  },
+  progressBackground: {
+    height: 6,
+    backgroundColor: COLORS.greyEEEEEE,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  progressText: {
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  quotaWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    padding: 8,
+    backgroundColor: COLORS.orange + '10',
+    borderRadius: 8,
+  },
+});
 
 // Severity Badge Component
 const SeverityBadge = ({ severity, count }) => {
@@ -496,6 +584,7 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: COLORS.greyF7F7F7,
+    marginLeft: -30,
   },
   quotaProgress: {
     flexDirection: 'row',

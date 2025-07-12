@@ -25,6 +25,7 @@ import {
   getProfile,
   ReportPost,
   deleteContent,
+  getContentWithPremiumCheck
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 import {navigationRef} from '../../../App';
@@ -40,6 +41,7 @@ import ReportPostModal from '../Post/ReportPostModal';
 import VideoPostPlayer from './VideoPostPlayer';
 import DeleteConfirmationModal from '../Post/DeleteConfirmationModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const PostView = ({
   item,
@@ -77,6 +79,12 @@ const PostView = ({
   const [playlistPosts, setPlaylistPosts] = useState([]);
   const [showInfoButton, setShowInfoButton] = useState(false);
 
+  const [premiumData, setPremiumData] = useState(null);
+const [showPremiumLock, setShowPremiumLock] = useState(false);
+const [hasAccess, setHasAccess] = useState(true);
+
+
+
   const getmeasure = () => {
     if (componentRef.current) {
       componentRef.current.measure((x, y, width, height, pageX, pageY) => {
@@ -113,6 +121,29 @@ const PostView = ({
       console.log('Profile data fetch error:', error?.response?.data?.message);
     }
   };
+
+const checkPremiumAccess = async () => {
+  if (item?.contentType === 'Video') {
+    try {
+      const response = await getContentWithPremiumCheck(postId);
+      if (response.success) {
+        setPremiumData({
+          ...response,
+          contentId: postId, // Ensure contentId is set
+          contentTitle: item?.heading || item?.title
+        });
+        setHasAccess(response.hasAccess);
+        if (response.isPreviewMode) {
+          setShowPremiumLock(false);
+        }
+      }
+    } catch (error) {
+      console.log('Premium access check error:', error);
+    }
+  }
+};
+
+
 
   const onLoad = data => {
     const {width, height} = data.naturalSize;
@@ -366,6 +397,7 @@ const PostView = ({
   useEffect(() => {
     if (item?.contentType === 'Video') {
       fetchPlaylistInfo();
+      checkPremiumAccess();
     }
   }, [item, profileData]);
 
@@ -586,52 +618,54 @@ const PostView = ({
     }
   };
 
-  const renderVideoContainer = () => (
-    <View style={styles.videoContainer}>
-      {item?.isVerified && (
-        <View style={styles.verifiedBadge}>
-          <Icon
-            type="material-community"
-            name="check-decagram"
-            color={COLORS.yellowF5BE00}
-            size={20}
-          />
-        </View>
-      )}
-      {playlistInfo && playlistInfo.length > 0 && showInfoButton && (
-        <TouchableOpacity
-          style={styles.infoButton}
-          onPress={() => {
-            setShowPlaylistInfo(true);
-          }}>
-          <Icon
-            type="feather"
-            name="info"
-            size={20}
-            color={COLORS.whiteFFFFFF}
-          />
-        </TouchableOpacity>
-      )}
-      <VideoPostPlayer
-        videoUrl={item?.contentURL}
-        thumbnail={item?.thumbnail}
-        isVisible={isVideoVisible}
-        videoDimensions={videoDimensions}
-        onProgress={progress => {
-          // Optional: Track video progress
-          // console.log('Video progress:', progress);
-          if (progress.currentTime >= 5) {
-            // Add a state to control info button visibility
-            setShowInfoButton(true);
-          }
-        }}
-        onEnd={() => {
-          // Optional: Handle video completion
-          // console.log('Video completed');
-        }}
-      />
-    </View>
-  );
+const renderVideoContainer = () => (
+  <View style={styles.videoContainer}>
+    {item?.isVerified && (
+      <View style={styles.verifiedBadge}>
+        <Icon
+          type="material-community"
+          name="check-decagram"
+          color={COLORS.yellowF5BE00}
+          size={20}
+        />
+      </View>
+    )}
+    {playlistInfo && playlistInfo.length > 0 && showInfoButton && (
+      <TouchableOpacity
+        style={styles.infoButton}
+        onPress={() => {
+          setShowPlaylistInfo(true);
+        }}>
+        <Icon
+          type="feather"
+          name="info"
+          size={20}
+          color={COLORS.whiteFFFFFF}
+        />
+      </TouchableOpacity>
+    )}
+    <VideoPostPlayer
+      videoUrl={item?.contentURL}
+      thumbnail={item?.thumbnail}
+      isVisible={isVideoVisible}
+      videoDimensions={videoDimensions}
+      premiumData={{
+              ...premiumData,
+              contentId: postId,
+              contentTitle: item?.heading || item?.title
+            }}
+      onPreviewEnd={() => setShowPremiumLock(true)}
+      onProgress={progress => {
+        if (progress.currentTime >= 5) {
+          setShowInfoButton(true);
+        }
+      }}
+      onEnd={() => {
+        // Optional: Handle video completion
+      }}
+    />
+  </View>
+);
 
   // console.log({profileData});
   const profilePicture = myProfile

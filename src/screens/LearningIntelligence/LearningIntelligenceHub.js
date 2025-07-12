@@ -279,23 +279,35 @@ const TabContentContainer = ({children, isLoading, tabType}) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (isLoading) {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    } else {
+    if (isVisible) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [isLoading]);
+  }, [isVisible]);
 
   return (
-    <View style={styles.tabContentContainer}>
+    <Animated.View
+      style={[
+        styles.tabContentContainer,
+        {
+          opacity: fadeAnim,
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        },
+      ]}
+      pointerEvents={isVisible ? 'auto' : 'none'}>
       {isLoading ? (
         <SkeletonLoader type={tabType} />
       ) : (
@@ -303,7 +315,7 @@ const TabContentContainer = ({children, isLoading, tabType}) => {
           {children}
         </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 };
 
@@ -374,7 +386,7 @@ const LearningIntelligenceHub = () => {
   const handleTabPress = index => {
     if (index === activeTab || loadingStates[index]) return;
 
-    // Immediate tab switch with loading state
+    // Immediate tab switch
     setActiveTab(index);
 
     // Animate tab transition
@@ -396,16 +408,25 @@ const LearningIntelligenceHub = () => {
     }
   };
 
-  const renderActiveTab = () => {
-    const ActiveComponent = tabs[activeTab].component;
-    const tabType = tabs[activeTab].type;
-    const isLoading = loadingStates[activeTab];
+  // Render all tabs but only show the active one
+  const renderAllTabs = () => {
+    return tabs.map((tab, index) => {
+      const Component = tab.component;
+      const isVisible = activeTab === index;
+      const isLoading = loadingStates[index];
+      const isInitialized = tabsInitialized[index];
 
-    return (
-      <TabContentContainer isLoading={isLoading} tabType={tabType}>
-        <ActiveComponent />
-      </TabContentContainer>
-    );
+      return (
+        <TabContentContainer
+          key={index}
+          isVisible={isVisible}
+          isLoading={isLoading}
+          tabType={tab.type}
+          tabIndex={index}>
+          {isInitialized && <Component />}
+        </TabContentContainer>
+      );
+    });
   };
 
   return (
@@ -479,7 +500,7 @@ const LearningIntelligenceHub = () => {
             ],
           },
         ]}>
-        {renderActiveTab()}
+        {renderAllTabs()}
       </Animated.View>
     </SafeAreaView>
   );

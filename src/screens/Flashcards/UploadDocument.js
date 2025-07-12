@@ -453,18 +453,19 @@ const UploadDocument = ({navigation, route}) => {
             </View>
             
             <View style={styles.modalActions}>
-              <Button
-                text="Cancel"
-                onPress={() => setShowCreateNew(false)}
-                style={[styles.modalButton, styles.modalCancelButton]}
-                textColor={COLORS.blue043142}
-              />
-              <Button
-                text="Create"
-                onPress={handleCreateNewDeck}
-                style={[styles.modalButton, styles.modalCreateButton]}
-              />
-            </View>
+  <Pressable 
+    style={[styles.modalButton, styles.modalCancelButton]}
+    onPress={() => setShowCreateNew(false)}
+  >
+    <Text variant="semibold14" color={COLORS.blue043142}>Cancel</Text>
+  </Pressable>
+  <Pressable 
+    style={[styles.modalButton, styles.modalCreateButton]}
+    onPress={handleCreateNewDeck}
+  >
+    <Text variant="semibold14" color={COLORS.whiteFFFFFF}>Create</Text>
+  </Pressable>
+</View>
           </View>
         </View>
       )}
@@ -665,21 +666,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(20),
   },
   // Deck Selection Styles
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: nh(40),
-  },
   decksContainer: {
     flex: 1,
+    paddingHorizontal: 20,
   },
   createNewDeckButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.blue043142,
-    borderRadius: nw(12),
-    paddingVertical: nh(16),
-    marginBottom: nh(20),
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 8,
   },
   decksList: {
     flex: 1,
@@ -688,33 +688,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.whiteFFFFFF,
-    borderRadius: nw(12),
-    padding: nw(16),
-    marginBottom: nh(12),
-    elevation: 1,
-    shadowColor: COLORS.black333333,
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   deckIcon: {
-    width: nw(40),
-    height: nw(40),
-    borderRadius: nw(20),
-    backgroundColor: COLORS.blue043142 + '15',
-    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.greyF5F5F5,
     alignItems: 'center',
-    marginRight: nw(12),
+    justifyContent: 'center',
+    marginRight: 12,
   },
   deckInfo: {
     flex: 1,
   },
   emptyDecks: {
+    flex: 1,
     alignItems: 'center',
-    paddingVertical: nh(60),
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    gap: 16,
   },
   // Modal Styles
-  modalOverlay: {
+   modalOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -727,41 +739,52 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: COLORS.whiteFFFFFF,
-    borderRadius: nw(16),
-    padding: nw(24),
-    width: DEVICE_WIDTH - nw(80),
-    maxHeight: nh(500),
+    borderRadius: 16,
+    padding: 24,
+    width: DEVICE_WIDTH - 48,
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
   },
   modalTitle: {
-    marginBottom: nh(20),
     textAlign: 'center',
+    marginBottom: 24,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: COLORS.greyD6D6D6,
-    borderRadius: nw(12),
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(12),
-    fontSize: 14,
-    color: COLORS.blue043142,
-    marginBottom: nh(16),
+    borderColor: COLORS.greyDDDDDD,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 16,
+    backgroundColor: COLORS.whiteFFFFFF,
   },
   modalTextArea: {
-    minHeight: nh(80),
+    minHeight: 80,
     textAlignVertical: 'top',
   },
   modalSubjects: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: nh(24),
+    marginBottom: 24,
+    gap: 8,
   },
   modalSubjectItem: {
-    backgroundColor: COLORS.greyF7F7F7,
-    borderRadius: nw(16),
-    paddingHorizontal: nw(12),
-    paddingVertical: nh(6),
-    marginRight: nw(8),
-    marginBottom: nh(8),
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.blue043142,
+    backgroundColor: COLORS.whiteFFFFFF,
+    minWidth: 80,
+    alignItems: 'center',
   },
   modalSubjectSelected: {
     backgroundColor: COLORS.blue043142,
@@ -769,13 +792,19 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
   },
   modalButton: {
     flex: 1,
-    marginHorizontal: nw(6),
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalCancelButton: {
-    backgroundColor: COLORS.greyF7F7F7,
+    backgroundColor: COLORS.greyF5F5F5,
+    borderWidth: 1,
+    borderColor: COLORS.greyDDDDDD,
   },
   modalCreateButton: {
     backgroundColor: COLORS.blue043142,

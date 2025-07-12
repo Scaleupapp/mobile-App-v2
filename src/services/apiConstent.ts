@@ -1,5 +1,4 @@
 export const API = {
-  BASE_URL1: 'http://localhost:3000/api/',
   BASE_URL: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
@@ -7,6 +6,7 @@ export const API = {
   GET_REFERRAL_CODE: 'auth/referral',
   PROFILE: 'users/profile',
   ALL_CONTENT: 'content/all-content',
+  CONTENT_ACCESS: 'content/content-access', // 👈 Add this
   ALL_VIDEOS: 'content/allcontent',
   EDUCATION_DETAIL: 'users/education',
   WORK_EXPERIENCE: 'users/work-experience',

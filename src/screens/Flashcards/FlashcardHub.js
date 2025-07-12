@@ -3,7 +3,7 @@
 // File: screens/Flashcards/FlashcardHub.js
 // =====================================================
 
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -48,6 +48,10 @@ const FlashcardHub = ({navigation}) => {
     totalNewCards: 0,
     decksNeedingAttention: 0,
   });
+
+  // Add ref to track if data has been loaded
+  const dataLoadedRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
 
   // Get current time greeting
   const getTimeGreeting = () => {
@@ -142,47 +146,81 @@ const FlashcardHub = ({navigation}) => {
     }));
   };
 
-  // Fetch dashboard data
-  const fetchDashboardData = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
+  // Fetch dashboard data with intelligent caching
+  const fetchDashboardData = useCallback(
+    async (isRefresh = false, forceRefresh = false) => {
+      try {
+        const now = Date.now();
+        const timeSinceLastFetch = now - lastFetchTimeRef.current;
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-      const decksResponse = await getUserFlashcardDecksApi({
-        page: 1,
-        limit: 6,
-      });
-
-      if (decksResponse?.data?.success) {
-        const decks = decksResponse.data.decks || [];
-        setRecentDecks(decks);
-        setOverallStats(prev => ({
-          ...prev,
-          totalDecks: decksResponse.data.pagination?.total || 0,
-        }));
-
-        if (decks.length > 0) {
-          await fetchDueCardsForDecks(decks);
+        // Skip fetching if data was recently loaded and it's not a forced refresh
+        if (
+          !forceRefresh &&
+          !isRefresh &&
+          dataLoadedRef.current &&
+          timeSinceLastFetch < CACHE_DURATION
+        ) {
+          return;
         }
-      }
-    } catch (error) {
-      console.error('Dashboard fetch error:', error);
-      showToast({
-        type: 'error',
-        title: 'Failed to load data',
-        message: 'Please check your connection and try again',
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
 
+        if (isRefresh) setRefreshing(true);
+        else if (!dataLoadedRef.current) setLoading(true);
+
+        const decksResponse = await getUserFlashcardDecksApi({
+          page: 1,
+          limit: 6,
+        });
+
+        if (decksResponse?.data?.success) {
+          const decks = decksResponse.data.decks || [];
+          setRecentDecks(decks);
+          setOverallStats(prev => ({
+            ...prev,
+            totalDecks: decksResponse.data.pagination?.total || 0,
+          }));
+
+          if (decks.length > 0) {
+            await fetchDueCardsForDecks(decks);
+          }
+
+          // Mark data as loaded and update timestamp
+          dataLoadedRef.current = true;
+          lastFetchTimeRef.current = now;
+        }
+      } catch (error) {
+        console.error('Dashboard fetch error:', error);
+        showToast({
+          type: 'error',
+          title: 'Failed to load data',
+          message: 'Please check your connection and try again',
+        });
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [showToast],
+  );
+
+  // Use useFocusEffect with intelligent refresh logic
   useFocusEffect(
     useCallback(() => {
       fetchDashboardData();
     }, [fetchDashboardData]),
   );
+
+  // Separate effect for initial load
+  useEffect(() => {
+    if (!dataLoadedRef.current) {
+      fetchDashboardData(false, true);
+    }
+  }, []);
+
+  // Handle manual refresh
+  const handleRefresh = useCallback(() => {
+    fetchDashboardData(true, true);
+  }, [fetchDashboardData]);
 
   // Render beautiful header
   const renderBeautifulHeader = () => {
@@ -366,11 +404,17 @@ const FlashcardHub = ({navigation}) => {
 
     return {
       title: '🎉 All Caught Up!',
-      subtitle: 'Your study game is strong! Keep it up',
+      subtitle: 'Amazing work! Your study game is absolutely on point',
       icon: 'check-circle',
       color: COLORS.green34A853,
-      bgColor: COLORS.green34A853 + '15',
-      actionText: 'Keep Going',
+      bgColor:
+        'linear-gradient(135deg, ' +
+        COLORS.green34A853 +
+        '15, ' +
+        COLORS.yellowF5BE00 +
+        '10)',
+      actionText: 'Keep Crushing It!',
+      celebration: true, // Add this flag
     };
   };
 
@@ -695,7 +739,7 @@ const FlashcardHub = ({navigation}) => {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => fetchDashboardData(true)}
+              onRefresh={handleRefresh}
               colors={[COLORS.blue043142]}
               tintColor={COLORS.blue043142}
             />
@@ -889,7 +933,7 @@ const styles = StyleSheet.create({
   },
   headerActions: {
     flexDirection: 'row',
-    gap: nw(12),
+    gap: nw(8),
   },
   primaryHeaderAction: {
     flexDirection: 'row',
@@ -898,7 +942,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(16),
     paddingVertical: nh(10),
     borderRadius: nw(20),
-    gap: nw(6),
+    gap: nw(2),
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -914,7 +958,7 @@ const styles = StyleSheet.create({
     borderRadius: nw(16),
     borderWidth: 1,
     borderColor: COLORS.whiteFFFFFF + '30',
-    gap: nw(4),
+    gap: nw(2),
   },
 
   // Content Container
@@ -972,6 +1016,26 @@ const styles = StyleSheet.create({
   enhancedStatsGrid: {
     flexDirection: 'row',
     gap: nw(12),
+  },
+  celebrationCard: {
+    borderWidth: 2,
+    borderColor: COLORS.green34A853 + '30',
+    elevation: 4,
+    shadowOpacity: 0.15,
+  },
+  celebrationIcon: {
+    elevation: 2,
+    shadowColor: COLORS.green34A853,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  celebrationAction: {
+    elevation: 2,
+    shadowColor: COLORS.green34A853,
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   statCard: {
     flex: 1,

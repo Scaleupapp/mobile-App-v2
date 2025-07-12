@@ -108,7 +108,11 @@ const PracticeQuestion = ({question, index, onAnswer}) => {
   const handleAnswerSelect = answer => {
     setSelectedAnswer(answer);
     setShowExplanation(true);
-    onAnswer?.(answer === question.correctAnswer);
+    // Extract the letter from the option (e.g., "A) Some text" -> "A")
+    const selectedLetter = answer.split(')')[0].trim();
+    const correctLetter = question.correctAnswer.trim();
+    const isCorrect = selectedLetter === correctLetter;
+    onAnswer?.(isCorrect);
   };
 
   const getOptionColor = option => {
@@ -126,6 +130,11 @@ const PracticeQuestion = ({question, index, onAnswer}) => {
       return COLORS.redError;
     return COLORS.greyD6D6D6;
   };
+
+  // Check if the selected answer is correct with proper comparison
+  const isCorrectAnswer =
+    selectedAnswer &&
+    selectedAnswer.split(')')[0].trim() === question.correctAnswer.trim();
 
   return (
     <View style={styles.practiceQuestion}>
