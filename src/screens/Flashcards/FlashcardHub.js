@@ -418,114 +418,175 @@ const FlashcardHub = ({navigation}) => {
     };
   };
 
-  // Enhanced overview stats
-  const renderEnhancedOverview = () => {
-    if (recentDecks.length === 0) return null;
+// Enhanced overview stats with fixed review action
+const renderEnhancedOverview = () => {
+  if (recentDecks.length === 0) return null;
 
-    const recommendation = getPriorityRecommendation();
+  const recommendation = getPriorityRecommendation();
 
-    return (
-      <View style={styles.overviewContainer}>
-        {/* Enhanced Priority Card */}
-        <View
-          style={[
-            styles.priorityCard,
-            {backgroundColor: recommendation.bgColor},
-          ]}>
-          <View style={styles.priorityCardHeader}>
-            <View style={styles.priorityCardLeft}>
-              <Text variant="semibold18" color={COLORS.blue043142}>
-                {recommendation.title}
-              </Text>
-              <Text
-                variant="medium14"
-                color={COLORS.grey666666}
-                style={styles.prioritySubtitle}>
-                {recommendation.subtitle}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.priorityIconCircle,
-                {backgroundColor: recommendation.color},
-              ]}>
-              <Icon
-                name={recommendation.icon}
-                size={24}
-                color={COLORS.whiteFFFFFF}
-              />
-            </View>
+  // Handler for priority action
+  const handlePriorityAction = () => {
+    if (overallStats.totalDueCards > 15) {
+      // Navigate to deck with most due cards for review
+      const deckWithMostDue = recentDecks.reduce((prev, current) => {
+        const prevDue = deckDueCards[prev._id]?.dueCards || 0;
+        const currentDue = deckDueCards[current._id]?.dueCards || 0;
+        return currentDue > prevDue ? current : prev;
+      });
+      
+      if (deckWithMostDue) {
+        navigation.navigate(Routes.FlashcardViewer, {
+          deckId: deckWithMostDue._id,
+          studyMode: true,
+        });
+      }
+    } else if (overallStats.totalNewCards > 10) {
+      // Navigate to deck with most new cards for learning
+      const deckWithMostNew = recentDecks.reduce((prev, current) => {
+        const prevNew = deckDueCards[prev._id]?.newCards || 0;
+        const currentNew = deckDueCards[current._id]?.newCards || 0;
+        return currentNew > prevNew ? current : prev;
+      });
+      
+      if (deckWithMostNew) {
+        navigation.navigate(Routes.FlashcardViewer, {
+          deckId: deckWithMostNew._id,
+          studyMode: true,
+        });
+      }
+    } else if (overallStats.decksNeedingAttention > 0) {
+      // Navigate to deck that needs most attention
+      const deckNeedingAttention = recentDecks.find(deck => {
+        const data = deckDueCards[deck._id];
+        return data?.dueCards > 5 || (data?.studyProgress < 50 && data?.totalCards > 0);
+      });
+      
+      if (deckNeedingAttention) {
+        navigation.navigate(Routes.FlashcardViewer, {
+          deckId: deckNeedingAttention._id,
+          studyMode: true,
+        });
+      }
+    } else {
+      // All caught up - navigate to deck with highest progress
+      const bestDeck = recentDecks.reduce((prev, current) => {
+        const prevProgress = deckDueCards[prev._id]?.studyProgress || 0;
+        const currentProgress = deckDueCards[current._id]?.studyProgress || 0;
+        return currentProgress > prevProgress ? current : prev;
+      });
+      
+      if (bestDeck) {
+        navigation.navigate(Routes.FlashcardViewer, {
+          deckId: bestDeck._id,
+          studyMode: true,
+        });
+      }
+    }
+  };
+
+  return (
+    <View style={styles.overviewContainer}>
+      {/* Enhanced Priority Card */}
+      <View
+        style={[
+          styles.priorityCard,
+          {backgroundColor: recommendation.bgColor},
+        ]}>
+        <View style={styles.priorityCardHeader}>
+          <View style={styles.priorityCardLeft}>
+            <Text variant="semibold18" color={COLORS.blue043142}>
+              {recommendation.title}
+            </Text>
+            <Text
+              variant="medium14"
+              color={COLORS.grey666666}
+              style={styles.prioritySubtitle}>
+              {recommendation.subtitle}
+            </Text>
           </View>
-
-          <Pressable
+          <View
             style={[
-              styles.priorityAction,
+              styles.priorityIconCircle,
               {backgroundColor: recommendation.color},
             ]}>
-            <Text variant="semibold14" color={COLORS.whiteFFFFFF}>
-              {recommendation.actionText}
-            </Text>
-            <Icon name="arrow-forward" size={16} color={COLORS.whiteFFFFFF} />
-          </Pressable>
+            <Icon
+              name={recommendation.icon}
+              size={24}
+              color={COLORS.whiteFFFFFF}
+            />
+          </View>
         </View>
 
-        {/* Enhanced Stats Grid */}
-        <View style={styles.enhancedStatsGrid}>
+        <Pressable
+          style={[
+            styles.priorityAction,
+            {backgroundColor: recommendation.color},
+          ]}
+          onPress={handlePriorityAction}>
+          <Text variant="semibold14" color={COLORS.whiteFFFFFF}>
+            {recommendation.actionText}
+          </Text>
+          <Icon name="arrow-forward" size={16} color={COLORS.whiteFFFFFF} />
+        </Pressable>
+      </View>
+
+      {/* Enhanced Stats Grid */}
+      <View style={styles.enhancedStatsGrid}>
+        <View style={styles.statCard}>
+          <View style={styles.statCardIcon}>
+            <Icon name="library-books" size={20} color={COLORS.blue043142} />
+          </View>
+          <Text variant="bold20" color={COLORS.blue043142}>
+            {overallStats.totalDecks}
+          </Text>
+          <Text variant="medium11" color={COLORS.grey777777}>
+            Total Decks
+          </Text>
+        </View>
+
+        {overallStats.totalDueCards > 0 && (
           <View style={styles.statCard}>
-            <View style={styles.statCardIcon}>
-              <Icon name="library-books" size={20} color={COLORS.blue043142} />
+            <View
+              style={[
+                styles.statCardIcon,
+                {backgroundColor: COLORS.redEA4335 + '15'},
+              ]}>
+              <Icon name="schedule" size={20} color={COLORS.redEA4335} />
             </View>
-            <Text variant="bold20" color={COLORS.blue043142}>
-              {overallStats.totalDecks}
+            <Text variant="bold20" color={COLORS.redEA4335}>
+              {overallStats.totalDueCards}
             </Text>
             <Text variant="medium11" color={COLORS.grey777777}>
-              Total Decks
+              Due Today
             </Text>
           </View>
+        )}
 
-          {overallStats.totalDueCards > 0 && (
-            <View style={styles.statCard}>
-              <View
-                style={[
-                  styles.statCardIcon,
-                  {backgroundColor: COLORS.redEA4335 + '15'},
-                ]}>
-                <Icon name="schedule" size={20} color={COLORS.redEA4335} />
-              </View>
-              <Text variant="bold20" color={COLORS.redEA4335}>
-                {overallStats.totalDueCards}
-              </Text>
-              <Text variant="medium11" color={COLORS.grey777777}>
-                Due Today
-              </Text>
+        {overallStats.totalNewCards > 0 && (
+          <View style={styles.statCard}>
+            <View
+              style={[
+                styles.statCardIcon,
+                {backgroundColor: COLORS.green34A853 + '15'},
+              ]}>
+              <Icon
+                name="auto-awesome"
+                size={20}
+                color={COLORS.green34A853}
+              />
             </View>
-          )}
-
-          {overallStats.totalNewCards > 0 && (
-            <View style={styles.statCard}>
-              <View
-                style={[
-                  styles.statCardIcon,
-                  {backgroundColor: COLORS.green34A853 + '15'},
-                ]}>
-                <Icon
-                  name="auto-awesome"
-                  size={20}
-                  color={COLORS.green34A853}
-                />
-              </View>
-              <Text variant="bold20" color={COLORS.green34A853}>
-                {overallStats.totalNewCards}
-              </Text>
-              <Text variant="medium11" color={COLORS.grey777777}>
-                New Cards
-              </Text>
-            </View>
-          )}
-        </View>
+            <Text variant="bold20" color={COLORS.green34A853}>
+              {overallStats.totalNewCards}
+            </Text>
+            <Text variant="medium11" color={COLORS.grey777777}>
+              New Cards
+            </Text>
+          </View>
+        )}
       </View>
-    );
-  };
+    </View>
+  );
+};
 
   // Enhanced deck card
   const renderEnhancedDeck = ({item}) => {

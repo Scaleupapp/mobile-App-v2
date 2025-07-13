@@ -275,7 +275,7 @@ const TabButton = ({title, icon, isActive, onPress, index, isLoading}) => {
 };
 
 // Enhanced Tab Content Container
-const TabContentContainer = ({children, isLoading, tabType}) => {
+const TabContentContainer = ({children, isLoading, tabType, isVisible}) => {
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -318,7 +318,6 @@ const TabContentContainer = ({children, isLoading, tabType}) => {
     </Animated.View>
   );
 };
-
 const LearningIntelligenceHub = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState(0);
