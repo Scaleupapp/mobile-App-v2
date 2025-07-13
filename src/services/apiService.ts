@@ -385,6 +385,8 @@ export const getNextQuestionApi = (attemptId: string) => {
   return axiosInstance.get(`rapidfire-quiz/attempt/${attemptId}/next-question`);
 };
 
+
+
 // Submit an answer for a specific quiz attempt
 export const submitAnswerApi = (
   quizId: string,
