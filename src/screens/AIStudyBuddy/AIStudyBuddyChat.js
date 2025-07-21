@@ -333,7 +333,11 @@ Let's start learning! 🚀`,
             setMessages(prev => [...prev, aiMessage]);
           }
         } else {
-          throw new Error('Backend response indicates failure');
+          // throw new Error('Backend response indicates failure');
+          showToast({
+            title: 'error creating response',
+            type: 'error',
+          });
         }
       } catch (backendError) {
         console.warn(

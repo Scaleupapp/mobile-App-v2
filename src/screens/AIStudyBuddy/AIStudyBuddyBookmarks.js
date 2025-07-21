@@ -657,7 +657,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
 
           <View style={styles.filterActions}>
             <Button
-              title="Clear Filters"
+              text="Clear Filters"
               onPress={() => {
                 setSelectedSubject('all');
                 setSelectedTopic('all');
@@ -666,7 +666,7 @@ const AIStudyBuddyBookmarks = ({navigation}) => {
               textStyle={styles.clearButtonText}
             />
             <Button
-              title="Apply Filters"
+              text="Apply Filters"
               onPress={() => {
                 setShowFilters(false);
                 loadBookmarks(1);

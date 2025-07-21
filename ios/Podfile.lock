@@ -2060,27 +2060,6 @@ PODS:
     - RNNotifee/NotifeeCore (= 9.1.8)
   - RNNotifee/NotifeeCore (9.1.8):
     - React-Core
-  - RNReactNativeHapticFeedback (2.3.3):
-    - DoubleConversion
-    - glog
-    - hermes-engine
-    - RCT-Folly (= 2024.01.01.00)
-    - RCTRequired
-    - RCTTypeSafety
-    - React-Core
-    - React-debug
-    - React-Fabric
-    - React-featureflags
-    - React-graphics
-    - React-ImageManager
-    - React-NativeModulesApple
-    - React-RCTFabric
-    - React-rendererdebug
-    - React-utils
-    - ReactCodegen
-    - ReactCommon/turbomodule/bridging
-    - ReactCommon/turbomodule/core
-    - Yoga
   - RNReanimated (3.18.0):
     - DoubleConversion
     - glog
@@ -2384,7 +2363,6 @@ DEPENDENCIES:
   - "RNGoogleSignin (from `../node_modules/@react-native-google-signin/google-signin`)"
   - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
   - "RNNotifee (from `../node_modules/@notifee/react-native`)"
-  - RNReactNativeHapticFeedback (from `../node_modules/react-native-haptic-feedback`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNShare (from `../node_modules/react-native-share`)
@@ -2596,8 +2574,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-image-crop-picker"
   RNNotifee:
     :path: "../node_modules/@notifee/react-native"
-  RNReactNativeHapticFeedback:
-    :path: "../node_modules/react-native-haptic-feedback"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2721,7 +2697,6 @@ SPEC CHECKSUMS:
   RNGoogleSignin: 86da11c8dda986f31ea1900b79f1e87c78167ae9
   RNImageCropPicker: b0afedeefd8655254a15c34103718455fde6ce59
   RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
-  RNReactNativeHapticFeedback: dddb16e62d4d9c4a5e0ac1d32ede09f6a9083e4c
   RNReanimated: 2626318a8fc0ce5a4a581ab86c63b97da84bb149
   RNScreens: 1f9cdaad0b1b81ec8c57256f193d918af49808db
   RNShare: 2fd1216f2c8b8d729625d8fac3abe50444a7323b

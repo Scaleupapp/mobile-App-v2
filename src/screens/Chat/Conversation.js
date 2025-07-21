@@ -189,7 +189,7 @@ const Conversation = ({navigation, route}) => {
   const [conversations, setConversations] = useState([]);
   const [studyGroups, setStudyGroups] = useState([]);
   const chatmodelRef = useRef(null);
-
+  const [socket, setSocket] = useState(null);
   const [allConversationsFetched, setAllConversationsFetched] = useState(false);
   const [isLoadingMoreConversations, setIsLoadingMoreConversations] =
     useState(false);
@@ -231,12 +231,13 @@ const Conversation = ({navigation, route}) => {
     }
 
     // **IMPORTANT**: Verify this URL and namespace with your backend.
-    const socketInstance = io('https://api.scaleupapp.club/api/', {
-      auth: {token: userData.token},
-      transports: ['websocket'],
-      reconnectionAttempts: 5,
-    });
-    socketRef.current = socketInstance;
+    const socketInstance = io('https://api.scaleupapp.club', {
+      // Your server URL
+      auth: {
+        token: userData?.token, // If you have authentication
+      },
+    }); // Replace with your server URL
+    setSocket(socketInstance);
 
     socketInstance.on('connect', () => {
       console.log('ConversationScreen: Socket connected.');
