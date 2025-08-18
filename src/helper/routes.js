@@ -1,3 +1,4 @@
+//src/helper/routes.js
 const Routes = {
   LoginStack: 'LoginStack',
   SplashScreen: 'SplashScreen',
@@ -94,73 +95,121 @@ const Routes = {
   // ==========================================
   
   // Main Hub and Dashboard
-  AIStudyBuddyHub: 'AIStudyBuddyHub',                     // Main landing page/dashboard
-  AIStudyBuddyDashboard: 'AIStudyBuddyDashboard',         // Alternative name for hub
+  AIStudyBuddyHub: 'AIStudyBuddyHub',
+  AIStudyBuddyDashboard: 'AIStudyBuddyDashboard',
   
   // Core Conversation Features
-  AIStudyBuddyChat: 'AIStudyBuddyChat',                   // Main chat interface
-  AIStudyBuddyNewSession: 'AIStudyBuddyNewSession',       // Start new study session
-  AIStudyBuddySubjectSelection: 'AIStudyBuddySubjectSelection', // Subject/syllabus picker
+  AIStudyBuddyChat: 'AIStudyBuddyChat',
+  AIStudyBuddyNewSession: 'AIStudyBuddyNewSession',
+  AIStudyBuddySubjectSelection: 'AIStudyBuddySubjectSelection',
   
   // Session Management
-  AIStudyBuddyActiveSessions: 'AIStudyBuddyActiveSessions', // List of active sessions
-  AIStudyBuddySessionHistory: 'AIStudyBuddySessionHistory', // Past conversations
-  AIStudyBuddySessionDetails: 'AIStudyBuddySessionDetails', // Individual session details
+  AIStudyBuddyActiveSessions: 'AIStudyBuddyActiveSessions',
+  AIStudyBuddySessionHistory: 'AIStudyBuddySessionHistory',
+  AIStudyBuddySessionDetails: 'AIStudyBuddySessionDetails',
   
   // Message and Content Management
-  AIStudyBuddyBookmarks: 'AIStudyBuddyBookmarks',         // Saved/bookmarked messages
-  AIStudyBuddySearchMessages: 'AIStudyBuddySearchMessages', // Search across conversations
+  AIStudyBuddyBookmarks: 'AIStudyBuddyBookmarks',
+  AIStudyBuddySearchMessages: 'AIStudyBuddySearchMessages',
   
   // Analytics and Insights
-  AIStudyBuddyAnalytics: 'AIStudyBuddyAnalytics',         // Usage analytics and insights
-  AIStudyBuddyLearningProgress: 'AIStudyBuddyLearningProgress', // Learning progress tracking
+  AIStudyBuddyAnalytics: 'AIStudyBuddyAnalytics',
+  AIStudyBuddyLearningProgress: 'AIStudyBuddyLearningProgress',
   
   // Integration Features
-  AIStudyBuddyGenerateFlashcards: 'AIStudyBuddyGenerateFlashcards', // Flashcard generation
-  AIStudyBuddyGenerateQuiz: 'AIStudyBuddyGenerateQuiz',   // Quiz generation
-  AIStudyBuddyExportChat: 'AIStudyBuddyExportChat',       // Export conversations
+  AIStudyBuddyGenerateFlashcards: 'AIStudyBuddyGenerateFlashcards',
+  AIStudyBuddyGenerateQuiz: 'AIStudyBuddyGenerateQuiz',
+  AIStudyBuddyExportChat: 'AIStudyBuddyExportChat',
   
   // Settings and Preferences
-  AIStudyBuddySettings: 'AIStudyBuddySettings',           // AI Study Buddy preferences
-  AIStudyBuddyQuotaStatus: 'AIStudyBuddyQuotaStatus',     // Quota and limits info
+  AIStudyBuddySettings: 'AIStudyBuddySettings',
+  AIStudyBuddyQuotaStatus: 'AIStudyBuddyQuotaStatus',
   
   // Subscription and Payment (Future Phase)
-  AIStudyBuddySubscription: 'AIStudyBuddySubscription',   // Subscription plans
-  AIStudyBuddyPayment: 'AIStudyBuddyPayment',             // Payment processing
-  AIStudyBuddyUpgrade: 'AIStudyBuddyUpgrade',             // Upgrade to Pro
+  AIStudyBuddySubscription: 'AIStudyBuddySubscription',
+  AIStudyBuddyPayment: 'AIStudyBuddyPayment',
+  AIStudyBuddyUpgrade: 'AIStudyBuddyUpgrade',
   
   // Help and Support
-  AIStudyBuddyHelp: 'AIStudyBuddyHelp',                   // How to use AI Study Buddy
-  AIStudyBuddyTutorial: 'AIStudyBuddyTutorial',           // First-time user tutorial
-  AIStudyBuddyFAQ: 'AIStudyBuddyFAQ',                     // Frequently asked questions
+  AIStudyBuddyHelp: 'AIStudyBuddyHelp',
+  AIStudyBuddyTutorial: 'AIStudyBuddyTutorial',
+  AIStudyBuddyFAQ: 'AIStudyBuddyFAQ',
   
   // Modal/Overlay Screens
-  AIStudyBuddyQuotaModal: 'AIStudyBuddyQuotaModal',       // Quota limit reached modal
-  AIStudyBuddyUpgradeModal: 'AIStudyBuddyUpgradeModal',   // Upgrade prompt modal
-  AIStudyBuddyFeedbackModal: 'AIStudyBuddyFeedbackModal', // Feedback modal
-  AIStudyBuddyShareModal: 'AIStudyBuddyShareModal',       // Share conversation modal
-
+  AIStudyBuddyQuotaModal: 'AIStudyBuddyQuotaModal',
+  AIStudyBuddyUpgradeModal: 'AIStudyBuddyUpgradeModal',
+  AIStudyBuddyFeedbackModal: 'AIStudyBuddyFeedbackModal',
+  AIStudyBuddyShareModal: 'AIStudyBuddyShareModal',
 
   // ==========================================
-// INTELLITEST ROUTES
-// ==========================================
-IntelliTestHub: 'IntelliTestHub',
-IntelliTestExamSelection: 'IntelliTestExamSelection',
-IntelliTestAssessmentConfig: 'IntelliTestAssessmentConfig', 
-IntelliTestCreateSession: 'IntelliTestCreateSession',
-IntelliTestQuestionGeneration: 'IntelliTestQuestionGeneration',
-IntelliTestSessionDetails: 'IntelliTestSessionDetails',  
-IntelliTestAssessment: 'IntelliTestAssessment',
-IntelliStartTestAssessment: 'IntelliStartTestAssessment',
-IntelliTestResults: 'IntelliTestResults',
-IntelliTestAnalyticsDashboard: 'IntelliTestAnalyticsDashboard',
-IntelliTestPerformanceDetails: 'IntelliTestPerformanceDetails',
-IntelliTestRoadmapDetails: 'IntelliTestRoadmapDetails',
-IntelliTestCreateRoadmap: 'IntelliTestCreateRoadmap',
-IntelliTestCustomTopics: 'IntelliTestCustomTopics',
-IntelliTestCreateTopic: 'IntelliTestCreateTopic',
-IntelliTestTopicDetails: 'IntelliTestTopicDetails',
-IntelliTestSessionHistory: 'IntelliTestSessionHistory', 
+  // COMMUNITY PLATFORM ROUTES
+  // ==========================================
+  
+  // Core Community Screens
+  CommunityDiscovery: 'CommunityDiscovery',
+  CommunityProfile: 'CommunityProfile',
+  MyCommunities: 'MyCommunities',
+  CreateCommunity: 'CreateCommunity',
+  
+  // Post Management
+  CommunityPostDetail: 'CommunityPostDetail',
+  CreateCommunityPost: 'CreateCommunityPost',
+  EditCommunityPost: 'EditCommunityPost',
+  
+  // Community Management (Admin/Moderator Features)
+  CommunityManagement: 'CommunityManagement',
+  CommunitySettings: 'CommunitySettings',
+  CommunityMembers: 'CommunityMembers',
+  CommunityModeration: 'CommunityModeration',
+  CommunityAnalytics: 'CommunityAnalytics',
+  CommunityRequests: 'CommunityRequests',
+  
+  // Member and Moderation Features
+  MemberProfile: 'MemberProfile',
+  InviteMembers: 'InviteMembers',
+  BulkInvite: 'BulkInvite',
+  ModerationQueue: 'ModerationQueue',
+  AppealManagement: 'AppealManagement',
+  
+  // Specialized Post Types
+  CreatePoll: 'CreatePoll',
+  CreateEvent: 'CreateEvent',
+  CreateAnnouncement: 'CreateAnnouncement',
+  EventDetail: 'EventDetail',
+  
+  // Discovery and Search
+  SearchCommunities: 'SearchCommunities',
+  SearchPosts: 'SearchPosts',
+  FeaturedCommunities: 'FeaturedCommunities',
+  TrendingCommunities: 'TrendingCommunities',
+  
+  // Engagement Features
+  CommunityLeaderboard: 'CommunityLeaderboard',
+  CommunityActivity: 'CommunityActivity',
+  BookmarkedPosts: 'BookmarkedPosts',
+  
+  // Notification Management
+  CommunityNotifications: 'CommunityNotifications',
+  NotificationSettings: 'NotificationSettings',
+  
+  // Settings and Configuration
+  FeedSettings: 'FeedSettings',
+  AutomationRules: 'AutomationRules',
+  IntegrationManagement: 'IntegrationManagement',
+  
+  // Sub-communities and Hierarchy
+  SubCommunities: 'SubCommunities',
+  CommunityHierarchy: 'CommunityHierarchy',
+  
+  // Modals and Overlays
+  JoinCommunityModal: 'JoinCommunityModal',
+  LeaveCommunityModal: 'LeaveCommunityModal',
+  ReportContentModal: 'ReportContentModal',
+  SharePostModal: 'SharePostModal',
+  RSVPModal: 'RSVPModal',
+  VoteModal: 'VoteModal',
+  CommunityHub: 'CommunityHub',
+ 
 };
 
 export default Routes;

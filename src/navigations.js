@@ -6,7 +6,7 @@ import {setupAxiosInterceptors} from './services/axiosinstance';
 import Routes from './helper/routes';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {icons} from './assets/icons';
-import {Dimensions, Image, PermissionsAndroid, View} from 'react-native';
+import {Dimensions, Image, PermissionsAndroid, View, ActivityIndicator} from 'react-native';
 import {isAndroid, nh, nw} from './helper/scales';
 import {COLORS} from './helper/colors';
 import Text from './components/Text';
@@ -19,74 +19,104 @@ import {
 } from './notifications';
 import {useSelector} from 'react-redux';
 import {SaveFcm} from './services/apiService';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {APP_FONTS} from './assets/fonts/index.js';
 
-// screens
+// --- Screen Imports ---
+// Onboarding & Auth
 import SplashScreen from './screens/Onboarding/SplashScreen';
 import OnboardingScreen from './screens/Onboarding/Onboarding';
 import SignUp from './screens/Signup/Signup';
 import Login from './screens/Login/Login';
 import ForgotPassword from './screens/Login/ForgotPassword';
 import Verification from './screens/Login/Verification';
+import SetNewPassword from './screens/Login/SetNewPassword';
+import ChangePassword from './screens/Login/ChangePassword';
+import BasicDetails from './screens/Signup/BasicDetails';
 import Preferences from './screens/Preferences/Preferences';
+
+// Core Features
+import Home from './screens/Home/Home';
+import Search from './screens/Search/Search';
+import Notifications from './screens/Notification/Notification';
+import CreatePost from './screens/Post/CreatePost';
+import CommunityHome from './screens/Community/CommunityHome';
+import CommunityDiscovery from './screens/Community/CommunityDiscovery';
+import CommunityProfile from './screens/Community/CommunityProfile';  
+import MyCommunities from './screens/Community/MyCommunities';
+import CreateCommunity from './screens/Community/CreateCommunity';
+import CreateCommunityPost from './screens/Community/CreatePost';
+import CommunityPostDetail from './screens/Community/CommunityPostDetail';
+
+// Profile & User
+import MyProfile from './screens/MyProfile/MyProfile';
 import EditProfile from './screens/EditProfile/EditProfile';
 import WorkExperience from './screens/EditProfile/WorkExperience';
 import Education from './screens/EditProfile/Education';
 import Certifications from './screens/EditProfile/Certifications';
 import Projects from './screens/EditProfile/Projects';
-import SetNewPassword from './screens/Login/SetNewPassword';
-import Home from './screens/Home/Home';
-import BasicDetails from './screens/Signup/BasicDetails';
-import Notifications from './screens/Notification/Notification';
-import MyProfile from './screens/MyProfile/MyProfile';
 import MyPlaylist from './screens/MyProfile/MyPlayList';
 import EditPlayList from './screens/MyProfile/EditPlaylist';
 import NewPlayList from './screens/MyProfile/NewPlayList';
+import Followers from './screens/MyProfile/Followers';
+import Following from './screens/MyProfile/Following';
+import Likes from './screens/MyProfile/Likes';
+import BlockUsers from './screens/MyProfile/BlockUser';
+import MyBadge from './screens/MyBadge/MyBadge';
+import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
+
+// Post Management
 import SavePost from './screens/Post/SavedPost';
 import DraftPost from './screens/Post/DraftPost';
 import VerifiedPost from './screens/Post/VerifiedPost';
 import PendingPost from './screens/Post/PendingPost';
 import DeclinedPost from './screens/Post/DeclinedPost';
-import CreatePost from './screens/Post/CreatePost';
+import UserPost from './screens/Post/UserPost';
+
+// Inner Circle
 import InnerCircleRequest from './screens/InnerCircle/InnerCircleRequest';
-import LearningVideo from './screens/LearningVideo/LearningVideo';
 import InnerCircle from './screens/InnerCircle/MyInnerCircle';
-import Followers from './screens/MyProfile/Followers';
-import Following from './screens/MyProfile/Following';
-import Likes from './screens/MyProfile/Likes';
-import BlockUsers from './screens/MyProfile/BlockUser';
+
+// Learning & Videos
+import LearningVideo from './screens/LearningVideo/LearningVideo';
+import LearningVault from './screens/LearningVault/LearningVault';
+import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
+import TopicInsight from './screens/TopicInsight/TopicInsight';
+import LearningIntelligenceHub from './screens/LearningIntelligence/LearningIntelligenceHub';
+
+// Menu & Settings
 import MenuScreen from './screens/Menuscreen/MenuScreen';
 import Settings from './screens/Menuscreen/SettingScreen';
-import ChangePassword from './screens/Login/ChangePassword';
-import Search from './screens/Search/Search';
 import HelpScreen from './screens/Menuscreen/HelpCentre';
 import Terms from './screens/Menuscreen/HelpCentre/Terms';
-import UserPost from './screens/Post/UserPost';
-import {UserAnalyticsPerf} from './screens/UserAnalyticsPerf/UserAnalyticsPerf';
+import SupportQueryScreen from './screens/Menuscreen/QueryScreen';
+import MyQueriesScreen from './screens/Menuscreen/QuerylistScreen';
+
+// Chat
 import Conversation from './screens/Chat/Conversation';
 import Chat from './screens/Chat/Chat';
-import MyBadge from './screens/MyBadge/MyBadge';
-import QuizScreen from './screens/Quiz/QuizScreen';
-import QuizListScreen from './screens/Quiz/QuizListScreen';
 import EditGroupProfile from './screens/Chat/EditGroupProfile';
 import GroupChat from './screens/Chat/GroupChat';
 import GroupProfile from './screens/Chat/GroupProfile';
 import GroupRequest from './screens/Chat/groupRequest';
+
+// Quiz
+import QuizScreen from './screens/Quiz/QuizScreen';
+import QuizListScreen from './screens/Quiz/QuizListScreen';
 import QuizFeedbackScreen from './screens/Quiz/QuizFeedBack';
-import SupportQueryScreen from './screens/Menuscreen/QueryScreen';
-import MyQueriesScreen from './screens/Menuscreen/QuerylistScreen';
-// --- Import User Generated Quiz Screens ---
 import CreateQuizScreen from './screens/Quiz/CreateQuizScreen';
 import EditQuizScreen from './screens/Quiz/EditQuizScreen';
 import CreatorDashboardScreen from './screens/Quiz/CreatorDashboardScreen';
 import QuizAnalyticsScreen from './screens/Quiz/QuizAnalyticsScreen';
 import QuizAccessRequestsScreen from './screens/Quiz/QuizAccessRequestsScreen';
-import AIPaymentModal from './screens/Quiz/AIPaymentModal'; // Assuming a modal might be its own screen or part of another
+import AIPaymentModal from './screens/Quiz/AIPaymentModal';
 import MyQuizzesScreen from './screens/Quiz/MyQuizzesScreen';
 import QuizParticipantsScreen from './screens/Quiz/QuizParticipantsScreen.js';
-import LearningVault from './screens/LearningVault/LearningVault';
-import AreasOfImprovement from './screens/AreasOfImprovement/AreasOfImprovement';
-import TopicInsight from './screens/TopicInsight/TopicInsight';
-import LearningIntelligenceHub from './screens/LearningIntelligence/LearningIntelligenceHub';
+
+// Flashcards
 import FlashcardHub from './screens/Flashcards/FlashcardHub';
 import CreateDeck from './screens/Flashcards/CreateDeck';
 import UploadDocument from './screens/Flashcards/UploadDocument';
@@ -99,6 +129,8 @@ import MyDecks from './screens/Flashcards/MyDecks';
 import StudySummary from './screens/Flashcards/StudySummary';
 import CramMode from './screens/Flashcards/CramMode';
 import CramFlashcardViewer from './screens/Flashcards/CramFlashcardViewer.js';
+
+// AI Study Buddy
 import AIStudyBuddyHub from './screens/AIStudyBuddy/AIStudyBuddyHub';
 import AIStudyBuddyNewSession from './screens/AIStudyBuddy/AIStudyBuddyNewSession';
 import AIStudyBuddyChat from './screens/AIStudyBuddy/AIStudyBuddyChat';
@@ -108,7 +140,8 @@ import AIStudyBuddySessionHistory from './screens/AIStudyBuddy/AIStudyBuddySessi
 import AIStudyBuddyAnalytics from './screens/AIStudyBuddy/AIStudyBuddyAnalytics';
 import AIStudyBuddyBookmarks from './screens/AIStudyBuddy/AIStudyBuddyBookmarks';
 import AIStudyBuddySearch from './screens/AIStudyBuddy/AIStudyBuddySearch';
-import {APP_FONTS} from './assets/fonts/index.js';
+
+// IntelliTest
 import IntelliTestHub from './screens/IntelliTest/IntelliTestHub';
 import IntelliTestExamSelection from './screens/IntelliTest/IntelliTestExamSelection.js';
 import IntelliTestAssessment from './screens/IntelliTest/IntelliTestAssessmentConfig.js';
@@ -117,12 +150,12 @@ import IntelliTestQuestionGeneration from './screens/IntelliTest/IntelliTestQues
 import IntelliTestSessionHistory from './screens/IntelliTest/IntelliTestSessionHistory';
 import IntelliTestAnalyticsDashboard from './screens/IntelliTest/IntelliTestAnalyticsDashboard';
 
-
-
+// --- Navigators ---
 const Stack = createNativeStackNavigator();
 const LoginStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// --- Login Flow Navigator ---
 const LoginNavigator = ({route}) => {
   return (
     <LoginStack.Navigator
@@ -142,7 +175,6 @@ const LoginNavigator = ({route}) => {
         component={SignUp}
         options={{headerShown: false}}
       />
-
       <LoginStack.Screen
         name={Routes.Login}
         component={Login}
@@ -158,7 +190,6 @@ const LoginNavigator = ({route}) => {
         component={Verification}
         options={{headerShown: false}}
       />
-
       <LoginStack.Screen
         name={Routes.SetNewPassword}
         component={SetNewPassword}
@@ -168,132 +199,173 @@ const LoginNavigator = ({route}) => {
   );
 };
 
-const TabNavigator = props => {
-  const initialRouteName = props?.route?.params?.route || 'MainHome';
+// --- Bottom Tab Navigator ---
 
-  const setBottomIcon = (img, focused, tabname) => {
-    if (focused)
-      return (
-        <View
-          style={{
-            top: nh(-20),
-            height: nw(50),
-            width: nw(50),
-            borderRadius: nw(25),
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: COLORS.whiteFFFFFF,
-          }}>
-          <View
-            style={{
-              backgroundColor: COLORS.blue043142,
-              height: nw(40),
-              width: nw(40),
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: nw(20),
-              borderWidth: nw(1),
-              borderColor: COLORS.whiteFFFFFF,
-              boxShadow: '0 0 10 0  rgba(4, 49, 66, 0.35)',
-              elevation: 3,
-            }}>
-            <Image
-              source={img}
-              tintColor={'white'}
-              style={{
-                height: nw(20),
-                width: nw(20),
-              }}
-            />
-          </View>
-        </View>
-      );
+// A helper function to render the focused state style for tab icons
+const FocusedIconWrapper = ({children}) => (
+  <View
+    style={{
+      top: nh(-20),
+      height: nw(50),
+      width: nw(50),
+      borderRadius: nw(25),
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: COLORS.whiteFFFFFF,
+    }}>
+    <View
+      style={{
+        backgroundColor: COLORS.blue043142,
+        height: nw(40),
+        width: nw(40),
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: nw(20),
+        borderWidth: nw(1),
+        borderColor: COLORS.whiteFFFFFF,
+        // Shadow for Android (elevation) and iOS (shadow properties)
+        elevation: 5,
+        shadowColor: 'rgba(4, 49, 66, 0.35)',
+        shadowOffset: {width: 0, height: 4},
+        shadowOpacity: 0.8,
+        shadowRadius: 8,
+      }}>
+      {children}
+    </View>
+  </View>
+);
+
+// A helper function to render the unfocused state style for tab icons
+const UnfocusedIconWrapper = ({children, tabname}) => (
+  <View style={{marginTop: nh(isAndroid ? 10 : 15), width: nw(30), height: nw(30), alignItems: 'center', justifyContent: 'center'}}>
+    {tabname === 'create' && <NewBadge />}
+    {children}
+  </View>
+);
+
+
+// A helper function to render the "New" badge on icons
+const NewBadge = () => (
+  <View
+    style={{
+      backgroundColor: 'orange',
+      borderRadius: 10,
+      paddingHorizontal: 4,
+      paddingVertical: 1,
+      position: 'absolute',
+      right: -5, 
+      top: -5,
+      zIndex: 1,
+    }}>
+    <Text
+      style={{
+        color: 'white',
+        fontSize: 8,
+        fontFamily: APP_FONTS.PoppinsBold,
+      }}>
+      New
+    </Text>
+  </View>
+);
+
+// Custom icon renderer for vector-based icons
+const setBottomIconWithVectorIcon = (
+  IconComponent,
+  iconName,
+  focused,
+  tabname,
+) => {
+  if (focused) {
     return (
-      <View style={{marginTop: nh(isAndroid ? 10 : 15)}}>
-        {tabname == 'create' ? (
-          <View
-            style={{
-              backgroundColor: 'orange',
-              borderRadius: 10,
-              paddingHorizontal: 4,
-              // marginLeft: 6,
-              paddingVertical: 1,
-              position: 'absolute',
-              right: -10,
-              top: -10,
-              zIndex: 1,
-            }}>
-            <Text
-              style={{
-                color: 'white',
-                fontSize: 8,
-                fontFamily: APP_FONTS.PoppinsBold,
-              }}>
-              New
-            </Text>
-          </View>
-        ) : null}
+      <FocusedIconWrapper>
+        <IconComponent name={iconName} size={nw(20)} color="white" />
+      </FocusedIconWrapper>
+    );
+  }
+  return (
+    <UnfocusedIconWrapper tabname={tabname}>
+      <IconComponent name={iconName} size={nw(24)} color="white" />
+    </UnfocusedIconWrapper>
+  );
+};
+
+// Custom icon renderer for image-based icons
+const setBottomIconWithImage = (img, focused, tabname) => {
+  if (focused) {
+    return (
+      <FocusedIconWrapper>
         <Image
           source={img}
-          style={{height: nw(30), width: nw(30)}}
           tintColor={'white'}
+          style={{height: nw(20), width: nw(20)}}
         />
-      </View>
+      </FocusedIconWrapper>
     );
-  };
+  }
+  return (
+    <UnfocusedIconWrapper tabname={tabname}>
+      <Image
+        source={img}
+        style={{height: nw(30), width: nw(30)}}
+        tintColor={'white'}
+      />
+    </UnfocusedIconWrapper>
+  );
+};
 
-  const setBottomIconText = (iconText, focused) => {
-    if (!focused) return;
-    return (
-      <Text
-        variant="bold12"
-        style={{
-          color: COLORS.whiteFFFFFF,
-          lineHeight: nh(14),
-        }}>
-        {iconText}
-      </Text>
-    );
-  };
+// Custom label renderer for focused tabs
+const setBottomIconText = (iconText, focused) => {
+  if (!focused) return null;
+  return (
+    <Text
+      variant="bold12"
+      style={{
+        color: COLORS.whiteFFFFFF,
+        lineHeight: nh(14),
+      }}>
+      {iconText}
+    </Text>
+  );
+};
+
+const TabNavigator = props => {
+  const initialRouteName = props?.route?.params?.route || 'MainHome';
 
   return (
     <Tab.Navigator
       initialRouteName={initialRouteName}
-      screenOptions={props => {
-        return {
-          tabBarLabelPosition: 'below-icon',
-          headerShown: false,
-          headerTransparent: true,
-          tabBarHideOnKeyboard: true,
-          showIcon: true,
-          tabBarStyle: {
-            backgroundColor: COLORS.blue043142,
-            // paddingTop: 5,
-          },
-          tabBarItemStyle: {
-            // paddingBottom: nh(15),
-            // marginBottom: 10,
-          },
-        };
+      screenOptions={{
+        tabBarLabelPosition: 'below-icon',
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: {
+          backgroundColor: COLORS.blue043142,
+          height: nh(isAndroid ? 60 : 80), // Standardized height
+        },
+        tabBarItemStyle: {
+          paddingBottom: nh(isAndroid ? 5 : 20), // Adjust padding for notch
+        },
       }}>
       <Tab.Screen
         name={'MainHome'}
         component={Home}
         options={{
-          headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Home', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.home1 : icons.home2, focused, 'home'),
+            setBottomIconWithImage(
+              focused ? icons.home1 : icons.home2,
+              focused,
+              'home',
+            ),
         }}
       />
       <Tab.Screen
         name={Routes.Search}
         component={Search}
         options={{
-          headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Search', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(
+            setBottomIconWithImage(
               focused ? icons.search1 : icons.search2,
               focused,
               'search',
@@ -301,46 +373,52 @@ const TabNavigator = props => {
         }}
       />
       <Tab.Screen
+        name={Routes.CommunityHub}
+        component={CommunityHome}
+        options={{
+          tabBarLabel: ({focused}) => setBottomIconText('Nexus', focused),
+          tabBarIcon: ({focused}) =>
+            setBottomIconWithVectorIcon(
+              FontAwesome5, // Using FontAwesome5 for a better community icon
+              'users', // The 'users' icon clearly represents community
+              focused,
+              'nexus',
+            ),
+        }}
+      />
+      <Tab.Screen
         name={Routes.CreatePost}
         component={CreatePost}
         options={{
-          headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Create', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.add1 : icons.add2, focused, 'create'),
+            setBottomIconWithImage(
+              focused ? icons.add1 : icons.add2,
+              focused,
+              'create',
+            ),
         }}
       />
       <Tab.Screen
         name={Routes.FlashcardHub}
         component={FlashcardHub}
         options={{
-          headerShown: false,
           tabBarLabel: ({focused}) => setBottomIconText('Flashcard', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(
+            setBottomIconWithImage(
               focused ? icons.book1 : icons.book2,
               focused,
               'Flashcard',
             ),
         }}
       />
-      {/* <Tab.Screen
-        name={Routes.MyProfile}
-        component={MyProfile}
-        options={{
-          headerShown: false,
-          tabBarLabel: ({focused}) => setBottomIconText('Profile', focused),
-          tabBarIcon: ({focused}) =>
-            setBottomIcon(focused ? icons.account1 : icons.account2, focused),
-        }}
-      /> */}
       <Tab.Screen
         name={Routes.QuizList}
         component={QuizListScreen}
         options={{
           tabBarLabel: ({focused}) => setBottomIconText('Quiz', focused),
           tabBarIcon: ({focused}) =>
-            setBottomIcon(
+            setBottomIconWithImage(
               focused ? icons.quizActive : icons.quizInactive,
               focused,
               'Quiz',
@@ -351,488 +429,228 @@ const TabNavigator = props => {
   );
 };
 
+// --- Main App Navigator (Root) ---
 export const RootNavigator = () => {
-  const {showToast} = useToast(); // Access useToast hook here
+  const {showToast} = useToast();
   const navigation = useNavigation();
   const userdata = useSelector(state => state?.userData);
 
+  // Setup Axios interceptors for API calls
   useEffect(() => {
     setupAxiosInterceptors(showToast, navigation);
+  }, [navigation, showToast]);
+
+  // Request notification permissions on Android
+  useEffect(() => {
+    if (isAndroid) {
+      PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
+      );
+    }
   }, []);
 
-  if (isAndroid) {
-    PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-    );
-  }
+  // Handle FCM token registration and saving
   useEffect(() => {
+    const pushAPI = async () => {
+      const isPermissionEnabled = await requestUserPermission();
+      if (isPermissionEnabled) {
+        const fcmToken = await fetchFCMToken();
+        if (fcmToken) {
+          try {
+            await SaveFcm({FcmToken: fcmToken});
+            console.log('FCM Token saved successfully.');
+          } catch (error) {
+            console.error('Failed to save FCM Token:', error);
+          }
+        }
+      }
+    };
+
     if (userdata?.token) {
       pushAPI();
     }
   }, [userdata]);
 
-  const pushAPI = async () => {
-    const isPermissionEnabled = await requestUserPermission();
-    // console.log('🚀 ~ pushAPI ~ isPermissionEnabled:', isPermissionEnabled);
-    if (isPermissionEnabled) {
-      // You only need to register if auto-registration is disabled
-      // if (!isAndroid) await messaging().registerDeviceForRemoteMessages();
-      const fcmToken = await fetchFCMToken();
-      // console.log('🚀 ~ pushAPI ~ fcmToken:', fcmToken);
-
-      if (fcmToken) {
-        try {
-          const {data} = await SaveFcm({FcmToken: fcmToken});
-        } catch (error) {
-          console.log('fireeee ', error);
-        }
-      }
-    }
-  };
+  // Setup notification listeners
   useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      const val = await getNotification(remoteMessage);
-      return val;
+    // Listener for foreground messages
+    const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
+      await getNotification(remoteMessage);
     });
 
-    notifee.onForegroundEvent(async ({type, detail}) => {
-      console.log(
-        'onForegroundEvent detail?.notification?.data?.route ',
-        type,
-        detail,
-      );
-      if (detail?.notification?.data?.route != undefined) {
-        if (type === EventType.PRESS) {
-          if (!!navigation) {
-            navigation.navigate(detail?.notification?.data?.route);
-          }
+    // Listener for when a foreground notification is pressed
+    const unsubscribeForegroundEvent = notifee.onForegroundEvent(
+      async ({type, detail}) => {
+        if (
+          type === EventType.PRESS &&
+          detail?.notification?.data?.route &&
+          !!navigation
+        ) {
+          navigation.navigate(detail.notification.data.route);
         }
-      }
-    });
+      },
+    );
+
+    // Listener for when a background notification is pressed.
+    // This handler is set once and does not return an unsubscribe function.
     notifee.onBackgroundEvent(async ({type, detail}) => {
-      console.log(
-        'onBackgroundEvent detail?.notification?.data?.route ',
-        type,
-        detail,
-      );
-
-      if (detail?.notification?.data?.route != undefined) {
-        if (type === EventType.PRESS) {
-          if (!!navigation) {
-            navigation.navigate(detail?.notification?.data?.route);
-          }
-        }
+      if (
+        type === EventType.PRESS &&
+        detail?.notification?.data?.route &&
+        !!navigation
+      ) {
+        // Note: Navigation from a background event can be tricky.
+        // Ensure the app is fully mounted before navigating.
+        navigation.navigate(detail.notification.data.route);
       }
     });
 
-    return unsubscribe;
-  }, []);
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribeOnMessage();
+      unsubscribeForegroundEvent();
+      // No need to unsubscribe from the background event listener
+    };
+  }, [navigation]);
 
   return (
     <Stack.Navigator
       screenOptions={{
-        headerTransparent: true,
+        headerShown: false,
       }}
       initialRouteName={Routes.LoginStack}>
-      <Stack.Screen
-        name={Routes.LoginStack}
-        component={LoginNavigator}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Preferences}
-        component={Preferences}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.BasicDetails}
-        component={BasicDetails}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Home}
-        component={TabNavigator}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Notifications}
-        component={Notifications}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.EditProfile}
-        component={EditProfile}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.WorkExperience}
-        component={WorkExperience}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Education}
-        component={Education}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Certifications}
-        component={Certifications}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Projects}
-        component={Projects}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.CreatePost}
-        component={CreatePost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.MenuScreen}
-        component={MenuScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.OtherProfile}
-        component={MyProfile}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.MyPlaylist}
-        component={MyPlaylist}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.EditPlayList}
-        component={EditPlayList}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.NewPlayList}
-        component={NewPlayList}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.SavePost}
-        component={SavePost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.DraftPost}
-        component={DraftPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.VerifiedPost}
-        component={VerifiedPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.PendingPost}
-        component={PendingPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.DeclinedPost}
-        component={DeclinedPost}
-        options={{headerShown: false}}
-      />
+      {/* Authentication Flow */}
+      <Stack.Screen name={Routes.LoginStack} component={LoginNavigator} />
 
-      <Stack.Screen
-        name={Routes.InnerCircleRequest}
-        component={InnerCircleRequest}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.InnerCircle}
-        component={InnerCircle}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Followers}
-        component={Followers}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Following}
-        component={Following}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Likes}
-        component={Likes}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.BlockUsers}
-        component={BlockUsers}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Settings}
-        component={Settings}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.ChangePassword}
-        component={ChangePassword}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.HelpScreen}
-        component={HelpScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Terms}
-        component={Terms}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.UserPost}
-        component={UserPost}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.UserAnalyticsPerf}
-        component={UserAnalyticsPerf}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.MyBadge}
-        component={MyBadge}
-        options={{headerShown: false}}
-      />
+      {/* Post-Login Setup */}
+      <Stack.Screen name={Routes.Preferences} component={Preferences} />
+      <Stack.Screen name={Routes.BasicDetails} component={BasicDetails} />
 
-      <Stack.Screen
-        name={Routes.Conversation}
-        component={Conversation}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.Chat}
-        component={Chat}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.QuizScreen}
-        component={QuizScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.MyProfile}
-        component={MyProfile}
-        options={{headerShown: false}}
-      />
+      {/* Main App Flow with Bottom Tabs */}
+      <Stack.Screen name={Routes.Home} component={TabNavigator} />
 
+      {/* Other Screens (Alphabetical for maintainability) */}
       <Stack.Screen
-        name={Routes.QuizList}
-        component={QuizListScreen}
-        options={{headerShown: false}}
+        name={Routes.AddEditCard}
+        component={AddEditCard}
       />
       <Stack.Screen
-        name={Routes.EditGroupProfile}
-        component={EditGroupProfile}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddyActiveSessions}
+        component={AIStudyBuddyActiveSessions}
       />
       <Stack.Screen
-        name={Routes.GroupChat}
-        component={GroupChat}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddyAnalytics}
+        component={AIStudyBuddyAnalytics}
       />
       <Stack.Screen
-        name={Routes.GroupProfile}
-        component={GroupProfile}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddyBookmarks}
+        component={AIStudyBuddyBookmarks}
       />
       <Stack.Screen
-        name={Routes.groupRequest}
-        component={GroupRequest}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddyChat}
+        component={AIStudyBuddyChat}
       />
       <Stack.Screen
-        name={Routes.QuizFeedbackScreen}
-        component={QuizFeedbackScreen}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddyHub}
+        component={AIStudyBuddyHub}
       />
       <Stack.Screen
-        name={Routes.SupportQueryScreen}
-        component={SupportQueryScreen}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddyNewSession}
+        component={AIStudyBuddyNewSession}
       />
       <Stack.Screen
-        name={'MyQueriesScreen'}
-        component={MyQueriesScreen}
-        options={{headerShown: false}}
-      />
-      {/* --- Add User Generated Quiz Screens --- */}
-      <Stack.Screen
-        name={Routes.CreateQuiz}
-        component={CreateQuizScreen}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddySearchMessages}
+        component={AIStudyBuddySearch}
       />
       <Stack.Screen
-        name={Routes.EditQuiz}
-        component={EditQuizScreen}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddySessionDetails}
+        component={AIStudyBuddySessionDetails}
       />
       <Stack.Screen
-        name={Routes.CreatorDashboard}
-        component={CreatorDashboardScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.QuizAnalytics}
-        component={QuizAnalyticsScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.QuizAccessRequests}
-        component={QuizAccessRequestsScreen}
-        options={{headerShown: false}}
-      />
-      <Stack.Screen
-        name={Routes.QuizParticipants}
-        component={QuizParticipantsScreen}
-        options={{headerShown: false}}
+        name={Routes.AIStudyBuddySessionHistory}
+        component={AIStudyBuddySessionHistory}
       />
       <Stack.Screen
         name={Routes.AIPayment}
         component={AIPaymentModal}
-        options={{presentation: 'modal', headerShown: false}}
+        options={{presentation: 'modal'}}
       />
       <Stack.Screen
-        name={Routes.MyQuizzes}
-        component={MyQuizzesScreen}
-        options={{headerShown: false}}
+        name={Routes.AreasOfImprovement}
+        component={AreasOfImprovement}
       />
+      <Stack.Screen name={Routes.BlockUsers} component={BlockUsers} />
+      <Stack.Screen name={Routes.Certifications} component={Certifications} />
+      <Stack.Screen name={Routes.ChangePassword} component={ChangePassword} />
+      <Stack.Screen name={Routes.Chat} component={Chat} />
+      <Stack.Screen name={Routes.CommunityHub} component={CommunityHome} />
+      <Stack.Screen name={Routes.Conversation} component={Conversation} />
+      <Stack.Screen name={Routes.CramFlashcardViewer} component={CramFlashcardViewer} />
+      <Stack.Screen name={Routes.CramMode} component={CramMode} />
+      <Stack.Screen name={Routes.CreateDeck} component={CreateDeck} />
+      <Stack.Screen name={Routes.CreatePost} component={CreatePost} />
+      <Stack.Screen name={Routes.CreateQuiz} component={CreateQuizScreen} />
+      <Stack.Screen name={Routes.CreatorDashboard} component={CreatorDashboardScreen} />
+      <Stack.Screen name={Routes.DeckDetails} component={DeckDetails} />
+      <Stack.Screen name={Routes.DeclinedPost} component={DeclinedPost} />
+      <Stack.Screen name={Routes.DraftPost} component={DraftPost} />
+      <Stack.Screen name={Routes.EditGroupProfile} component={EditGroupProfile} />
+      <Stack.Screen name={Routes.EditPlayList} component={EditPlayList} />
+      <Stack.Screen name={Routes.EditProfile} component={EditProfile} />
+      <Stack.Screen name={Routes.EditQuiz} component={EditQuizScreen} />
+      <Stack.Screen name={Routes.Education} component={Education} />
+      <Stack.Screen name={Routes.FlashcardAnalytics} component={FlashcardAnalytics} />
+      <Stack.Screen name={Routes.FlashcardHub} component={FlashcardHub} />
+      <Stack.Screen name={Routes.FlashcardViewer} component={FlashcardViewer} />
+      <Stack.Screen name={Routes.Followers} component={Followers} />
+      <Stack.Screen name={Routes.Following} component={Following} />
+      <Stack.Screen name={Routes.GroupChat} component={GroupChat} />
+      <Stack.Screen name={Routes.GroupProfile} component={GroupProfile} />
+      <Stack.Screen name={Routes.groupRequest} component={GroupRequest} />
+      <Stack.Screen name={Routes.HelpScreen} component={HelpScreen} />
+      <Stack.Screen name={Routes.InnerCircle} component={InnerCircle} />
+      <Stack.Screen name={Routes.InnerCircleRequest} component={InnerCircleRequest} />
+      <Stack.Screen name={Routes.LearningIntelligenceHub} component={LearningIntelligenceHub} />
+      <Stack.Screen name={Routes.LearningVault} component={LearningVault} />
+      <Stack.Screen name={Routes.Likes} component={Likes} />
+      <Stack.Screen name={Routes.MenuScreen} component={MenuScreen} />
+      <Stack.Screen name={Routes.MyBadge} component={MyBadge} />
+      <Stack.Screen name={Routes.MyDecks} component={MyDecks} />
+      <Stack.Screen name={Routes.MyPlaylist} component={MyPlaylist} />
+      <Stack.Screen name={Routes.MyProfile} component={MyProfile} />
+      <Stack.Screen name={Routes.MyQuizzes} component={MyQuizzesScreen} />
+      <Stack.Screen name={Routes.NewPlayList} component={NewPlayList} />
+      <Stack.Screen name={Routes.Notifications} component={Notifications} />
+      <Stack.Screen name={Routes.OtherProfile} component={MyProfile} />
+      <Stack.Screen name={Routes.PendingPost} component={PendingPost} />
+      <Stack.Screen name={Routes.Projects} component={Projects} />
+      <Stack.Screen name={Routes.PublicDecks} component={BrowsePublicDecks} />
+      <Stack.Screen name={Routes.QuizAccessRequests} component={QuizAccessRequestsScreen} />
+      <Stack.Screen name={Routes.QuizAnalytics} component={QuizAnalyticsScreen} />
+      <Stack.Screen name={Routes.QuizFeedbackScreen} component={QuizFeedbackScreen} />
+      <Stack.Screen name={Routes.QuizList} component={QuizListScreen} />
+      <Stack.Screen name={Routes.QuizParticipants} component={QuizParticipantsScreen} />
+      <Stack.Screen name={Routes.QuizScreen} component={QuizScreen} />
+      <Stack.Screen name={Routes.SavePost} component={SavePost} />
+      <Stack.Screen name={Routes.Settings} component={Settings} />
+      <Stack.Screen name={Routes.StudySummary} component={StudySummary} />
+      <Stack.Screen name={Routes.SupportQueryScreen} component={SupportQueryScreen} />
+      <Stack.Screen name={'MyQueriesScreen'} component={MyQueriesScreen} />
+      <Stack.Screen name={Routes.Terms} component={Terms} />
+      <Stack.Screen name={Routes.TopicInsight} component={TopicInsight} />
+      <Stack.Screen name={Routes.UploadDocument} component={UploadDocument} />
       <Stack.Screen
-        name={Routes.LearningVault}
-        component={LearningVault}
-        options={{headerShown: false}}
+        name={Routes.UserAnalyticsPerf}
+        component={UserAnalyticsPerf}
       />
-      <Stack.Screen
-          name={Routes.AreasOfImprovement}
-          component={AreasOfImprovement}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.TopicInsight}
-          component={TopicInsight}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.LearningIntelligenceHub}
-          component={LearningIntelligenceHub}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.FlashcardHub}
-          component={FlashcardHub}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.CreateDeck}
-          component={CreateDeck}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.UploadDocument}
-          component={UploadDocument}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.DeckDetails}
-          component={DeckDetails}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.FlashcardViewer}
-          component={FlashcardViewer}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.PublicDecks}
-          component={BrowsePublicDecks}
-          options={{headerShown: false}}
-        />  
-        <Stack.Screen
-          name={Routes.AddEditCard}
-          component={AddEditCard}
-          options={{headerShown: false}}
-        />
-          <Stack.Screen
-          name={Routes.FlashcardAnalytics}
-          component={FlashcardAnalytics}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.MyDecks}
-          component={MyDecks}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.StudySummary}
-          component={StudySummary}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.CramMode}
-          component={CramMode}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.CramFlashcardViewer}
-          component={CramFlashcardViewer}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyHub}
-          component={AIStudyBuddyHub}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyNewSession}
-          component={AIStudyBuddyNewSession}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyChat}
-          component={AIStudyBuddyChat}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen 
-          name={Routes.AIStudyBuddyActiveSessions} 
-          component={AIStudyBuddyActiveSessions} 
-          options={{headerShown: false}} 
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddySessionDetails}
-          component={AIStudyBuddySessionDetails}
-          options={{headerShown: false}}
-        />    
-        <Stack.Screen
-          name={Routes.AIStudyBuddySessionHistory}
-          component={AIStudyBuddySessionHistory}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyAnalytics}
-          component={AIStudyBuddyAnalytics}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddyBookmarks}
-          component={AIStudyBuddyBookmarks}
-          options={{headerShown: false}}
-        />
-        <Stack.Screen
-          name={Routes.AIStudyBuddySearchMessages}
-          component={AIStudyBuddySearch}
-          options={{headerShown: false}}
-        />
-    </Stack.Navigator>
+      <Stack.Screen name={Routes.UserPost} component={UserPost} />
+      <Stack.Screen name={Routes.VerifiedPost} component={VerifiedPost} />
+      <Stack.Screen name={Routes.CommunityDiscovery} component={CommunityDiscovery} /> 
+      <Stack.Screen name={Routes.CommunityProfile} component={CommunityProfile} />
+      <Stack.Screen name={Routes.MyCommunities} component={MyCommunities} />
+      <Stack.Screen name={Routes.CreateCommunity} component={CreateCommunity} />
+      <Stack.Screen name={Routes.CreateCommunityPost} component={CreateCommunityPost} />
+      <Stack.Screen name={Routes.CommunityPostDetail} component={CommunityPostDetail} />
+      </Stack.Navigator>
   );
 };
