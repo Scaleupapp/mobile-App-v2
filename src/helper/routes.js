@@ -139,6 +139,28 @@ const Routes = {
   AIStudyBuddyUpgradeModal: 'AIStudyBuddyUpgradeModal',   // Upgrade prompt modal
   AIStudyBuddyFeedbackModal: 'AIStudyBuddyFeedbackModal', // Feedback modal
   AIStudyBuddyShareModal: 'AIStudyBuddyShareModal',       // Share conversation modal
+
+
+  // ==========================================
+// INTELLITEST ROUTES
+// ==========================================
+IntelliTestHub: 'IntelliTestHub',
+IntelliTestExamSelection: 'IntelliTestExamSelection',
+IntelliTestAssessmentConfig: 'IntelliTestAssessmentConfig', 
+IntelliTestCreateSession: 'IntelliTestCreateSession',
+IntelliTestQuestionGeneration: 'IntelliTestQuestionGeneration',
+IntelliTestSessionDetails: 'IntelliTestSessionDetails',  
+IntelliTestAssessment: 'IntelliTestAssessment',
+IntelliStartTestAssessment: 'IntelliStartTestAssessment',
+IntelliTestResults: 'IntelliTestResults',
+IntelliTestAnalyticsDashboard: 'IntelliTestAnalyticsDashboard',
+IntelliTestPerformanceDetails: 'IntelliTestPerformanceDetails',
+IntelliTestRoadmapDetails: 'IntelliTestRoadmapDetails',
+IntelliTestCreateRoadmap: 'IntelliTestCreateRoadmap',
+IntelliTestCustomTopics: 'IntelliTestCustomTopics',
+IntelliTestCreateTopic: 'IntelliTestCreateTopic',
+IntelliTestTopicDetails: 'IntelliTestTopicDetails',
+IntelliTestSessionHistory: 'IntelliTestSessionHistory', 
 };
 
 export default Routes;

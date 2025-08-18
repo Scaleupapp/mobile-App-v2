@@ -1691,6 +1691,491 @@ export const validateAiStudyBuddyMessage = (payload: {
   };
 };
 
+
+// ==========================================
+// INTELLITEST - AI-POWERED ASSESSMENT SYSTEM
+// ==========================================
+
+// ==========================================
+// CORE ASSESSMENT FLOW
+// ==========================================
+
+// Get available exams for IntelliTest
+export const getIntelliTestAvailableExamsApi = () => {
+  return axiosInstance.get(API.INTELLITEST_AVAILABLE_EXAMS);
+};
+
+// Create new assessment session
+export const createIntelliTestSessionApi = (payload: {
+  examId: string;
+  sessionType: 'initial_assessment' | 'practice' | 'mock_test' | 'custom_topic';
+  totalQuestions: number;
+  timeLimit: number;
+  difficultyDistribution?: {
+    easy: number;
+    medium: number;
+    hard: number;
+  };
+  includeCustomTopics?: boolean;
+  customTopicIds?: string[];
+  hasNegativeMarking?: boolean;
+  allowQuestionNavigation?: boolean;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_CREATE_SESSION, payload);
+};
+
+// Start assessment session
+export const startIntelliTestSessionApi = (payload: {
+  sessionId: string;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_START_SESSION, payload);
+};
+
+// Get current question in session
+export const getCurrentIntelliTestQuestionApi = (sessionId: string) => {
+  return axiosInstance.get(
+    API.INTELLITEST_CURRENT_QUESTION.replace(':sessionId', sessionId)
+  );
+};
+
+// Submit answer for current question
+export const submitIntelliTestAnswerApi = (payload: {
+  sessionId: string;
+  questionId: string;
+  selectedOption?: string;
+  numericalAnswer?: number;
+  confidenceLevel?: 'low' | 'medium' | 'high';
+  timeSpent: number;
+  optionChangeCount?: number;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_SUBMIT_ANSWER, payload);
+};
+
+// Navigate to specific question
+export const navigateIntelliTestQuestionApi = (payload: {
+  sessionId: string;
+  questionNumber: number;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_NAVIGATE_QUESTION, payload);
+};
+
+// End assessment session
+export const endIntelliTestSessionApi = (payload: {
+  sessionId: string;
+  reason?: 'completed_manually' | 'time_up' | 'user_quit';
+}) => {
+  return axiosInstance.post(API.INTELLITEST_END_SESSION, payload);
+};
+
+// ==========================================
+// SESSION MANAGEMENT
+// ==========================================
+
+// Pause active session
+export const pauseIntelliTestSessionApi = (payload: {
+  sessionId: string;
+  reason?: 'user_requested' | 'system_pause' | 'break_time';
+}) => {
+  return axiosInstance.post(API.INTELLITEST_PAUSE_SESSION, payload);
+};
+
+// Resume paused session
+export const resumeIntelliTestSessionApi = (payload: {
+  sessionId: string;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_RESUME_SESSION, payload);
+};
+
+// Get session summary and results
+export const getIntelliTestSessionSummaryApi = (sessionId: string) => {
+  return axiosInstance.get(
+    API.INTELLITEST_SESSION_SUMMARY.replace(':sessionId', sessionId)
+  );
+};
+
+// Get user's session history
+export const getIntelliTestSessionHistoryApi = (params?: {
+  examId?: string;
+  status?: string;
+  limit?: number;
+  page?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.INTELLITEST_SESSION_HISTORY}${queryString ? '?' + queryString : ''}`);
+};
+
+// ==========================================
+// PERFORMANCE ANALYTICS
+// ==========================================
+
+// Get detailed performance analysis
+export const getIntelliTestPerformanceAnalysisApi = (
+  examId: string,
+  params?: {
+    includeInsights?: boolean;
+    timeRange?: number;
+    includeTopicBreakdown?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.INTELLITEST_PERFORMANCE_ANALYSIS.replace(':examId', examId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// Generate AI-powered performance insights
+export const generateIntelliTestInsightsApi = (payload: {
+  examId: string;
+  timeRange: number;
+  includeWeakAreas?: boolean;
+  includePeerComparison?: boolean;
+  includeRecommendations?: boolean;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_GENERATE_INSIGHTS, payload);
+};
+
+// Get peer comparison data
+export const getIntelliTestPeerComparisonApi = (
+  examId: string,
+  params?: {
+    includeAnonymizedData?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.INTELLITEST_PEER_COMPARISON.replace(':examId', examId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// ==========================================
+// LEARNING ROADMAPS
+// ==========================================
+
+// Generate personalized learning roadmap
+export const generateIntelliTestRoadmapApi = (payload: {
+  examId: string;
+  targetDate: string;
+  dailyStudyTime: number;
+  currentPreparationLevel?: 'beginner' | 'intermediate' | 'advanced';
+  strongSubjects?: string[];
+  weakSubjects?: string[];
+  studyIntensity?: 'light' | 'moderate' | 'intensive';
+  learningStyle?: 'visual' | 'auditory' | 'kinesthetic' | 'mixed';
+}) => {
+  return axiosInstance.post(API.INTELLITEST_GENERATE_ROADMAP, payload);
+};
+
+// Get roadmap details
+export const getIntelliTestRoadmapApi = (
+  roadmapId: string,
+  params?: {
+    includeDetails?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.INTELLITEST_GET_ROADMAP.replace(':roadmapId', roadmapId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// Get daily study plan
+export const getIntelliTestDailyPlanApi = (roadmapId: string) => {
+  return axiosInstance.get(
+    API.INTELLITEST_DAILY_PLAN.replace(':roadmapId', roadmapId)
+  );
+};
+
+// Get plan for specific date
+export const getIntelliTestSpecificDatePlanApi = (roadmapId: string, date: string) => {
+  return axiosInstance.get(
+    API.INTELLITEST_SPECIFIC_DATE_PLAN
+      .replace(':roadmapId', roadmapId)
+      .replace(':date', date)
+  );
+};
+
+// Update daily progress
+export const updateIntelliTestDailyProgressApi = (roadmapId: string, payload: {
+  date: string;
+  timeSpent: number;
+  topicsCompleted?: string[];
+  difficultyRating?: 'easy' | 'medium' | 'hard';
+  comprehensionLevel?: number;
+  strugglingAreas?: string[];
+  confidenceLevel?: 'low' | 'medium' | 'high';
+  studyNotes?: string;
+}) => {
+  return axiosInstance.post(
+    API.INTELLITEST_UPDATE_DAILY_PROGRESS.replace(':roadmapId', roadmapId),
+    payload
+  );
+};
+
+// Complete milestone
+export const completeIntelliTestMilestoneApi = (
+  roadmapId: string,
+  milestoneId: string,
+  payload: {
+    completionNotes?: string;
+    performanceScore?: number;
+  }
+) => {
+  return axiosInstance.post(
+    API.INTELLITEST_COMPLETE_MILESTONE
+      .replace(':roadmapId', roadmapId)
+      .replace(':milestoneId', milestoneId),
+    payload
+  );
+};
+
+// Adapt roadmap based on performance
+export const adaptIntelliTestRoadmapApi = (roadmapId: string, payload: {
+  reason: 'performance_change' | 'time_constraint' | 'preference_update' | 'external_factors';
+  performanceData?: {
+    recentAssessmentScore: number;
+    strugglingTopics: string[];
+    improvedTopics: string[];
+    timeEfficiency?: 'above_average' | 'average' | 'below_average';
+    confidenceLevel?: 'low' | 'medium' | 'high';
+  };
+  timeConstraints?: {
+    availableDailyTime: number;
+    examDate?: string;
+    urgentTopics?: string[];
+  };
+  learningPreferences?: {
+    preferredDifficulty?: 'easy' | 'medium' | 'hard';
+    learningStyle?: 'visual' | 'auditory' | 'kinesthetic' | 'mixed';
+    studyIntensity?: 'light' | 'moderate' | 'intensive';
+  };
+}) => {
+  return axiosInstance.post(
+    API.INTELLITEST_ADAPT_ROADMAP.replace(':roadmapId', roadmapId),
+    payload
+  );
+};
+
+// Get roadmap analytics
+export const getIntelliTestRoadmapAnalyticsApi = (
+  roadmapId: string,
+  params?: {
+    includeProgressTrends?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.INTELLITEST_ROADMAP_ANALYTICS.replace(':roadmapId', roadmapId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// Get roadmap history
+export const getIntelliTestRoadmapHistoryApi = (params?: {
+  examId?: string;
+  limit?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.INTELLITEST_ROADMAP_HISTORY}${queryString ? '?' + queryString : ''}`);
+};
+
+// ==========================================
+// CUSTOM TOPICS
+// ==========================================
+
+// Get custom topics with filters
+export const getIntelliTestCustomTopicsApi = (params?: {
+  examId?: string;
+  subjectId?: string;
+  visibility?: 'public' | 'private' | 'community';
+  createdBy?: 'me' | string;
+  search?: string;
+  sortBy?: 'popularityScore' | 'createdAt' | 'validationScore';
+  order?: 'asc' | 'desc';
+  limit?: number;
+  page?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.INTELLITEST_CUSTOM_TOPICS}${queryString ? '?' + queryString : ''}`);
+};
+
+// Create new custom topic
+export const createIntelliTestCustomTopicApi = (payload: {
+  topicName: string;
+  topicDescription: string;
+  targetExamId: string;
+  targetSubjectId: string;
+  learningObjectives?: string[];
+  difficultyLevel?: 'beginner' | 'intermediate' | 'advanced' | 'easy' | 'medium' | 'hard';
+  visibility?: 'private' | 'public' | 'community';
+  generateQuestions?: number;
+}) => {
+  return axiosInstance.post(API.INTELLITEST_CREATE_CUSTOM_TOPIC, payload);
+};
+
+// Get custom topic details
+export const getIntelliTestCustomTopicDetailsApi = (
+  topicId: string,
+  params?: {
+    includeQuestions?: boolean;
+  }
+) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(
+    `${API.INTELLITEST_CUSTOM_TOPIC_DETAILS.replace(':topicId', topicId)}${queryString ? '?' + queryString : ''}`
+  );
+};
+
+// Update custom topic
+export const updateIntelliTestCustomTopicApi = (topicId: string, payload: {
+  topicName?: string;
+  topicDescription?: string;
+  learningObjectives?: string[];
+  estimatedMasteryTime?: number;
+  visibility?: 'private' | 'public' | 'community';
+  prerequisites?: any[];
+  suggestedResources?: any[];
+  tags?: string[];
+}) => {
+  return axiosInstance.put(
+    API.INTELLITEST_UPDATE_CUSTOM_TOPIC.replace(':topicId', topicId),
+    payload
+  );
+};
+
+// Delete custom topic
+export const deleteIntelliTestCustomTopicApi = (topicId: string) => {
+  return axiosInstance.delete(
+    API.INTELLITEST_DELETE_CUSTOM_TOPIC.replace(':topicId', topicId)
+  );
+};
+
+// Get trending custom topics
+export const getIntelliTestTrendingTopicsApi = (params?: {
+  examId?: string;
+  limit?: number;
+  timeframe?: '24h' | '7d' | '30d';
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.INTELLITEST_TRENDING_TOPICS}${queryString ? '?' + queryString : ''}`);
+};
+
+// Search custom topics
+export const searchIntelliTestTopicsApi = (params: {
+  q: string;
+  examId?: string;
+  subjectId?: string;
+  difficulty?: string;
+  minRating?: number;
+  limit?: number;
+}) => {
+  const queryString = new URLSearchParams(params as any).toString();
+  return axiosInstance.get(`${API.INTELLITEST_SEARCH_TOPICS}?${queryString}`);
+};
+
+// ==========================================
+// ADMIN & TESTING
+// ==========================================
+
+// Health check for IntelliTest service
+export const intelliTestHealthCheckApi = () => {
+  return axiosInstance.get(API.INTELLITEST_HEALTH);
+};
+
+// Seed exam configurations (development/testing)
+export const seedIntelliTestExamsApi = () => {
+  return axiosInstance.post(API.INTELLITEST_SEED_EXAMS);
+};
+
+// ==========================================
+// INTELLITEST HELPER FUNCTIONS
+// ==========================================
+
+// Validate session creation payload
+export const validateIntelliTestSessionPayload = (payload: any) => {
+  const errors: string[] = [];
+  
+  if (!payload.examId?.trim()) {
+    errors.push('Exam ID is required');
+  }
+  
+  if (!payload.sessionType?.trim()) {
+    errors.push('Session type is required');
+  }
+  
+  if (!payload.totalQuestions || payload.totalQuestions < 1) {
+    errors.push('Total questions must be at least 1');
+  }
+  
+  if (!payload.timeLimit || payload.timeLimit < 1) {
+    errors.push('Time limit must be at least 1 minute');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+};
+
+// Calculate session progress percentage
+export const calculateIntelliTestProgress = (currentQuestion: number, totalQuestions: number) => {
+  return Math.round((currentQuestion / totalQuestions) * 100);
+};
+
+// Format time remaining for display
+export const formatIntelliTestTimeRemaining = (timeInSeconds: number) => {
+  if (timeInSeconds <= 0) return 'Time up!';
+  
+  const hours = Math.floor(timeInSeconds / 3600);
+  const minutes = Math.floor((timeInSeconds % 3600) / 60);
+  const seconds = timeInSeconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  } else {
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+};
+
+// Check if IntelliTest quota exceeded
+export const isIntelliTestQuotaExceeded = (error: any) => {
+  return error.response?.status === 429 || 
+         error.response?.data?.message?.includes('quota') ||
+         error.response?.data?.message?.includes('limit');
+};
+
+// Format IntelliTest error messages
+export const formatIntelliTestError = (error: any) => {
+  if (error.response?.data?.message) {
+    return error.response.data.message;
+  } else if (error.message) {
+    return error.message;
+  } else {
+    return 'Something went wrong with IntelliTest. Please try again.';
+  }
+};
+
+// Parse difficulty distribution
+export const parseIntelliTestDifficultyDistribution = (easy: number, medium: number, hard: number) => {
+  const total = easy + medium + hard;
+  if (total !== 100) {
+    const ratio = 100 / total;
+    return {
+      easy: Math.round(easy * ratio),
+      medium: Math.round(medium * ratio),
+      hard: Math.round(hard * ratio)
+    };
+  }
+  return { easy, medium, hard };
+};
+
+// ==========================================
+// BACKWARD COMPATIBILITY & ALIASES
+// ==========================================
+
+// Maintain backward compatibility with existing naming
+export const createIntelliTestApi = createIntelliTestSessionApi;
+export const getIntelliTestResultsApi = getIntelliTestSessionSummaryApi;
+export const getIntelliTestAnalyticsApi = getIntelliTestPerformanceAnalysisApi;
+
 // ==========================================
 // BACKWARD COMPATIBILITY & ALIASES
 // ==========================================

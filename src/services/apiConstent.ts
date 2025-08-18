@@ -1,4 +1,5 @@
 export const API = {
+  BASE_URL1: 'http://localhost:3000/api/',
   BASE_URL: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
@@ -278,5 +279,54 @@ AI_STUDY_BUDDY_DOWNLOAD_EXPORT: 'ai-study-buddy/download/:filename',
 AI_STUDY_BUDDY_SUBJECTS_CONFIG: 'ai-study-buddy/config/subjects',
 AI_STUDY_BUDDY_FEATURES: 'ai-study-buddy/features',
 AI_STUDY_BUDDY_HEALTH: 'ai-study-buddy/health',
+
+
+// ==========================================
+// INTELLITEST - AI-POWERED ASSESSMENT SYSTEM
+// ==========================================
+
+// CORE ASSESSMENT FLOW
+INTELLITEST_AVAILABLE_EXAMS: 'intellitest/available-exams',
+INTELLITEST_CREATE_SESSION: 'intellitest/create-session',
+INTELLITEST_START_SESSION: 'intellitest/start-session',
+INTELLITEST_CURRENT_QUESTION: 'intellitest/current-question/:sessionId',
+INTELLITEST_SUBMIT_ANSWER: 'intellitest/submit-answer',
+INTELLITEST_NAVIGATE_QUESTION: 'intellitest/navigate',
+INTELLITEST_END_SESSION: 'intellitest/end-session',
+
+// SESSION MANAGEMENT
+INTELLITEST_PAUSE_SESSION: 'intellitest/pause-session',
+INTELLITEST_RESUME_SESSION: 'intellitest/resume-session',
+INTELLITEST_SESSION_SUMMARY: 'intellitest/session-summary/:sessionId',
+INTELLITEST_SESSION_HISTORY: 'intellitest/session-history',
+
+// PERFORMANCE ANALYTICS
+INTELLITEST_PERFORMANCE_ANALYSIS: 'intellitest/performance/analysis/:examId',
+INTELLITEST_GENERATE_INSIGHTS: 'intellitest/performance/generate-insights',
+INTELLITEST_PEER_COMPARISON: 'intellitest/performance/peer-comparison/:examId',
+
+// LEARNING ROADMAPS
+INTELLITEST_GENERATE_ROADMAP: 'intellitest/roadmap/generate',
+INTELLITEST_GET_ROADMAP: 'intellitest/roadmap/:roadmapId',
+INTELLITEST_DAILY_PLAN: 'intellitest/roadmap/:roadmapId/daily-plan',
+INTELLITEST_SPECIFIC_DATE_PLAN: 'intellitest/roadmap/:roadmapId/daily-plan/:date',
+INTELLITEST_UPDATE_DAILY_PROGRESS: 'intellitest/roadmap/:roadmapId/daily-progress',
+INTELLITEST_COMPLETE_MILESTONE: 'intellitest/roadmap/:roadmapId/milestone/:milestoneId/complete',
+INTELLITEST_ADAPT_ROADMAP: 'intellitest/roadmap/:roadmapId/adapt',
+INTELLITEST_ROADMAP_ANALYTICS: 'intellitest/roadmap/:roadmapId/analytics',
+INTELLITEST_ROADMAP_HISTORY: 'intellitest/roadmap/history',
+
+// CUSTOM TOPICS
+INTELLITEST_CUSTOM_TOPICS: 'intellitest/custom-topics',
+INTELLITEST_CREATE_CUSTOM_TOPIC: 'intellitest/custom-topics/create',
+INTELLITEST_CUSTOM_TOPIC_DETAILS: 'intellitest/custom-topics/:topicId',
+INTELLITEST_UPDATE_CUSTOM_TOPIC: 'intellitest/custom-topics/:topicId',
+INTELLITEST_DELETE_CUSTOM_TOPIC: 'intellitest/custom-topics/:topicId',
+INTELLITEST_TRENDING_TOPICS: 'intellitest/custom-topics/trending',
+INTELLITEST_SEARCH_TOPICS: 'intellitest/custom-topics/search',
+
+// ADMIN & TESTING
+INTELLITEST_HEALTH: 'intellitest/health',
+INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
 
 };
