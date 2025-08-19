@@ -743,15 +743,20 @@ const CommunityHeader = ({
             />
           </TouchableOpacity>
 
-          {/* Show settings button for admins/mods */}
-          {(userRole === 'owner' || userRole === 'admin' || userRole === 'moderator') && (
-            <TouchableOpacity
-              style={styles.secondaryActionButton}
-              onPress={() => {/* Navigate to community settings */}}
-            >
-              <Icon name="settings-outline" size={16} color={COMMUNITY_COLORS.textSecondary} />
-            </TouchableOpacity>
-          )}
+          {/* Management button for Owner/Admin/Moderator */}
+{(['owner', 'admin', 'moderator'].includes(userRole)) && (
+  <TouchableOpacity
+    style={[styles.secondaryActionButton, styles.managementButton]}
+    onPress={() => navigation.navigate(Routes.CommunityManagement, {
+      communityId: community.id || community._id,
+      communityData: community,
+      userRole: userRole
+    })}
+    activeOpacity={0.7}
+  >
+    <Icon name="settings" size={16} color={COMMUNITY_COLORS.accent} />
+  </TouchableOpacity>
+)}
         </View>
 
         {/* Description */}
@@ -1741,6 +1746,27 @@ const CommunityProfile = ({navigation, route}) => {
           onShare={handleShareCommunity}
         />
 
+        {/* Management Section for Owner/Admin/Moderator */}
+{(['owner', 'admin', 'moderator'].includes(userRole)) && (
+  <View style={styles.managementSection}>
+    <TouchableOpacity
+      style={styles.managementButton}
+      onPress={() => {
+        console.log('🏢 Opening Community Management for:', community?.name);
+        navigation.navigate(Routes.CommunityManagement, {
+          communityId: community.id || community._id,
+          communityData: community,
+          userRole: userRole
+        });
+      }}
+      activeOpacity={0.7}
+    >
+      <Icon name="settings" size={20} color={COMMUNITY_COLORS.accent} />
+      <Text style={styles.managementButtonText}>Manage Community</Text>
+      <Icon name="chevron-forward" size={16} color={COMMUNITY_COLORS.textMuted} />
+    </TouchableOpacity>
+  </View>
+)}
         {/* Tab Bar */}
         {renderTabBar()}
 
@@ -1758,11 +1784,23 @@ const CommunityProfile = ({navigation, route}) => {
           </View>
         )}
 
-        {activeTab === 'members' && (
-          <View style={styles.membersContainer}>
-            <Text style={styles.membersText}>Members section coming soon...</Text>
-          </View>
-        )}
+{activeTab === 'members' && (
+  <TouchableOpacity 
+    style={styles.membersContainer}
+    onPress={() => navigation.navigate(Routes.CommunityMembers, {
+      communityId: community.id || community._id,
+      communityName: community.name,
+    })}
+  >
+    <View style={styles.memberPreview}>
+      <Icon name="people" size={32} color={COMMUNITY_COLORS.accent} />
+      <Text style={styles.memberPreviewText}>
+        View all {formatNumber(communityStats?.totalMembers || 0)} members
+      </Text>
+      <Icon name="chevron-forward" size={20} color={COMMUNITY_COLORS.textMuted} />
+    </View>
+  </TouchableOpacity>
+)}
 
         {activeTab === 'events' && (
           <View style={styles.eventsContainer}>
@@ -2469,7 +2507,29 @@ const styles = StyleSheet.create({
   },
   type_file: {
     backgroundColor: COMMUNITY_COLORS.textMuted + '30',
-  }
+  },
+
+  // Management Section Styles
+managementSection: {
+  backgroundColor: COMMUNITY_COLORS.surface,
+  marginHorizontal: nw(16),
+  marginTop: nh(8),
+  borderRadius: nw(12),
+  borderWidth: nw(1),
+  borderColor: COMMUNITY_COLORS.border,
+},
+managementButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: nw(16),
+  gap: nw(12),
+},
+managementButtonText: {
+  flex: 1,
+  fontSize: nw(16),
+  fontWeight: '600',
+  color: COMMUNITY_COLORS.textPrimary,
+},
 });
 
 export default CommunityProfile;

@@ -3,6 +3,7 @@
  * Community Hub - Reddit x Discord Hybrid Design
  * Shows feed of posts from all user's communities
  * Enhanced with comprehensive API logging for debugging
+ * FULLY FIXED VERSION WITH PROPER NAVIGATION AND API CALLS
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
@@ -22,6 +23,7 @@ import {
   Image,
   ScrollView,
   Pressable,
+  Share,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -56,6 +58,8 @@ import {
   voteCommunityPostApi,
   bookmarkCommunityPostApi,
   shareCommunityPostApi,
+  getCommunityDetailsApi,
+  addCommunityPostCommentApi,
 } from '../../services/apiService';
 import {useDispatch, useSelector} from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -189,7 +193,7 @@ const getRelativeTime = (date) => {
 // ===============================
 // DISCORD-STYLE SERVER LIST SIDEBAR
 // ===============================
-const DiscordServerList = ({communities, onSelect, selectedId}) => {
+const DiscordServerList = ({communities, onSelect, selectedId, navigation}) => {
   return (
     <View style={styles.serverList}>
       <TouchableOpacity style={styles.homeServer} onPress={() => onSelect(null)}>
@@ -201,12 +205,19 @@ const DiscordServerList = ({communities, onSelect, selectedId}) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         {communities.map((community, index) => (
           <TouchableOpacity
-            key={community.id}
+            key={community.id || community._id || index}
             style={[
               styles.serverIcon,
-              selectedId === community.id && styles.serverIconActive
+              selectedId === (community.id || community._id) && styles.serverIconActive
             ]}
-            onPress={() => onSelect(community.id)}
+            onPress={() => onSelect(community.id || community._id)}
+            onLongPress={() => {
+              // Long press to navigate directly to community profile
+              navigation.navigate(Routes.CommunityProfile, {
+                communityId: community.id || community._id,
+                community: community
+              });
+            }}
           >
             {community.coverImage ? (
               <Image source={{uri: community.coverImage}} style={styles.serverImage} />
@@ -226,7 +237,10 @@ const DiscordServerList = ({communities, onSelect, selectedId}) => {
         ))}
       </ScrollView>
       
-      <TouchableOpacity style={styles.addServerButton}>
+      <TouchableOpacity 
+        style={styles.addServerButton}
+        onPress={() => navigation.navigate(Routes.CommunityDiscovery)}
+      >
         <Icon name="add" size={24} color={REDDIT_DISCORD_COLORS.discordGreen} />
       </TouchableOpacity>
     </View>
@@ -237,50 +251,131 @@ const DiscordServerList = ({communities, onSelect, selectedId}) => {
 // POST FEED CARD COMPONENT
 // ===============================
 const PostFeedCard = ({post, onPress, index = 0, navigation}) => {
-  const [voteStatus, setVoteStatus] = useState(null);
+  const [voteStatus, setVoteStatus] = useState(post.userInteractions?.voteType || null);
   const [isBookmarked, setIsBookmarked] = useState(post.userInteractions?.bookmarked || false);
+  const [voteCount, setVoteCount] = useState((post.metrics?.upvotes || 0) - (post.metrics?.downvotes || 0));
+  
+  // Get community ID and info properly
+  const communityId = post.community?.id || post.community?._id || post.communityId;
+  const communityInfo = post.community || post.communityInfo;
   
   const handleVote = async (type) => {
+    if (!communityId) {
+      Alert.alert('Error', 'Community information not available');
+      return;
+    }
+    
     const newStatus = voteStatus === type ? null : type;
+    const prevStatus = voteStatus;
+    const prevCount = voteCount;
+    
+    // Optimistic update
     setVoteStatus(newStatus);
     
+    // Update vote count optimistically
+    if (prevStatus === 'upvote') {
+      setVoteCount(prevCount - 1);
+    } else if (prevStatus === 'downvote') {
+      setVoteCount(prevCount + 1);
+    }
+    
+    if (newStatus === 'upvote') {
+      setVoteCount(prevCount + (prevStatus === 'downvote' ? 2 : 1));
+    } else if (newStatus === 'downvote') {
+      setVoteCount(prevCount - (prevStatus === 'upvote' ? 2 : 1));
+    }
+    
     try {
-      // Call vote API
-      await voteCommunityPostApi(post.communityInfo?.id, post.id, {
-        voteType: newStatus ? type : 'remove'
+      // Call vote API with proper parameters
+      await voteCommunityPostApi(communityId, post.id || post._id, {
+        voteType: newStatus || 'none'
+      });
+      
+      APILogger.log('voteCommunityPostApi', 'SUCCESS', { 
+        communityId, 
+        postId: post.id || post._id, 
+        voteType: newStatus 
       });
     } catch (error) {
       console.error('Vote error:', error);
-      setVoteStatus(voteStatus); // Revert on error
+      // Revert on error
+      setVoteStatus(prevStatus);
+      setVoteCount(prevCount);
+      Alert.alert('Error', 'Failed to update vote. Please try again.');
     }
   };
   
   const handleBookmark = async () => {
+    if (!communityId) {
+      Alert.alert('Error', 'Community information not available');
+      return;
+    }
+    
     try {
       setIsBookmarked(!isBookmarked);
-      await bookmarkCommunityPostApi(post.communityInfo?.id, post.id);
+      await bookmarkCommunityPostApi(communityId, post.id || post._id);
+      
+      APILogger.log('bookmarkCommunityPostApi', 'SUCCESS', { 
+        communityId, 
+        postId: post.id || post._id 
+      });
     } catch (error) {
       console.error('Bookmark error:', error);
       setIsBookmarked(isBookmarked); // Revert on error
+      Alert.alert('Error', 'Failed to bookmark post. Please try again.');
     }
   };
   
   const handleShare = async () => {
+    if (!communityId) {
+      Alert.alert('Error', 'Community information not available');
+      return;
+    }
+    
     try {
-      await shareCommunityPostApi(post.communityInfo?.id, post.id, {
-        platform: 'internal'
+      // Try native share first
+      const shareMessage = `Check out this post: ${post.title || 'Untitled Post'}\n\nFrom r/${communityInfo?.name || 'community'}`;
+      
+      await Share.share({
+        message: shareMessage,
+        title: post.title || 'Share Post',
       });
-      Alert.alert('Success', 'Post shared successfully');
+      
+      // Track share in backend
+      await shareCommunityPostApi(communityId, post.id || post._id, {
+        platform: 'native'
+      });
+      
+      APILogger.log('shareCommunityPostApi', 'SUCCESS', { 
+        communityId, 
+        postId: post.id || post._id 
+      });
     } catch (error) {
-      console.error('Share error:', error);
+      if (error.message !== 'Share cancelled') {
+        console.error('Share error:', error);
+        Alert.alert('Error', 'Failed to share post. Please try again.');
+      }
     }
   };
   
   const navigateToCommunity = () => {
-    if (post.communityInfo) {
+    if (communityInfo && communityId) {
       navigation.navigate(Routes.CommunityProfile, {
-        communityId: post.communityInfo.id,
-        community: post.communityInfo,
+        communityId: communityId,
+        community: communityInfo,
+      });
+    }
+  };
+  
+  const handleCommentPress = () => {
+    if (onPress) {
+      onPress(post);
+    } else {
+      // Navigate to post detail
+      navigation.navigate(Routes.CommunityPostDetail, {
+        postId: post.id || post._id,
+        communityId: communityId,
+        post: post,
       });
     }
   };
@@ -290,7 +385,7 @@ const PostFeedCard = ({post, onPress, index = 0, navigation}) => {
       entering={FadeInDown.delay(index * 50).springify()}
       style={styles.redditCard}
     >
-      <Pressable onPress={() => onPress?.(post)} style={styles.redditCardPressable}>
+      <Pressable onPress={handleCommentPress} style={styles.redditCardPressable}>
         {/* Upvote Section */}
         <View style={styles.voteSection}>
           <TouchableOpacity 
@@ -308,7 +403,7 @@ const PostFeedCard = ({post, onPress, index = 0, navigation}) => {
             voteStatus === 'upvote' && styles.karmaUp,
             voteStatus === 'downvote' && styles.karmaDown
           ]}>
-            {formatNumber(post.metrics?.upvotes - post.metrics?.downvotes || 0)}
+            {formatNumber(voteCount)}
           </Text>
           <TouchableOpacity 
             onPress={() => handleVote('downvote')}
@@ -327,25 +422,25 @@ const PostFeedCard = ({post, onPress, index = 0, navigation}) => {
           {/* Header with Community Info */}
           <View style={styles.redditHeader}>
             <TouchableOpacity onPress={navigateToCommunity} style={styles.communityInfo}>
-              {post.community?.coverImage ? (
-                <Image source={{uri: post.community.coverImage}} style={styles.subredditIcon} />
+              {communityInfo?.coverImage ? (
+                <Image source={{uri: communityInfo.coverImage}} style={styles.subredditIcon} />
               ) : (
                 <View style={[styles.subredditIconPlaceholder, {backgroundColor: REDDIT_DISCORD_COLORS.blurple}]}>
                   <Text style={styles.subredditInitial}>
-                    {(post.community?.name || 'C').charAt(0).toUpperCase()}
+                    {(communityInfo?.name || 'C').charAt(0).toUpperCase()}
                   </Text>
                 </View>
               )}
               
               <Text style={styles.subredditName}>
-                r/{(post.community?.name || 'community').toLowerCase().replace(/\s+/g, '')}
+                r/{(communityInfo?.name || 'community').toLowerCase().replace(/\s+/g, '')}
               </Text>
             </TouchableOpacity>
             
             <Text style={styles.dotSeparator}>•</Text>
             
             <Text style={styles.postTime}>
-              u/{post.author?.username || 'anonymous'} • {getRelativeTime(post.publishedAt)}
+              u/{post.author?.username || 'anonymous'} • {getRelativeTime(post.publishedAt || post.createdAt)}
             </Text>
           </View>
           
@@ -363,7 +458,7 @@ const PostFeedCard = ({post, onPress, index = 0, navigation}) => {
           
           {/* Post Images if any */}
           {post.media?.images?.length > 0 && (
-            <TouchableOpacity onPress={() => onPress?.(post)}>
+            <TouchableOpacity onPress={handleCommentPress}>
               <Image 
                 source={{uri: post.media.images[0].url || post.media.images[0].thumbnailUrl}} 
                 style={styles.postImage}
@@ -411,7 +506,7 @@ const PostFeedCard = ({post, onPress, index = 0, navigation}) => {
           
           {/* Footer Actions */}
           <View style={styles.redditFooter}>
-            <TouchableOpacity style={styles.footerAction} onPress={() => onPress?.(post)}>
+            <TouchableOpacity style={styles.footerAction} onPress={handleCommentPress}>
               <Icon name="chatbubble-outline" size={16} color={REDDIT_DISCORD_COLORS.textMuted} />
               <Text style={styles.footerText}>
                 {formatNumber(post.metrics?.comments || 0)}
@@ -605,7 +700,7 @@ const CommunityHome = ({navigation, route}) => {
     const apiName = 'getMyCommunitiesApi';
     const params = {
       page: 1,
-      limit: 50, // Get more communities for the feed
+      limit: 50,
       includeStats: true,
       sortBy: 'lastActivity',
     };
@@ -617,13 +712,13 @@ const CommunityHome = ({navigation, route}) => {
       APILogger.logResponse(apiName, response);
       
       if (response?.data?.success) {
-        const communities = response.data.data?.communities || [];
+        const communities = response.data.data?.communities || response.data.data || [];
         console.log(`✅ Fetched ${communities.length} communities for user`);
         setMyCommunities(communities);
         
         // Log each community
         communities.forEach((comm, index) => {
-          console.log(`  ${index + 1}. ${comm.name} (ID: ${comm.id})`);
+          console.log(`  ${index + 1}. ${comm.name} (ID: ${comm.id || comm._id})`);
         });
         
         return communities;
@@ -689,7 +784,7 @@ const CommunityHome = ({navigation, route}) => {
       
       // Determine which communities to fetch from
       const communitiesToFetch = specificCommunityId 
-        ? communities.filter(c => c.id === specificCommunityId)
+        ? communities.filter(c => (c.id || c._id) === specificCommunityId)
         : communities;
       
       // Map sort type to API parameter
@@ -702,7 +797,7 @@ const CommunityHome = ({navigation, route}) => {
       
       // Fetch posts from each community
       const postPromises = communitiesToFetch.slice(0, 20).map(community => 
-        getCommunityPostsApi(community.id, {
+        getCommunityPostsApi(community.id || community._id, {
           page: reset ? 1 : feedPage,
           limit: 10,
           sort: sortMap[activeSort] || 'latest'
@@ -720,7 +815,8 @@ const CommunityHome = ({navigation, route}) => {
         if (response?.data?.success && response.data.data?.posts) {
           const posts = response.data.data.posts.map(post => ({
             ...post,
-            community: communitiesToFetch[index] // Add community info to each post
+            community: communitiesToFetch[index],
+            communityId: communitiesToFetch[index].id || communitiesToFetch[index]._id
           }));
           allPosts.push(...posts);
         }
@@ -728,7 +824,7 @@ const CommunityHome = ({navigation, route}) => {
       
       // Sort by date (newest first) or by engagement based on sort type
       if (activeSort === 'new') {
-        allPosts.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+        allPosts.sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
       } else if (activeSort === 'top') {
         allPosts.sort((a, b) => (b.metrics?.upvotes || 0) - (a.metrics?.upvotes || 0));
       } else {
@@ -789,16 +885,25 @@ const CommunityHome = ({navigation, route}) => {
   }, [activeSort]);
   
   const handlePostPress = useCallback((post) => {
-    console.log(`\n👆 Post Pressed: ${post.title} (ID: ${post.id})`);
+    console.log(`\n👆 Post Pressed: ${post.title} (ID: ${post.id || post._id})`);
+    
+    const communityId = post.community?.id || post.community?._id || post.communityId;
+    
+    if (!communityId) {
+      Alert.alert('Error', 'Community information not available for this post');
+      return;
+    }
+    
     mixpanel.track('Post Selected', {
-      post_id: post.id,
+      post_id: post.id || post._id,
       post_title: post.title,
-      community_id: post.community?.id,
+      community_id: communityId,
     });
     
-    navigation.navigate(Routes.PostDetail, {
-      postId: post.id,
-      communityId: post.community?.id,
+    // Navigate to CommunityPostDetail (correct route)
+    navigation.navigate(Routes.CommunityPostDetail, {
+      postId: post.id || post._id,
+      communityId: communityId,
       post: post,
     });
   }, [navigation]);
@@ -806,8 +911,11 @@ const CommunityHome = ({navigation, route}) => {
   const handleSearch = useCallback(() => {
     if (searchQuery.trim()) {
       console.log(`\n🔍 Search initiated: "${searchQuery}"`);
-      navigation.navigate(Routes.SearchCommunities, {
+      // Navigate to Search screen with community search parameters
+      navigation.navigate(Routes.Search, {
         initialQuery: searchQuery,
+        searchType: 'communities',
+        fromScreen: 'CommunityHome'
       });
     }
   }, [navigation, searchQuery]);
@@ -822,6 +930,19 @@ const CommunityHome = ({navigation, route}) => {
   const handleSortChange = (newSort) => {
     console.log(`📊 Sort changed to: ${newSort}`);
     setActiveSort(newSort);
+  };
+  
+  const handleCreatePost = () => {
+    if (selectedServerId) {
+      const selectedCommunity = myCommunities.find(c => (c.id || c._id) === selectedServerId);
+      navigation.navigate(Routes.CreateCommunityPost, {
+        communityId: selectedServerId,
+        community: selectedCommunity
+      });
+    } else {
+      // Navigate to community selection for post creation
+      navigation.navigate(Routes.CreateCommunityPost);
+    }
   };
   
   // ===============================
@@ -846,7 +967,7 @@ const CommunityHome = ({navigation, route}) => {
         
         <TouchableOpacity 
           style={styles.createButton}
-          onPress={() => navigation.navigate(Routes.CreateCommunity)}
+          onPress={handleCreatePost}
         >
           <LinearGradient
             colors={[REDDIT_DISCORD_COLORS.blurple, REDDIT_DISCORD_COLORS.blurpleLight]}
@@ -916,6 +1037,7 @@ const CommunityHome = ({navigation, route}) => {
               communities={myCommunities}
               onSelect={setSelectedServerId}
               selectedId={selectedServerId}
+              navigation={navigation}
             />
           )}
           
@@ -932,7 +1054,7 @@ const CommunityHome = ({navigation, route}) => {
               
               <Text style={styles.topBarTitle}>
                 {selectedServerId 
-                  ? myCommunities.find(c => c.id === selectedServerId)?.name || 'Community Feed'
+                  ? myCommunities.find(c => (c.id || c._id) === selectedServerId)?.name || 'Community Feed'
                   : 'All Communities Feed'}
               </Text>
               
@@ -958,11 +1080,17 @@ const CommunityHome = ({navigation, route}) => {
                   <Icon name="compass" size={20} color={REDDIT_DISCORD_COLORS.textBright} />
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.topBarButton}>
+                <TouchableOpacity 
+                  style={styles.topBarButton}
+                  onPress={() => navigation.navigate(Routes.Notifications)}
+                >
                   <Feather name="bell" size={20} color={REDDIT_DISCORD_COLORS.textBright} />
                 </TouchableOpacity>
                 
-                <TouchableOpacity style={styles.topBarButton}>
+                <TouchableOpacity 
+                  style={styles.topBarButton}
+                  onPress={() => navigation.navigate(Routes.Conversation)}
+                >
                   <Feather name="message-square" size={20} color={REDDIT_DISCORD_COLORS.textBright} />
                 </TouchableOpacity>
               </View>
@@ -979,7 +1107,7 @@ const CommunityHome = ({navigation, route}) => {
                   navigation={navigation}
                 />
               )}
-              keyExtractor={(item, index) => `post-${item.id}-${index}`}
+              keyExtractor={(item, index) => `post-${item.id || item._id}-${index}`}
               ListHeaderComponent={renderHeader}
               ListFooterComponent={renderFooter}
               ListEmptyComponent={

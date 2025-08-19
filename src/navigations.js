@@ -50,7 +50,9 @@ import MyCommunities from './screens/Community/MyCommunities';
 import CreateCommunity from './screens/Community/CreateCommunity';
 import CreateCommunityPost from './screens/Community/CreatePost';
 import CommunityPostDetail from './screens/Community/CommunityPostDetail';
-
+import CommunityMembers from './screens/Community/CommunityMembers.js';
+import MemberProfile from './screens/Community/MemberProfile.js';
+import CommunityManagement from './screens/Community/CommunityManagement';
 // Profile & User
 import MyProfile from './screens/MyProfile/MyProfile';
 import EditProfile from './screens/EditProfile/EditProfile';
@@ -651,6 +653,9 @@ export const RootNavigator = () => {
       <Stack.Screen name={Routes.CreateCommunity} component={CreateCommunity} />
       <Stack.Screen name={Routes.CreateCommunityPost} component={CreateCommunityPost} />
       <Stack.Screen name={Routes.CommunityPostDetail} component={CommunityPostDetail} />
+      <Stack.Screen name={Routes.CommunityMembers} component={CommunityMembers} />
+      <Stack.Screen name={Routes.MemberProfile} component={MemberProfile} />
+      <Stack.Screen name={Routes.CommunityManagement} component={CommunityManagement} />
       </Stack.Navigator>
   );
 };
