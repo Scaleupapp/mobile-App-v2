@@ -39,10 +39,15 @@ import {useToast} from '../../components/CustomToast';
 const {width: screenWidth} = Dimensions.get('window');
 
 const StudySummary = ({navigation, route}) => {
-  const {deckId, deckTitle, summaryType = 'quick', timeAvailable = 15} = route.params;
+  const {
+    deckId,
+    deckTitle,
+    summaryType = 'quick',
+    timeAvailable = 15,
+  } = route.params;
   const userData = useSelector(state => state?.userData);
   const {showToast} = useToast();
-  
+
   // State management
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,28 +82,28 @@ const StudySummary = ({navigation, route}) => {
       label: 'Quick Review',
       icon: 'flash-on',
       color: COLORS.yellowF5BE00,
-      description: 'Fast review for limited time'
+      description: 'Fast review for limited time',
     },
     {
       id: 'formula',
       label: 'Formula Sheet',
       icon: 'functions',
       color: COLORS.blue043142,
-      description: 'Key formulas and concepts'
+      description: 'Key formulas and concepts',
     },
     {
       id: 'comprehensive',
       label: 'Complete Study',
       icon: 'menu-book',
       color: COLORS.green34A853,
-      description: 'Thorough study material'
+      description: 'Thorough study material',
     },
     {
       id: 'generated',
       label: 'AI Summary',
       icon: 'auto-awesome',
       color: COLORS.redEA4335,
-      description: 'Custom AI-generated summary'
+      description: 'Custom AI-generated summary',
     },
   ];
 
@@ -116,55 +121,64 @@ const StudySummary = ({navigation, route}) => {
   }, [deckId]);
 
   // Generate Quick Review
-  const generateQuickReview = useCallback(async (timeAvail = timeSettings.quickReview) => {
-    if (summaryData.quickReview && !refreshing) return summaryData.quickReview;
-    
-    try {
-      setGenerating(prev => ({...prev, quickReview: true}));
-      
-      const response = await getFlashcardQuickReviewApi(deckId, timeAvail);
-      
-      if (response?.data?.success) {
-        const quickReview = response.data.quickReview;
-        setSummaryData(prev => ({...prev, quickReview}));
-        
-        if (!refreshing) {
-          showToast('Quick review generated successfully!', 'success');
+  const generateQuickReview = useCallback(
+    async (timeAvail = timeSettings.quickReview) => {
+      if (summaryData.quickReview && !refreshing)
+        return summaryData.quickReview;
+
+      try {
+        setGenerating(prev => ({...prev, quickReview: true}));
+
+        const response = await getFlashcardQuickReviewApi(deckId, timeAvail);
+
+        if (response?.data?.success) {
+          const quickReview = response.data.quickReview;
+          setSummaryData(prev => ({...prev, quickReview}));
+
+          if (!refreshing) {
+            showToast('Quick review generated successfully!', 'success');
+          }
+
+          return quickReview;
+        } else {
+          throw new Error(
+            response?.data?.message || 'Failed to generate quick review',
+          );
         }
-        
-        return quickReview;
-      } else {
-        throw new Error(response?.data?.message || 'Failed to generate quick review');
+      } catch (error) {
+        console.error('Error generating quick review:', error);
+        showToast('Failed to generate quick review', 'error');
+        return null;
+      } finally {
+        setGenerating(prev => ({...prev, quickReview: false}));
       }
-    } catch (error) {
-      console.error('Error generating quick review:', error);
-      showToast('Failed to generate quick review', 'error');
-      return null;
-    } finally {
-      setGenerating(prev => ({...prev, quickReview: false}));
-    }
-  }, [deckId, timeSettings.quickReview, summaryData.quickReview, refreshing]);
+    },
+    [deckId, timeSettings.quickReview, summaryData.quickReview, refreshing],
+  );
 
   // Generate Formula Sheet
   const generateFormulaSheet = useCallback(async () => {
-    if (summaryData.formulaSheet && !refreshing) return summaryData.formulaSheet;
-    
+    if (summaryData.formulaSheet && !refreshing)
+      return summaryData.formulaSheet;
+
     try {
       setGenerating(prev => ({...prev, formulaSheet: true}));
-      
+
       const response = await getFlashcardFormulaSheetApi(deckId);
-      
+
       if (response?.data?.success) {
         const formulaSheet = response.data.formulaSheet;
         setSummaryData(prev => ({...prev, formulaSheet}));
-        
+
         if (!refreshing) {
           showToast('Formula sheet generated successfully!', 'success');
         }
-        
+
         return formulaSheet;
       } else {
-        throw new Error(response?.data?.message || 'Failed to generate formula sheet');
+        throw new Error(
+          response?.data?.message || 'Failed to generate formula sheet',
+        );
       }
     } catch (error) {
       console.error('Error generating formula sheet:', error);
@@ -177,24 +191,27 @@ const StudySummary = ({navigation, route}) => {
 
   // Generate Comprehensive Summary
   const generateComprehensiveSummary = useCallback(async () => {
-    if (summaryData.comprehensiveSummary && !refreshing) return summaryData.comprehensiveSummary;
-    
+    if (summaryData.comprehensiveSummary && !refreshing)
+      return summaryData.comprehensiveSummary;
+
     try {
       setGenerating(prev => ({...prev, comprehensive: true}));
-      
+
       const response = await getFlashcardComprehensiveSummaryApi(deckId);
-      
+
       if (response?.data?.success) {
         const comprehensiveSummary = response.data.summary;
         setSummaryData(prev => ({...prev, comprehensiveSummary}));
-        
+
         if (!refreshing) {
           showToast('Comprehensive summary generated successfully!', 'success');
         }
-        
+
         return comprehensiveSummary;
       } else {
-        throw new Error(response?.data?.message || 'Failed to generate comprehensive summary');
+        throw new Error(
+          response?.data?.message || 'Failed to generate comprehensive summary',
+        );
       }
     } catch (error) {
       console.error('Error generating comprehensive summary:', error);
@@ -207,24 +224,27 @@ const StudySummary = ({navigation, route}) => {
 
   // Generate Custom AI Summary
   const generateAISummary = useCallback(async () => {
-    if (summaryData.generatedSummary && !refreshing) return summaryData.generatedSummary;
-    
+    if (summaryData.generatedSummary && !refreshing)
+      return summaryData.generatedSummary;
+
     try {
       setGenerating(prev => ({...prev, generated: true}));
-      
+
       const response = await generateFlashcardStudySummaryApi(deckId);
-      
+
       if (response?.data?.success) {
         const generatedSummary = response.data.summary;
         setSummaryData(prev => ({...prev, generatedSummary}));
-        
+
         if (!refreshing) {
           showToast('AI summary generated successfully!', 'success');
         }
-        
+
         return generatedSummary;
       } else {
-        throw new Error(response?.data?.message || 'Failed to generate AI summary');
+        throw new Error(
+          response?.data?.message || 'Failed to generate AI summary',
+        );
       }
     } catch (error) {
       console.error('Error generating AI summary:', error);
@@ -236,84 +256,102 @@ const StudySummary = ({navigation, route}) => {
   }, [deckId, summaryData.generatedSummary, refreshing]);
 
   // Load content based on selected tab
-  const loadContentForTab = useCallback(async (tabId) => {
-    switch (tabId) {
-      case 'quick':
-        return await generateQuickReview();
-      case 'formula':
-        return await generateFormulaSheet();
-      case 'comprehensive':
-        return await generateComprehensiveSummary();
-      case 'generated':
-        return await generateAISummary();
-      default:
-        return null;
-    }
-  }, [generateQuickReview, generateFormulaSheet, generateComprehensiveSummary, generateAISummary]);
+  const loadContentForTab = useCallback(
+    async tabId => {
+      switch (tabId) {
+        case 'quick':
+          return await generateQuickReview();
+        case 'formula':
+          return await generateFormulaSheet();
+        case 'comprehensive':
+          return await generateComprehensiveSummary();
+        case 'generated':
+          return await generateAISummary();
+        default:
+          return null;
+      }
+    },
+    [
+      generateQuickReview,
+      generateFormulaSheet,
+      generateComprehensiveSummary,
+      generateAISummary,
+    ],
+  );
 
   // Handle tab change
-  const handleTabChange = useCallback(async (tabId) => {
-    setSelectedTab(tabId);
-    
-    // Animate content change
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 50,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start(async () => {
-      // Load content for new tab
-      await loadContentForTab(tabId);
-      
-      // Animate content in
-      Animated.parallel([
+  const handleTabChange = useCallback(
+    async tabId => {
+      setSelectedTab(tabId);
+
+      // Animate content change
+      Animated.sequence([
         Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
+          toValue: 0,
+          duration: 150,
           useNativeDriver: true,
         }),
         Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
+          toValue: 50,
+          duration: 150,
           useNativeDriver: true,
         }),
-      ]).start();
-    });
-  }, [fadeAnim, slideAnim, loadContentForTab]);
+      ]).start(async () => {
+        // Load content for new tab
+        await loadContentForTab(tabId);
+
+        // Animate content in
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    },
+    [fadeAnim, slideAnim, loadContentForTab],
+  );
 
   // Handle refresh
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    
+
     // Clear current data for selected tab
     setSummaryData(prev => ({
       ...prev,
-      [selectedTab === 'quick' ? 'quickReview' : 
-       selectedTab === 'formula' ? 'formulaSheet' :
-       selectedTab === 'comprehensive' ? 'comprehensiveSummary' : 'generatedSummary']: null
+      [selectedTab === 'quick'
+        ? 'quickReview'
+        : selectedTab === 'formula'
+        ? 'formulaSheet'
+        : selectedTab === 'comprehensive'
+        ? 'comprehensiveSummary'
+        : 'generatedSummary']: null,
     }));
-    
+
     // Regenerate content
     await loadContentForTab(selectedTab);
     setRefreshing(false);
   }, [selectedTab, loadContentForTab]);
 
   // Handle time change for quick review
-  const handleTimeChange = useCallback((newTime) => {
-    setTimeSettings(prev => ({...prev, quickReview: newTime}));
-    
-    // If quick review is currently selected and loaded, regenerate with new time
-    if (selectedTab === 'quick' && summaryData.quickReview) {
-      setSummaryData(prev => ({...prev, quickReview: null}));
-      generateQuickReview(newTime);
-    }
-  }, [selectedTab, summaryData.quickReview, generateQuickReview]);
+  const handleTimeChange = useCallback(
+    newTime => {
+      setTimeSettings(prev => ({...prev, quickReview: newTime}));
+
+      // If quick review is currently selected and loaded, regenerate with new time
+      if (selectedTab === 'quick' && summaryData.quickReview) {
+        setSummaryData(prev => ({...prev, quickReview: null}));
+        generateQuickReview(newTime);
+      }
+    },
+    [selectedTab, summaryData.quickReview, generateQuickReview],
+  );
 
   // Share summary
   const handleShare = useCallback(async () => {
@@ -356,13 +394,22 @@ const StudySummary = ({navigation, route}) => {
   // Format content for sharing
   const formatContentForShare = (data, tabLabel) => {
     let content = `${tabLabel} - ${deck?.title || deckTitle}\n\n`;
-    
+
     if (selectedTab === 'quick' && data) {
-      content += `📚 Quick Facts:\n${data.quickFacts?.join('\n') || 'No quick facts available'}\n\n`;
-      content += `📝 Must Remember:\n${data.mustRemember?.join('\n') || 'No key points available'}\n\n`;
-      content += `💡 Study Tips:\n${data.examTips?.join('\n') || 'No tips available'}\n`;
+      content += `📚 Quick Facts:\n${
+        data.quickFacts?.join('\n') || 'No quick facts available'
+      }\n\n`;
+      content += `📝 Must Remember:\n${
+        data.mustRemember?.join('\n') || 'No key points available'
+      }\n\n`;
+      content += `💡 Study Tips:\n${
+        data.examTips?.join('\n') || 'No tips available'
+      }\n`;
     } else if (selectedTab === 'formula' && data) {
-      content += `📐 Formulas:\n${data.formulas?.map(f => `${f.formula}: ${f.description}`).join('\n') || 'No formulas available'}\n`;
+      content += `📐 Formulas:\n${
+        data.formulas?.map(f => `${f.formula}: ${f.description}`).join('\n') ||
+        'No formulas available'
+      }\n`;
     } else if (data && typeof data === 'object') {
       content += JSON.stringify(data, null, 2);
     } else if (data) {
@@ -378,14 +425,14 @@ const StudySummary = ({navigation, route}) => {
     useCallback(() => {
       const initializeScreen = async () => {
         setLoading(true);
-        
+
         try {
           // Load deck details
           await fetchDeckDetails();
-          
+
           // Load initial content
           await loadContentForTab(selectedTab);
-          
+
           // Animate content in
           Animated.parallel([
             Animated.timing(fadeAnim, {
@@ -399,7 +446,6 @@ const StudySummary = ({navigation, route}) => {
               useNativeDriver: true,
             }),
           ]).start();
-          
         } catch (error) {
           console.error('Error initializing screen:', error);
           showToast('Failed to load summary', 'error');
@@ -409,7 +455,7 @@ const StudySummary = ({navigation, route}) => {
       };
 
       initializeScreen();
-    }, [])
+    }, []),
   );
 
   // Render time selector for quick review
@@ -420,21 +466,31 @@ const StudySummary = ({navigation, route}) => {
 
     return (
       <View style={styles.timeSelector}>
-        <Text variant="medium12" color={COLORS.grey777777} style={styles.timeSelectorLabel}>
+        <Text
+          variant="medium12"
+          color={COLORS.grey777777}
+          style={styles.timeSelectorLabel}>
           Study Time Available:
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeOptionsContainer}>
-          {timeOptions.map((time) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.timeOptionsContainer}>
+          {timeOptions.map(time => (
             <Pressable
               key={time}
               style={[
                 styles.timeOption,
-                timeSettings.quickReview === time && styles.timeOptionSelected
+                timeSettings.quickReview === time && styles.timeOptionSelected,
               ]}
               onPress={() => handleTimeChange(time)}>
               <Text
                 variant="medium12"
-                color={timeSettings.quickReview === time ? COLORS.whiteFFFFFF : COLORS.grey777777}>
+                color={
+                  timeSettings.quickReview === time
+                    ? COLORS.whiteFFFFFF
+                    : COLORS.grey777777
+                }>
                 {time}m
               </Text>
             </Pressable>
@@ -448,12 +504,15 @@ const StudySummary = ({navigation, route}) => {
   const renderTabs = () => (
     <View style={styles.tabContainer}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {tabs.map((tab) => (
+        {tabs.map(tab => (
           <Pressable
             key={tab.id}
             style={[
               styles.tab,
-              selectedTab === tab.id && [styles.tabSelected, {borderBottomColor: tab.color}]
+              selectedTab === tab.id && [
+                styles.tabSelected,
+                {borderBottomColor: tab.color},
+              ],
             ]}
             onPress={() => handleTabChange(tab.id)}>
             <Icon
@@ -476,16 +535,33 @@ const StudySummary = ({navigation, route}) => {
   // Render content based on selected tab
   const renderContent = () => {
     const currentData = getCurrentTabData();
-    const isGenerating = generating[selectedTab] || generating[selectedTab === 'quick' ? 'quickReview' : selectedTab === 'formula' ? 'formulaSheet' : selectedTab === 'comprehensive' ? 'comprehensive' : 'generated'];
+    const isGenerating =
+      generating[selectedTab] ||
+      generating[
+        selectedTab === 'quick'
+          ? 'quickReview'
+          : selectedTab === 'formula'
+          ? 'formulaSheet'
+          : selectedTab === 'comprehensive'
+          ? 'comprehensive'
+          : 'generated'
+      ];
 
     if (isGenerating) {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.blue043142} />
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.loadingText}>
-            Generating {tabs.find(tab => tab.id === selectedTab)?.label.toLowerCase()}...
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.loadingText}>
+            Generating{' '}
+            {tabs.find(tab => tab.id === selectedTab)?.label.toLowerCase()}...
           </Text>
-          <Text variant="regular12" color={COLORS.grey999999} style={styles.loadingSubText}>
+          <Text
+            variant="regular12"
+            color={COLORS.grey999999}
+            style={styles.loadingSubText}>
             This may take a few moments
           </Text>
         </View>
@@ -496,10 +572,16 @@ const StudySummary = ({navigation, route}) => {
       return (
         <View style={styles.emptyContainer}>
           <Icon name="auto-awesome" size={48} color={COLORS.greyDDDDDD} />
-          <Text variant="medium16" color={COLORS.grey777777} style={styles.emptyTitle}>
+          <Text
+            variant="medium16"
+            color={COLORS.grey777777}
+            style={styles.emptyTitle}>
             No summary generated yet
           </Text>
-          <Text variant="regular12" color={COLORS.grey999999} style={styles.emptySubtitle}>
+          <Text
+            variant="regular12"
+            color={COLORS.grey999999}
+            style={styles.emptySubtitle}>
             Pull down to refresh and generate a new summary
           </Text>
         </View>
@@ -507,30 +589,32 @@ const StudySummary = ({navigation, route}) => {
     }
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.contentContainer,
           {
             opacity: fadeAnim,
-            transform: [{translateY: slideAnim}]
-          }
+            transform: [{translateY: slideAnim}],
+          },
         ]}>
         {selectedTab === 'quick' && renderQuickReview(currentData)}
         {selectedTab === 'formula' && renderFormulaSheet(currentData)}
-        {selectedTab === 'comprehensive' && renderComprehensiveSummary(currentData)}
+        {selectedTab === 'comprehensive' &&
+          renderComprehensiveSummary(currentData)}
         {selectedTab === 'generated' && renderGeneratedSummary(currentData)}
       </Animated.View>
     );
   };
 
   // Render Quick Review
-  const renderQuickReview = (data) => (
+  const renderQuickReview = data => (
     <View style={styles.quickReviewContainer}>
       {/* Time Estimate */}
       <View style={styles.timeEstimateCard}>
         <Icon name="access-time" size={20} color={COLORS.yellowF5BE00} />
         <Text variant="medium14" color={COLORS.blue043142}>
-          Estimated time: {data.timeEstimate || timeSettings.quickReview} minutes
+          Estimated time: {data.timeEstimate || timeSettings.quickReview}{' '}
+          minutes
         </Text>
       </View>
 
@@ -546,7 +630,10 @@ const StudySummary = ({navigation, route}) => {
           {data.quickFacts.map((fact, index) => (
             <View key={index} style={styles.factItem}>
               <View style={styles.factBullet} />
-              <Text variant="medium14" color={COLORS.grey333333} style={styles.factText}>
+              <Text
+                variant="medium14"
+                color={COLORS.grey333333}
+                style={styles.factText}>
                 {fact}
               </Text>
             </View>
@@ -585,7 +672,10 @@ const StudySummary = ({navigation, route}) => {
           {data.mustRemember.map((item, index) => (
             <View key={index} style={styles.rememberItem}>
               <Icon name="bookmark" size={16} color={COLORS.redEA4335} />
-              <Text variant="medium14" color={COLORS.grey333333} style={styles.rememberText}>
+              <Text
+                variant="medium14"
+                color={COLORS.grey333333}
+                style={styles.rememberText}>
                 {item}
               </Text>
             </View>
@@ -605,7 +695,10 @@ const StudySummary = ({navigation, route}) => {
           {data.examTips.map((tip, index) => (
             <View key={index} style={styles.tipItem}>
               <Icon name="check-circle" size={16} color={COLORS.green34A853} />
-              <Text variant="medium14" color={COLORS.grey333333} style={styles.tipText}>
+              <Text
+                variant="medium14"
+                color={COLORS.grey333333}
+                style={styles.tipText}>
                 {tip}
               </Text>
             </View>
@@ -616,7 +709,7 @@ const StudySummary = ({navigation, route}) => {
   );
 
   // Render Formula Sheet
-  const renderFormulaSheet = (data) => (
+  const renderFormulaSheet = data => (
     <View style={styles.formulaSheetContainer}>
       {data.formulas && data.formulas.length > 0 ? (
         data.formulas.map((formula, index) => (
@@ -633,7 +726,10 @@ const StudySummary = ({navigation, route}) => {
                 </View>
               )}
             </View>
-            <Text variant="medium14" color={COLORS.grey555555} style={styles.formulaDescription}>
+            <Text
+              variant="medium14"
+              color={COLORS.grey555555}
+              style={styles.formulaDescription}>
               {formula.description}
             </Text>
           </View>
@@ -650,7 +746,7 @@ const StudySummary = ({navigation, route}) => {
   );
 
   // Render Comprehensive Summary
-  const renderComprehensiveSummary = (data) => (
+  const renderComprehensiveSummary = data => (
     <View style={styles.comprehensiveContainer}>
       {/* Study Summary */}
       {data.studySummary && (
@@ -661,25 +757,29 @@ const StudySummary = ({navigation, route}) => {
               Study Summary
             </Text>
           </View>
-          
-          {data.studySummary.keyPoints && data.studySummary.keyPoints.map((point, index) => (
-            <View key={index} style={styles.keyPointCard}>
-              <Text variant="semibold14" color={COLORS.blue043142}>
-                {point.topic}
-              </Text>
-              <Text variant="medium12" color={COLORS.grey555555} style={styles.keyPointSummary}>
-                {point.summary}
-              </Text>
-              <View style={styles.importanceBar}>
-                <View 
-                  style={[
-                    styles.importanceFill,
-                    {width: `${(point.importance || 3) * 20}%`}
-                  ]} 
-                />
+
+          {data.studySummary.keyPoints &&
+            data.studySummary.keyPoints.map((point, index) => (
+              <View key={index} style={styles.keyPointCard}>
+                <Text variant="semibold14" color={COLORS.blue043142}>
+                  {point.topic}
+                </Text>
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey555555}
+                  style={styles.keyPointSummary}>
+                  {point.summary}
+                </Text>
+                <View style={styles.importanceBar}>
+                  <View
+                    style={[
+                      styles.importanceFill,
+                      {width: `${(point.importance || 3) * 20}%`},
+                    ]}
+                  />
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
         </View>
       )}
 
@@ -692,14 +792,21 @@ const StudySummary = ({navigation, route}) => {
               Exam Preparation
             </Text>
           </View>
-          
+
           {data.examPrep.studyTips && (
             <View style={styles.examSection}>
-              <Text variant="medium14" color={COLORS.grey777777} style={styles.examSectionTitle}>
+              <Text
+                variant="medium14"
+                color={COLORS.grey777777}
+                style={styles.examSectionTitle}>
                 Study Tips:
               </Text>
               {data.examPrep.studyTips.map((tip, index) => (
-                <Text key={index} variant="medium12" color={COLORS.grey555555} style={styles.examItem}>
+                <Text
+                  key={index}
+                  variant="medium12"
+                  color={COLORS.grey555555}
+                  style={styles.examItem}>
                   • {tip}
                 </Text>
               ))}
@@ -708,11 +815,18 @@ const StudySummary = ({navigation, route}) => {
 
           {data.examPrep.commonMistakes && (
             <View style={styles.examSection}>
-              <Text variant="medium14" color={COLORS.grey777777} style={styles.examSectionTitle}>
+              <Text
+                variant="medium14"
+                color={COLORS.grey777777}
+                style={styles.examSectionTitle}>
                 Common Mistakes:
               </Text>
               {data.examPrep.commonMistakes.map((mistake, index) => (
-                <Text key={index} variant="medium12" color={COLORS.redEA4335} style={styles.examItem}>
+                <Text
+                  key={index}
+                  variant="medium12"
+                  color={COLORS.redEA4335}
+                  style={styles.examItem}>
                   ⚠️ {mistake}
                 </Text>
               ))}
@@ -724,20 +838,35 @@ const StudySummary = ({navigation, route}) => {
       {/* Time Estimates */}
       {data.timeEstimates && (
         <View style={styles.timeEstimatesCard}>
-          <Text variant="semibold14" color={COLORS.blue043142} style={styles.timeEstimatesTitle}>
+          <Text
+            variant="semibold14"
+            color={COLORS.blue043142}
+            style={styles.timeEstimatesTitle}>
             Recommended Study Times
           </Text>
           <View style={styles.timeEstimateRow}>
-            <Text variant="medium12" color={COLORS.grey555555}>Quick Review:</Text>
-            <Text variant="medium12" color={COLORS.blue043142}>{data.timeEstimates.quickReview}m</Text>
+            <Text variant="medium12" color={COLORS.grey555555}>
+              Quick Review:
+            </Text>
+            <Text variant="medium12" color={COLORS.blue043142}>
+              {data.timeEstimates.quickReview}m
+            </Text>
           </View>
           <View style={styles.timeEstimateRow}>
-            <Text variant="medium12" color={COLORS.grey555555}>Thorough Study:</Text>
-            <Text variant="medium12" color={COLORS.blue043142}>{data.timeEstimates.thoroughStudy}m</Text>
+            <Text variant="medium12" color={COLORS.grey555555}>
+              Thorough Study:
+            </Text>
+            <Text variant="medium12" color={COLORS.blue043142}>
+              {data.timeEstimates.thoroughStudy}m
+            </Text>
           </View>
           <View style={styles.timeEstimateRow}>
-            <Text variant="medium12" color={COLORS.grey555555}>Exam Prep:</Text>
-            <Text variant="medium12" color={COLORS.blue043142}>{data.timeEstimates.examPrep}m</Text>
+            <Text variant="medium12" color={COLORS.grey555555}>
+              Exam Prep:
+            </Text>
+            <Text variant="medium12" color={COLORS.blue043142}>
+              {data.timeEstimates.examPrep}m
+            </Text>
           </View>
         </View>
       )}
@@ -745,9 +874,12 @@ const StudySummary = ({navigation, route}) => {
   );
 
   // Render Generated Summary
-  const renderGeneratedSummary = (data) => (
+  const renderGeneratedSummary = data => (
     <View style={styles.generatedContainer}>
-      <Text variant="medium14" color={COLORS.grey333333} style={styles.generatedText}>
+      <Text
+        variant="medium14"
+        color={COLORS.grey333333}
+        style={styles.generatedText}>
         {typeof data === 'string' ? data : JSON.stringify(data, null, 2)}
       </Text>
     </View>
@@ -756,11 +888,11 @@ const StudySummary = ({navigation, route}) => {
   // Action buttons
   const renderActionButtons = () => {
     const currentData = getCurrentTabData();
-    
+
     return (
       <View style={styles.actionButtons}>
         <Button
-          title="Share Summary"
+          text="Share Summary"
           variant="outline"
           onPress={handleShare}
           disabled={!currentData}
@@ -769,12 +901,14 @@ const StudySummary = ({navigation, route}) => {
           icon="share"
         />
         <Button
-          title="Start Studying"
-          onPress={() => navigation.navigate(Routes.FlashcardViewer, {
-            deckId,
-            studyMode: true,
-            fromSummary: true
-          })}
+          text="Start Studying"
+          onPress={() =>
+            navigation.navigate(Routes.FlashcardViewer, {
+              deckId,
+              studyMode: true,
+              fromSummary: true,
+            })
+          }
           style={[styles.actionButton, styles.studyButton]}
           textStyle={styles.studyButtonText}
         />
@@ -786,14 +920,17 @@ const StudySummary = ({navigation, route}) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-        <Header 
-          title="Study Summary" 
-          onBackPress={() => navigation.goBack()}
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
         />
+        <Header title="Study Summary" onBackPress={() => navigation.goBack()} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.blue043142} />
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.loadingText}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.loadingText}>
             Loading study materials...
           </Text>
         </View>
@@ -803,9 +940,12 @@ const StudySummary = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-      
-      <Header 
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+
+      <Header
         title="Study Summary"
         subtitle={deck?.title || deckTitle}
         onBackPress={() => navigation.goBack()}
@@ -817,7 +957,7 @@ const StudySummary = ({navigation, route}) => {
       <View style={styles.content}>
         {renderTabs()}
         {renderTimeSelector()}
-        
+
         <ScrollView
           style={styles.scrollView}
           refreshControl={
@@ -850,7 +990,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: nh(25),
     borderTopRightRadius: nh(25),
   },
-  
+
   // Tabs
   tabContainer: {
     paddingVertical: nh(16),
@@ -904,7 +1044,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: nw(20),
   },
-  
+
   // Loading & Empty States
   loadingContainer: {
     flex: 1,

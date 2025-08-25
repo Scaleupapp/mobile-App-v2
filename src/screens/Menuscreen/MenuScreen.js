@@ -41,6 +41,13 @@ const MenuScreen = ({navigation, route}) => {
       nav: Routes.FlashcardHub,
       subtitle: 'Create, study & analyze flashcards',
     },
+    /*
+    {
+      title: 'IntelliTest Hub',
+      nav: Routes.IntelliTestHub,
+      subtitle: 'Your personalised AI test hub',
+    },
+  */
     {
       title: 'Study Buddy',
       nav: Routes.AIStudyBuddyHub,

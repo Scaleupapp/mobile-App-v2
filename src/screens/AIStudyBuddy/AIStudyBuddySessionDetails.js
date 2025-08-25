@@ -35,6 +35,7 @@ import {
   aiStudyBuddyGenerateFlashcardsApi,
   aiStudyBuddyGenerateQuizApi,
   formatAiStudyBuddyError,
+  stsrtQuiz,
 } from '../../services/apiService';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -295,7 +296,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
         });
 
         // Navigate to quiz if available
-        if (response.data.quiz?.quizId) {
+        if (response.data.quiz?.quizId && resp) {
           navigation.navigate(Routes.QuizScreen, {
             quizId: response.data.quiz.quizId,
             isNewQuiz: true,
@@ -708,7 +709,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
         </View>
 
         {/* Secondary Actions */}
-        <View style={styles.secondaryActionsContainer}>
+        {/* <View style={styles.secondaryActionsContainer}>
           {secondaryActions.map((action, index) => (
             <Pressable
               key={index}
@@ -733,7 +734,7 @@ const AIStudyBuddySessionDetails = ({navigation, route}) => {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </View> */}
       </Animated.View>
     );
   };

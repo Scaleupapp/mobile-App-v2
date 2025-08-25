@@ -31,6 +31,7 @@ import {
   updateFlashcardDeckApi,
 } from '../../services/apiService';
 import {useToast} from '../../components/CustomToast';
+import mixpanel from '../../helper/mixpanelClient';
 
 const CreateDeck = ({navigation, route}) => {
   const userData = useSelector(state => state?.userData);
@@ -181,6 +182,7 @@ const CreateDeck = ({navigation, route}) => {
         // Create new deck
         response = await createFlashcardDeckApi(payload);
       }
+      console.log('🚀 ~ handleSubmit ~ response:', response);
 
       if (response?.data?.success) {
         showToast({

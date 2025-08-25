@@ -33,7 +33,7 @@ import {
   deleteFlashcardDeckApi,
   getFlashcardStudyStatsApi,
   exportFlashcardDeckApi,
-  deleteFlashcardApi, 
+  deleteFlashcardApi,
   updateFlashcardDeckApi,
   getDueCardsCountApi,
 } from '../../services/apiService';
@@ -45,7 +45,7 @@ const DeckDetails = ({navigation, route}) => {
   const {deckId, isNewDeck, fromUpload} = route.params;
   const userData = useSelector(state => state?.userData);
   const {showToast} = useToast();
-  
+
   // State management
   const [deck, setDeck] = useState(null);
   const [cards, setCards] = useState([]);
@@ -57,69 +57,75 @@ const DeckDetails = ({navigation, route}) => {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
-  
+
   // Animation
   const celebrationAnim = useRef(new Animated.Value(0)).current;
   const [showCelebration, setShowCelebration] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Fetch deck details
-  const fetchDeckDetails = useCallback(async (page = 1, isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-        setCurrentPage(1);
-      } else if (page > 1) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-
-      const response = await getFlashcardDeckDetailsApi(deckId, {
-        page,
-        limit: 20,
-      });
-
-      if (response?.data?.success) {
-        setDeck(response.data.deck);
-        
-        if (page === 1 || isRefresh) {
-          setCards(response.data.cards || []);
+  const fetchDeckDetails = useCallback(
+    async (page = 1, isRefresh = false) => {
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+          setCurrentPage(1);
+        } else if (page > 1) {
+          setLoadingMore(true);
         } else {
-          setCards(prev => [...prev, ...(response.data.cards || [])]);
+          setLoading(true);
         }
-        
-        setHasMore(response.data.cards?.length === 20);
-        setCurrentPage(page);
 
-        // Fetch additional data if user owns the deck
-        if (response.data.deck?.userId === userData?.id || response.data.deck?.userId?._id === userData?.id) {
-          try {
-            // Fetch study stats
-            const statsResponse = await getFlashcardStudyStatsApi(deckId);
-            if (statsResponse?.data?.success) {
-              setStudyStats(statsResponse.data.stats);
-            }
+        const response = await getFlashcardDeckDetailsApi(deckId, {
+          page,
+          limit: 20,
+        });
 
-            // Fetch due cards info
-            const dueCardsResponse = await getDueCardsCountApi(deckId);
-            if (dueCardsResponse?.data?.success) {
-              setDueCardsInfo(dueCardsResponse.data.data);
+        if (response?.data?.success) {
+          setDeck(response.data.deck);
+
+          if (page === 1 || isRefresh) {
+            setCards(response.data.cards || []);
+          } else {
+            setCards(prev => [...prev, ...(response.data.cards || [])]);
+          }
+
+          setHasMore(response.data.cards?.length === 20);
+          setCurrentPage(page);
+
+          // Fetch additional data if user owns the deck
+          if (
+            response.data.deck?.userId === userData?.id ||
+            response.data.deck?.userId?._id === userData?.id
+          ) {
+            try {
+              // Fetch study stats
+              const statsResponse = await getFlashcardStudyStatsApi(deckId);
+              if (statsResponse?.data?.success) {
+                setStudyStats(statsResponse.data.stats);
+              }
+
+              // Fetch due cards info
+              const dueCardsResponse = await getDueCardsCountApi(deckId);
+              if (dueCardsResponse?.data?.success) {
+                setDueCardsInfo(dueCardsResponse.data.data);
+              }
+            } catch (error) {
+              console.log('Additional data fetch error:', error);
             }
-          } catch (error) {
-            console.log('Additional data fetch error:', error);
           }
         }
+      } catch (error) {
+        console.error('Deck details fetch error:', error);
+        showToast('Failed to load deck details', 'error');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadingMore(false);
       }
-    } catch (error) {
-      console.error('Deck details fetch error:', error);
-      showToast('Failed to load deck details', 'error');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  }, [deckId, userData?.id, showToast]);
+    },
+    [deckId, userData?.id, showToast],
+  );
 
   // Show celebration for new decks
   useEffect(() => {
@@ -151,7 +157,7 @@ const DeckDetails = ({navigation, route}) => {
   useFocusEffect(
     useCallback(() => {
       fetchDeckDetails();
-    }, [fetchDeckDetails])
+    }, [fetchDeckDetails]),
   );
 
   // Navigation handlers
@@ -160,7 +166,7 @@ const DeckDetails = ({navigation, route}) => {
       showToast('No cards available to study', 'info');
       return;
     }
-    
+
     navigation.navigate(Routes.FlashcardViewer, {
       deckId,
       cardIndex: 0,
@@ -204,23 +210,23 @@ const DeckDetails = ({navigation, route}) => {
       deckId: deck._id,
       deckTitle: deck.title,
       summaryType: 'quick',
-      timeAvailable: 15
+      timeAvailable: 15,
     });
   };
-  
+
   const handleFormulaSummary = () => {
     navigation.navigate(Routes.StudySummary, {
       deckId: deck._id,
       deckTitle: deck.title,
-      summaryType: 'formula'
+      summaryType: 'formula',
     });
   };
-  
+
   const handleComprehensiveSummary = () => {
     navigation.navigate(Routes.StudySummary, {
       deckId: deck._id,
       deckTitle: deck.title,
-      summaryType: 'comprehensive'
+      summaryType: 'comprehensive',
     });
   };
 
@@ -228,16 +234,16 @@ const DeckDetails = ({navigation, route}) => {
     navigation.navigate(Routes.StudySummary, {
       deckId: deck._id,
       deckTitle: deck.title,
-      summaryType: 'generated'
+      summaryType: 'generated',
     });
   };
 
-  const handleEditCard = (card) => {
+  const handleEditCard = card => {
     navigation.navigate(Routes.AddEditCard, {
       deckId: deck._id,
       cardId: card._id,
       cardData: card,
-      isEdit: true
+      isEdit: true,
     });
   };
 
@@ -252,12 +258,12 @@ const DeckDetails = ({navigation, route}) => {
         subject: deck.subject,
         subjectDetails: deck.subjectDetails,
         tags: deck.tags || [],
-        isPublic: deck.isPublic || false
-      }
+        isPublic: deck.isPublic || false,
+      },
     });
   };
 
-  const handleDeleteCard = (card) => {
+  const handleDeleteCard = card => {
     Alert.alert(
       'Delete Card',
       'Are you sure you want to delete this flashcard? This action cannot be undone.',
@@ -269,22 +275,22 @@ const DeckDetails = ({navigation, route}) => {
           onPress: async () => {
             try {
               await deleteFlashcardApi(card._id);
-              
+
               const updatedCards = cards.filter(c => c._id !== card._id);
               setCards(updatedCards);
-              
+
               setDeck(prev => ({
                 ...prev,
-                cardCount: (prev.cardCount || 0) - 1
+                cardCount: (prev.cardCount || 0) - 1,
               }));
-              
+
               showToast('Card deleted successfully', 'success');
             } catch (error) {
               showToast('Failed to delete card', 'error');
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -297,7 +303,11 @@ const DeckDetails = ({navigation, route}) => {
   const handleShareDeck = async () => {
     try {
       const result = await Share.share({
-        message: `Check out this flashcard deck: "${deck?.title}" on StudyApp!\n\n${deck?.cardCount || 0} cards on ${deck?.subject || 'various topics'}`,
+        message: `Check out this flashcard deck: "${
+          deck?.title
+        }" on StudyApp!\n\n${deck?.cardCount || 0} cards on ${
+          deck?.subject || 'various topics'
+        }`,
         title: deck?.title,
       });
     } catch (error) {
@@ -309,7 +319,7 @@ const DeckDetails = ({navigation, route}) => {
     try {
       setLoading(true);
       const response = await exportFlashcardDeckApi(deckId);
-      
+
       if (response?.data?.success) {
         showToast('Deck exported successfully!', 'success');
         console.log('Export data:', response.data.data);
@@ -325,7 +335,11 @@ const DeckDetails = ({navigation, route}) => {
   const handleDeleteDeck = () => {
     Alert.alert(
       'Delete Deck',
-      `Are you sure you want to delete "${deck?.title}"? This will permanently delete all ${deck?.cardCount || 0} cards in this deck. This action cannot be undone.`,
+      `Are you sure you want to delete "${
+        deck?.title
+      }"? This will permanently delete all ${
+        deck?.cardCount || 0
+      } cards in this deck. This action cannot be undone.`,
       [
         {text: 'Cancel', style: 'cancel'},
         {
@@ -335,7 +349,7 @@ const DeckDetails = ({navigation, route}) => {
             try {
               setLoading(true);
               await deleteFlashcardDeckApi(deckId);
-              
+
               showToast('Deck deleted successfully', 'success');
               navigation.goBack();
             } catch (error) {
@@ -346,7 +360,7 @@ const DeckDetails = ({navigation, route}) => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -354,7 +368,7 @@ const DeckDetails = ({navigation, route}) => {
     navigation.navigate(Routes.AddEditCard, {
       deckId: deck._id,
       isEdit: false,
-      deckTitle: deck.title
+      deckTitle: deck.title,
     });
   };
 
@@ -365,31 +379,44 @@ const DeckDetails = ({navigation, route}) => {
         <View style={styles.deckIconContainer}>
           <Icon name="style" size={32} color={COLORS.blue043142} />
         </View>
-        
+
         <View style={styles.deckTitleContainer}>
-          <Text variant="semibold20" color={COLORS.blue043142} style={styles.deckTitle}>
+          <Text
+            variant="semibold20"
+            color={COLORS.blue043142}
+            style={styles.deckTitle}>
             {deck?.title}
           </Text>
-          
+
           <View style={styles.deckMetaRow}>
             <View style={styles.metaChip}>
               <Icon name="category" size={14} color={COLORS.grey777777} />
-              <Text variant="medium12" color={COLORS.grey777777} style={styles.metaText}>
-                {deck?.subject?.charAt(0).toUpperCase() + deck?.subject?.slice(1) || 'General'}
+              <Text
+                variant="medium12"
+                color={COLORS.grey777777}
+                style={styles.metaText}>
+                {deck?.subject?.charAt(0).toUpperCase() +
+                  deck?.subject?.slice(1) || 'General'}
               </Text>
             </View>
-            
+
             <View style={styles.metaChip}>
               <Icon name="style" size={14} color={COLORS.grey777777} />
-              <Text variant="medium12" color={COLORS.grey777777} style={styles.metaText}>
+              <Text
+                variant="medium12"
+                color={COLORS.grey777777}
+                style={styles.metaText}>
                 {deck?.cardCount || 0} cards
               </Text>
             </View>
-            
+
             {deck?.isPublic && (
               <View style={[styles.metaChip, styles.publicChip]}>
                 <Icon name="public" size={14} color={COLORS.green34A853} />
-                <Text variant="medium12" color={COLORS.green34A853} style={styles.metaText}>
+                <Text
+                  variant="medium12"
+                  color={COLORS.green34A853}
+                  style={styles.metaText}>
                   Public
                 </Text>
               </View>
@@ -397,18 +424,21 @@ const DeckDetails = ({navigation, route}) => {
           </View>
         </View>
       </View>
-      
+
       {deck?.description && (
         <View style={styles.descriptionContainer}>
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.deckDescription}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.deckDescription}>
             {deck.description}
           </Text>
         </View>
       )}
-      
+
       {deck?.tags && deck.tags.length > 0 && (
         <View style={styles.tagsContainer}>
-          {deck.tags.slice(0, 4).map((tag) => (
+          {deck.tags.slice(0, 4).map(tag => (
             <View key={tag} style={styles.tag}>
               <Text variant="medium11" color={COLORS.blue043142}>
                 #{tag}
@@ -416,7 +446,10 @@ const DeckDetails = ({navigation, route}) => {
             </View>
           ))}
           {deck.tags.length > 4 && (
-            <Text variant="medium11" color={COLORS.grey777777} style={styles.moreTagsText}>
+            <Text
+              variant="medium11"
+              color={COLORS.grey777777}
+              style={styles.moreTagsText}>
               +{deck.tags.length - 4} more
             </Text>
           )}
@@ -431,55 +464,106 @@ const DeckDetails = ({navigation, route}) => {
 
     return (
       <Animated.View style={[styles.statsContainer, {opacity: fadeAnim}]}>
-        <Text variant="semibold16" color={COLORS.blue043142} style={styles.sectionTitle}>
+        <Text
+          variant="semibold16"
+          color={COLORS.blue043142}
+          style={styles.sectionTitle}>
           Your Progress
         </Text>
-        
+
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, {backgroundColor: COLORS.blue043142 + '15'}]}>
+            <View
+              style={[
+                styles.statIcon,
+                {backgroundColor: COLORS.blue043142 + '15'},
+              ]}>
               <Icon name="school" size={20} color={COLORS.blue043142} />
             </View>
-            <Text variant="bold18" color={COLORS.blue043142} style={styles.statNumber}>
+            <Text
+              variant="bold18"
+              color={COLORS.blue043142}
+              style={styles.statNumber}>
               {studyStats?.totalCardsStudied || dueCardsInfo?.totalCards || 0}
             </Text>
-            <Text variant="medium11" color={COLORS.grey777777} style={styles.statLabel}>
+            <Text
+              variant="medium11"
+              color={COLORS.grey777777}
+              style={styles.statLabel}>
               {studyStats ? 'Cards Studied' : 'Total Cards'}
             </Text>
           </View>
-          
+
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, {backgroundColor: COLORS.green34A853 + '15'}]}>
+            <View
+              style={[
+                styles.statIcon,
+                {backgroundColor: COLORS.green34A853 + '15'},
+              ]}>
               <Icon name="trending-up" size={20} color={COLORS.green34A853} />
             </View>
-            <Text variant="bold18" color={COLORS.green34A853} style={styles.statNumber}>
-              {studyStats ? `${Math.round(studyStats.averageAccuracy || 0)}%` : dueCardsInfo?.dueCards || 0}
+            <Text
+              variant="bold18"
+              color={COLORS.green34A853}
+              style={styles.statNumber}>
+              {studyStats
+                ? `${Math.round(studyStats.averageAccuracy || 0)}%`
+                : dueCardsInfo?.dueCards || 0}
             </Text>
-            <Text variant="medium11" color={COLORS.grey777777} style={styles.statLabel}>
+            <Text
+              variant="medium11"
+              color={COLORS.grey777777}
+              style={styles.statLabel}>
               {studyStats ? 'Accuracy' : 'Due Cards'}
             </Text>
           </View>
-          
+
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, {backgroundColor: COLORS.yellowF5BE00 + '15'}]}>
-              <Icon name="local-fire-department" size={20} color={COLORS.yellowF5BE00} />
+            <View
+              style={[
+                styles.statIcon,
+                {backgroundColor: COLORS.yellowF5BE00 + '15'},
+              ]}>
+              <Icon
+                name="local-fire-department"
+                size={20}
+                color={COLORS.yellowF5BE00}
+              />
             </View>
-            <Text variant="bold18" color={COLORS.yellowF5BE00} style={styles.statNumber}>
+            <Text
+              variant="bold18"
+              color={COLORS.yellowF5BE00}
+              style={styles.statNumber}>
               {studyStats?.currentStreak || dueCardsInfo?.newCards || 0}
             </Text>
-            <Text variant="medium11" color={COLORS.grey777777} style={styles.statLabel}>
+            <Text
+              variant="medium11"
+              color={COLORS.grey777777}
+              style={styles.statLabel}>
               {studyStats ? 'Day Streak' : 'New Cards'}
             </Text>
           </View>
-          
+
           <View style={styles.statCard}>
-            <View style={[styles.statIcon, {backgroundColor: COLORS.redEA4335 + '15'}]}>
+            <View
+              style={[
+                styles.statIcon,
+                {backgroundColor: COLORS.redEA4335 + '15'},
+              ]}>
               <Icon name="schedule" size={20} color={COLORS.redEA4335} />
             </View>
-            <Text variant="bold18" color={COLORS.redEA4335} style={styles.statNumber}>
-              {studyStats ? `${Math.round(studyStats.totalStudyTime || 0)}m` : `${Math.round((dueCardsInfo?.masteryProgress || 0) * 100)}%`}
+            <Text
+              variant="bold18"
+              color={COLORS.redEA4335}
+              style={styles.statNumber}>
+              {studyStats
+                ? `${Math.round(studyStats.totalStudyTime || 0)}m`
+                : `${Math.round((dueCardsInfo?.masteryProgress || 0) * 100)}%`}
             </Text>
-            <Text variant="medium11" color={COLORS.grey777777} style={styles.statLabel}>
+            <Text
+              variant="medium11"
+              color={COLORS.grey777777}
+              style={styles.statLabel}>
               {studyStats ? 'Study Time' : 'Mastered'}
             </Text>
           </View>
@@ -491,93 +575,145 @@ const DeckDetails = ({navigation, route}) => {
   // Render action buttons
   const renderActionButtons = () => (
     <Animated.View style={[styles.actionsContainer, {opacity: fadeAnim}]}>
-      <Text variant="semibold16" color={COLORS.blue043142} style={styles.sectionTitle}>
+      <Text
+        variant="semibold16"
+        color={COLORS.blue043142}
+        style={styles.sectionTitle}>
         Study Options
       </Text>
-      
+
       {/* Primary Actions */}
       <View style={styles.primaryActionsRow}>
-        <Pressable 
+        <Pressable
           style={[styles.primaryActionButton, styles.studyButton]}
           onPress={() => handleStartStudy('mixed')}>
           <Icon name="school" size={24} color={COLORS.whiteFFFFFF} />
-          <Text variant="semibold14" color={COLORS.whiteFFFFFF} style={styles.actionButtonText}>
+          <Text
+            variant="semibold14"
+            color={COLORS.whiteFFFFFF}
+            style={styles.actionButtonText}>
             Start Studying
           </Text>
         </Pressable>
-        
-        <Pressable 
+
+        <Pressable
           style={[styles.primaryActionButton, styles.cramButton]}
           onPress={handleCramMode}>
           <Icon name="flash-on" size={24} color={COLORS.whiteFFFFFF} />
-          <Text variant="semibold14" color={COLORS.whiteFFFFFF} style={styles.actionButtonText}>
+          <Text
+            variant="semibold14"
+            color={COLORS.whiteFFFFFF}
+            style={styles.actionButtonText}>
             Cram Mode
           </Text>
         </Pressable>
       </View>
-      
+
       {/* Study Summary Actions */}
       <View style={styles.summaryActionsContainer}>
-        <Text variant="medium14" color={COLORS.grey777777} style={styles.summaryTitle}>
+        <Text
+          variant="medium14"
+          color={COLORS.grey777777}
+          style={styles.summaryTitle}>
           Study Summaries
         </Text>
         <View style={styles.summaryActionsRow}>
-          <Pressable style={styles.summaryActionButton} onPress={handleQuickSummary}>
+          <Pressable
+            style={styles.summaryActionButton}
+            onPress={handleQuickSummary}>
             <Icon name="flash-on" size={18} color={COLORS.yellowF5BE00} />
-            <Text variant="medium11" color={COLORS.blue043142} style={styles.summaryActionText}>
+            <Text
+              variant="medium11"
+              color={COLORS.blue043142}
+              style={styles.summaryActionText}>
               Quick Review
             </Text>
-            <Text variant="medium9" color={COLORS.grey777777} style={styles.summaryActionSubtext}>
+            <Text
+              variant="medium9"
+              color={COLORS.grey777777}
+              style={styles.summaryActionSubtext}>
               15 min
             </Text>
           </Pressable>
-          
-          <Pressable style={styles.summaryActionButton} onPress={handleFormulaSummary}>
+
+          <Pressable
+            style={styles.summaryActionButton}
+            onPress={handleFormulaSummary}>
             <Icon name="functions" size={18} color={COLORS.blue043142} />
-            <Text variant="medium11" color={COLORS.blue043142} style={styles.summaryActionText}>
+            <Text
+              variant="medium11"
+              color={COLORS.blue043142}
+              style={styles.summaryActionText}>
               Formulas
             </Text>
-            <Text variant="medium9" color={COLORS.grey777777} style={styles.summaryActionSubtext}>
+            <Text
+              variant="medium9"
+              color={COLORS.grey777777}
+              style={styles.summaryActionSubtext}>
               Key concepts
             </Text>
           </Pressable>
-          
-          <Pressable style={styles.summaryActionButton} onPress={handleComprehensiveSummary}>
+
+          <Pressable
+            style={styles.summaryActionButton}
+            onPress={handleComprehensiveSummary}>
             <Icon name="menu-book" size={18} color={COLORS.green34A853} />
-            <Text variant="medium11" color={COLORS.blue043142} style={styles.summaryActionText}>
+            <Text
+              variant="medium11"
+              color={COLORS.blue043142}
+              style={styles.summaryActionText}>
               Complete
             </Text>
-            <Text variant="medium9" color={COLORS.grey777777} style={styles.summaryActionSubtext}>
+            <Text
+              variant="medium9"
+              color={COLORS.grey777777}
+              style={styles.summaryActionSubtext}>
               Full guide
             </Text>
           </Pressable>
-          
-          <Pressable style={styles.summaryActionButton} onPress={handleAISummary}>
+
+          <Pressable
+            style={styles.summaryActionButton}
+            onPress={handleAISummary}>
             <Icon name="auto-awesome" size={18} color={COLORS.redEA4335} />
-            <Text variant="medium11" color={COLORS.blue043142} style={styles.summaryActionText}>
+            <Text
+              variant="medium11"
+              color={COLORS.blue043142}
+              style={styles.summaryActionText}>
               AI Summary
             </Text>
-            <Text variant="medium9" color={COLORS.grey777777} style={styles.summaryActionSubtext}>
+            <Text
+              variant="medium9"
+              color={COLORS.grey777777}
+              style={styles.summaryActionSubtext}>
               Custom
             </Text>
           </Pressable>
         </View>
       </View>
-      
+
       {/* Secondary Actions */}
       <View style={styles.secondaryActionsRow}>
-        
-        
-        <Pressable style={styles.secondaryActionButton} onPress={() => handleStartStudy('review')}>
+        <Pressable
+          style={styles.secondaryActionButton}
+          onPress={() => handleStartStudy('review')}>
           <Icon name="refresh" size={18} color={COLORS.blue043142} />
-          <Text variant="medium12" color={COLORS.blue043142} style={styles.secondaryActionText}>
+          <Text
+            variant="medium12"
+            color={COLORS.blue043142}
+            style={styles.secondaryActionText}>
             Review
           </Text>
         </Pressable>
-        
-        <Pressable style={styles.secondaryActionButton} onPress={handleAnalytics}>
+
+        <Pressable
+          style={styles.secondaryActionButton}
+          onPress={handleAnalytics}>
           <Icon name="analytics" size={18} color={COLORS.blue043142} />
-          <Text variant="medium12" color={COLORS.blue043142} style={styles.secondaryActionText}>
+          <Text
+            variant="medium12"
+            color={COLORS.blue043142}
+            style={styles.secondaryActionText}>
             Analytics
           </Text>
         </Pressable>
@@ -587,7 +723,7 @@ const DeckDetails = ({navigation, route}) => {
 
   // Render card item
   const renderCard = ({item, index}) => (
-    <Pressable 
+    <Pressable
       style={styles.cardItem}
       onPress={() => handleViewCard(item, index)}>
       <View style={styles.cardContent}>
@@ -597,57 +733,72 @@ const DeckDetails = ({navigation, route}) => {
               {index + 1}
             </Text>
           </View>
-          
+
           <View style={styles.cardTextContainer}>
-            <Text variant="medium14" color={COLORS.blue043142} numberOfLines={2} style={styles.cardQuestion}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              numberOfLines={2}
+              style={styles.cardQuestion}>
               {item.question}
             </Text>
-            <Text variant="medium12" color={COLORS.grey777777} numberOfLines={1} style={styles.cardAnswer}>
+            <Text
+              variant="medium12"
+              color={COLORS.grey777777}
+              numberOfLines={1}
+              style={styles.cardAnswer}>
               {item.answer}
             </Text>
           </View>
-          
+
           <View style={styles.cardMeta}>
             {item.difficulty && (
-              <View style={[
-                styles.difficultyBadge,
-                item.difficulty === 'easy' && styles.difficultyEasy,
-                item.difficulty === 'medium' && styles.difficultyMedium,
-                item.difficulty === 'hard' && styles.difficultyHard,
-              ]}>
+              <View
+                style={[
+                  styles.difficultyBadge,
+                  item.difficulty === 'easy' && styles.difficultyEasy,
+                  item.difficulty === 'medium' && styles.difficultyMedium,
+                  item.difficulty === 'hard' && styles.difficultyHard,
+                ]}>
                 <Text variant="medium9" color={COLORS.whiteFFFFFF}>
                   {item.difficulty.toUpperCase()}
                 </Text>
               </View>
             )}
-            
-            {(deck?.userId === userData?.id || deck?.userId?._id === userData?.id) && (
+
+            {(deck?.userId === userData?.id ||
+              deck?.userId?._id === userData?.id) && (
               <View style={styles.cardActions}>
-                <Pressable 
+                <Pressable
                   onPress={() => handleEditCard(item)}
                   style={styles.cardActionButton}>
                   <Icon name="edit" size={16} color={COLORS.blue043142} />
                 </Pressable>
-                <Pressable 
+                <Pressable
                   onPress={() => handleDeleteCard(item)}
                   style={styles.cardActionButton}>
                   <Icon name="delete" size={16} color={COLORS.redEA4335} />
                 </Pressable>
               </View>
             )}
-            
+
             {item.studyMetrics?.timesReviewed > 0 && (
               <View style={styles.progressDot}>
-                <View style={[
-                  styles.progressIndicator,
-                  {backgroundColor: item.studyMetrics.correctAnswers > item.studyMetrics.incorrectAnswers 
-                    ? COLORS.green34A853 
-                    : COLORS.yellowF5BE00
-                  }
-                ]} />
+                <View
+                  style={[
+                    styles.progressIndicator,
+                    {
+                      backgroundColor:
+                        item.studyMetrics.correctAnswers >
+                        item.studyMetrics.incorrectAnswers
+                          ? COLORS.green34A853
+                          : COLORS.yellowF5BE00,
+                    },
+                  ]}
+                />
               </View>
             )}
-            
+
             <View style={styles.cardActionHint}>
               <Icon name="visibility" size={14} color={COLORS.grey999999} />
             </View>
@@ -661,29 +812,39 @@ const DeckDetails = ({navigation, route}) => {
   const renderCardsList = () => (
     <Animated.View style={[styles.cardsContainer, {opacity: fadeAnim}]}>
       <View style={styles.cardsHeader}>
-        <Text variant="semibold16" color={COLORS.blue043142} style={styles.sectionTitle}>
+        <Text
+          variant="semibold16"
+          color={COLORS.blue043142}
+          style={styles.sectionTitle}>
           Flashcards ({cards.length})
         </Text>
-        
-        {(deck?.userId === userData?.id || deck?.userId?._id === userData?.id) && (
+
+        {(deck?.userId === userData?.id ||
+          deck?.userId?._id === userData?.id) && (
           <View style={styles.cardsHeaderActions}>
             <Pressable onPress={handleAddCard} style={styles.addCardButton}>
               <Icon name="add" size={20} color={COLORS.blue043142} />
-              <Text variant="medium12" color={COLORS.blue043142} style={styles.addCardText}>
+              <Text
+                variant="medium12"
+                color={COLORS.blue043142}
+                style={styles.addCardText}>
                 Add Card
               </Text>
             </Pressable>
-            
+
             <Pressable onPress={handleAddCards} style={styles.addCardsButton}>
               <Icon name="upload-file" size={20} color={COLORS.blue043142} />
-              <Text variant="medium12" color={COLORS.blue043142} style={styles.addCardsText}>
+              <Text
+                variant="medium12"
+                color={COLORS.blue043142}
+                style={styles.addCardsText}>
                 Upload
               </Text>
             </Pressable>
           </View>
         )}
       </View>
-      
+
       {cards.length > 0 ? (
         <FlatList
           data={cards}
@@ -694,11 +855,14 @@ const DeckDetails = ({navigation, route}) => {
           onEndReached={loadMoreCards}
           onEndReachedThreshold={0.5}
           ItemSeparatorComponent={() => <View style={styles.cardSeparator} />}
-          ListFooterComponent={() => 
+          ListFooterComponent={() =>
             loadingMore ? (
               <View style={styles.loadingMore}>
                 <ActivityIndicator size="small" color={COLORS.blue043142} />
-                <Text variant="medium12" color={COLORS.grey777777} style={styles.loadingText}>
+                <Text
+                  variant="medium12"
+                  color={COLORS.grey777777}
+                  style={styles.loadingText}>
                   Loading more cards...
                 </Text>
               </View>
@@ -708,21 +872,28 @@ const DeckDetails = ({navigation, route}) => {
       ) : (
         <View style={styles.emptyCards}>
           <Icon name="style" size={48} color={COLORS.greyBBBBBB} />
-          <Text variant="medium16" color={COLORS.grey777777} style={styles.emptyTitle}>
+          <Text
+            variant="medium16"
+            color={COLORS.grey777777}
+            style={styles.emptyTitle}>
             No cards in this deck yet
           </Text>
-          <Text variant="medium12" color={COLORS.grey999999} style={styles.emptyDescription}>
+          <Text
+            variant="medium12"
+            color={COLORS.grey999999}
+            style={styles.emptyDescription}>
             Add your first flashcard to start studying
           </Text>
-          {(deck?.userId === userData?.id || deck?.userId?._id === userData?.id) && (
+          {(deck?.userId === userData?.id ||
+            deck?.userId?._id === userData?.id) && (
             <View style={styles.emptyActions}>
               <Button
-                title="Add Card Manually"
+                text="Add Card Manually"
                 onPress={handleAddCard}
                 style={styles.addFirstCardButton}
               />
               <Button
-                title="Upload Document"
+                text="Upload Document"
                 onPress={handleAddCards}
                 style={[styles.addFirstCardButton, styles.uploadButton]}
                 variant="outline"
@@ -736,20 +907,27 @@ const DeckDetails = ({navigation, route}) => {
 
   // Render deck options
   const renderDeckOptions = () => {
-    if (deck?.userId !== userData?.id && deck?.userId?._id !== userData?.id) return null;
+    if (deck?.userId !== userData?.id && deck?.userId?._id !== userData?.id)
+      return null;
 
     return (
       <Animated.View style={[styles.optionsContainer, {opacity: fadeAnim}]}>
-        <Text variant="semibold16" color={COLORS.blue043142} style={styles.sectionTitle}>
+        <Text
+          variant="semibold16"
+          color={COLORS.blue043142}
+          style={styles.sectionTitle}>
           Deck Management
         </Text>
-        
+
         <View style={styles.optionsList}>
           <Pressable style={styles.optionItem} onPress={handleEditDeck}>
             <View style={styles.optionIcon}>
               <Icon name="edit" size={18} color={COLORS.blue043142} />
             </View>
-            <Text variant="medium14" color={COLORS.blue043142} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              style={styles.optionText}>
               Edit Deck Details
             </Text>
             <Icon name="chevron-right" size={18} color={COLORS.grey999999} />
@@ -759,27 +937,38 @@ const DeckDetails = ({navigation, route}) => {
             <View style={styles.optionIcon}>
               <Icon name="share" size={18} color={COLORS.blue043142} />
             </View>
-            <Text variant="medium14" color={COLORS.blue043142} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              style={styles.optionText}>
               Share Deck
             </Text>
             <Icon name="chevron-right" size={18} color={COLORS.grey999999} />
           </Pressable>
-          
+
           <Pressable style={styles.optionItem} onPress={handleExportDeck}>
             <View style={styles.optionIcon}>
               <Icon name="download" size={18} color={COLORS.blue043142} />
             </View>
-            <Text variant="medium14" color={COLORS.blue043142} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.blue043142}
+              style={styles.optionText}>
               Export Deck
             </Text>
             <Icon name="chevron-right" size={18} color={COLORS.grey999999} />
           </Pressable>
-          
-          <Pressable style={[styles.optionItem, styles.dangerOption]} onPress={handleDeleteDeck}>
+
+          <Pressable
+            style={[styles.optionItem, styles.dangerOption]}
+            onPress={handleDeleteDeck}>
             <View style={styles.optionIcon}>
               <Icon name="delete" size={18} color={COLORS.redEA4335} />
             </View>
-            <Text variant="medium14" color={COLORS.redEA4335} style={styles.optionText}>
+            <Text
+              variant="medium14"
+              color={COLORS.redEA4335}
+              style={styles.optionText}>
               Delete Deck
             </Text>
             <Icon name="chevron-right" size={18} color={COLORS.grey999999} />
@@ -794,25 +983,33 @@ const DeckDetails = ({navigation, route}) => {
     if (!showCelebration) return null;
 
     return (
-      <Animated.View 
+      <Animated.View
         style={[
           styles.celebrationOverlay,
           {
             opacity: celebrationAnim,
-            transform: [{
-              scale: celebrationAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.8, 1],
-              }),
-            }],
-          }
+            transform: [
+              {
+                scale: celebrationAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+              },
+            ],
+          },
         ]}>
         <View style={styles.celebrationContent}>
           <Icon name="celebration" size={64} color={COLORS.yellowF5BE00} />
-          <Text variant="semibold20" color={COLORS.whiteFFFFFF} style={styles.celebrationTitle}>
+          <Text
+            variant="semibold20"
+            color={COLORS.whiteFFFFFF}
+            style={styles.celebrationTitle}>
             Cards Added! 🎉
           </Text>
-          <Text variant="medium14" color={COLORS.whiteFFFFFF} style={styles.celebrationText}>
+          <Text
+            variant="medium14"
+            color={COLORS.whiteFFFFFF}
+            style={styles.celebrationText}>
             Your new flashcards are ready to study
           </Text>
         </View>
@@ -823,15 +1020,21 @@ const DeckDetails = ({navigation, route}) => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-        <Header 
-          title="Deck Details" 
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={COLORS.yellowF5BE00}
+        />
+        <Header
+          title="Deck Details"
           onBackPress={() => navigation.goBack()}
           showBackButton={true}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.blue043142} />
-          <Text variant="medium14" color={COLORS.grey777777} style={styles.loadingText}>
+          <Text
+            variant="medium14"
+            color={COLORS.grey777777}
+            style={styles.loadingText}>
             Loading deck details...
           </Text>
         </View>
@@ -841,13 +1044,18 @@ const DeckDetails = ({navigation, route}) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.yellowF5BE00} />
-      
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={COLORS.yellowF5BE00}
+      />
+
       <Header
         title={deck?.title || 'Deck Details'}
         onBackPress={() => navigation.goBack()}
         showBackButton={true}
-        rightIcon={(deck?.userId === userData?.id || deck?.userId?._id === userData?.id)}
+        rightIcon={
+          deck?.userId === userData?.id || deck?.userId?._id === userData?.id
+        }
         rightIconName="more-vert"
         onRightIconPress={() => setShowOptions(!showOptions)}
       />
@@ -865,13 +1073,12 @@ const DeckDetails = ({navigation, route}) => {
                 tintColor={COLORS.blue043142}
               />
             }>
-            
             {renderDeckHeader()}
             {renderStudyStats()}
             {renderActionButtons()}
             {renderCardsList()}
             {renderDeckOptions()}
-            
+
             <View style={styles.bottomSpacing} />
           </ScrollView>
         </View>
@@ -920,7 +1127,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nh(16),
   },
-  
+
   // Header Styles
   headerContainer: {
     paddingVertical: nh(24),
@@ -990,7 +1197,7 @@ const styles = StyleSheet.create({
   moreTagsText: {
     marginLeft: nw(4),
   },
-  
+
   // Stats Styles
   statsContainer: {
     backgroundColor: COLORS.greyF7F7F7,
@@ -1023,7 +1230,7 @@ const styles = StyleSheet.create({
   statLabel: {
     textAlign: 'center',
   },
-  
+
   // Actions Styles
   actionsContainer: {
     marginBottom: nh(24),
@@ -1050,7 +1257,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     marginLeft: nw(8),
   },
-  
+
   // Summary Actions
   summaryActionsContainer: {
     backgroundColor: COLORS.greyF7F7F7,
@@ -1086,7 +1293,7 @@ const styles = StyleSheet.create({
   summaryActionSubtext: {
     textAlign: 'center',
   },
-  
+
   secondaryActionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1102,7 +1309,7 @@ const styles = StyleSheet.create({
   secondaryActionText: {
     marginTop: nh(4),
   },
-  
+
   // Cards Styles
   cardsContainer: {
     marginBottom: nh(24),
@@ -1248,7 +1455,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: nh(16),
   },
-  
+
   // Options Styles
   optionsContainer: {
     marginBottom: nh(24),
@@ -1281,7 +1488,7 @@ const styles = StyleSheet.create({
   dangerOption: {
     borderBottomWidth: 0,
   },
-  
+
   // Celebration Styles
   celebrationOverlay: {
     position: 'absolute',

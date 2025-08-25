@@ -358,13 +358,13 @@ const AIStudyBuddyIntegrationFlows = ({
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Button
-            title="Cancel"
+            text="Cancel"
             onPress={closeModal}
             style={styles.cancelButton}
             textStyle={styles.cancelButtonText}
           />
           <Button
-            title="Generate Flashcards"
+            text="Generate Flashcards"
             onPress={generateFlashcards}
             style={styles.generateButton}
             loading={loading}
@@ -515,13 +515,13 @@ const AIStudyBuddyIntegrationFlows = ({
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <Button
-            title="Cancel"
+            text="Cancel"
             onPress={closeModal}
             style={styles.cancelButton}
             textStyle={styles.cancelButtonText}
           />
           <Button
-            title="Generate Quiz"
+            text="Generate Quiz"
             onPress={generateQuiz}
             style={styles.generateButton}
             loading={loading}
@@ -587,7 +587,7 @@ const AIStudyBuddyIntegrationFlows = ({
 
         <View style={styles.successActions}>
           <Button
-            title={
+            text={
               activeFlow === 'flashcards' ? 'Study Flashcards' : 'Take Quiz'
             }
             onPress={() => {
@@ -606,7 +606,7 @@ const AIStudyBuddyIntegrationFlows = ({
           />
 
           <Button
-            title="Close"
+            text="Close"
             onPress={closeModal}
             style={styles.secondaryAction}
             textStyle={styles.secondaryActionText}

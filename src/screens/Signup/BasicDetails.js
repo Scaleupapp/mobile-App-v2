@@ -7,6 +7,7 @@ import {
   ScrollView,
   Modal,
   TextInput,
+  TouchableOpacity,
 } from 'react-native';
 import {COLORS} from '../../helper/colors';
 import {isAndroid, nh, nw} from '../../helper/scales';
@@ -18,15 +19,24 @@ import SocialLogin from '../../components/socialauth';
 import {APP_FONTS} from '../../assets/fonts';
 import Routes from '../../helper/routes';
 import {useToast} from '../../components/CustomToast';
-import {registerApi, applyReferralCodeApi} from '../../services/apiService';
+import {
+  registerApi, 
+  applyReferralCodeApi,
+  checkDomainTypeApi,
+  sendDomainVerificationApi,
+  verifyDomainApi
+} from '../../services/apiService';
 import {isValidEmail, isvalidPassword} from '../../helper/commonFunctions';
 import mixpanel from '../../helper/mixpanelClient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BasicDetails = ({navigation, route}) => {
   const {showToast} = useToast();
+  
   useEffect(() => {
     mixpanel.track('Landed_BasicDetails');
   }, []);
+
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -48,9 +58,38 @@ const BasicDetails = ({navigation, route}) => {
   const [secureText, setSecureText] = useState(true);
   const [secureText1, setSecureText1] = useState(true);
 
-  // [NEW] State for referral popup
+  // Referral popup state
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [referralCode, setReferralCode] = useState('');
+
+  // Domain verification state
+  const [showDomainVerificationModal, setShowDomainVerificationModal] = useState(false);
+  const [domainInfo, setDomainInfo] = useState({
+    email: '',
+    domainType: '',
+    institutionName: '',
+    requiresVerification: false
+  });
+  const [domainOtp, setDomainOtp] = useState('');
+  const [isDomainVerified, setIsDomainVerified] = useState(false);
+  const [isVerifyingDomain, setIsVerifyingDomain] = useState(false);
+  const [resendDomainTimer, setResendDomainTimer] = useState(0);
+  const [isResendDomainDisabled, setIsResendDomainDisabled] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false); // [NEW]
+
+  // Timer for domain OTP resend
+  useEffect(() => {
+    let timer;
+    if (resendDomainTimer > 0 && isResendDomainDisabled) {
+      timer = setInterval(() => {
+        setResendDomainTimer(prev => prev - 1);
+      }, 1000);
+    } else if (resendDomainTimer === 0) {
+      setIsResendDomainDisabled(false);
+    }
+
+    return () => clearInterval(timer);
+  }, [resendDomainTimer, isResendDomainDisabled]);
 
   const handleInputChange = (field, value) => {
     setForm({...form, [field]: value});
@@ -58,6 +97,44 @@ const BasicDetails = ({navigation, route}) => {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors({...errors, [field]: ''});
+    }
+
+    // Check domain type when email is complete
+    if (field === 'email' && isValidEmail(value)) {
+      checkEmailDomain(value);
+    }
+    
+    // Reset verification if email changes
+    if (field === 'email' && isDomainVerified) {
+      setIsDomainVerified(false);
+      setShowOtpInput(false);
+      setDomainOtp('');
+    }
+  };
+
+  // Check if email domain needs verification
+  const checkEmailDomain = async (email) => {
+    try {
+      const {data} = await checkDomainTypeApi({email});
+      
+      if (data?.data?.requiresVerification) {
+        setDomainInfo({
+          email: email,
+          domainType: data.data.domainType,
+          institutionName: data.data.institutionName,
+          requiresVerification: true
+        });
+      } else {
+        setDomainInfo({
+          email: email,
+          domainType: 'public',
+          institutionName: null,
+          requiresVerification: false
+        });
+        setIsDomainVerified(false);
+      }
+    } catch (error) {
+      console.log('Domain check error:', error);
     }
   };
 
@@ -105,49 +182,175 @@ const BasicDetails = ({navigation, route}) => {
     return isValid;
   };
 
+// Updated sendDomainOTP function in BasicDetails.js
+const sendDomainOTP = async () => {
+  try {
+    setIsVerifyingDomain(true);
+    
+    // Get userId from AsyncStorage - it's stored after phone verification
+    const userData = await AsyncStorage.getItem('userData');
+    console.log('userData from storage:', userData); // Debug log
+    
+    if (!userData) {
+      showToast({type: 'error', title: 'Session expired. Please restart registration.'});
+      setIsVerifyingDomain(false);
+      return;
+    }
+    
+    const parsedData = JSON.parse(userData);
+    console.log('parsedData:', parsedData); // Debug log
+    
+    // The userId might be under different keys depending on your backend response
+    const userId = parsedData?.user?.id || 
+                   parsedData?.user?._id || 
+                   parsedData?.id || 
+                   parsedData?._id ||
+                   parsedData?.userId;
+    
+    console.log('Extracted userId:', userId); // Debug log
+    console.log('Email being sent:', form.email); // Debug log
+    
+    if (!userId) {
+      showToast({type: 'error', title: 'User session not found. Please restart registration.'});
+      setIsVerifyingDomain(false);
+      return;
+    }
+
+    const payload = {
+      email: form.email,
+      userId: userId
+    };
+    
+    console.log('Sending payload:', payload); // Debug log
+
+    const {data} = await sendDomainVerificationApi(payload);
+
+    showToast({type: 'success', title: 'OTP sent to your email'});
+    setIsResendDomainDisabled(true);
+    setResendDomainTimer(300); // 5 minutes
+    setShowOtpInput(true);
+    setIsVerifyingDomain(false);
+  } catch (error) {
+    console.log('Send domain OTP error:', error);
+    console.log('Error response:', error?.response?.data); // Debug log
+    showToast({type: 'error', title: error?.response?.data?.message || 'Failed to send OTP'});
+    setIsVerifyingDomain(false);
+  }
+};
+
+// Also update the verifyDomainOTP function similarly
+const verifyDomainOTP = async () => {
+  if (!domainOtp || domainOtp.length !== 6) {
+    showToast({type: 'error', title: 'Please enter 6-digit OTP'});
+    return;
+  }
+
+  try {
+    setIsVerifyingDomain(true);
+    
+    const userData = await AsyncStorage.getItem('userData');
+    
+    if (!userData) {
+      showToast({type: 'error', title: 'Session expired. Please restart registration.'});
+      setIsVerifyingDomain(false);
+      return;
+    }
+    
+    const parsedData = JSON.parse(userData);
+    const userId = parsedData?.user?.id || 
+                   parsedData?.user?._id || 
+                   parsedData?.id || 
+                   parsedData?._id ||
+                   parsedData?.userId;
+    
+    if (!userId) {
+      showToast({type: 'error', title: 'User session not found. Please restart registration.'});
+      setIsVerifyingDomain(false);
+      return;
+    }
+
+    const payload = {
+      email: form.email,
+      otp: domainOtp,
+      userId: userId
+    };
+    
+    console.log('Verifying with payload:', payload); // Debug log
+
+    const {data} = await verifyDomainApi(payload);
+
+    if (data?.success) {
+      showToast({type: 'success', title: 'Email verified successfully!'});
+      setIsDomainVerified(true);
+      setShowOtpInput(false);
+      setDomainOtp('');
+    }
+  } catch (error) {
+    console.log('Verify domain OTP error:', error);
+    showToast({type: 'error', title: error?.response?.data?.message || 'Invalid OTP'});
+  } finally {
+    setIsVerifyingDomain(false);
+  }
+};
+
+  // Main registration function
   const registerUser = async () => {
     if (validateFields()) {
-      mixpanel.track('Clicked_Submit_BasicDetails', {email: form.email});
-      try {
-        const params = {
-          firstname: form.firstName,
-          lastname: form.lastName,
-          username: form.userName,
-          email: form.email,
-          password: form.password,
-        };
-        console.log({params});
-        const {data} = await registerApi(params);
-        showToast({type: 'success', title: data?.message});
-
-        // Set user profile properties
-        mixpanel.people.set({
-          $first_name: params.firstname,
-          $last_name: params.lastname,
-          $email: params.email,
-          username: params.username,
-          signup_date: new Date().toISOString(),
-        });
-        // [NEW] Once registration succeeds, show the referral popup
-        setShowReferralModal(true);
-
-        // Clear the form
-        setForm({
-          firstName: '',
-          lastName: '',
-          userName: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-        });
-      } catch (error) {
-        console.log('Registration Error:', error);
-        // Optionally show toast or handle error messages
+      // Check if domain needs verification and not yet verified
+      if (domainInfo.requiresVerification && !isDomainVerified) {
+        showToast({type: 'error', title: 'Please verify your institutional email first'});
+        return;
       }
+      proceedWithRegistration();
     }
   };
 
-  // [NEW] Function to call applyReferralCodeApi
+  // Proceed with actual registration
+  const proceedWithRegistration = async () => {
+    mixpanel.track('Clicked_Submit_BasicDetails', {email: form.email});
+    try {
+      const params = {
+        firstname: form.firstName,
+        lastname: form.lastName,
+        username: form.userName,
+        email: form.email,
+        password: form.password,
+      };
+      
+      const {data} = await registerApi(params);
+      
+      showToast({type: 'success', title: data?.message || 'Registration successful'});
+
+      // Set user profile properties
+      mixpanel.people.set({
+        $first_name: params.firstname,
+        $last_name: params.lastname,
+        $email: params.email,
+        username: params.username,
+        signup_date: new Date().toISOString(),
+        isInstitutionalUser: data?.userInfo?.isInstitutionalUser || false,
+        institutionName: data?.userInfo?.institutionName || null
+      });
+
+      // Show referral popup
+      setShowReferralModal(true);
+
+      // Clear the form
+      setForm({
+        firstName: '',
+        lastName: '',
+        userName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      });
+    } catch (error) {
+      console.log('Registration Error:', error);
+      showToast({type: 'error', title: error?.response?.data?.message || 'Registration failed'});
+    }
+  };
+
+  // Referral code functions
   const handleApplyReferralCode = async () => {
     if (!referralCode.trim()) {
       showToast({type: 'error', title: 'Referral code cannot be empty'});
@@ -157,10 +360,8 @@ const BasicDetails = ({navigation, route}) => {
       mixpanel.track('Attempted_Referral_Submit', {referralCode});
 
       const {data} = await applyReferralCodeApi({referralCode});
-      // e.g. data.message => "Now following user X"
       showToast({type: 'success', title: data?.message});
       setShowReferralModal(false);
-      // Move on to the next page after successful code application
       navigation.navigate(Routes.Preferences);
     } catch (err) {
       console.log('applyReferralCode error:', err);
@@ -172,12 +373,9 @@ const BasicDetails = ({navigation, route}) => {
     }
   };
 
-  // [NEW] If user wants to skip/cancel referral code
   const handleSkipReferral = () => {
     mixpanel.track('Skipped_Referral');
-
     setShowReferralModal(false);
-    // Move on to next page
     navigation.navigate(Routes.Preferences);
   };
 
@@ -223,7 +421,77 @@ const BasicDetails = ({navigation, route}) => {
               value={form.email}
               onChangeText={value => handleInputChange('email', value)}
               errorMessage={errors.email}
+              rightIcon={isDomainVerified ? icons.verified : null}
             />
+            
+            {/* [NEW] Domain verification section - appears inline */}
+            {domainInfo.requiresVerification && !isDomainVerified && form.email && (
+              <View style={styles.domainVerificationSection}>
+                <View style={styles.domainInfoBox}>
+                  <Text variant="medium12" color={COLORS.blue043142}>
+                    🎓 {domainInfo.institutionName} email detected
+                  </Text>
+                  <Text variant="regular11" color={COLORS.grey999999}>
+                    Verification required for institutional benefits
+                  </Text>
+                </View>
+                
+                {!showOtpInput ? (
+                  <TouchableOpacity 
+                    style={styles.verifyButton} 
+                    onPress={sendDomainOTP}
+                    disabled={isVerifyingDomain}>
+                    <Text variant="semibold14" color={COLORS.whiteFFFFFF}>
+                      {isVerifyingDomain ? 'Sending OTP...' : 'Send OTP'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.otpSection}>
+                    <View style={styles.otpInputContainer}>
+                      <TextInput
+                        placeholder="Enter 6-digit OTP"
+                        value={domainOtp}
+                        onChangeText={setDomainOtp}
+                        style={styles.otpInput}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                      />
+                      <TouchableOpacity 
+                        style={styles.verifyOtpButton}
+                        onPress={verifyDomainOTP}
+                        disabled={isVerifyingDomain || !domainOtp}>
+                        <Text variant="semibold12" color={COLORS.whiteFFFFFF}>
+                          Verify
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    
+                    <View style={styles.resendContainer}>
+                      <Text style={styles.resendText}>Didn't receive OTP? </Text>
+                      {isResendDomainDisabled ? (
+                        <Text style={styles.timerText}>
+                          Resend in {Math.floor(resendDomainTimer / 60)}:{(resendDomainTimer % 60).toString().padStart(2, '0')}
+                        </Text>
+                      ) : (
+                        <TouchableOpacity onPress={sendDomainOTP}>
+                          <Text style={styles.resendLink}>Click to resend</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* [NEW] Verified badge */}
+            {isDomainVerified && (
+              <View style={styles.verifiedBadge}>
+                <Text variant="semibold12" color={COLORS.green}>
+                  ✅ {domainInfo.institutionName} email verified
+                </Text>
+              </View>
+            )}
+
             <CustomTextInput
               placeholder="Password"
               value={form.password}
@@ -254,7 +522,7 @@ const BasicDetails = ({navigation, route}) => {
         </View>
       </View>
 
-      {/* [NEW] Modal for referral code */}
+      {/* Referral Modal */}
       <Modal
         transparent
         animationType="slide"
@@ -272,7 +540,6 @@ const BasicDetails = ({navigation, route}) => {
               style={styles.referralInput}
             />
 
-            {/* Button Row */}
             <View style={styles.buttonRow}>
               <Button
                 text="Submit"
@@ -288,7 +555,6 @@ const BasicDetails = ({navigation, route}) => {
           </View>
         </View>
       </Modal>
-      {/* [END NEW MODAL] */}
     </SafeAreaView>
   );
 };
@@ -318,39 +584,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: nw(16),
     paddingTop: nh(30),
   },
-  container1: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: -10,
-    marginBottom: nh(40),
-  },
-  checkboxContainer: {
-    padding: 0,
-    margin: 0,
-    marginRight: nw(5),
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingVertical: 15,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: COLORS.whiteFFFFFF,
-  },
-  footerText: {
-    color: COLORS.grey999999,
-    fontSize: nh(12),
-    fontFamily: APP_FONTS.PoppinsMedium,
-  },
-  footerLink: {
-    color: COLORS.yellowF5BE00,
-    fontSize: nh(12),
-    fontFamily: APP_FONTS.PoppinsMedium,
-  },
-  // [NEW] Styles for referral modal
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',
@@ -373,18 +606,92 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   buttonRow: {
-    flexDirection: 'column', // Arrange buttons vertically
-    alignItems: 'center', // Center the buttons horizontally
-    width: '100%', // Ensure full width for layout control
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: '100%',
     marginTop: 20,
-    gap: 15, // Increased top spacing
+    gap: 15,
   },
-
   modalButton: {
-    width: '50%', // Reduce button width to half the modal
-    paddingVertical: nh(10), // Adjust padding for touch area
-    borderRadius: 8, // Rounded edges for aesthetics
-    alignSelf: 'center', // Ensure button stays centered
-    marginVertical: 5, // Add spacing between buttons
+    width: '50%',
+    paddingVertical: nh(10),
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginVertical: 5,
+  },
+  // [NEW] Domain verification styles
+  domainVerificationSection: {
+    marginBottom: 15,
+  },
+  domainInfoBox: {
+    backgroundColor: '#f0f8ff',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.yellowF5BE00,
+  },
+  verifyButton: {
+    backgroundColor: COLORS.yellowF5BE00,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  otpSection: {
+    marginTop: 10,
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  otpInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: COLORS.blue043142,
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 16,
+    letterSpacing: 5,
+    textAlign: 'center',
+    fontFamily: APP_FONTS.PoppinsSemiBold,
+  },
+  verifyOtpButton: {
+    backgroundColor: COLORS.blue043142,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  resendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  resendText: {
+    color: COLORS.grey999999,
+    fontSize: nh(12),
+    fontFamily: APP_FONTS.PoppinsMedium,
+  },
+  timerText: {
+    color: COLORS.redFF0000,
+    fontSize: nh(12),
+    fontFamily: APP_FONTS.PoppinsMedium,
+  },
+  resendLink: {
+    color: COLORS.yellowF5BE00,
+    fontSize: nh(12),
+    fontFamily: APP_FONTS.PoppinsMedium,
+    textDecorationLine: 'underline',
+  },
+  verifiedBadge: {
+    backgroundColor: '#e8f5e9',
+    padding: 8,
+    borderRadius: 5,
+    marginBottom: 10,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4caf50',
   },
 });

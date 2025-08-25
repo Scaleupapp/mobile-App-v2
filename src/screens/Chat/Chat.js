@@ -82,7 +82,7 @@ const Chat = ({navigation, route}) => {
   const [threedotmodal, setThreeDotmodal] = useState(false);
   useEffect(() => {
     // Connect to the Socket.IO server when the component mounts
-    const socketInstance = io('https://api.scaleupapp.club/api/', {
+    const socketInstance = io('https://api.scaleupapp.club', {
       // Your server URL
       auth: {
         token: userData?.token, // If you have authentication
@@ -151,7 +151,12 @@ const Chat = ({navigation, route}) => {
       setMessages(updatedMessages);
       // will recieive messageId and content
     });
-
+    socketInstance.on('connect_error', err =>
+      console.error(
+        'ConversationScreen: Socket connection error ----',
+        err.message,
+      ),
+    );
     // Clean up the socket connection when the component unmounts
     return () => {
       if (socketInstance) {
@@ -224,6 +229,7 @@ const Chat = ({navigation, route}) => {
         .then(response => response.text())
         .then(data => {
           console.log('🚀 ~ sendMessage ~ data:', data);
+
           let conversationId = route?.params?.chatId;
           setUserHasScrolled(false);
           setIsread(true);

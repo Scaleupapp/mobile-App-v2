@@ -31,8 +31,7 @@ import Video from 'react-native-video';
 import {compressImage, compressVideo} from '../../helper/commonFunctions';
 import mixpanel from '../../helper/mixpanelClient';
 
-import { getVideoDuration } from 'react-native-video-duration';
-
+import {getVideoDuration} from 'react-native-video-duration';
 
 const CreatePost = ({navigation}) => {
   const {showToast} = useToast();
@@ -64,40 +63,37 @@ const CreatePost = ({navigation}) => {
   // Determine if editing an existing draft
   const isEditingDraft = Boolean(draftData?.id);
 
-
   const [contentMetrics, setContentMetrics] = useState(null);
 
+  const fetchContentMetrics = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('userData');
+      const {token} = JSON.parse(userData);
 
-
-const fetchContentMetrics = async () => {
-  try {
-    const userData = await AsyncStorage.getItem('userData');
-    const {token} = JSON.parse(userData);
-    
-    const response = await axios.get(
-      'https://api.scaleupapp.club/api/content/fetch-upload-metrics',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.get(
+        'https://api.scaleupapp.club/api/content/fetch-upload-metrics',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
+      );
+
+      setContentMetrics(response.data.userContentMetrics);
+    } catch (error) {
+      console.log(
+        'Content metrics fetch error:',
+        error?.response?.data?.message || error.message,
+      );
+      // Only show toast if user has creator badge (otherwise they can't see metrics anyway)
+      if (profileData?.creatorBadgeUnlocked) {
+        showToast({
+          title: 'Failed to load content metrics',
+          type: 'error',
+        });
       }
-    );
-    
-    setContentMetrics(response.data.userContentMetrics);
-  } catch (error) {
-    console.log('Content metrics fetch error:', error?.response?.data?.message || error.message);
-    // Only show toast if user has creator badge (otherwise they can't see metrics anyway)
-    if (profileData?.creatorBadgeUnlocked) {
-      showToast({
-        title: 'Failed to load content metrics',
-        type: 'error',
-      });
     }
-  }
-};
-
-
-
+  };
 
   useEffect(() => {
     if (draftData) {
@@ -117,7 +113,7 @@ const fetchContentMetrics = async () => {
       setIsPremium(draftData.isPremium || false);
       setPrice(draftData.price ? draftData.price.toString() : '');
       // setPreviewDuration(draftData.previewDuration ? draftData.previewDuration.toString() : '');
-      
+
       if (draftData.file && draftData.file.uri) {
         setFile({
           uri: draftData.file.uri,
@@ -134,112 +130,115 @@ const fetchContentMetrics = async () => {
   }, []);
 
   useEffect(() => {
-  if (profileData?.creatorBadgeUnlocked) {
-    fetchContentMetrics();
-  }
-}, [profileData]);
-
-
-
+    if (profileData?.creatorBadgeUnlocked) {
+      fetchContentMetrics();
+    }
+  }, [profileData]);
 
   // console.log("vkhbsksdvkbdsvbkvdskbvsd",profileData?.creatorBadgeUnlocked);
 
-
-
   const PremiumContentCounter = () => {
-  if (!profileData?.creatorBadgeUnlocked || !contentMetrics) {
-    return null;
-  }
+    if (!profileData?.creatorBadgeUnlocked || !contentMetrics) {
+      return null;
+    }
 
-  const { premiumContent } = contentMetrics;
-  console.log('ppppppppppppppppp',premiumContent)
-  const remainingCount = premiumContent.permittedUploadCount - premiumContent.uploadCount;
+    const {premiumContent} = contentMetrics;
+    console.log('ppppppppppppppppp', premiumContent);
+    const remainingCount =
+      premiumContent.permittedUploadCount - premiumContent.uploadCount;
 
-  return (
-    <View style={styles.premiumCounterContainer}>
-      <View style={styles.premiumCounterHeader}>
-        <Icon name="diamond-outline" size={nw(18)} color={COLORS.yellowF5BE00} />
-        <Text variant="medium14" color={COLORS.greyBBBBBB}>
-          Premium Content Quota
-        </Text>
-      </View>
-      
-      <View style={styles.premiumCounterStats}>
-        <View style={styles.statItem}>
-          <Text variant="bold16" color={COLORS.blue043142}>
-            {remainingCount}
-          </Text>
-          <Text variant="regular12" color={COLORS.grey999999}>
-            Remaining
+    return (
+      <View style={styles.premiumCounterContainer}>
+        <View style={styles.premiumCounterHeader}>
+          <Icon
+            name="diamond-outline"
+            size={nw(18)}
+            color={COLORS.yellowF5BE00}
+          />
+          <Text variant="medium14" color={COLORS.greyBBBBBB}>
+            Premium Content Quota
           </Text>
         </View>
-        
-        <View style={styles.statDivider} />
-        
-        <View style={styles.statItem}>
-          <Text variant="regular14" color={COLORS.greyBBBBBB}>
-            {premiumContent.uploadCount}/{premiumContent.permittedUploadCount}
+
+        <View style={styles.premiumCounterStats}>
+          <View style={styles.statItem}>
+            <Text variant="bold16" color={COLORS.blue043142}>
+              {remainingCount}
+            </Text>
+            <Text variant="regular12" color={COLORS.grey999999}>
+              Remaining
+            </Text>
+          </View>
+
+          <View style={styles.statDivider} />
+
+          <View style={styles.statItem}>
+            <Text variant="regular14" color={COLORS.greyBBBBBB}>
+              {premiumContent.uploadCount}/{premiumContent.permittedUploadCount}
+            </Text>
+            <Text variant="regular12" color={COLORS.grey999999}>
+              Used this month
+            </Text>
+          </View>
+        </View>
+
+        {remainingCount === 0 && (
+          <View style={styles.quotaExhaustedWarning}>
+            <Icon name="warning-outline" size={nw(16)} color={COLORS.red} />
+            <Text variant="regular12" color={COLORS.red}>
+              Upload more free videos to increase your premium quota
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const ContentRequirementsChecker = () => {
+    if (!contentMetrics) {
+      return null;
+    }
+
+    const {freeContent, overallFreeContentCount} = contentMetrics;
+    const hasUploadedTenOverall = overallFreeContentCount >= 10;
+    const hasUploadedThreeThisMonth = freeContent.currentMonthCount >= 3;
+
+    return (
+      <View style={styles.requirementsContainer}>
+        <Text
+          variant="medium14"
+          color={COLORS.greyBBBBBB}
+          style={styles.requirementsTitle}>
+          Premium Content Requirements
+        </Text>
+
+        <View style={styles.requirementRow}>
+          <Icon
+            name={hasUploadedTenOverall ? 'checkmark-circle' : 'close-circle'}
+            size={nw(18)}
+            color={hasUploadedTenOverall ? COLORS.green : COLORS.red}
+          />
+          <Text variant="regular12" color={COLORS.greyBBBBBB}>
+            Upload 10+ free content overall ({overallFreeContentCount}/10)
           </Text>
-          <Text variant="regular12" color={COLORS.grey999999}>
-            Used this month
+        </View>
+
+        <View style={styles.requirementRow}>
+          <Icon
+            name={
+              hasUploadedThreeThisMonth ? 'checkmark-circle' : 'close-circle'
+            }
+            size={nw(18)}
+            color={hasUploadedThreeThisMonth ? COLORS.green : COLORS.red}
+          />
+          <Text variant="regular12" color={COLORS.greyBBBBBB}>
+            Upload 3+ free content this month ({freeContent.currentMonthCount}
+            /3)
           </Text>
         </View>
       </View>
-      
-      {remainingCount === 0 && (
-        <View style={styles.quotaExhaustedWarning}>
-          <Icon name="warning-outline" size={nw(16)} color={COLORS.red} />
-          <Text variant="regular12" color={COLORS.red}>
-            Upload more free videos to increase your premium quota
-          </Text>
-        </View>
-      )}
-    </View>
-  );
-};
-
-const ContentRequirementsChecker = () => {
-  if (!contentMetrics) {
-    return null;
-  }
-
-  const { freeContent, overallFreeContentCount } = contentMetrics;
-  const hasUploadedTenOverall = overallFreeContentCount >= 10;
-  const hasUploadedThreeThisMonth = freeContent.currentMonthCount >= 3;
-
-  return (
-    <View style={styles.requirementsContainer}>
-      <Text variant="medium14" color={COLORS.greyBBBBBB} style={styles.requirementsTitle}>
-        Premium Content Requirements
-      </Text>
-      
-      <View style={styles.requirementRow}>
-        <Icon 
-          name={hasUploadedTenOverall ? "checkmark-circle" : "close-circle"} 
-          size={nw(18)} 
-          color={hasUploadedTenOverall ? COLORS.green : COLORS.red} 
-        />
-        <Text variant="regular12" color={COLORS.greyBBBBBB}>
-          Upload 10+ free content overall ({overallFreeContentCount}/10)
-        </Text>
-      </View>
-      
-      <View style={styles.requirementRow}>
-        <Icon 
-          name={hasUploadedThreeThisMonth ? "checkmark-circle" : "close-circle"} 
-          size={nw(18)} 
-          color={hasUploadedThreeThisMonth ? COLORS.green : COLORS.red} 
-        />
-        <Text variant="regular12" color={COLORS.greyBBBBBB}>
-          Upload 3+ free content this month ({freeContent.currentMonthCount}/3)
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-
-
+    );
+  };
 
   const resetForm = () => {
     setHeading('');
@@ -275,7 +274,7 @@ const ContentRequirementsChecker = () => {
       console.log('Profile data fetched:', res?.data?.userProfileInfo);
       setProfileData(res?.data?.userProfileInfo);
 
-      console.log("gggggggggggggggggggg",parsedUser);
+      console.log('gggggggggggggggggggg', parsedUser);
     } catch (error) {
       console.log(
         'Profile data fetch error:',
@@ -314,17 +313,16 @@ const ContentRequirementsChecker = () => {
       let videoDuration = null;
 
       if (selectedContentType === 'Video') {
-        
-
         compressedUri = await compressVideo(asset.uri);
         videoDuration = asset.duration || asset.playableDuration || 60; // Default 60 seconds
         console.log('Video duration from asset:', videoDuration);
-        
       } else {
         compressedUri = await compressImage(asset.uri);
       }
-      setFile({...tempFile, uri: compressedUri,
-              duration: videoDuration // Store duration in file object
+      setFile({
+        ...tempFile,
+        uri: compressedUri,
+        duration: videoDuration, // Store duration in file object
       }); // Update with compressed URI
     } catch (error) {
       console.error('Error processing file:', error);
@@ -379,30 +377,36 @@ const ContentRequirementsChecker = () => {
     }
   };
 
-const handlePremiumToggle = (value) => {
-  if (value && contentMetrics) {
-    const hasUploadedTenOverall = contentMetrics.overallFreeContentCount >= 10;
-    const hasUploadedThreeThisMonth = contentMetrics.freeContent.uploadCount >= 3;
-    
-    if (!hasUploadedTenOverall || !hasUploadedThreeThisMonth) {
-      showToast({
-        title: 'Requirements not met for premium content',
-        type: 'error'
-      });
-      return;
+  const handlePremiumToggle = value => {
+    mixpanel.track(`Click on Premium Toggle`);
+    if (value && contentMetrics) {
+      const hasUploadedTenOverall =
+        contentMetrics.overallFreeContentCount >= 10;
+      const hasUploadedThreeThisMonth =
+        contentMetrics.freeContent.uploadCount >= 3;
+
+      if (!hasUploadedTenOverall || !hasUploadedThreeThisMonth) {
+        showToast({
+          title: 'Requirements not met for premium content',
+          type: 'error',
+        });
+        return;
+      }
     }
-  }
-  
-  setIsPremium(value);
-  if (!value) {
-    setPrice('');
-  }
-};
+
+    setIsPremium(value);
+    if (!value) {
+      setPrice('');
+    }
+  };
 
   const validatePremiumFields = () => {
     if (isPremium) {
       if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
-        showToast({title: 'Please enter a valid price for premium content.', type: 'error'});
+        showToast({
+          title: 'Please enter a valid price for premium content.',
+          type: 'error',
+        });
         return false;
       }
       // if (!previewDuration || isNaN(parseInt(previewDuration)) || parseInt(previewDuration) <= 0) {
@@ -441,8 +445,9 @@ const handlePremiumToggle = (value) => {
     // Check if user has creator badge for premium content
     if (isPremium && !profileData?.creatorBadgeUnlocked) {
       showToast({
-        title: 'You need to unlock the Content Creator badge to create premium content.',
-        type: 'error'
+        title:
+          'You need to unlock the Content Creator badge to create premium content.',
+        type: 'error',
       });
       return;
     }
@@ -479,13 +484,19 @@ const handlePremiumToggle = (value) => {
       if (isPremium) {
         formData.append('isPremium', 'true');
         formData.append('price', price);
-// Calculate preview duration as 10% of video duration
-  if (contentType === 'Video' && file?.duration) {
-    const calculatedPreviewDuration = Math.max(2, Math.floor(file.duration * 0.1)); // Minimum 5 seconds
-    formData.append('previewDuration', calculatedPreviewDuration.toString());
-  } else {
-    formData.append('previewDuration', '10'); // Default for images or if duration unavailable
-  }
+        // Calculate preview duration as 10% of video duration
+        if (contentType === 'Video' && file?.duration) {
+          const calculatedPreviewDuration = Math.max(
+            2,
+            Math.floor(file.duration * 0.1),
+          ); // Minimum 5 seconds
+          formData.append(
+            'previewDuration',
+            calculatedPreviewDuration.toString(),
+          );
+        } else {
+          formData.append('previewDuration', '10'); // Default for images or if duration unavailable
+        }
       } else {
         formData.append('isPremium', 'false');
       }
@@ -559,7 +570,7 @@ const handlePremiumToggle = (value) => {
       }
 
       console.log('Post/Draft Operation Success:', response.data);
-      
+
       // Show achievement message if creator badge was unlocked
       if (response.data?.acheivement) {
         setTimeout(() => {
@@ -569,7 +580,7 @@ const handlePremiumToggle = (value) => {
           });
         }, 1000);
       }
-      
+
       setTimeout(() => {
         resetForm();
         navigation.goBack();
@@ -639,8 +650,6 @@ const handlePremiumToggle = (value) => {
             {profileData?.creatorBadgeUnlocked && <PremiumContentCounter />}
             {<ContentRequirementsChecker />}
 
-
-
             {/* Premium Content Section */}
             <View style={styles.premiumSection}>
               <View style={styles.premiumToggleContainer}>
@@ -650,16 +659,20 @@ const handlePremiumToggle = (value) => {
                 <Switch
                   value={isPremium}
                   onValueChange={handlePremiumToggle}
-                  disabled={disableActions || !profileData?.creatorBadgeUnlocked}
-                  trackColor={{ false: COLORS.greyBBBBBB, true: COLORS.yellowF5BE00 }}
-                  thumbColor={isPremium ? COLORS.whiteFFFFFF : COLORS.greyBBBBBB}
+                  disabled={
+                    disableActions || !profileData?.creatorBadgeUnlocked
+                  }
+                  trackColor={{
+                    false: COLORS.greyBBBBBB,
+                    true: COLORS.yellowF5BE00,
+                  }}
+                  thumbColor={
+                    isPremium ? COLORS.whiteFFFFFF : COLORS.greyBBBBBB
+                  }
                 />
               </View>
 
-                {/* <ContentRequirementsChecker /> */}
-
-
-             
+              {/* <ContentRequirementsChecker /> */}
 
               {isPremium && (
                 <View style={styles.premiumFieldsContainer}>
@@ -763,7 +776,11 @@ const handlePremiumToggle = (value) => {
 
                   {isPremium && (
                     <View style={styles.premiumBadge}>
-                      <Icon name="diamond-outline" size={nw(16)} color={COLORS.yellowF5BE00} />
+                      <Icon
+                        name="diamond-outline"
+                        size={nw(16)}
+                        color={COLORS.yellowF5BE00}
+                      />
                       <Text style={styles.premiumBadgeText}>Premium</Text>
                     </View>
                   )}
@@ -851,7 +868,6 @@ const handlePremiumToggle = (value) => {
   );
 };
 
-
 export default CreatePost;
 
 const styles = StyleSheet.create({
@@ -860,7 +876,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.yellowF5BE00,
   },
 
-   premiumCounterContainer: {
+  premiumCounterContainer: {
     backgroundColor: COLORS.whiteFFFFFF,
     borderRadius: nw(8),
     padding: nw(16),
@@ -868,7 +884,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.greyEEEEEE,
   },
-  
+
   premiumCounterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -876,43 +892,41 @@ const styles = StyleSheet.create({
   },
 
   requirementsContainer: {
-  backgroundColor: COLORS.whiteFFFFFF,
-  padding: nw(16),
-  marginVertical: nh(8),
-  borderRadius: nw(8),
-  borderWidth: 1,
-  borderColor: COLORS.greyEEEEEE,
-},
-requirementsTitle: {
-  marginBottom: nh(12),
-},
-requirementRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: nh(8),
-  gap: nw(8),
-},
+    backgroundColor: COLORS.whiteFFFFFF,
+    padding: nw(16),
+    marginVertical: nh(8),
+    borderRadius: nw(8),
+    borderWidth: 1,
+    borderColor: COLORS.greyEEEEEE,
+  },
+  requirementsTitle: {
+    marginBottom: nh(12),
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: nh(8),
+    gap: nw(8),
+  },
 
-
-  
   premiumCounterStats: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  
+
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
-  
+
   statDivider: {
     width: 1,
     height: nh(30),
     backgroundColor: COLORS.greyEEEEEE,
     marginHorizontal: nw(16),
   },
-  
+
   quotaExhaustedWarning: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -922,7 +936,6 @@ requirementRow: {
     borderRadius: nw(6),
   },
 
-  
   layer1: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
