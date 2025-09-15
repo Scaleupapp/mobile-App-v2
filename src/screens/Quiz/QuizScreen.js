@@ -1,3 +1,4 @@
+//src/screens/Quiz/QuizScreen.js
 import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
@@ -207,9 +208,13 @@ const QuizScreen = ({navigation, route}) => {
         `You scored ${totalScore} points.\nYour current rank: ${finalRank}\nYou will get the final ranking after the quiz officially ends.`,
         [
           {
-            text: 'Give Feedback',
-            onPress: () =>
-              navigation.navigate('QuizFeedbackScreen', {quizEventId: quizId}),
+            text: 'View Results',
+            onPress: () => {
+              navigation.navigate('QuizList', {
+                openLeaderboard: true,
+                quizId: quizId
+              });
+            },
           },
         ],
       );
