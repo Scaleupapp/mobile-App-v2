@@ -342,169 +342,54 @@ INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
   DOMAIN_WHITELIST: 'domain-verification/whitelist',
   DOMAIN_WHITELIST_ADD: 'domain-verification/whitelist/add',
   
+
+    // ==========================================
+  // COMMUNITY FEATURE API ENDPOINTS
   // ==========================================
-  // COMMUNITY PLATFORM API ENDPOINTS
-  // ==========================================
   
-  // COMMUNITY MANAGEMENT - DISCOVERY & CORE
-  COMMUNITIES: 'communities',
-  COMMUNITIES_SEARCH: 'communities/search/communities',
-  COMMUNITIES_FEATURED: 'communities/featured/list',
-  COMMUNITIES_TRENDING: 'communities/trending/list',
-  COMMUNITIES_CATEGORIES: 'communities/categories/list',
-  COMMUNITIES_TYPES: 'communities/types/list',
-  COMMUNITIES_PLATFORM_STATS: 'communities/platform/stats',
-  COMMUNITIES_MY_LIST: 'communities/my-communities/list',
-  COMMUNITIES_MY_SUMMARY: 'communities/my-communities/summary',
-  COMMUNITIES_SUGGESTIONS_INSTITUTIONAL: 'communities/suggestions/institutional',
-  COMMUNITIES_AUTO_JOIN_DOMAIN: 'communities/auto-join-domain',
-  COMMUNITIES_RECOMMENDATIONS_PERSONALIZED: 'communities/recommendations/personalized',
-  COMMUNITIES_BULK_JOIN: 'communities/bulk/join',
-  COMMUNITIES_BULK_LEAVE: 'communities/bulk/leave',
-  COMMUNITIES_LOCATION: 'communities/location/:location',
+  // -- Community Management & Discovery --
+  COMMUNITY_CREATE: 'communities', // POST
+  COMMUNITY_LIST_ALL: 'communities', // GET
+  COMMUNITY_DETAILS: 'communities/', // GET with /:communityId
+  COMMUNITY_UPDATE: 'communities/', // PUT with /:communityId
+  COMMUNITY_SEARCH: 'communities/search', // GET
+  COMMUNITY_RECOMMENDATIONS: 'communities/recommendations', // GET
+  COMMUNITY_TRENDING: 'communities/trending', // GET
   
-  // COMMUNITY MANAGEMENT - CRUD OPERATIONS
-  COMMUNITIES_CREATE: 'communities',
-  COMMUNITIES_CREATE_FROM_TEMPLATE: 'communities/from-template',
-  COMMUNITIES_DETAILS: 'communities/:communityId',
-  COMMUNITIES_UPDATE: 'communities/:communityId',
-  COMMUNITIES_DELETE: 'communities/:communityId',
-  COMMUNITIES_ARCHIVE: 'communities/:communityId/archive',
-  COMMUNITIES_RESTORE: 'communities/:communityId/restore',
-  COMMUNITIES_TRANSFER_OWNERSHIP: 'communities/:communityId/transfer-ownership',
-  
-  // COMMUNITY MANAGEMENT - ANALYTICS & INSIGHTS
-  COMMUNITIES_STATS: 'communities/:communityId/stats',
-  COMMUNITIES_STATS_PUBLIC: 'communities/:communityId/stats/public',
-  COMMUNITIES_ANALYTICS: 'communities/:communityId/analytics',
-  COMMUNITIES_HEALTH: 'communities/:communityId/health',
-  COMMUNITIES_ACTIVITY: 'communities/:communityId/activity',
-  COMMUNITIES_INSIGHTS: 'communities/:communityId/insights',
-  
-  // COMMUNITY MANAGEMENT - STRUCTURE & ORGANIZATION
-  COMMUNITIES_HIERARCHY: 'communities/:communityId/hierarchy',
-  COMMUNITIES_SUB_COMMUNITIES: 'communities/:communityId/sub-communities',
-  COMMUNITIES_SIMILAR: 'communities/:communityId/similar',
-  COMMUNITIES_EXPORT: 'communities/:communityId/export',
-  COMMUNITIES_GENERATE_REPORT: 'communities/:communityId/generate-report',
-  COMMUNITIES_DUPLICATE: 'communities/:communityId/duplicate',
-  COMMUNITIES_TEMPLATE: 'communities/:communityId/template',
-  
-  // COMMUNITY MANAGEMENT - USER INTERACTIONS
-  COMMUNITIES_BOOKMARK: 'communities/:communityId/bookmark',
-  COMMUNITIES_REMOVE_BOOKMARK: 'communities/:communityId/bookmark',
-  COMMUNITIES_FOLLOW: 'communities/:communityId/follow',
-  COMMUNITIES_UNFOLLOW: 'communities/:communityId/follow',
-  COMMUNITIES_REPORT: 'communities/:communityId/report',
-  COMMUNITIES_VERIFY_INSTITUTIONAL: 'communities/:communityId/verify-institutional',
-  
-  // COMMUNITY MANAGEMENT - FEED CONFIGURATION
-  COMMUNITIES_FEED_CONFIG: 'communities/:communityId/feed-config',
-  COMMUNITIES_FEED_CONFIG_UPDATE: 'communities/:communityId/feed-config',
-  
-  // COMMUNITY POSTS - CORE OPERATIONS
-  COMMUNITY_POSTS: 'communities/:communityId/posts',
-  COMMUNITY_POST_CREATE: 'communities/:communityId/posts',
-  COMMUNITY_POST_DETAILS: 'communities/:communityId/posts/:postId',
-  COMMUNITY_POST_UPDATE: 'communities/:communityId/posts/:postId',
-  COMMUNITY_POST_DELETE: 'communities/:communityId/posts/:postId',
-  COMMUNITY_POST_SEARCH: 'communities/:communityId/posts/search',
-  
-  // COMMUNITY POSTS - MEDIA & UPLOADS
-  COMMUNITY_POSTS_UPLOAD_MEDIA: 'communities/:communityId/posts/upload-media',
-  
-  // COMMUNITY POSTS - POST TYPES
-  COMMUNITY_POSTS_POLL: 'communities/:communityId/posts/poll',
-  COMMUNITY_POSTS_EVENT: 'communities/:communityId/posts/event',
-  COMMUNITY_POSTS_ANNOUNCEMENT: 'communities/:communityId/posts/announcement',
-  COMMUNITY_POSTS_SCHEDULE: 'communities/:communityId/posts/schedule',
-  
-  // COMMUNITY POSTS - MODERATION & MANAGEMENT
-  COMMUNITY_POSTS_PIN: 'communities/:communityId/posts/:postId/pin',
-  COMMUNITY_POSTS_FEATURE: 'communities/:communityId/posts/:postId/feature',
-  COMMUNITY_POSTS_BULK_PIN: 'communities/:communityId/posts/bulk-pin',
-  COMMUNITY_POSTS_BULK_DELETE: 'communities/:communityId/posts/bulk-delete',
-  
-  // COMMUNITY POSTS - ANALYTICS
-  COMMUNITY_POSTS_ANALYTICS: 'communities/:communityId/posts/:postId/analytics',
-  COMMUNITY_POSTS_CONTENT_OVERVIEW: 'communities/:communityId/posts/content-overview',
-  
-  // COMMUNITY POSTS - ENCRYPTION
-  COMMUNITY_POSTS_TEST_ENCRYPTION: 'communities/test-encryption',
-  COMMUNITY_POSTS_ENCRYPTION_STATUS: 'communities/:communityId/posts/:postId/encryption-status',
-  COMMUNITY_POSTS_ENCRYPTION_STATS: 'communities/:communityId/posts/encryption-stats',
-  COMMUNITY_POSTS_MIGRATE_ENCRYPTION: 'communities/:communityId/posts/migrate-encryption',
-  
-  // COMMUNITY INTERACTIONS - POST INTERACTIONS
-  COMMUNITY_POST_VOTE: 'communities/:communityId/posts/:postId/vote',
-  COMMUNITY_POST_COMMENTS: 'communities/:communityId/posts/:postId/comments',
-  COMMUNITY_POST_POLL_VOTE: 'communities/:communityId/posts/:postId/poll/vote',
-  COMMUNITY_POST_EVENT_RSVP: 'communities/:communityId/posts/:postId/event/rsvp',
-  COMMUNITY_POST_SHARE: 'communities/:communityId/posts/:postId/share',
-  COMMUNITY_POST_BOOKMARK: 'communities/:communityId/posts/:postId/bookmark',
-  COMMUNITY_POST_REPORT: 'communities/:communityId/posts/:postId/report',
-  COMMUNITY_POST_INTERACTIONS: 'communities/:communityId/posts/:postId/interactions',
-  
-  // COMMUNITY MEMBERS - CORE OPERATIONS
-  COMMUNITY_MEMBERS: 'communities/:communityId/members',
-  COMMUNITY_MEMBERS_JOIN: 'communities/:communityId/members/join',
-  COMMUNITY_MEMBERS_LEAVE: 'communities/:communityId/members/leave',
-  COMMUNITY_MEMBER_DETAILS: 'communities/:communityId/members/:memberId',
-  COMMUNITY_MEMBERS_SEARCH: 'communities/:communityId/members/search',
-  COMMUNITY_MEMBERS_EXPORT: 'communities/:communityId/members/export',
-  
-  // COMMUNITY MEMBERS - INVITATIONS & REQUESTS
-  COMMUNITY_MEMBERS_INVITE: 'communities/:communityId/members/invite',
-  
-  // COMMUNITY MEMBERS - ROLE MANAGEMENT
-  COMMUNITY_MEMBER_UPDATE_ROLE: 'communities/:communityId/members/:memberId/role',
-  COMMUNITY_MEMBER_UPDATE_IMPACT_POINTS: 'communities/:communityId/members/:memberId/impact-points',
-  
-  // COMMUNITY MEMBERS - ANALYTICS & LEADERBOARD
-  COMMUNITY_MEMBER_ANALYTICS: 'communities/:communityId/members/:memberId/analytics',
-  COMMUNITY_LEADERBOARD: 'communities/:communityId/leaderboard',
-  
-  // COMMUNITY MEMBERS - BULK OPERATIONS
-  COMMUNITY_MEMBERS_BULK: 'communities/:communityId/members/bulk',
-  
-  // COMMUNITY MEMBERS - MODERATION
-  COMMUNITY_MEMBER_SUSPEND: 'communities/:communityId/members/:userId/suspend',
-  COMMUNITY_MEMBER_BAN: 'communities/:communityId/members/:userId/ban',
-  
-  // COMMUNITY MEMBERS - NOTIFICATIONS
-  COMMUNITY_MEMBERS_NOTIFICATIONS: 'communities/:communityId/members/notifications',
-  
-  // COMMUNITY MODERATION - CONTENT MODERATION
-  COMMUNITY_MODERATION_CONTENT: 'communities/:communityId/moderation/content',
-  COMMUNITY_MODERATION_USER_BAN: 'communities/:communityId/moderation/users/:userId/ban',
-  COMMUNITY_MODERATION_AUTO_MODERATE: 'communities/:communityId/moderation/auto-moderate',
-  COMMUNITY_MODERATION_QUEUE: 'communities/:communityId/moderation/queue',
-  COMMUNITY_MODERATION_SETTINGS: 'communities/:communityId/moderation/settings',
-  
-  // COMMUNITY MODERATION - APPEALS
-  COMMUNITY_MODERATION_APPEAL_REVIEW: 'communities/:communityId/moderation/appeals/:appealId/review',
-  
-  // COMMUNITY NOTIFICATIONS - CORE
-  COMMUNITY_NOTIFICATIONS_CREATE: 'communities/:communityId/notifications',
-  COMMUNITY_NOTIFICATIONS: 'communities/:communityId/notifications',
-  COMMUNITY_NOTIFICATION_UPDATE: 'communities/:communityId/notifications/:notificationId',
-  COMMUNITY_NOTIFICATIONS_PREFERENCES: 'communities/:communityId/notifications/preferences',
-  COMMUNITY_NOTIFICATIONS_DIGEST: 'communities/:communityId/notifications/digest',
-  
-  // COMMUNITY REQUESTS - REQUEST MANAGEMENT
-  COMMUNITY_REQUESTS_CREATE: 'communities/:communityId/requests',
-  COMMUNITY_REQUESTS_PROCESS: 'communities/:communityId/requests/:requestId/process',
-  COMMUNITY_REQUESTS_BULK_INVITE: 'communities/:communityId/requests/bulk-invite',
-  COMMUNITY_REQUESTS_QUEUE: 'communities/:communityId/requests/queue',
-  COMMUNITY_REQUESTS_CANCEL: 'communities/:communityId/requests/:requestId',
-  COMMUNITY_REQUESTS_HISTORY: 'communities/:communityId/requests/history',
-  COMMUNITY_REQUESTS_AUTO_PROCESS: 'communities/:communityId/requests/auto-process',
-  
-  // COMMUNITY SETTINGS - CONFIGURATION
-  COMMUNITY_SETTINGS: 'communities/:communityId/settings',
-  COMMUNITY_SETTINGS_UPDATE: 'communities/:communityId/settings',
-  COMMUNITY_SETTINGS_AUTOMATION: 'communities/:communityId/settings/automation',
-  COMMUNITY_SETTINGS_INTEGRATIONS: 'communities/:communityId/settings/integrations',
-  
+  // -- Community Membership --
+  COMMUNITY_JOIN: 'communities/:communityId/join', // POST
+  COMMUNITY_LEAVE: 'communities/:communityId/leave', // POST
+  COMMUNITY_MEMBERS: 'communities/:communityId/members', // GET
+  COMMUNITY_UPDATE_MEMBER_ROLE: 'communities/:communityId/members/:memberId/role', // POST
+  COMMUNITY_REMOVE_MEMBER: 'communities/:communityId/members/:memberId', // DELETE
+
+  // -- Join Requests (For Admins) --
+  COMMUNITY_LIST_JOIN_REQUESTS: 'communities/:communityId/requests', // GET
+  COMMUNITY_RESPOND_JOIN_REQUEST: 'communities/:communityId/requests/:requestId/respond', // POST
+
+  // -- Content Management (Posts, Polls, Events) --
+  COMMUNITY_CREATE_POST: 'communities/:communityId/posts', // POST (for all post types)
+  COMMUNITY_GET_FEED: 'communities/:communityId/posts/feed', // GET
+  COMMUNITY_GET_POST: 'communities/:communityId/posts/', // GET with /:postId
+  COMMUNITY_UPDATE_POST: 'communities/:communityId/posts/', // PUT with /:postId
+  COMMUNITY_DELETE_POST: 'communities/:communityId/posts/', // DELETE with /:postId
+
+  // -- User Interactions on Content --
+  COMMUNITY_POST_LIKE: 'communities/:communityId/posts/:postId/like', // POST
+  COMMUNITY_POST_COMMENT: 'communities/:communityId/posts/:postId/comments', // POST
+  COMMUNITY_POLL_VOTE: 'communities/:communityId/posts/:postId/poll/vote', // POST
+  COMMUNITY_EVENT_RSVP: 'communities/:communityId/posts/:postId/event/rsvp', // POST
+  COMMUNITY_POST_SAVE: 'communities/:communityId/posts/:postId/save', // POST
+  COMMUNITY_POST_SHARE: 'communities/:communityId/posts/:postId/share', // POST
+
+  // -- Administration & Analytics --
+  COMMUNITY_UPDATE_SETTINGS: 'communities/:communityId/settings', // PUT
+  COMMUNITY_ANALYTICS: 'communities/:communityId/analytics', // GET
+  PLATFORM_ANALYTICS: 'analytics/platform', // GET (For Super Admins)
+
+  // -- File & Media Uploads --
+  FILE_UPLOAD: 'upload', // POST
+  FILE_DETAILS: 'files/', // GET with /:fileId
+  FILE_DELETE: 'files/', // DELETE with /:fileId
   
 };

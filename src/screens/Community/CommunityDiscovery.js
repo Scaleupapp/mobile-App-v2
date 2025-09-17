@@ -1,1754 +1,941 @@
-// src/screens/Community/CommunityDiscovery.js
-/**
- * Community Discovery Screen - Reddit x Discord Design
- * Matches the hybrid design language from CommunityHome
- * Enhanced with comprehensive API logging
- */
-
-import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  View,
-  RefreshControl,
   ActivityIndicator,
   FlatList,
-  TouchableOpacity,
-  Dimensions,
-  Platform,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
   TextInput,
-  Alert,
-  Image,
-  ScrollView,
-  Pressable,
-  Modal,
-  Vibration,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSpring,
-  withSequence,
-  Easing,
-  FadeIn,
-  FadeInDown,
-  FadeInUp,
-  Layout,
-  interpolate,
-  runOnJS,
-} from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import {BlurView} from '@react-native-community/blur';
-import Slider from '@react-native-community/slider';
-import Voice from '@react-native-voice/voice';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import {COLORS} from '../../helper/colors';
-import {DEVICE_HEIGHT, DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import MainHeader from '../../components/MainHeader';
-import Text from '../../components/Text';
-import {
-  searchCommunitiesApi,
-  getCommunitiesApi,
-  getCommunityTypesApi,
-  getCommunityCategoriesApi,
-  getCommunityDetailsApi,
-  getCommunityLocationApi,
-  getInstitutionalSuggestionsApi,
-  bookmarkCommunityApi,
-  removeBookmarkCommunityApi,
-  joinCommunityApi,
-  getTrendingCommunitiesApi,
-  getFeaturedCommunitiesApi,
-  getCommunityPreviewApi,
-} from '../../services/apiService';
-import {useDispatch, useSelector} from 'react-redux';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import Feather from 'react-native-vector-icons/Feather';
-import Entypo from 'react-native-vector-icons/Entypo';
-import mixpanel from '../../helper/mixpanelClient';
+
+import Text from '../../components/Text';
+import {COLORS} from '../../helper/colors';
+import {nh, nw} from '../../helper/scales';
+import {listAllCommunitiesApi, searchCommunitiesApi} from '../../services/apiService';
+import {throttle} from '../../helper/commonFunctions';
 import Routes from '../../helper/routes';
 
-const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+const PAGE_SIZE = 10;
 
-// ===============================
-// REDDIT + DISCORD COLOR SYSTEM (Matching Homepage)
-// ===============================
-const REDDIT_DISCORD_COLORS = {
-  // Reddit Colors
-  redditOrange: '#FF4500',
-  redditOrangeLight: '#FF5700',
-  upvote: '#FF4500',
-  downvote: '#7193FF',
-  
-  // Discord Colors
-  blurple: '#5865F2',
-  blurpleLight: '#7289DA',
-  discordGreen: '#3BA55C',
-  discordYellow: '#FAA61A',
-  discordRed: '#ED4245',
-  
-  // Hybrid Dark Theme
-  background: '#0E0E10',
-  backgroundSecondary: '#1A1A1B',
-  surface: '#272729',
-  surfaceHover: '#343536',
-  elevated: '#2F3136',
-  
-  // Text Hierarchy
-  text: '#D7DADC',
-  textBright: '#FFFFFF',
-  textMuted: '#818384',
-  textDim: '#565758',
-  
-  // Borders
-  border: '#343536',
-  borderLight: '#474748',
-  divider: '#343536',
-  
-  // Status Colors
-  online: '#3BA55C',
-  idle: '#FAA61A',
-  dnd: '#ED4245',
-  offline: '#747F8D',
-  
-  // Interaction States
-  hover: 'rgba(255, 255, 255, 0.08)',
-  pressed: 'rgba(255, 255, 255, 0.04)',
-  selected: 'rgba(88, 101, 242, 0.15)',
+const SORT_OPTIONS = [
+  {key: 'recommended', label: 'Featured'},
+  {key: 'popular', label: 'Most members'},
+  {key: 'newest', label: 'Newest'},
+  {key: 'alphabetical', label: 'A-Z'},
+];
+
+const PALETTE = {
+  background: COLORS.greyF7F7F7,
+  card: COLORS.whiteFFFFFF,
+  primary: COLORS.blue043142,
+  muted: COLORS.grey777777,
+  subtle: COLORS.grey999999,
+  border: COLORS.greyEEEEEE,
+  accent: COLORS.yellowF5BE00,
 };
 
-// ===============================
-// COMPREHENSIVE API LOGGER
-// ===============================
-const APILogger = {
-  log: (apiName, phase, data) => {
-    const timestamp = new Date().toISOString();
-    const logColor = phase === 'SUCCESS' ? '\x1b[32m' : phase === 'ERROR' ? '\x1b[31m' : '\x1b[33m';
-    const resetColor = '\x1b[0m';
-    
-    console.log(`${logColor}[${timestamp}] DISCOVERY API: ${apiName} - ${phase}${resetColor}`);
-    
-    if (data) {
-      console.log('📦 Data:', JSON.stringify(data, null, 2));
-    }
-    
-    if (__DEV__) {
-      console.log('=====================================');
-    }
-  },
-  
-  logRequest: (apiName, params) => {
-    console.log(`\n🔍 DISCOVERY REQUEST: ${apiName}`);
-    console.log('📤 Parameters:', params);
-    console.log('🕐 Time:', new Date().toLocaleTimeString());
-  },
-  
-  logResponse: (apiName, response) => {
-    console.log(`\n✅ DISCOVERY RESPONSE: ${apiName}`);
-    console.log('📥 Status:', response?.status);
-    console.log('📊 Success:', response?.data?.success);
-    
-    if (response?.data?.data) {
-      const data = response.data.data;
-      if (Array.isArray(data)) {
-        console.log('📋 Array Length:', data.length);
-        console.log('🔍 First Item:', data[0]);
-      } else if (data.communities) {
-        console.log('🏘️ Communities Count:', data.communities.length);
-        data.communities.forEach((comm, idx) => {
-          if (idx < 5) { // Log first 5
-            console.log(`  ${idx + 1}. ${comm.name} (ID: ${comm.id}, Members: ${comm.stats?.totalMembers})`);
-          }
-        });
-      } else {
-        console.log('📦 Data Structure:', Object.keys(data));
-      }
-    }
-    
-    console.log('🕐 Response Time:', new Date().toLocaleTimeString());
-  },
-  
-  logError: (apiName, error) => {
-    console.log(`\n❌ DISCOVERY ERROR: ${apiName}`);
-    console.log('💥 Error Message:', error?.message);
-    console.log('📛 Error Code:', error?.code);
-    console.log('🔍 Error Response:', error?.response?.data);
-    console.log('📚 Stack Trace:', error?.stack);
-  },
-  
-  logUserAction: (action, data) => {
-    console.log(`\n👤 USER ACTION: ${action}`);
-    console.log('🎯 Action Data:', data);
-    console.log('🕐 Time:', new Date().toLocaleTimeString());
-    
-    // Track with Mixpanel
-    mixpanel.track(action, {
-      ...data,
-      timestamp: new Date().toISOString(),
-      screen: 'CommunityDiscovery',
-    });
+const formatNumber = (value) => {
+  const num = Number(value || 0);
+  if (!num) {
+    return '0';
   }
+  if (num >= 1_000_000) {
+    return `${(num / 1_000_000).toFixed(1)}M`;
+  }
+  if (num >= 1_000) {
+    return `${(num / 1_000).toFixed(1)}k`;
+  }
+  return `${num}`;
 };
 
-// ===============================
-// UTILITY FUNCTIONS
-// ===============================
-const formatNumber = (num) => {
-  if (!num) return '0';
-  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-  if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
-  return num.toString();
+const extractArray = (payload) => {
+  if (!payload) {
+    return [];
+  }
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (Array.isArray(payload.communities)) {
+    return payload.communities;
+  }
+  if (Array.isArray(payload.items)) {
+    return payload.items;
+  }
+  if (Array.isArray(payload.results)) {
+    return payload.results;
+  }
+  if (Array.isArray(payload.data)) {
+    return payload.data;
+  }
+  return [];
 };
 
-const getRelativeTime = (date) => {
-  if (!date) return 'Never';
-  const now = new Date();
-  const past = new Date(date);
-  const diffMs = now - past;
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 30) return `${diffDays}d ago`;
-  return past.toLocaleDateString();
+const parseCommunityResponse = (response, pageParam) => {
+  const root = response?.data ?? {};
+  const dataSection = root?.data ?? root;
+  const communities = extractArray(dataSection).length
+    ? extractArray(dataSection)
+    : extractArray(root);
+
+  const pagination =
+    dataSection?.pagination ||
+    root?.pagination ||
+    dataSection?.meta ||
+    {};
+
+  const explicitHasMore =
+    pagination?.hasMore ??
+    pagination?.has_more ??
+    pagination?.hasNext ??
+    pagination?.has_next;
+
+  const nextPageValue =
+    pagination?.nextPage ??
+    pagination?.next_page ??
+    (typeof pagination?.page === 'number' && typeof pagination?.totalPages === 'number'
+      ? pagination.page < pagination.totalPages
+        ? pagination.page + 1
+        : null
+      : null);
+
+  const fallbackHasMore = communities.length >= PAGE_SIZE;
+
+  return {
+    communities,
+    hasMore:
+      typeof explicitHasMore === 'boolean' ? explicitHasMore : nextPageValue != null ? true : fallbackHasMore,
+    nextPage: nextPageValue ?? (fallbackHasMore ? pageParam + 1 : null),
+  };
 };
 
-const getActivityStatus = (lastActive) => {
-  if (!lastActive) return 'offline';
-  const now = new Date();
-  const lastActiveDate = new Date(lastActive);
-  const diffMinutes = Math.floor((now - lastActiveDate) / 60000);
-  
-  if (diffMinutes < 5) return 'online';
-  if (diffMinutes < 30) return 'idle';
-  return 'offline';
-};
+const getCommunityId = (community) =>
+  community?.id || community?._id || community?.communityId || community?.slug || null;
 
-// ===============================
-// REDDIT-STYLE DISCOVERY CARD
-// ===============================
-// Update the RedditDiscoveryCard component (replace the existing one)
-const RedditDiscoveryCard = ({community, onPress, onJoin, onBookmark, isBookmarked, index = 0, currentUserId}) => {
-    const [isJoining, setIsJoining] = useState(false);
-    const [voteStatus, setVoteStatus] = useState(null);
-    const scaleAnim = useSharedValue(1);
-    
-    // Check membership status
-    const isMember = community.isMember || community.userRole;
-    const isOwner = community.isOwner || (community.owner === currentUserId || community.createdBy === currentUserId);
-    const isAdmin = community.isAdmin;
-    const isModerator = community.isModerator;
-    
-    // Determine button text and action based on privacy
-    const getJoinButtonConfig = () => {
-      if (isMember) {
-        return null; // Don't show join button if already a member
+const mergeUniqueCommunities = (existing, incoming) => {
+  if (!incoming?.length) {
+    return existing;
+  }
+  const seen = new Set(existing.map((item) => getCommunityId(item) || `existing-${Math.random()}`));
+  const merged = [...existing];
+  incoming.forEach((item) => {
+    const id = getCommunityId(item);
+    if (id) {
+      if (!seen.has(id)) {
+        seen.add(id);
+        merged.push(item);
       }
-      
-      switch (community.privacy) {
-        case 'public':
-        case 'open':
-          return { text: 'Join', action: 'join' };
-        case 'protected':
-        case 'approval_required':
-          return { text: 'Request', action: 'request' };
-        case 'private':
-        case 'invite_only':
-          return { text: 'Private', action: 'private', disabled: true };
-        case 'domain_restricted':
-          return { text: 'Join', action: 'join' }; // If user can see it, they likely have access
-        default:
-          return { text: 'Join', action: 'join' };
-      }
-    };
-    
-    const joinButtonConfig = getJoinButtonConfig();
-    
-    const handleJoin = async (e) => {
-      e?.stopPropagation();
-      if (isJoining || !joinButtonConfig || joinButtonConfig.disabled) return;
-      
-      setIsJoining(true);
-      scaleAnim.value = withSequence(
-        withTiming(0.95, {duration: 100}),
-        withSpring(1)
-      );
-      
-      try {
-        await onJoin?.(community, joinButtonConfig.action);
-      } finally {
-        setIsJoining(false);
-      }
-    };
-    
-    const handleVote = (type) => {
-      setVoteStatus(voteStatus === type ? null : type);
-      Vibration.vibrate(10);
-    };
-    
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{scale: scaleAnim.value}],
-    }));
-    
-    // Fix: Use correct field names from API
-    const karmaCount = community.stats?.postCount || 0;
-    const memberCount = formatNumber(community.stats?.memberCount || 0);
-    const isVerified = community.isVerified || community.verificationStatus === 'verified';
-    const activityStatus = getActivityStatus(community.stats?.lastActivity);
-    
+    } else {
+      merged.push(item);
+    }
+  });
+  return merged;
+};
+
+const getName = (community) =>
+  community?.name || community?.title || community?.displayName || 'Community';
+
+const getSummary = (community) =>
+  community?.tagline ||
+  community?.shortDescription ||
+  community?.description ||
+  community?.about ||
+  'Stay tuned for updates from this community.';
+
+const getMembersCount = (community) =>
+  community?.stats?.memberCount ??
+  community?.memberCount ??
+  community?.membersCount ??
+  community?.members ??
+  0;
+
+const getCategoryLabel = (community) => {
+  const labels =
+    community?.categories ||
+    community?.topics ||
+    community?.tags ||
+    community?.labels;
+  if (Array.isArray(labels) && labels.length > 0) {
+    return labels[0];
+  }
+  return community?.category || community?.type || null;
+};
+
+const getScheduleLabel = (community) =>
+  community?.meeting ||
+  community?.meetingTime ||
+  community?.meetingSchedule ||
+  community?.nextEvent ||
+  community?.nextMeetup ||
+  community?.schedule ||
+  community?.upcomingEvent ||
+  '';
+
+const getCreatedAtValue = (community) => {
+  const raw =
+    community?.createdAt ||
+    community?.created_at ||
+    community?.createdOn ||
+    community?.meta?.createdAt ||
+    community?.updatedAt ||
+    null;
+  if (!raw) {
+    return 0;
+  }
+  const timestamp = new Date(raw).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+// Floating Action Button Component
+const FloatingActionButton = ({onPress}) => (
+  <TouchableOpacity 
+    style={styles.fab} 
+    onPress={onPress}
+    activeOpacity={0.9}
+  >
+    <LinearGradient 
+      colors={['#0B3E56', '#0F6476']} 
+      style={styles.fabGradient}
+    >
+      <Icon name="add" size={nw(24)} color={COLORS.whiteFFFFFF} />
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
+const HeroBanner = ({community, onPress, loading}) => {
+  if (loading) {
     return (
-      <Animated.View 
-        entering={FadeInDown.delay(index * 50).springify()}
-        style={[styles.redditCard, animatedStyle]}
-      >
-        <Pressable 
-          onPress={() => onPress?.(community)} 
-          style={styles.redditCardPressable}
-          onPressIn={() => {scaleAnim.value = withTiming(0.98, {duration: 100})}}
-          onPressOut={() => {scaleAnim.value = withSpring(1)}}
-        >
-          {/* Upvote Section */}
-          <View style={styles.voteSection}>
-            <TouchableOpacity 
-              onPress={() => handleVote('up')}
-              style={styles.voteButton}
-            >
-              <Icon 
-                name="arrow-up" 
-                size={20} 
-                color={voteStatus === 'up' ? REDDIT_DISCORD_COLORS.upvote : REDDIT_DISCORD_COLORS.textDim} 
-              />
-            </TouchableOpacity>
-            <Text style={[
-              styles.karmaCount,
-              voteStatus === 'up' && styles.karmaUp,
-              voteStatus === 'down' && styles.karmaDown
-            ]}>
-              {formatNumber(karmaCount)}
-            </Text>
-            <TouchableOpacity 
-              onPress={() => handleVote('down')}
-              style={styles.voteButton}
-            >
-              <Icon 
-                name="arrow-down" 
-                size={20} 
-                color={voteStatus === 'down' ? REDDIT_DISCORD_COLORS.downvote : REDDIT_DISCORD_COLORS.textDim} 
-              />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Content Section */}
-          <View style={styles.redditContent}>
-            {/* Header with Community Info */}
-            <View style={styles.redditHeader}>
-              <View style={styles.communityAvatarContainer}>
-                {community.coverImage ? (
-                  <Image source={{uri: community.coverImage}} style={styles.communityAvatar} />
-                ) : (
-                  <LinearGradient
-                    colors={[REDDIT_DISCORD_COLORS.blurple, REDDIT_DISCORD_COLORS.blurpleLight]}
-                    style={styles.communityAvatarPlaceholder}
-                  >
-                    <Text style={styles.avatarText}>
-                      {community.name.charAt(0).toUpperCase()}
-                    </Text>
-                  </LinearGradient>
-                )}
-                <View style={[styles.activityDot, styles[`${activityStatus}Status`]]} />
-              </View>
-              
-              <View style={styles.headerInfo}>
-                <View style={styles.headerTop}>
-                  <Text style={styles.subredditName}>r/{community.name.toLowerCase().replace(/\s+/g, '')}</Text>
-                  {isVerified && (
-                    <MaterialIcons name="verified" size={14} color={REDDIT_DISCORD_COLORS.blurple} />
-                  )}
-                  {/* Show ownership/role badges */}
-                  {isOwner && (
-                    <View style={styles.ownerBadge}>
-                      <Text style={styles.ownerBadgeText}>OWNER</Text>
-                    </View>
-                  )}
-                  {!isOwner && isAdmin && (
-                    <View style={styles.adminBadge}>
-                      <Text style={styles.adminBadgeText}>ADMIN</Text>
-                    </View>
-                  )}
-                  {!isOwner && !isAdmin && isModerator && (
-                    <View style={styles.modBadge}>
-                      <Text style={styles.modBadgeText}>MOD</Text>
-                    </View>
-                  )}
-                </View>
-                <View style={styles.headerMeta}>
-                  <Text style={styles.memberCount}>{memberCount} members</Text>
-                  <Text style={styles.dotSeparator}>•</Text>
-                  <Text style={styles.postTime}>{getRelativeTime(community.createdAt)}</Text>
-                  {isMember && (
-                    <>
-                      <Text style={styles.dotSeparator}>•</Text>
-                      <Text style={styles.joinedText}>Joined</Text>
-                    </>
-                  )}
-                </View>
-              </View>
-              
-              {/* Action Buttons */}
-              <View style={styles.headerActions}>
-                <TouchableOpacity 
-                  style={styles.bookmarkButton}
-                  onPress={() => onBookmark?.(community)}
-                >
-                  <Icon 
-                    name={isBookmarked ? "bookmark" : "bookmark-outline"} 
-                    size={18} 
-                    color={isBookmarked ? REDDIT_DISCORD_COLORS.discordYellow : REDDIT_DISCORD_COLORS.textMuted} 
-                  />
-                </TouchableOpacity>
-                
-                {joinButtonConfig && (
-                  <TouchableOpacity 
-                    style={[
-                      styles.joinChip,
-                      joinButtonConfig.action === 'request' && styles.requestChip,
-                      joinButtonConfig.disabled && styles.disabledChip
-                    ]}
-                    onPress={handleJoin}
-                    disabled={isJoining || joinButtonConfig.disabled}
-                  >
-                    {isJoining ? (
-                      <ActivityIndicator size="small" color={REDDIT_DISCORD_COLORS.textBright} />
-                    ) : (
-                      <>
-                        {joinButtonConfig.action !== 'private' && (
-                          <Icon 
-                            name={joinButtonConfig.action === 'request' ? "mail-outline" : "add"} 
-                            size={14} 
-                            color={REDDIT_DISCORD_COLORS.textBright} 
-                          />
-                        )}
-                        <Text style={styles.joinChipText}>{joinButtonConfig.text}</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                )}
-                
-                {isMember && (
-                  <View style={styles.memberChip}>
-                    <Icon name="checkmark-circle" size={14} color={REDDIT_DISCORD_COLORS.discordGreen} />
-                    <Text style={styles.memberChipText}>Member</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-            
-            {/* Title */}
-            <Text style={styles.communityTitle} numberOfLines={2}>
-              {community.name}
-            </Text>
-            
-            {/* Description */}
-            {community.description && (
-              <Text style={styles.communityDescription} numberOfLines={3}>
-                {community.description}
-              </Text>
-            )}
-            
-            {/* Tags */}
-            <View style={styles.tagContainer}>
-              {community.category && (
-                <View style={[styles.categoryTag, {backgroundColor: REDDIT_DISCORD_COLORS.blurple + '20'}]}>
-                  <Text style={styles.tagText}>{community.category}</Text>
-                </View>
-              )}
-              {community.type && (
-                <View style={[styles.typeTag, {backgroundColor: REDDIT_DISCORD_COLORS.elevated}]}>
-                  <Text style={styles.tagText}>{community.type}</Text>
-                </View>
-              )}
-              {community.stats?.activeWeeklyUsers > 10 && (
-                <View style={[styles.activityTag, {backgroundColor: REDDIT_DISCORD_COLORS.discordGreen + '20'}]}>
-                  <Text style={styles.tagText}>🔥 Active</Text>
-                </View>
-              )}
-              {community.privacy === 'private' && (
-                <View style={[styles.privacyTag, {backgroundColor: REDDIT_DISCORD_COLORS.discordRed + '20'}]}>
-                  <Icon name="lock-closed" size={10} color={REDDIT_DISCORD_COLORS.discordRed} />
-                  <Text style={[styles.tagText, {color: REDDIT_DISCORD_COLORS.discordRed}]}>Private</Text>
-                </View>
-              )}
-            </View>
-            
-            {/* Footer Actions */}
-            <View style={styles.redditFooter}>
-              <TouchableOpacity style={styles.footerAction}>
-                <Icon name="chatbubble-outline" size={16} color={REDDIT_DISCORD_COLORS.textMuted} />
-                <Text style={styles.footerText}>{formatNumber(community.stats?.postCount || 0)} posts</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.footerAction}>
-                <Icon name="people-outline" size={16} color={REDDIT_DISCORD_COLORS.textMuted} />
-                <Text style={styles.footerText}>{formatNumber(community.stats?.activeWeeklyUsers || 0)} active</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.footerAction}>
-                <Icon name="share-outline" size={16} color={REDDIT_DISCORD_COLORS.textMuted} />
-                <Text style={styles.footerText}>Share</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={styles.footerAction}>
-                <Feather name="more-horizontal" size={16} color={REDDIT_DISCORD_COLORS.textMuted} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Pressable>
-      </Animated.View>
+      <LinearGradient colors={['#0B3E56', '#0F6476']} style={styles.heroGradient}>
+        <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
+      </LinearGradient>
     );
-  };
+  }
 
-// ===============================
-// FILTER CHIP COMPONENT
-// ===============================
-const FilterChip = ({label, icon, isActive, onPress, count}) => {
-  const scaleAnim = useSharedValue(1);
-  
-  const handlePress = () => {
-    scaleAnim.value = withSequence(
-      withTiming(0.9, {duration: 100}),
-      withSpring(1)
-    );
-    onPress();
-  };
-  
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{scale: scaleAnim.value}],
-  }));
-  
-  return (
-    <Animated.View style={animatedStyle}>
-      <TouchableOpacity
-        style={[styles.filterChip, isActive && styles.filterChipActive]}
-        onPress={handlePress}
-      >
-        {icon && (
-          <Icon 
-            name={icon} 
-            size={14} 
-            color={isActive ? REDDIT_DISCORD_COLORS.textBright : REDDIT_DISCORD_COLORS.textMuted} 
-          />
-        )}
-        <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-          {label}
+  if (!community) {
+    return (
+      <LinearGradient colors={['#0B3E56', '#0F6476']} style={styles.heroGradient}>
+        <Icon name="sparkles" size={nw(18)} color={COLORS.whiteFFFFFF} />
+        <Text style={styles.heroTitle}>No communities yet</Text>
+        <Text style={styles.heroSubtitle}>
+          New spaces will appear here as soon as students start creating them.
         </Text>
-        {count !== undefined && count > 0 && (
-          <View style={styles.filterChipBadge}>
-            <Text style={styles.filterChipBadgeText}>{count}</Text>
+      </LinearGradient>
+    );
+  }
+
+  const members = formatNumber(getMembersCount(community));
+  const label = getCategoryLabel(community);
+  const schedule = getScheduleLabel(community);
+
+  return (
+    <LinearGradient colors={['#0B3E56', '#0F6476']} style={styles.heroGradient}>
+      {label ? (
+        <View style={styles.heroPill}>
+          <Text style={styles.heroPillText}>#{label}</Text>
+        </View>
+      ) : null}
+      <Text style={styles.heroTitle}>{getName(community)}</Text>
+      <Text style={styles.heroSubtitle}>{getSummary(community)}</Text>
+      <View style={styles.heroStatsRow}>
+        <View style={styles.heroStatBadge}>
+          <Icon name="people" size={nw(16)} color={COLORS.whiteFFFFFF} />
+          <Text style={styles.heroStatLabel}>{members} members</Text>
+        </View>
+        {schedule ? (
+          <View style={styles.heroStatBadge}>
+            <Icon name="time-outline" size={nw(16)} color={COLORS.whiteFFFFFF} />
+            <Text style={styles.heroStatLabel} numberOfLines={1}>
+              {schedule}
+            </Text>
           </View>
-        )}
+        ) : null}
+      </View>
+      <TouchableOpacity style={styles.heroButton} onPress={() => onPress(community)} activeOpacity={0.85}>
+        <Text style={styles.heroButtonText}>Open community</Text>
+        <Icon name="arrow-forward" size={nw(16)} color={COLORS.whiteFFFFFF} />
       </TouchableOpacity>
-    </Animated.View>
+    </LinearGradient>
   );
 };
 
-// ===============================
-// MAIN DISCOVERY COMPONENT
-// ===============================
-const CommunityDiscovery = ({navigation, route}) => {
-  const dispatch = useDispatch();
-  const userData = useSelector(state => state?.userData);
-  
-  console.log('\n🚀 COMMUNITY DISCOVERY MOUNTED');
-  console.log('👤 User Data:', userData);
-  console.log('🛣️ Route Params:', route?.params);
-  
-  // ===============================
-  // STATE MANAGEMENT
-  // ===============================
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  
-  // Search & Filter States
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [voiceSearchActive, setVoiceSearchActive] = useState(false);
-  
-  // Filter States
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
-  const [sortBy, setSortBy] = useState('hot'); // hot, new, top, rising
-  const [showFilters, setShowFilters] = useState(false);
-  
-  // Data States
+const StatsStrip = ({totalCommunities, totalMembers, categoryCount}) => (
+  <View style={styles.statsStrip}>
+    <View style={styles.statItem}>
+      <Text style={styles.statValue}>{formatNumber(totalCommunities)}</Text>
+      <Text style={styles.statLabel}>communities</Text>
+    </View>
+    <View style={styles.statDivider} />
+    <View style={styles.statItem}>
+      <Text style={styles.statValue}>{formatNumber(totalMembers)}</Text>
+      <Text style={styles.statLabel}>collective members</Text>
+    </View>
+    <View style={styles.statDivider} />
+    <View style={styles.statItem}>
+      <Text style={styles.statValue}>{formatNumber(categoryCount)}</Text>
+      <Text style={styles.statLabel}>unique tags</Text>
+    </View>
+  </View>
+);
+
+const SortSelector = ({selected, onChange}) => (
+  <View style={styles.sortRow}>
+    <Text style={styles.sortLabel}>Sort by</Text>
+    <View style={styles.sortChipsContainer}>
+      {SORT_OPTIONS.map((option) => {
+        const isActive = option.key === selected;
+        return (
+          <TouchableOpacity
+            key={option.key}
+            style={[styles.sortChip, isActive && styles.sortChipActive]}
+            onPress={() => onChange(option.key)}
+            activeOpacity={0.8}>
+            <Text style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  </View>
+);
+
+const CommunityCard = React.memo(({community, onPress}) => {
+  const members = formatNumber(getMembersCount(community));
+  const label = getCategoryLabel(community);
+  const schedule = getScheduleLabel(community);
+
+  return (
+    <TouchableOpacity style={styles.communityCard} onPress={() => onPress(community)} activeOpacity={0.85}>
+      <View style={styles.communityHeaderRow}>
+        <View style={styles.communityAvatar}>
+          <Icon name="people" size={nw(20)} color={PALETTE.primary} />
+        </View>
+        <View style={styles.communityHeaderText}>
+          <Text style={styles.communityName} numberOfLines={1}>
+            {getName(community)}
+          </Text>
+          {label ? (
+            <Text style={styles.communityLabel}>#{label}</Text>
+          ) : null}
+        </View>
+        <Icon name="chevron-forward" size={nw(18)} color={PALETTE.muted} />
+      </View>
+      <Text style={styles.communitySummary} numberOfLines={2}>
+        {getSummary(community)}
+      </Text>
+      <View style={styles.communityMetaRow}>
+        <Icon name="people-circle" size={nw(16)} color={PALETTE.primary} />
+        <Text style={styles.communityMetaText}>{members} members</Text>
+        {schedule ? (
+          <>
+            <View style={styles.metaSeparator} />
+            <Icon name="time-outline" size={nw(16)} color={PALETTE.primary} />
+            <Text style={styles.communityMetaText} numberOfLines={1}>
+              {schedule}
+            </Text>
+          </>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+const SkeletonCard = () => (
+  <View style={styles.skeletonCard}>
+    <View style={styles.skeletonLineWide} />
+    <View style={styles.skeletonLine} />
+    <View style={styles.skeletonLine} />
+  </View>
+);
+
+// Updated EmptyState component with optional create button
+const EmptyState = ({icon = 'compass-outline', title, subtitle, showCreateButton, onCreatePress}) => (
+  <View style={styles.emptyState}>
+    <Icon name={icon} size={nw(36)} color={COLORS.greyBBBBBB} />
+    <Text style={styles.emptyTitle}>{title}</Text>
+    <Text style={styles.emptySubtitle}>{subtitle}</Text>
+    {showCreateButton && (
+      <TouchableOpacity 
+        style={styles.emptyCreateButton} 
+        onPress={onCreatePress}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.emptyCreateButtonText}>Create First Community</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
+const CommunityDiscovery = ({navigation}) => {
   const [communities, setCommunities] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [communityTypes, setCommunityTypes] = useState([]);
-  const [bookmarkedCommunities, setBookmarkedCommunities] = useState(new Set());
-  
-  // Pagination
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  
-  // Animation Values
-  const searchScale = useSharedValue(1);
-  const filterHeight = useSharedValue(0);
-  
-  // Refs
-  const searchTimeoutRef = useRef(null);
-  const flatListRef = useRef(null);
-  
-  // ===============================
-  // LIFECYCLE & INITIALIZATION
-  // ===============================
-  useEffect(() => {
-    console.log('\n🔄 DISCOVERY INITIALIZATION STARTED');
-    APILogger.logUserAction('Discovery Screen Opened', {
-      source: route?.params?.source || 'direct',
-      user_id: userData?.id,
-    });
-    
-    initializeDiscovery();
-    setupVoiceSearch();
-    loadUserPreferences();
-    
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [searchApplied, setSearchApplied] = useState('');
+  const [sortOption, setSortOption] = useState('recommended');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const fetchCommunities = useCallback(
+    async ({pageParam = 1, replace = false} = {}) => {
+      if (replace) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
       }
-      Voice.destroy().then(Voice.removeAllListeners);
-    };
-  }, []);
-  
-  useEffect(() => {
-    if (searchQuery) {
-      handleDebouncedSearch();
-    } else {
-      setSearchResults([]);
-    }
-  }, [searchQuery]);
-  
-  useEffect(() => {
-    console.log(`\n🔄 Filters Changed - Categories: ${selectedCategories.length}, Types: ${selectedTypes.length}`);
-    if (selectedCategories.length || selectedTypes.length) {
-      performSearch(searchQuery || '', true);
-    }
-  }, [selectedCategories, selectedTypes]);
-  
-  useEffect(() => {
-    console.log(`\n🔄 Sort Changed to: ${sortBy}`);
-    performSearch(searchQuery || '', true);
-  }, [sortBy]);
-  
-  const initializeDiscovery = async () => {
-    console.log('\n📊 INITIALIZING DISCOVERY DATA...');
-    setInitialLoading(true);
-    
-    try {
-      const promises = [
-        fetchCategories(),
-        fetchCommunityTypes(),
-        fetchInitialCommunities(),
-      ];
-      
-      const results = await Promise.all(promises);
-      console.log('\n✅ DISCOVERY INITIALIZATION COMPLETE');
-      console.log('📊 Summary:', {
-        categories: categories.length,
-        types: communityTypes.length,
-        communities: communities.length,
-      });
-    } catch (error) {
-      console.error('\n❌ DISCOVERY INITIALIZATION FAILED:', error);
-    } finally {
-      setInitialLoading(false);
-    }
-  };
-  
-  const setupVoiceSearch = async () => {
-    try {
-      Voice.onSpeechStart = () => {
-        console.log('🎤 Voice search started');
-        setVoiceSearchActive(true);
-        searchScale.value = withSpring(1.1);
-      };
-      
-      Voice.onSpeechEnd = () => {
-        console.log('🎤 Voice search ended');
-        setVoiceSearchActive(false);
-        searchScale.value = withSpring(1);
-      };
-      
-      Voice.onSpeechResults = (e) => {
-        const spokenText = e.value[0];
-        console.log('🎤 Voice result:', spokenText);
-        setSearchQuery(spokenText);
-      };
-      
-      Voice.onSpeechError = (e) => {
-        console.log('🎤 Voice error:', e);
-        setVoiceSearchActive(false);
-        searchScale.value = withSpring(1);
-      };
-    } catch (error) {
-      console.log('🎤 Voice setup error:', error);
-    }
-  };
-  
-  const loadUserPreferences = async () => {
-    try {
-      const bookmarks = await AsyncStorage.getItem('discovery_bookmarks');
-      if (bookmarks) {
-        setBookmarkedCommunities(new Set(JSON.parse(bookmarks)));
-        console.log('📚 Loaded bookmarks:', JSON.parse(bookmarks).length);
-      }
-    } catch (error) {
-      console.log('📚 Preferences loading error:', error);
-    }
-  };
-  
-  // ===============================
-  // API FUNCTIONS WITH LOGGING
-  // ===============================
-  const fetchCategories = async () => {
-    const apiName = 'getCommunityCategories';
-    const params = {includeCount: true, sortBy: 'popularity'};
-    
-    APILogger.logRequest(apiName, params);
-    
-    try {
-      const response = await getCommunityTypesApi(params);
-      APILogger.logResponse(apiName, response);
-      
-      if (response?.data?.success) {
-        const categoriesData = response.data.data?.categories || [];
-        setCategories(categoriesData);
-        console.log(`✅ Fetched ${categoriesData.length} categories`);
-        return categoriesData;
-      }
-    } catch (error) {
-      APILogger.logError(apiName, error);
-    }
-    return [];
-  };
-  
-  const fetchCommunityTypes = async () => {
-    const apiName = 'getCommunityTypes';
-    const params = {};
-    
-    APILogger.logRequest(apiName, params);
-    
-    try {
-      const response = await getCommunityTypesApi(params);
-      APILogger.logResponse(apiName, response);
-      
-      if (response?.data?.success) {
-        const typesData = response.data.data?.types || [
-          {id: 'public', name: 'Public', icon: 'globe-outline'},
-          {id: 'private', name: 'Private', icon: 'lock-closed-outline'},
-          {id: 'restricted', name: 'Restricted', icon: 'shield-outline'},
-        ];
-        setCommunityTypes(typesData);
-        console.log(`✅ Fetched ${typesData.length} community types`);
-        return typesData;
-      }
-    } catch (error) {
-      APILogger.logError(apiName, error);
-    }
-    return [];
-  };
-  
-  const fetchInitialCommunities = async () => {
-    const apiName = 'getCommunitiesApi';
-    const params = {
-      page: 1,
-      limit: 20,
-      sortBy: sortBy === 'hot' ? 'trending' : sortBy,
-      includeStats: true,
-    };
-    
-    APILogger.logRequest(apiName, params);
-    
-    try {
-      const response = await getCommunitiesApi(params);
-      APILogger.logResponse(apiName, response);
-      
-      if (response?.data?.success) {
-        const communitiesData = response.data.data?.communities || [];
-        setCommunities(communitiesData);
-        setHasMore(response.data.data?.hasMore || false);
-        console.log(`✅ Fetched ${communitiesData.length} initial communities`);
-        return communitiesData;
-      }
-    } catch (error) {
-      APILogger.logError(apiName, error);
-    }
-    return [];
-  };
-  
-  const performSearch = async (query, reset = true) => {
-    const apiName = 'searchCommunitiesApi';
-    const params = {
-      query: query.trim(),
-      page: reset ? 1 : page + 1,
-      limit: 20,
-      categories: selectedCategories,
-      types: selectedTypes,
-      sortBy: sortBy === 'hot' ? 'trending' : sortBy,
-    };
-    
-    APILogger.logRequest(apiName, params);
-    setIsSearching(true);
-    
-    try {
-      const response = await searchCommunitiesApi(params);
-      APILogger.logResponse(apiName, response);
-      
-      if (response?.data?.success) {
-        const results = response.data.data?.communities || [];
-        
-        if (reset) {
-          setSearchResults(results);
-          setCommunities(results);
-          setPage(1);
-        } else {
-          setSearchResults(prev => [...prev, ...results]);
-          setCommunities(prev => [...prev, ...results]);
-          setPage(prev => prev + 1);
+      setErrorMessage('');
+
+      try {
+        const params = {page: pageParam, limit: PAGE_SIZE};
+        if (searchApplied) {
+          params.q = searchApplied;
         }
-        
-        setHasMore(response.data.data?.hasMore || false);
-        
-        APILogger.logUserAction('Search Performed', {
-          query,
-          results_count: results.length,
-          filters: {categories: selectedCategories, types: selectedTypes},
-        });
-        
-        console.log(`✅ Search completed: ${results.length} results`);
-      }
-    } catch (error) {
-      APILogger.logError(apiName, error);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-  
-  // ===============================
-  // EVENT HANDLERS
-  // ===============================
-  const handleDebouncedSearch = useCallback(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-    
-    searchTimeoutRef.current = setTimeout(() => {
-      performSearch(searchQuery);
-    }, 300);
-  }, [searchQuery, selectedCategories, selectedTypes, sortBy]);
-  
-  const handleVoiceSearch = async () => {
-    try {
-      if (voiceSearchActive) {
-        await Voice.stop();
-      } else {
-        await Voice.start('en-US');
-      }
-    } catch (error) {
-      console.log('Voice search error:', error);
-    }
-  };
-  
-  const handleCommunityPress = useCallback((community) => {
-    APILogger.logUserAction('Community Selected', {
-      community_id: community.id,
-      community_name: community.name,
-      source: 'discovery',
-    });
-    
-    navigation.navigate(Routes.CommunityProfile, {
-      communityId: community.id,
-      community: community,
-    });
-  }, [navigation]);
-  
-  const handleJoinCommunity = useCallback(async (community, action = 'join') => {
-    console.log(`\n🤝 ${action === 'request' ? 'Requesting to join' : 'Joining'} community: ${community.name}`);
-    
-    try {
-      let response;
-      
-      if (action === 'request') {
-        // For protected communities, create a join request
-        response = await joinCommunityApi(community.id, {
-          requestType: 'join_request',
-          joinReason: 'Interested in joining this community',
-        });
-      } else {
-        // For public communities, direct join
-        response = await joinCommunityApi(community.id, {
-          autoJoin: community.privacy === 'public' || community.privacy === 'open',
-        });
-      }
-      
-      APILogger.logResponse('joinCommunity', response);
-      
-      if (response?.data?.success) {
-        // Update local state
-        setCommunities(prev => 
-          prev.map(c => c.id === community.id 
-            ? {...c, isMember: true, userRole: 'member'}
-            : c
-          )
+
+        const response = searchApplied
+          ? await searchCommunitiesApi(params)
+          : await listAllCommunitiesApi(params);
+
+        const {communities: fetched, hasMore: more, nextPage} = parseCommunityResponse(response, pageParam);
+
+        setCommunities((prev) =>
+          replace ? fetched : mergeUniqueCommunities(prev, fetched),
         );
-        
-        if (action === 'request') {
-          Alert.alert(
-            'Request Sent',
-            `Your request to join ${community.name} has been sent. You'll be notified when it's approved.`,
-            [{text: 'OK'}]
-          );
+        setHasMore(more);
+        setPage(nextPage ?? (more ? pageParam + 1 : pageParam));
+      } catch (error) {
+        console.log('Community discovery fetch error', error?.response?.data || error?.message);
+        if (replace) {
+          setCommunities([]);
+        }
+        setHasMore(false);
+        setErrorMessage(
+          error?.response?.data?.message ||
+            error?.message ||
+            'Unable to load communities right now. Please try again later.',
+        );
+      } finally {
+        if (replace) {
+          setLoading(false);
         } else {
-          Alert.alert(
-            'Success',
-            `Welcome to ${community.name}!`,
-            [{text: 'OK'}]
-          );
+          setLoadingMore(false);
         }
-        
-        APILogger.logUserAction('Community Joined', {
-          community_id: community.id,
-          community_name: community.name,
-          action_type: action,
-        });
+        setRefreshing(false);
       }
-    } catch (error) {
-      APILogger.logError('joinCommunity', error);
-      
-      const errorMessage = error?.response?.data?.message || 
-        (action === 'request' ? 'Failed to send join request' : 'Failed to join community');
-      
-      Alert.alert('Error', errorMessage);
+    },
+    [searchApplied],
+  );
+
+  useEffect(() => {
+    fetchCommunities({pageParam: 1, replace: true});
+  }, [fetchCommunities]);
+
+  const handleSearchSubmit = useCallback(() => {
+    const nextQuery = searchText.trim();
+    if (nextQuery === searchApplied) {
+      fetchCommunities({pageParam: 1, replace: true});
+      return;
     }
-  }, []);
-  
-  const handleBookmarkToggle = useCallback(async (community) => {
-    const isBookmarked = bookmarkedCommunities.has(community.id);
-    
-    try {
-      if (isBookmarked) {
-        await removeBookmarkCommunityApi(community.id);
-        setBookmarkedCommunities(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(community.id);
-          AsyncStorage.setItem('discovery_bookmarks', JSON.stringify(Array.from(newSet)));
-          return newSet;
-        });
-      } else {
-        await bookmarkCommunityApi(community.id);
-        setBookmarkedCommunities(prev => {
-          const newSet = new Set([...prev, community.id]);
-          AsyncStorage.setItem('discovery_bookmarks', JSON.stringify(Array.from(newSet)));
-          return newSet;
-        });
-      }
-      
-      APILogger.logUserAction('Bookmark Toggled', {
-        community_id: community.id,
-        action: isBookmarked ? 'removed' : 'added',
-      });
-    } catch (error) {
-      APILogger.logError('bookmarkToggle', error);
+    setSearchApplied(nextQuery);
+  }, [fetchCommunities, searchApplied, searchText]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchText('');
+    if (searchApplied) {
+      setSearchApplied('');
+    } else {
+      fetchCommunities({pageParam: 1, replace: true});
     }
-  }, [bookmarkedCommunities]);
-  
-  const handleLoadMore = useCallback(() => {
-    if (!loadingMore && hasMore) {
-      console.log('\n📄 Loading more communities...');
-      setLoadingMore(true);
-      performSearch(searchQuery, false);
-      setLoadingMore(false);
-    }
-  }, [loadingMore, hasMore, searchQuery]);
-  
-  const handleRefresh = useCallback(async () => {
-    console.log('\n🔄 Refreshing discovery...');
+  }, [fetchCommunities, searchApplied]);
+
+  const handleRefresh = useCallback(() => {
     setRefreshing(true);
-    await performSearch(searchQuery || '', true);
-    setRefreshing(false);
-  }, [searchQuery]);
-  
-  const handleToggleFilters = () => {
-    const newShowFilters = !showFilters;
-    setShowFilters(newShowFilters);
-    filterHeight.value = withSpring(newShowFilters ? 150 : 0);
-  };
-  
-  // ===============================
-  // ANIMATION STYLES
-  // ===============================
-  const searchAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{scale: searchScale.value}],
-  }));
-  
-  const filterAnimatedStyle = useAnimatedStyle(() => ({
-    height: filterHeight.value,
-    opacity: interpolate(filterHeight.value, [0, 150], [0, 1]),
-  }));
-  
-  // ===============================
-  // RENDER FUNCTIONS
-  // ===============================
-  const renderHeader = () => (
-    <View style={styles.headerContainer}>
-      {/* Search Bar */}
-      <Animated.View style={[styles.searchContainer, searchAnimatedStyle]}>
-        <View style={styles.searchBar}>
-          <Feather name="search" size={18} color={REDDIT_DISCORD_COLORS.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search communities..."
-            placeholderTextColor={REDDIT_DISCORD_COLORS.textDim}
-            returnKeyType="search"
-            onSubmitEditing={() => performSearch(searchQuery)}
-          />
-          {isSearching && (
-            <ActivityIndicator size="small" color={REDDIT_DISCORD_COLORS.blurple} />
-          )}
-          <TouchableOpacity
-            style={[styles.voiceButton, voiceSearchActive && styles.voiceButtonActive]}
-            onPress={handleVoiceSearch}
-          >
-            <Icon 
-              name={voiceSearchActive ? "mic" : "mic-outline"} 
-              size={18} 
-              color={voiceSearchActive ? REDDIT_DISCORD_COLORS.discordRed : REDDIT_DISCORD_COLORS.textMuted} 
-            />
-          </TouchableOpacity>
-        </View>
-        
-        <TouchableOpacity
-          style={styles.filterToggleButton}
-          onPress={handleToggleFilters}
-        >
-          <Icon name="options" size={20} color={REDDIT_DISCORD_COLORS.textBright} />
-          {(selectedCategories.length + selectedTypes.length) > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>
-                {selectedCategories.length + selectedTypes.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
-      
-      {/* Sort Bar (Reddit Style) */}
-      <View style={styles.sortBar}>
-        {[
-          {id: 'hot', label: 'Hot', icon: 'flame'},
-          {id: 'new', label: 'New', icon: 'sparkles'},
-          {id: 'top', label: 'Top', icon: 'trending-up'},
-          {id: 'rising', label: 'Rising', icon: 'rocket'},
-        ].map(sort => (
-          <TouchableOpacity
-            key={sort.id}
-            style={[styles.sortButton, sortBy === sort.id && styles.sortButtonActive]}
-            onPress={() => setSortBy(sort.id)}
-          >
-            <Icon 
-              name={sort.icon} 
-              size={16} 
-              color={sortBy === sort.id ? REDDIT_DISCORD_COLORS.textBright : REDDIT_DISCORD_COLORS.textMuted} 
-            />
-            <Text style={[styles.sortText, sortBy === sort.id && styles.sortTextActive]}>
-              {sort.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      
-      {/* Filters (Discord Style) */}
-      <Animated.View style={[styles.filtersContainer, filterAnimatedStyle]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={styles.filterSection}>
-            <Text style={styles.filterSectionTitle}>Categories</Text>
-            <View style={styles.filterChips}>
-              {categories.map(category => (
-                <FilterChip
-                  key={category.id}
-                  label={category.name}
-                  isActive={selectedCategories.includes(category.id)}
-                  onPress={() => {
-                    setSelectedCategories(prev =>
-                      prev.includes(category.id)
-                        ? prev.filter(id => id !== category.id)
-                        : [...prev, category.id]
-                    );
-                  }}
-                  count={category.count}
-                />
-              ))}
-            </View>
-          </View>
-          
-          <View style={styles.filterSection}>
-            <Text style={styles.filterSectionTitle}>Types</Text>
-            <View style={styles.filterChips}>
-              {communityTypes.map(type => (
-                <FilterChip
-                  key={type.id}
-                  label={type.name}
-                  icon={type.icon}
-                  isActive={selectedTypes.includes(type.id)}
-                  onPress={() => {
-                    setSelectedTypes(prev =>
-                      prev.includes(type.id)
-                        ? prev.filter(id => id !== type.id)
-                        : [...prev, type.id]
-                    );
-                  }}
-                />
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-      </Animated.View>
-    </View>
+    setHasMore(true);
+    fetchCommunities({pageParam: 1, replace: true});
+  }, [fetchCommunities]);
+
+  const handleLoadMore = useCallback(
+    throttle(() => {
+      if (hasMore && !loading && !loadingMore) {
+        fetchCommunities({pageParam: page, replace: false});
+      }
+    }, 900),
+    [fetchCommunities, hasMore, loading, loadingMore, page],
   );
-  
-  const renderCommunity = ({item, index}) => (
-    <RedditDiscoveryCard
-      community={item}
-      onPress={handleCommunityPress}
-      onJoin={handleJoinCommunity}
-      onBookmark={handleBookmarkToggle}
-      isBookmarked={bookmarkedCommunities.has(item.id)}
-      index={index}
-      currentUserId={userData?.id || userData?.userId}
-    />
-  );
-  
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Icon name="planet-outline" size={64} color={REDDIT_DISCORD_COLORS.textDim} />
-      <Text style={styles.emptyTitle}>No communities found</Text>
-      <Text style={styles.emptySubtitle}>
-        {searchQuery 
-          ? 'Try different search terms or filters'
-          : 'Be the first to create a community!'
-        }
-      </Text>
-    </View>
-  );
-  
-  const renderFooter = () => {
-    if (!loadingMore) return null;
-    return (
-      <View style={styles.loadingFooter}>
-        <ActivityIndicator size="small" color={REDDIT_DISCORD_COLORS.blurple} />
-        <Text style={styles.loadingFooterText}>Loading more...</Text>
-      </View>
-    );
-  };
-  
-  if (initialLoading) {
-    return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor={REDDIT_DISCORD_COLORS.background} />
-        <SafeAreaView style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={REDDIT_DISCORD_COLORS.blurple} />
-          <Text style={styles.loadingText}>Discovering communities...</Text>
-        </SafeAreaView>
-      </View>
-    );
-  }
-  
-  return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={REDDIT_DISCORD_COLORS.background} />
-      
-      <SafeAreaView style={styles.safeArea}>
-        {/* Header Bar */}
-        <View style={styles.topBar}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="arrow-back" size={24} color={REDDIT_DISCORD_COLORS.textBright} />
-          </TouchableOpacity>
-          
-          <Text style={styles.topBarTitle}>Discover Communities</Text>
-          
-          <View style={styles.topBarActions}>
-            <TouchableOpacity style={styles.topBarButton}>
-              <Feather name="bookmark" size={20} color={REDDIT_DISCORD_COLORS.textBright} />
-              {bookmarkedCommunities.size > 0 && (
-                <View style={styles.topBarBadge}>
-                  <Text style={styles.topBarBadgeText}>{bookmarkedCommunities.size}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-        
-        {/* Main Content */}
-        <FlatList
-          ref={flatListRef}
-          data={searchQuery ? searchResults : communities}
-          renderItem={renderCommunity}
-          keyExtractor={(item) => item.id.toString()}
-          ListHeaderComponent={renderHeader}
-          ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.3}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={REDDIT_DISCORD_COLORS.blurple}
-              colors={[REDDIT_DISCORD_COLORS.blurple]}
-            />
+
+  const sortedCommunities = useMemo(() => {
+    if (!communities.length) {
+      return [];
+    }
+    const list = [...communities];
+    switch (sortOption) {
+      case 'popular':
+        return list.sort((a, b) => getMembersCount(b) - getMembersCount(a));
+      case 'newest':
+        return list.sort((a, b) => getCreatedAtValue(b) - getCreatedAtValue(a));
+      case 'alphabetical':
+        return list.sort((a, b) => getName(a).localeCompare(getName(b)));
+      case 'recommended':
+      default:
+        return list;
+    }
+  }, [communities, sortOption]);
+
+  const heroCommunity = sortedCommunities[0] || null;
+  const listData = heroCommunity ? sortedCommunities.slice(1) : sortedCommunities;
+
+  const metrics = useMemo(() => {
+    const totalCommunities = sortedCommunities.length;
+    const totalMembers = sortedCommunities.reduce((total, item) => total + getMembersCount(item), 0);
+    const tags = new Set();
+    sortedCommunities.forEach((item) => {
+      const category = getCategoryLabel(item);
+      if (category) {
+        tags.add(category);
+      }
+      const itemTags = Array.isArray(item?.tags) ? item.tags : [];
+      itemTags.forEach((tag) => tags.add(tag));
+    });
+    return {
+      totalCommunities,
+      totalMembers,
+      categoryCount: tags.size,
+    };
+  }, [sortedCommunities]);
+
+  const listHeader = useMemo(() => (
+    <View>
+      <HeroBanner
+        community={heroCommunity}
+        loading={loading && !communities.length}
+        onPress={(community) => {
+          const communityId = getCommunityId(community);
+          if (communityId) {
+            navigation.navigate(Routes.CommunityDetail, {communityId});
           }
+        }}
+      />
+      <StatsStrip
+        totalCommunities={metrics.totalCommunities}
+        totalMembers={metrics.totalMembers}
+        categoryCount={metrics.categoryCount}
+      />
+      <View style={styles.searchCard}>
+        <Icon name="search" size={nw(18)} color={PALETTE.subtle} />
+        <TextInput
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder="Search communities, interests, or friends"
+          placeholderTextColor={PALETTE.subtle}
+          style={styles.searchInput}
+          autoCorrect={false}
+          returnKeyType="search"
+          onSubmitEditing={handleSearchSubmit}
+        />
+        {searchText.length ? (
+          <TouchableOpacity onPress={handleClearSearch}>
+            <Icon name="close-circle" size={nw(18)} color={PALETTE.subtle} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity onPress={handleSearchSubmit}>
+            <Feather name="sliders" size={nw(18)} color={PALETTE.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+      <SortSelector selected={sortOption} onChange={setSortOption} />
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <Icon name="alert-circle" size={nw(18)} color={COLORS.redEA4335} />
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+    </View>
+  ), [heroCommunity, loading, communities.length, metrics, searchText, sortOption, errorMessage, handleSearchSubmit, handleClearSearch, navigation]);
+
+  if (loading && !communities.length) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
+        <FlatList
+          data={[1, 2, 3, 4]}
+          keyExtractor={(item) => `skeleton-${item}`}
+          renderItem={() => <SkeletonCard />}
+          ListHeaderComponent={listHeader}
+          contentContainerStyle={styles.listContent}
         />
       </SafeAreaView>
-    </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
+      <FlatList
+        data={listData}
+        keyExtractor={(item, index) => (getCommunityId(item) || `community-${index}`).toString()}
+        renderItem={({item}) => (
+          <CommunityCard
+            community={item}
+            onPress={(community) => {
+              const communityId = getCommunityId(community);
+              if (communityId) {
+                navigation.navigate(Routes.CommunityDetail, {communityId});
+              }
+            }}
+          />
+        )}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={
+          !loading && !loadingMore ? (
+            <EmptyState
+              title={searchApplied ? 'No communities match this search' : 'No communities yet'}
+              subtitle={
+                searchApplied
+                  ? 'Try a different keyword or clear the search to see all communities.'
+                  : 'Be the first to create a community and bring students together!'
+              }
+              showCreateButton={!searchApplied}
+              onCreatePress={() => navigation.navigate('CreateCommunity')}
+            />
+          ) : null
+        }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={PALETTE.primary} />}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.6}
+        ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={PALETTE.primary} style={styles.footerLoader} /> : null}
+        contentContainerStyle={styles.listContent}
+      />
+      
+      {/* Floating Action Button */}
+      <FloatingActionButton 
+        onPress={() => navigation.navigate('CreateCommunity')}
+      />
+    </SafeAreaView>
   );
 };
 
-// ===============================
-// STYLES
-// ===============================
 const styles = StyleSheet.create({
-  // Container
-  container: {
-    flex: 1,
-    backgroundColor: REDDIT_DISCORD_COLORS.background,
-  },
   safeArea: {
     flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 14,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.textMuted,
+    backgroundColor: PALETTE.background,
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: nh(32),
   },
-  
-  // Top Bar (Discord Style)
-  topBar: {
+  heroGradient: {
+    marginHorizontal: nw(20),
+    marginTop: nh(16),
+    borderRadius: nw(24),
+    paddingHorizontal: nw(20),
+    paddingVertical: nh(22),
+  },
+  heroPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.whiteFFFFFF + '1A',
+    paddingHorizontal: nw(12),
+    paddingVertical: nh(6),
+    borderRadius: nw(14),
+    marginBottom: nh(10),
+  },
+  heroPillText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(11),
+    fontWeight: '600',
+  },
+  heroTitle: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(22),
+    fontWeight: '700',
+    marginBottom: nh(10),
+  },
+  heroSubtitle: {
+    color: COLORS.whiteFFFFFF + 'CC',
+    fontSize: nw(12),
+    lineHeight: nh(18),
+    marginBottom: nh(18),
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: nw(10),
+    marginBottom: nh(18),
+  },
+  heroStatBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.whiteFFFFFF + '22',
+    paddingHorizontal: nw(12),
+    paddingVertical: nh(8),
+    borderRadius: nw(16),
+  },
+  heroStatLabel: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(12),
+    marginLeft: nw(6),
+  },
+  heroButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.whiteFFFFFF + '20',
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(10),
+    borderRadius: nw(16),
+    gap: nw(6),
+  },
+  heroButtonText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(12),
+    fontWeight: '600',
+  },
+  statsStrip: {
+    marginHorizontal: nw(20),
+    marginTop: nh(18),
+    marginBottom: nh(16),
+    borderRadius: nw(18),
+    backgroundColor: PALETTE.card,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: REDDIT_DISCORD_COLORS.elevated,
-    borderBottomWidth: 1,
-    borderBottomColor: REDDIT_DISCORD_COLORS.border,
+    paddingVertical: nh(14),
+    paddingHorizontal: nw(16),
   },
-  backButton: {
-    padding: 4,
-  },
-  topBarTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Semibold',
-    color: REDDIT_DISCORD_COLORS.textBright,
+  statItem: {
     flex: 1,
-    marginLeft: 16,
-  },
-  topBarActions: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  topBarButton: {
-    position: 'relative',
-    padding: 4,
-  },
-  topBarBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: REDDIT_DISCORD_COLORS.discordYellow,
-    borderRadius: 10,
-    minWidth: 16,
-    height: 16,
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  topBarBadgeText: {
-    fontSize: 10,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.background,
+  statValue: {
+    color: PALETTE.primary,
+    fontSize: nw(16),
+    fontWeight: '700',
   },
-  
-  // Header Container
-  headerContainer: {
-    backgroundColor: REDDIT_DISCORD_COLORS.backgroundSecondary,
-    paddingBottom: 8,
+  statLabel: {
+    color: PALETTE.muted,
+    fontSize: nw(11),
+    marginTop: nh(4),
   },
-  
-  // Search Container
-  searchContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
+  statDivider: {
+    width: 1,
+    height: '70%',
+    backgroundColor: PALETTE.border,
   },
-  searchBar: {
-    flex: 1,
+  searchCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: REDDIT_DISCORD_COLORS.surface,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: PALETTE.card,
+    borderRadius: nw(18),
     borderWidth: 1,
-    borderColor: REDDIT_DISCORD_COLORS.border,
+    borderColor: PALETTE.border,
+    marginHorizontal: nw(20),
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(10),
+    gap: nw(10),
   },
   searchInput: {
     flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: REDDIT_DISCORD_COLORS.text,
-    paddingVertical: 0,
+    fontSize: nw(13),
+    color: PALETTE.primary,
   },
-  voiceButton: {
-    padding: 4,
-    marginLeft: 8,
+  sortRow: {
+    marginHorizontal: nw(20),
+    marginTop: nh(14),
+    marginBottom: nh(4),
   },
-  voiceButtonActive: {
-    backgroundColor: REDDIT_DISCORD_COLORS.discordRed + '30',
-    borderRadius: 12,
+  sortLabel: {
+    color: PALETTE.muted,
+    fontSize: nw(12),
+    marginBottom: nh(8),
   },
-  filterToggleButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: REDDIT_DISCORD_COLORS.surface,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: REDDIT_DISCORD_COLORS.border,
-    position: 'relative',
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: REDDIT_DISCORD_COLORS.discordRed,
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterBadgeText: {
-    fontSize: 10,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  
-  // Sort Bar (Reddit Style)
-  sortBar: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: REDDIT_DISCORD_COLORS.surface,
-    gap: 6,
-  },
-  sortButtonActive: {
-    backgroundColor: REDDIT_DISCORD_COLORS.blurple,
-  },
-  sortText: {
-    fontSize: 13,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-  },
-  sortTextActive: {
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  
-  // Filters Container
-  filtersContainer: {
-    backgroundColor: REDDIT_DISCORD_COLORS.surface,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  filterSection: {
-    padding: 12,
-  },
-  filterSectionTitle: {
-    fontSize: 12,
-    fontFamily: 'Inter-Semibold',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  filterChips: {
+  sortChipsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: nw(10),
   },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: REDDIT_DISCORD_COLORS.elevated,
-    gap: 4,
-  },
-  filterChipActive: {
-    backgroundColor: REDDIT_DISCORD_COLORS.blurple,
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-  },
-  filterChipTextActive: {
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  filterChipBadge: {
-    backgroundColor: REDDIT_DISCORD_COLORS.discordYellow,
-    borderRadius: 8,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    marginLeft: 4,
-  },
-  filterChipBadgeText: {
-    fontSize: 10,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.background,
-  },
-  
-  // Reddit Card Styles
-  redditCard: {
-    backgroundColor: REDDIT_DISCORD_COLORS.surface,
-    marginHorizontal: 16,
-    marginVertical: 4,
-    borderRadius: 8,
+  sortChip: {
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(8),
+    borderRadius: nw(16),
     borderWidth: 1,
-    borderColor: REDDIT_DISCORD_COLORS.border,
-    overflow: 'hidden',
+    borderColor: PALETTE.border,
+    backgroundColor: PALETTE.card,
   },
-  redditCardPressable: {
+  sortChipActive: {
+    backgroundColor: PALETTE.primary,
+    borderColor: PALETTE.primary,
+  },
+  sortChipText: {
+    fontSize: nw(12),
+    color: PALETTE.primary,
+    fontWeight: '500',
+  },
+  sortChipTextActive: {
+    color: COLORS.whiteFFFFFF,
+  },
+  errorBanner: {
+    marginHorizontal: nw(20),
+    marginTop: nh(12),
+    borderRadius: nw(16),
+    backgroundColor: COLORS.redEA4335 + '12',
+    borderWidth: 1,
+    borderColor: COLORS.redEA4335 + '40',
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(12),
     flexDirection: 'row',
-    padding: 12,
-  },
-  voteSection: {
     alignItems: 'center',
-    marginRight: 12,
+    gap: nw(10),
   },
-  voteButton: {
-    padding: 4,
-  },
-  karmaCount: {
-    fontSize: 13,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.text,
-    marginVertical: 2,
-  },
-  karmaUp: {
-    color: REDDIT_DISCORD_COLORS.upvote,
-  },
-  karmaDown: {
-    color: REDDIT_DISCORD_COLORS.downvote,
-  },
-  redditContent: {
+  errorText: {
+    color: COLORS.redEA4335,
+    fontSize: nw(12),
     flex: 1,
   },
-  redditHeader: {
+  communityCard: {
+    marginHorizontal: nw(20),
+    marginTop: nh(16),
+    backgroundColor: PALETTE.card,
+    borderRadius: nw(20),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    paddingHorizontal: nw(18),
+    paddingVertical: nh(18),
+    shadowColor: '#132E4D',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  communityHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  communityAvatarContainer: {
-    position: 'relative',
-    marginRight: 8,
+    marginBottom: nh(12),
   },
   communityAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-  },
-  communityAvatarPlaceholder: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
+    width: nw(40),
+    height: nw(40),
+    borderRadius: nw(12),
+    backgroundColor: COLORS.blue043142_light,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarText: {
-    fontSize: 14,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  activityDot: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2,
-    borderColor: REDDIT_DISCORD_COLORS.surface,
-  },
-  onlineStatus: {
-    backgroundColor: REDDIT_DISCORD_COLORS.online,
-  },
-  idleStatus: {
-    backgroundColor: REDDIT_DISCORD_COLORS.idle,
-  },
-  offlineStatus: {
-    backgroundColor: REDDIT_DISCORD_COLORS.offline,
-  },
-  headerInfo: {
+  communityHeaderText: {
     flex: 1,
+    marginLeft: nw(12),
   },
-  headerTop: {
+  communityName: {
+    fontSize: nw(16),
+    fontWeight: '700',
+    color: PALETTE.primary,
+  },
+  communityLabel: {
+    marginTop: nh(4),
+    fontSize: nw(12),
+    color: PALETTE.muted,
+  },
+  communitySummary: {
+    fontSize: nw(12),
+    color: PALETTE.muted,
+    lineHeight: nh(18),
+    marginBottom: nh(14),
+  },
+  communityMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    flexWrap: 'wrap',
+    gap: nw(6),
   },
-  subredditName: {
-    fontSize: 12,
-    fontFamily: 'Inter-Semibold',
-    color: REDDIT_DISCORD_COLORS.text,
+  communityMetaText: {
+    fontSize: nw(11),
+    color: PALETTE.primary,
   },
-  headerMeta: {
-    flexDirection: 'row',
+  metaSeparator: {
+    width: 1,
+    height: nh(12),
+    backgroundColor: PALETTE.border,
+    marginHorizontal: nw(4),
+  },
+  skeletonCard: {
+    marginHorizontal: nw(20),
+    marginTop: nh(16),
+    backgroundColor: PALETTE.card,
+    borderRadius: nw(20),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    paddingHorizontal: nw(18),
+    paddingVertical: nh(18),
+  },
+  skeletonLineWide: {
+    height: nh(18),
+    backgroundColor: COLORS.greyEEEEEE,
+    borderRadius: nw(8),
+    marginBottom: nh(12),
+  },
+  skeletonLine: {
+    height: nh(14),
+    backgroundColor: COLORS.greyEEEEEE,
+    borderRadius: nw(8),
+    marginBottom: nh(10),
+  },
+  emptyState: {
+    marginHorizontal: nw(20),
+    marginTop: nh(60),
     alignItems: 'center',
-    marginTop: 2,
-  },
-  memberCount: {
-    fontSize: 11,
-    fontFamily: 'Inter-Regular',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-  },
-  dotSeparator: {
-    fontSize: 11,
-    color: REDDIT_DISCORD_COLORS.textDim,
-    marginHorizontal: 4,
-  },
-  postTime: {
-    fontSize: 11,
-    fontFamily: 'Inter-Regular',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  bookmarkButton: {
-    padding: 4,
-  },
-  joinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    backgroundColor: REDDIT_DISCORD_COLORS.blurple,
-    borderRadius: 12,
-    gap: 4,
-  },
-  joinChipText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Semibold',
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  communityTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter-Semibold',
-    color: REDDIT_DISCORD_COLORS.text,
-    marginBottom: 8,
-  },
-  communityDescription: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  categoryTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  typeTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  activityTag: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  tagText: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.text,
-  },
-  redditFooter: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  footerAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  footerText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.textMuted,
-  },
-  
-  // Empty State
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 32,
+    gap: nh(12),
   },
   emptyTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter-Semibold',
-    color: REDDIT_DISCORD_COLORS.text,
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: nw(16),
+    fontWeight: '700',
+    color: PALETTE.primary,
   },
   emptySubtitle: {
-    fontSize: 14,
-    fontFamily: 'Inter-Regular',
-    color: REDDIT_DISCORD_COLORS.textMuted,
+    fontSize: nw(12),
+    color: PALETTE.muted,
     textAlign: 'center',
+    lineHeight: nh(18),
+    paddingHorizontal: nw(20),
   },
-  
-  // Loading Footer
-  loadingFooter: {
-    flexDirection: 'row',
+  emptyCreateButton: {
+    marginTop: nh(16),
+    paddingHorizontal: nw(24),
+    paddingVertical: nh(12),
+    backgroundColor: PALETTE.primary,
+    borderRadius: nw(18),
+  },
+  emptyCreateButtonText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(13),
+    fontWeight: '600',
+  },
+  footerLoader: {
+    marginTop: nh(12),
+  },
+  // Floating Action Button styles
+  fab: {
+    position: 'absolute',
+    bottom: nh(24),
+    right: nw(20),
+    width: nw(56),
+    height: nw(56),
+    borderRadius: nw(28),
+    shadowColor: '#132E4D',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  fabGradient: {
+    width: '100%',
+    height: '100%',
+    borderRadius: nw(28),
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
-    gap: 8,
-  },
-
-  // Add these styles to the existing StyleSheet
-ownerBadge: {
-    backgroundColor: REDDIT_DISCORD_COLORS.discordYellow,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 4,
-  },
-  ownerBadgeText: {
-    fontSize: 9,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.background,
-  },
-  adminBadge: {
-    backgroundColor: REDDIT_DISCORD_COLORS.blurple,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 4,
-  },
-  adminBadgeText: {
-    fontSize: 9,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  modBadge: {
-    backgroundColor: REDDIT_DISCORD_COLORS.discordGreen,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 4,
-  },
-  modBadgeText: {
-    fontSize: 9,
-    fontFamily: 'Inter-Bold',
-    color: REDDIT_DISCORD_COLORS.textBright,
-  },
-  memberChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: REDDIT_DISCORD_COLORS.discordGreen + '20',
-    borderRadius: 12,
-    gap: 4,
-  },
-  memberChipText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.discordGreen,
-  },
-  requestChip: {
-    backgroundColor: REDDIT_DISCORD_COLORS.discordYellow,
-  },
-  disabledChip: {
-    backgroundColor: REDDIT_DISCORD_COLORS.elevated,
-    opacity: 0.6,
-  },
-  joinedText: {
-    fontSize: 11,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.discordGreen,
-  },
-  privacyTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  loadingFooterText: {
-    fontSize: 12,
-    fontFamily: 'Inter-Medium',
-    color: REDDIT_DISCORD_COLORS.textMuted,
   },
 });
 

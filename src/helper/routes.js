@@ -140,75 +140,15 @@ const Routes = {
   AIStudyBuddyUpgradeModal: 'AIStudyBuddyUpgradeModal',
   AIStudyBuddyFeedbackModal: 'AIStudyBuddyFeedbackModal',
   AIStudyBuddyShareModal: 'AIStudyBuddyShareModal',
-
   // ==========================================
-  // COMMUNITY PLATFORM ROUTES
+  // COMMUNITY ROUTES (MVP)
   // ==========================================
-  
-  // Core Community Screens
   CommunityDiscovery: 'CommunityDiscovery',
-  CommunityProfile: 'CommunityProfile',
-  MyCommunities: 'MyCommunities',
-  CreateCommunity: 'CreateCommunity',
-  
-  // Post Management
-  CommunityPostDetail: 'CommunityPostDetail',
-  CreateCommunityPost: 'CreateCommunityPost',
-  EditCommunityPost: 'EditCommunityPost',
-  
-  // Community Management (Admin/Moderator Features)
-  CommunityManagement: 'CommunityManagement',
-  CommunitySettings: 'CommunitySettings',
-  CommunityMembers: 'CommunityMembers',
-  CommunityModeration: 'CommunityModeration',
-  CommunityAnalytics: 'CommunityAnalytics',
-  CommunityRequests: 'CommunityRequests',
-  
-  // Member and Moderation Features
-  MemberProfile: 'MemberProfile',
-  InviteMembers: 'InviteMembers',
-  BulkInvite: 'BulkInvite',
-  ModerationQueue: 'ModerationQueue',
-  AppealManagement: 'AppealManagement',
-  
-  // Specialized Post Types
-  CreatePoll: 'CreatePoll',
-  CreateEvent: 'CreateEvent',
-  CreateAnnouncement: 'CreateAnnouncement',
-  EventDetail: 'EventDetail',
-  
-  // Discovery and Search
-  SearchCommunities: 'SearchCommunities',
-  SearchPosts: 'SearchPosts',
-  FeaturedCommunities: 'FeaturedCommunities',
-  TrendingCommunities: 'TrendingCommunities',
-  
-  // Engagement Features
-  CommunityLeaderboard: 'CommunityLeaderboard',
-  CommunityActivity: 'CommunityActivity',
-  BookmarkedPosts: 'BookmarkedPosts',
-  
-  // Notification Management
-  CommunityNotifications: 'CommunityNotifications',
-  NotificationSettings: 'NotificationSettings',
-  
-  // Settings and Configuration
-  FeedSettings: 'FeedSettings',
-  AutomationRules: 'AutomationRules',
-  IntegrationManagement: 'IntegrationManagement',
-  
-  // Sub-communities and Hierarchy
-  SubCommunities: 'SubCommunities',
-  CommunityHierarchy: 'CommunityHierarchy',
-  
-  // Modals and Overlays
-  JoinCommunityModal: 'JoinCommunityModal',
-  LeaveCommunityModal: 'LeaveCommunityModal',
-  ReportContentModal: 'ReportContentModal',
-  SharePostModal: 'SharePostModal',
-  RSVPModal: 'RSVPModal',
-  VoteModal: 'VoteModal',
-  CommunityHub: 'CommunityHub',
+  CommunityDetail: 'CommunityDetail',
+   CreateCommunityPost: 'CreateCommunityPost',
+CommunityManagement: 'CommunityManagement',
+ CreateCommunity: 'CreateCommunity',
+ CommunitySettings: 'CommunitySettings',
  
 };
 

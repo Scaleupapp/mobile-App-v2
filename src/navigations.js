@@ -43,16 +43,13 @@ import Home from './screens/Home/Home';
 import Search from './screens/Search/Search';
 import Notifications from './screens/Notification/Notification';
 import CreatePost from './screens/Post/CreatePost';
-import CommunityHome from './screens/Community/CommunityHome';
+// NEW COMMUNITY SCREEN IMPORTS
 import CommunityDiscovery from './screens/Community/CommunityDiscovery';
-import CommunityProfile from './screens/Community/CommunityProfile';  
-import MyCommunities from './screens/Community/MyCommunities';
+import CommunityDetail from './screens/Community/CommunityDetail';
+import CreateCommunityPost from './screens/Community/CreateCommunityPost';
+import CommunityManagement from './screens/Community/CommunityManagement'; 
 import CreateCommunity from './screens/Community/CreateCommunity';
-import CreateCommunityPost from './screens/Community/CreatePost';
-import CommunityPostDetail from './screens/Community/CommunityPostDetail';
-import CommunityMembers from './screens/Community/CommunityMembers.js';
-import MemberProfile from './screens/Community/MemberProfile.js';
-import CommunityManagement from './screens/Community/CommunityManagement';
+import CommunitySettings from './screens/Community/CommunitySettings';
 // Profile & User
 import MyProfile from './screens/MyProfile/MyProfile';
 import EditProfile from './screens/EditProfile/EditProfile';
@@ -375,8 +372,8 @@ const TabNavigator = props => {
         }}
       />
       <Tab.Screen
-        name={Routes.CommunityHub}
-        component={CommunityHome}
+        name={Routes.CommunityDiscovery}
+        component={CommunityDiscovery}
         options={{
           tabBarLabel: ({focused}) => setBottomIconText('Nexus', focused),
           tabBarIcon: ({focused}) =>
@@ -585,7 +582,7 @@ export const RootNavigator = () => {
       <Stack.Screen name={Routes.Certifications} component={Certifications} />
       <Stack.Screen name={Routes.ChangePassword} component={ChangePassword} />
       <Stack.Screen name={Routes.Chat} component={Chat} />
-      <Stack.Screen name={Routes.CommunityHub} component={CommunityHome} />
+    
       <Stack.Screen name={Routes.Conversation} component={Conversation} />
       <Stack.Screen name={Routes.CramFlashcardViewer} component={CramFlashcardViewer} />
       <Stack.Screen name={Routes.CramMode} component={CramMode} />
@@ -648,14 +645,11 @@ export const RootNavigator = () => {
       <Stack.Screen name={Routes.UserPost} component={UserPost} />
       <Stack.Screen name={Routes.VerifiedPost} component={VerifiedPost} />
       <Stack.Screen name={Routes.CommunityDiscovery} component={CommunityDiscovery} /> 
-      <Stack.Screen name={Routes.CommunityProfile} component={CommunityProfile} />
-      <Stack.Screen name={Routes.MyCommunities} component={MyCommunities} />
-      <Stack.Screen name={Routes.CreateCommunity} component={CreateCommunity} />
-      <Stack.Screen name={Routes.CreateCommunityPost} component={CreateCommunityPost} />
-      <Stack.Screen name={Routes.CommunityPostDetail} component={CommunityPostDetail} />
-      <Stack.Screen name={Routes.CommunityMembers} component={CommunityMembers} />
-      <Stack.Screen name={Routes.MemberProfile} component={MemberProfile} />
+      <Stack.Screen name={Routes.CommunityDetail} component={CommunityDetail} />
+      <Stack.Screen name={Routes.CreateCommunityPost} component={CreateCommunityPost} /> 
       <Stack.Screen name={Routes.CommunityManagement} component={CommunityManagement} />
+      <Stack.Screen name={Routes.CreateCommunity} component={CreateCommunity} />
+      <Stack.Screen name={Routes.CommunitySettings} component={CommunitySettings} />
       </Stack.Navigator>
   );
 };
