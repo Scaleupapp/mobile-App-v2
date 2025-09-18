@@ -6,11 +6,11 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Linking,
   RefreshControl,
   SafeAreaView,
   ScrollView,
-  Share,
+  Modal,
+  Pressable,
   StatusBar,
   StyleSheet,
   TextInput,
@@ -30,7 +30,6 @@ import {
 } from '../../services/apiService';
 import { throttle } from '../../helper/commonFunctions';
 import Routes from '../../helper/routes';
-import PostView from '../Home/Post';
 
 const FEED_PAGE_SIZE = 10;
 
@@ -65,10 +64,18 @@ const formatDate = (value) => {
 
 const parseFeedResponse = (response, page) => {
   const root = response?.data ?? {};
+  
+  // Try multiple possible locations for posts
   const posts = Array.isArray(root.posts)
     ? root.posts
     : Array.isArray(root.data?.posts)
     ? root.data.posts
+    : Array.isArray(root.feed)
+    ? root.feed
+    : Array.isArray(root.data?.feed)
+    ? root.data.feed
+    : Array.isArray(root.content)
+    ? root.content
     : [];
 
   const pagination = root?.pagination || root?.data?.pagination || {};
@@ -82,20 +89,42 @@ const parseFeedResponse = (response, page) => {
 };
 
 const extractMembers = (payload) => {
-  if (!payload) return [];
-  if (Array.isArray(payload.members)) return payload.members;
-  if (Array.isArray(payload.data?.members)) return payload.data.members;
-  if (Array.isArray(payload.data)) return payload.data;
-  return [];
+  let members = [];
+  if (!payload) {
+    members = [];
+  } else if (Array.isArray(payload.members)) {
+    members = payload.members;
+  } else if (Array.isArray(payload.data?.members)) {
+    members = payload.data.members;
+  } else if (Array.isArray(payload.data)) {
+    members = payload.data;
+  } else if (Array.isArray(payload)) {
+    members = payload;
+  }
+
+  return members;
 };
 
-const ManagementHero = ({community, membership, onShare, onPreview, onInvite}) => {
-  const cover = community?.coverImage?.url;
-  const avatar = community?.avatar?.url;
-  const visibility = community?.privacy?.visibility;
-  const joinMethod = community?.privacy?.joinMethod;
+const getNestedValue = (obj, path) => {
+  if (!obj) {
+    return undefined;
+  }
+
+  return path.split('.').reduce((acc, segment) => {
+    if (acc === undefined || acc === null) {
+      return undefined;
+    }
+    return acc[segment];
+  }, obj);
+};
+
+const ManagementHero = ({community, membership}) => {
+  const cover = community?.coverImage?.url || community?.coverImage;
+  const avatar = community?.avatar?.url || community?.avatar;
+  const visibility = community?.privacy?.visibility || community?.privacy;
+  const joinMethod = community?.privacy?.joinMethod || community?.joinMethod;
   const createdAt = community?.createdAt;
-  const creator = community?.creator;
+  const creator = community?.createdBy || community?.owner;
 
   return (
     <View style={styles.heroWrapper}>
@@ -115,7 +144,7 @@ const ManagementHero = ({community, membership, onShare, onPreview, onInvite}) =
               {community?.name || 'Community'}
             </Text>
             <Text style={styles.heroSubtitle} numberOfLines={2}>
-              {community?.tagline || 'Keep your members engaged, informed, and growing.'}
+              {community?.tagline || community?.description || 'Keep your members engaged, informed, and growing.'}
             </Text>
             <View style={styles.heroChipsRow}>
               {visibility ? (
@@ -165,20 +194,6 @@ const ManagementHero = ({community, membership, onShare, onPreview, onInvite}) =
           </View>
         </View>
 
-        <View style={styles.heroActionsRow}>
-          <TouchableOpacity style={styles.heroActionButton} onPress={onPreview} activeOpacity={0.85}>
-            <Icon name="eye" size={nw(16)} color={PALETTE.primary} />
-            <Text style={styles.heroActionLabel}>Preview community</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.heroActionButton} onPress={onShare} activeOpacity={0.85}>
-            <Icon name="share-social" size={nw(16)} color={PALETTE.primary} />
-            <Text style={styles.heroActionLabel}>Share invite</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.heroActionButton} onPress={onInvite} activeOpacity={0.85}>
-            <Icon name="person-add" size={nw(16)} color={PALETTE.primary} />
-            <Text style={styles.heroActionLabel}>Invite members</Text>
-          </TouchableOpacity>
-        </View>
       </LinearGradient>
 
       {cover ? <Image source={{uri: cover}} style={styles.heroCoverImage} /> : null}
@@ -212,18 +227,128 @@ const QuickActionCard = ({icon, title, subtitle, onPress}) => (
   </TouchableOpacity>
 );
 
-const FeedCard = ({post}) => (
-  <View style={styles.feedCard}>
-    <PostView item={post} isVideoVisible={false} />
-  </View>
-);
+// Custom FeedCard component without PostView dependency
+const FeedCard = ({post}) => {
+  if (!post) return null;
+
+  // Extract safe text from potentially encrypted content
+  const extractText = (data) => {
+    if (!data) return '';
+    if (typeof data === 'string') return data;
+    if (data.text) return data.text;
+    if (data.content) return data.content;
+    return '';
+  };
+
+  const postId = post?.id || post?._id;
+  const postType = post?.postType || 'text';
+  const authorName = post?.author?.username || 
+                    post?.author?.name || 
+                    `${post?.author?.firstname || ''} ${post?.author?.lastname || ''}`.trim() ||
+                    'Anonymous';
+  const authorAvatar = post?.author?.profilePicture || post?.author?.avatar;
+  const postTitle = extractText(post?.title);
+  const postContent = extractText(post?.content);
+  const truncatedContent = postContent.length > 150 
+    ? postContent.substring(0, 150) + '...' 
+    : postContent;
+  
+  const metrics = post?.metrics || {};
+  const upvotes = metrics.upvotes || 0;
+  const downvotes = metrics.downvotes || 0;
+  const comments = metrics.comments || 0;
+  const shares = metrics.shares || 0;
+  
+  const createdAt = post?.publishedAt || post?.createdAt;
+  const formattedDate = formatDate(createdAt);
+
+  // Type-specific content
+  const renderTypeSpecificContent = () => {
+    switch (postType) {
+      case 'poll':
+        const pollQuestion = extractText(post?.poll?.question || post?.preview?.pollQuestion || postTitle);
+        const options = post?.poll?.options || post?.preview?.pollOptions || [];
+        return (
+          <View style={styles.feedCardPoll}>
+            <Text style={styles.feedCardPollLabel}>📊 Poll</Text>
+            <Text style={styles.feedCardPollQuestion}>{pollQuestion}</Text>
+            <Text style={styles.feedCardPollOptions}>{options.length} options</Text>
+          </View>
+        );
+      
+      case 'event':
+        const eventTitle = extractText(post?.event?.title || post?.preview?.eventTitle || postTitle);
+        const eventDate = post?.event?.startDate || post?.preview?.eventDate;
+        const eventVenue = post?.event?.location?.venue || post?.preview?.eventLocation?.venue;
+        return (
+          <View style={styles.feedCardEvent}>
+            <Text style={styles.feedCardEventLabel}>📅 Event</Text>
+            <Text style={styles.feedCardEventTitle}>{eventTitle}</Text>
+            {eventDate && <Text style={styles.feedCardEventDate}>{formatDate(eventDate)}</Text>}
+            {eventVenue && <Text style={styles.feedCardEventVenue}>📍 {eventVenue}</Text>}
+          </View>
+        );
+      
+      case 'announcement':
+        return (
+          <View style={styles.feedCardAnnouncement}>
+            <Text style={styles.feedCardAnnouncementLabel}>📢 Announcement</Text>
+            {postTitle && <Text style={styles.feedCardTitle}>{postTitle}</Text>}
+            {truncatedContent && <Text style={styles.feedCardContent}>{truncatedContent}</Text>}
+          </View>
+        );
+      
+      default:
+        return (
+          <>
+            {postTitle && <Text style={styles.feedCardTitle}>{postTitle}</Text>}
+            {truncatedContent && <Text style={styles.feedCardContent}>{truncatedContent}</Text>}
+          </>
+        );
+    }
+  };
+
+  return (
+    <View style={styles.feedCardContainer}>
+      <View style={styles.feedCardHeader}>
+        <View style={styles.feedCardAuthorInfo}>
+          {authorAvatar ? (
+            <Image source={{uri: authorAvatar}} style={styles.feedCardAvatar} />
+          ) : (
+            <View style={styles.feedCardAvatarFallback}>
+              <Text style={styles.feedCardAvatarText}>{authorName[0]?.toUpperCase()}</Text>
+            </View>
+          )}
+          <View>
+            <Text style={styles.feedCardAuthor}>{authorName}</Text>
+            <Text style={styles.feedCardDate}>{formattedDate}</Text>
+          </View>
+        </View>
+        <View style={styles.feedCardTypeBadge}>
+          <Text style={styles.feedCardType}>{postType}</Text>
+        </View>
+      </View>
+      
+      <View style={styles.feedCardBody}>
+        {renderTypeSpecificContent()}
+      </View>
+      
+      <View style={styles.feedCardStats}>
+        <Text style={styles.feedCardStat}>👍 {upvotes}</Text>
+        <Text style={styles.feedCardStat}>👎 {downvotes}</Text>
+        <Text style={styles.feedCardStat}>💬 {comments}</Text>
+        <Text style={styles.feedCardStat}>📤 {shares}</Text>
+      </View>
+    </View>
+  );
+};
 
 const MemberRow = ({member}) => {
   const name = member?.user
     ? `${member.user.firstname || ''} ${member.user.lastname || ''}`.trim() || member.user.username
     : member?.name || 'Member';
   const role = member?.role || 'member';
-  const avatar = member?.user?.profilePicture;
+  const avatar = member?.user?.profilePicture || member?.user?.avatar;
 
   return (
     <View style={styles.memberRow}>
@@ -283,14 +408,18 @@ const CommunityManagement = ({route, navigation}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [engagementModalVisible, setEngagementModalVisible] = useState(false);
 
   const fetchCommunityDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getCommunityDetailsApi(communityId);
-      const data = response?.data || {};
-      setCommunity(data.community || null);
-      setMembership(data.userMembership || null);
+      
+      // FIX: Access the nested data structure correctly
+      const responseData = response?.data?.data || {};
+      
+      setCommunity(responseData.community || null);
+      setMembership(responseData.userMembership || null);
     } catch (error) {
       console.log('Community management detail error', error?.response?.data || error?.message);
       Alert.alert('Error', 'Unable to load community details right now.');
@@ -307,6 +436,7 @@ const CommunityManagement = ({route, navigation}) => {
       try {
         const response = await getCommunityFeedApi(communityId, {page: pageParam, limit: FEED_PAGE_SIZE});
         const {posts, hasMore, nextPage} = parseFeedResponse(response, pageParam);
+        
         setFeed((prev) => (replace ? posts : [...prev, ...posts]));
         setHasMoreFeed(hasMore);
         setFeedPage(nextPage);
@@ -362,56 +492,120 @@ const CommunityManagement = ({route, navigation}) => {
     [fetchFeed, feedLoading, feedPage, hasMoreFeed, loadingMore],
   );
 
-  const handleShare = useCallback(() => {
-    if (!community) return;
-    const shareUrl = community?.slug ? `https://scaleup.app/community/${community.slug}` : undefined;
-    Share.share({
-      title: community.name,
-      message: shareUrl
-        ? `Help me grow ${community.name}! Invite link: ${shareUrl}`
-        : `Help me grow ${community.name} on ScaleUp.`,
-    }).catch(() => {});
-  }, [community]);
+  const handleTrackEngagement = useCallback(() => {
+    setEngagementModalVisible(true);
+  }, []);
 
-  const handlePreview = useCallback(() => {
-    navigation.navigate(Routes.CommunityDetail, {communityId});
-  }, [communityId, navigation]);
-
-  const handleInvite = useCallback(() => {
-    if (community?.institutionalInfo?.website) {
-      Linking.openURL(community.institutionalInfo.website).catch(() => {});
-    } else {
-      handleShare();
-    }
-  }, [community?.institutionalInfo?.website, handleShare]);
+  const handleCloseEngagement = useCallback(() => {
+    setEngagementModalVisible(false);
+  }, []);
 
   const metrics = useMemo(() => {
     const stats = community?.stats || {};
     return {
-      members: formatNumber(stats.memberCount),
-      weekly: formatNumber(stats.weeklyActivity),
+      members: formatNumber(stats.memberCount || stats.totalMembers),
+      weekly: formatNumber(stats.weeklyActivity || stats.activeWeeklyUsers || stats.activeThisWeek),
       engagement: stats.engagementRate ? `${Math.round(stats.engagementRate)}%` : '—',
-      growth: stats.monthlyGrowth ? `${stats.monthlyGrowth > 0 ? '+' : ''}${stats.monthlyGrowth}%` : '—',
+      growth: stats.monthlyGrowth || stats.memberGrowthRate || '—',
     };
   }, [community?.stats]);
 
+  const feedBreakdown = useMemo(() => {
+    return feed.reduce(
+      (acc, item) => {
+        const type = (item?.postType || '').toLowerCase();
+
+        if (type === 'poll') {
+          acc.polls += 1;
+        } else if (type === 'event') {
+          acc.events += 1;
+        } else {
+          acc.posts += 1;
+        }
+
+        return acc;
+      },
+      {posts: 0, polls: 0, events: 0},
+    );
+  }, [feed]);
+
+  const resolveStatValue = useCallback(
+    (paths, fallback) => {
+      const stats = community?.stats;
+      if (!stats) {
+        return fallback;
+      }
+
+      for (const path of paths) {
+        const value = getNestedValue(stats, path);
+        if (value !== undefined && value !== null) {
+          return value;
+        }
+      }
+
+      return fallback;
+    },
+    [community?.stats],
+  );
+
+  const engagementStats = useMemo(() => {
+    const membersValue = resolveStatValue(
+      ['memberCount', 'totalMembers', 'members.total'],
+      members.length,
+    );
+    const postsValue = resolveStatValue(
+      ['postCount', 'posts.total', 'posts.count', 'totalPosts'],
+      feedBreakdown.posts,
+    );
+    const pollsValue = resolveStatValue(
+      ['pollCount', 'polls.total', 'polls.count', 'posts.poll', 'contentBreakdown.polls'],
+      feedBreakdown.polls,
+    );
+    const eventsValue = resolveStatValue(
+      ['eventCount', 'events.total', 'events.count', 'posts.event', 'contentBreakdown.events'],
+      feedBreakdown.events,
+    );
+    const weeklyFallback =
+      community?.stats?.weeklyActivity ||
+      community?.stats?.activeWeeklyUsers ||
+      community?.stats?.activeThisWeek ||
+      0;
+    const weeklyValue = resolveStatValue(
+      ['weeklyActivity', 'activeWeeklyUsers', 'activeThisWeek'],
+      weeklyFallback,
+    );
+
+    return [
+      {
+        key: 'members',
+        label: 'Members',
+        value: formatNumber(membersValue),
+      },
+      {
+        key: 'posts',
+        label: 'Posts',
+        value: formatNumber(postsValue),
+      },
+      {
+        key: 'polls',
+        label: 'Polls',
+        value: formatNumber(pollsValue),
+      },
+      {
+        key: 'events',
+        label: 'Events',
+        value: formatNumber(eventsValue),
+      },
+      {
+        key: 'weekly',
+        label: 'Active this week',
+        value: formatNumber(weeklyValue),
+      },
+    ];
+  }, [resolveStatValue, feedBreakdown, members.length, community?.stats]);
+
   const membersPreview = useMemo(() => members.slice(0, 6), [members]);
   const moderationFeed = useMemo(() => feed.slice(0, 5), [feed]);
-
-  const checklistItems = useMemo(() => {
-    if (!community) return [];
-    const items = [];
-    const hasWelcome = Boolean(community.welcomeMessage);
-    const hasGuidelines = Boolean(community.guidelines);
-    const hasCover = Boolean(community.coverImage?.url);
-    const hasTags = Array.isArray(community.tags) && community.tags.length > 0;
-
-    items.push({ label: 'Set a welcome message', done: hasWelcome, icon: 'chatbubble-ellipses-outline' });
-    items.push({ label: 'Share community guidelines', done: hasGuidelines, icon: 'shield-half-outline' });
-    items.push({ label: 'Upload a cover image', done: hasCover, icon: 'image-outline' });
-    items.push({ label: 'Add community tags', done: hasTags, icon: 'pricetag-outline' });
-    return items;
-  }, [community]);
 
   if (loading && !community) {
     return <Skeleton />;
@@ -421,9 +615,6 @@ const CommunityManagement = ({route, navigation}) => {
     <ManagementHero
       community={community}
       membership={membership}
-      onShare={handleShare}
-      onPreview={handlePreview}
-      onInvite={handleInvite}
     />
   );
 
@@ -445,11 +636,11 @@ const CommunityManagement = ({route, navigation}) => {
           <Text style={styles.sectionTitle}>Key health metrics</Text>
           <View style={styles.insightRow}>
             <InsightCard icon="people" value={metrics.members} label="Total members" />
-            <InsightCard icon="pulse" value={metrics.weekly} label="Weekly check-ins" />
+            <InsightCard icon="pulse" value={metrics.weekly} label="Weekly activity" />
           </View>
           <View style={styles.insightRow}>
             <InsightCard icon="stats-chart" value={metrics.engagement} label="Engagement rate" />
-            <InsightCard icon="trending-up" value={metrics.growth} label="30-day growth" />
+            <InsightCard icon="trending-up" value={metrics.growth} label="Growth rate" />
           </View>
         </View>
 
@@ -470,13 +661,18 @@ const CommunityManagement = ({route, navigation}) => {
             icon="settings"
             title="Review settings"
             subtitle="Update privacy, features, or branding"
-            onPress={() => navigation.navigate(Routes.CommunitySettings, { communityId })}
+            onPress={() =>
+              navigation.navigate(Routes.CommunitySettings, {
+                communityId,
+                communityName: community?.name,
+              })
+            }
           />
           <QuickActionCard
             icon="analytics"
             title="Track engagement"
             subtitle="Check growth and activity trends"
-            onPress={() => navigation.navigate(Routes.CommunityDetail, { communityId })}
+            onPress={handleTrackEngagement}
           />
         </View>
 
@@ -489,7 +685,7 @@ const CommunityManagement = ({route, navigation}) => {
           ) : (
             <EmptyState title="No posts yet" subtitle="Once members post, you can moderate from here." />
           )}
-          {hasMoreFeed ? (
+          {hasMoreFeed && feed.length > 0 ? (
             <TouchableOpacity style={styles.moreButton} onPress={handleLoadMore}>
               <Text style={styles.moreButtonText}>Load more posts</Text>
             </TouchableOpacity>
@@ -503,7 +699,7 @@ const CommunityManagement = ({route, navigation}) => {
           ) : membersPreview.length ? (
             <View style={styles.membersGrid}>
               {membersPreview.map((member) => (
-                <MemberRow key={member.id || member.user?.id || member.user?._id} member={member} />
+                <MemberRow key={member.id || member.user?.id || member.user?._id || member._id} member={member} />
               ))}
             </View>
           ) : (
@@ -521,16 +717,13 @@ const CommunityManagement = ({route, navigation}) => {
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Setup checklist</Text>
-          {checklistItems.map((item) => (
-            <View key={item.label} style={styles.checklistRow}>
-              <Icon
-                name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
-                size={nw(18)}
-                color={item.done ? PALETTE.primary : PALETTE.subtle}
-              />
-              <Text style={styles.checklistLabel}>{item.label}</Text>
-            </View>
-          ))}
+          <View style={styles.comingSoonContainer}>
+            <Icon name="time-outline" size={nw(18)} color={PALETTE.subtle} />
+            <Text style={styles.comingSoonText}>Coming soon</Text>
+          </View>
+          <Text style={styles.comingSoonSubtext}>
+            We'll surface guided setup tasks here to help you launch faster.
+          </Text>
         </View>
 
         <View style={styles.sectionCard}>
@@ -544,6 +737,31 @@ const CommunityManagement = ({route, navigation}) => {
           />
         </View>
       </ScrollView>
+
+      <Modal
+        visible={engagementModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseEngagement}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseEngagement} />
+          <View style={styles.engagementCard}>
+            <Text style={styles.engagementTitle}>Engagement snapshot</Text>
+            <View style={styles.engagementStatsList}>
+              {engagementStats.map((stat) => (
+                <View key={stat.key} style={styles.engagementStatRow}>
+                  <Text style={styles.engagementStatLabel}>{stat.label}</Text>
+                  <Text style={styles.engagementStatValue}>{stat.value}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={handleCloseEngagement}>
+              <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -557,7 +775,7 @@ const styles = StyleSheet.create({
     paddingBottom: nh(32),
   },
   heroWrapper: {
-    marginHorizontal: nw(20),
+    marginHorizontal: nw(16),
     marginTop: nh(18),
     borderRadius: nw(28),
     overflow: 'hidden',
@@ -672,28 +890,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.whiteFFFFFF + '22',
     marginHorizontal: nw(12),
   },
-  heroActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nh(18),
-    gap: nw(10),
-  },
-  heroActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: nw(6),
-    backgroundColor: COLORS.whiteFFFFFF,
-    paddingHorizontal: nw(14),
-    paddingVertical: nh(10),
-    borderRadius: nw(16),
-  },
-  heroActionLabel: {
-    color: PALETTE.primary,
-    fontSize: nw(12),
-    fontWeight: '600',
-  },
   sectionCard: {
     marginHorizontal: nw(20),
     marginTop: nh(18),
@@ -713,6 +909,7 @@ const styles = StyleSheet.create({
   insightRow: {
     flexDirection: 'row',
     gap: nw(12),
+    marginBottom: nh(12),
   },
   insightCard: {
     flex: 1,
@@ -776,9 +973,159 @@ const styles = StyleSheet.create({
     fontSize: nw(11),
     marginTop: nh(4),
   },
-  feedCard: {
-    marginBottom: nh(14),
+  
+  // FeedCard Styles
+  feedCardContainer: {
+    backgroundColor: PALETTE.background,
+    borderRadius: nw(12),
+    padding: nw(12),
+    marginBottom: nh(10),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
   },
+  feedCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: nh(10),
+  },
+  feedCardAuthorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  feedCardAvatar: {
+    width: nw(32),
+    height: nw(32),
+    borderRadius: nw(16),
+    marginRight: nw(8),
+  },
+  feedCardAvatarFallback: {
+    width: nw(32),
+    height: nw(32),
+    borderRadius: nw(16),
+    backgroundColor: PALETTE.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: nw(8),
+  },
+  feedCardAvatarText: {
+    color: PALETTE.primary,
+    fontSize: nw(14),
+    fontWeight: '600',
+  },
+  feedCardAuthor: {
+    fontSize: nw(13),
+    color: PALETTE.primary,
+    fontWeight: '600',
+  },
+  feedCardDate: {
+    fontSize: nw(11),
+    color: PALETTE.subtle,
+    marginTop: nh(2),
+  },
+  feedCardTypeBadge: {
+    backgroundColor: PALETTE.primary + '10',
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(3),
+    borderRadius: nw(8),
+  },
+  feedCardType: {
+    fontSize: nw(10),
+    color: PALETTE.primary,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  feedCardBody: {
+    marginBottom: nh(10),
+  },
+  feedCardTitle: {
+    fontSize: nw(14),
+    fontWeight: '600',
+    color: PALETTE.primary,
+    marginBottom: nh(6),
+  },
+  feedCardContent: {
+    fontSize: nw(12),
+    color: PALETTE.muted,
+    lineHeight: nh(18),
+  },
+  feedCardStats: {
+    flexDirection: 'row',
+    gap: nw(16),
+    paddingTop: nh(8),
+    borderTopWidth: 1,
+    borderTopColor: PALETTE.border,
+  },
+  feedCardStat: {
+    fontSize: nw(11),
+    color: PALETTE.subtle,
+  },
+  
+  // Poll specific styles
+  feedCardPoll: {
+    backgroundColor: PALETTE.primary + '08',
+    padding: nw(10),
+    borderRadius: nw(8),
+  },
+  feedCardPollLabel: {
+    fontSize: nw(11),
+    color: PALETTE.primary,
+    fontWeight: '600',
+    marginBottom: nh(4),
+  },
+  feedCardPollQuestion: {
+    fontSize: nw(13),
+    color: PALETTE.primary,
+    fontWeight: '500',
+    marginBottom: nh(4),
+  },
+  feedCardPollOptions: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+  },
+  
+  // Event specific styles
+  feedCardEvent: {
+    backgroundColor: PALETTE.accent + '15',
+    padding: nw(10),
+    borderRadius: nw(8),
+  },
+  feedCardEventLabel: {
+    fontSize: nw(11),
+    color: PALETTE.primary,
+    fontWeight: '600',
+    marginBottom: nh(4),
+  },
+  feedCardEventTitle: {
+    fontSize: nw(13),
+    color: PALETTE.primary,
+    fontWeight: '500',
+    marginBottom: nh(4),
+  },
+  feedCardEventDate: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+  },
+  feedCardEventVenue: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+    marginTop: nh(2),
+  },
+  
+  // Announcement specific styles
+  feedCardAnnouncement: {
+    backgroundColor: PALETTE.accent + '10',
+    padding: nw(10),
+    borderRadius: nw(8),
+  },
+  feedCardAnnouncementLabel: {
+    fontSize: nw(11),
+    color: PALETTE.accent,
+    fontWeight: '700',
+    marginBottom: nh(6),
+  },
+  
   moreButton: {
     marginTop: nh(10),
     alignSelf: 'flex-start',
@@ -832,15 +1179,22 @@ const styles = StyleSheet.create({
     fontSize: nw(11),
     marginTop: nh(2),
   },
-  checklistRow: {
+  comingSoonContainer: {
+    marginTop: nh(12),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nw(10),
-    paddingVertical: nh(8),
+    gap: nw(8),
   },
-  checklistLabel: {
+  comingSoonText: {
     color: PALETTE.muted,
+    fontSize: nw(13),
+    fontWeight: '600',
+  },
+  comingSoonSubtext: {
+    marginTop: nh(6),
+    color: PALETTE.subtle,
     fontSize: nw(12),
+    lineHeight: nh(18),
   },
   notesInput: {
     marginTop: nh(10),
@@ -850,6 +1204,66 @@ const styles = StyleSheet.create({
     padding: nw(14),
     color: PALETTE.subtle,
     minHeight: nh(100),
+    textAlignVertical: 'top',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: nw(20),
+  },
+  engagementCard: {
+    width: '100%',
+    maxWidth: nw(320),
+    borderRadius: nw(20),
+    backgroundColor: PALETTE.surface,
+    paddingHorizontal: nw(20),
+    paddingVertical: nh(20),
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 6,
+  },
+  engagementTitle: {
+    fontSize: nw(16),
+    fontWeight: '700',
+    color: PALETTE.primary,
+    marginBottom: nh(12),
+    textAlign: 'center',
+  },
+  engagementStatsList: {
+    gap: nh(10),
+  },
+  engagementStatRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: nh(4),
+  },
+  engagementStatLabel: {
+    fontSize: nw(13),
+    color: PALETTE.muted,
+  },
+  engagementStatValue: {
+    fontSize: nw(14),
+    fontWeight: '600',
+    color: PALETTE.primary,
+  },
+  modalCloseButton: {
+    marginTop: nh(18),
+    alignSelf: 'center',
+    paddingHorizontal: nw(20),
+    paddingVertical: nh(10),
+    borderRadius: nw(14),
+    backgroundColor: PALETTE.primary,
+  },
+  modalCloseText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(12),
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
   emptyState: {
     alignItems: 'center',
