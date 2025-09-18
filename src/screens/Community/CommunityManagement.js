@@ -1,7 +1,7 @@
 // src/screens/Community/CommunityManagement.js
 'use strict';
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,8 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -30,6 +32,7 @@ import {
   getJoinRequestsApi,
   respondToJoinRequestApi,
   updateMemberRoleApi,
+  createCommunityPostApi,
 } from '../../services/apiService';
 import { throttle } from '../../helper/commonFunctions';
 import Routes from '../../helper/routes';
@@ -68,7 +71,6 @@ const formatDate = (value) => {
 const parseFeedResponse = (response, page) => {
   const root = response?.data ?? {};
   
-  // Try multiple possible locations for posts
   const posts = Array.isArray(root.posts)
     ? root.posts
     : Array.isArray(root.data?.posts)
@@ -230,11 +232,9 @@ const QuickActionCard = ({icon, title, subtitle, onPress}) => (
   </TouchableOpacity>
 );
 
-// Custom FeedCard component without PostView dependency
 const FeedCard = ({post}) => {
   if (!post) return null;
 
-  // Extract safe text from potentially encrypted content
   const extractText = (data) => {
     if (!data) return '';
     if (typeof data === 'string') return data;
@@ -246,9 +246,9 @@ const FeedCard = ({post}) => {
   const postId = post?.id || post?._id;
   const postType = post?.postType || 'text';
   const authorName = post?.author?.username || 
-                    post?.author?.name || 
-                    `${post?.author?.firstname || ''} ${post?.author?.lastname || ''}`.trim() ||
-                    'Anonymous';
+                      post?.author?.name || 
+                      `${post?.author?.firstname || ''} ${post?.author?.lastname || ''}`.trim() ||
+                      'Anonymous';
   const authorAvatar = post?.author?.profilePicture || post?.author?.avatar;
   const postTitle = extractText(post?.title);
   const postContent = extractText(post?.content);
@@ -265,7 +265,6 @@ const FeedCard = ({post}) => {
   const createdAt = post?.publishedAt || post?.createdAt;
   const formattedDate = formatDate(createdAt);
 
-  // Type-specific content
   const renderTypeSpecificContent = () => {
     switch (postType) {
       case 'poll':
@@ -483,13 +482,27 @@ const CommunityManagement = ({route, navigation}) => {
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [roleUpdating, setRoleUpdating] = useState(false);
+  const membersFetchedRef = useRef(false);
+  const membersLoadingRef = useRef(false);
+  const scrollRef = useRef(null);
+  const [membershipSectionY, setMembershipSectionY] = useState(0);
+
+  // Announcement modal state
+  const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
+  const [announcementData, setAnnouncementData] = useState({
+    title: '',
+    content: '',
+    priority: 'normal',
+    requireReadReceipt: false,
+    targetAllMembers: true,
+  });
+  const [isSubmittingAnnouncement, setIsSubmittingAnnouncement] = useState(false);
 
   const fetchCommunityDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getCommunityDetailsApi(communityId);
       
-      // FIX: Access the nested data structure correctly
       const responseData = response?.data?.data || {};
       
       setCommunity(responseData.community || null);
@@ -530,19 +543,70 @@ const CommunityManagement = ({route, navigation}) => {
 
   const fetchMembers = useCallback(
     async (force = false) => {
-      if (!force && (membersLoading || members.length)) return;
+      if (force) {
+        membersFetchedRef.current = false;
+      }
+
+      if (membersLoadingRef.current) {
+        return;
+      }
+
+      if (!force && membersFetchedRef.current) {
+        return;
+      }
+
+      membersLoadingRef.current = true;
       setMembersLoading(true);
       try {
         const response = await getCommunityMembersApi(communityId);
-        setMembers(extractMembers(response?.data));
+        const parsedMembers = extractMembers(response?.data);
+        setMembers(parsedMembers);
+        membersFetchedRef.current = true;
       } catch (error) {
         console.log('Community management members error', error?.response?.data || error?.message);
       } finally {
+        membersLoadingRef.current = false;
         setMembersLoading(false);
       }
     },
-    [communityId, members.length, membersLoading],
+    [communityId],
   );
+
+  const userRole = useMemo(() => (membership?.role || '').toLowerCase(), [membership?.role]);
+  const canModerateMembers = useMemo(
+    () => ['owner', 'admin', 'moderator'].includes(userRole),
+    [userRole],
+  );
+
+  const fetchJoinRequests = useCallback(async () => {
+    if (!canModerateMembers) {
+      return;
+    }
+
+    setJoinRequestsLoading(true);
+    try {
+      const response = await getJoinRequestsApi(communityId, {status: 'pending', page: 1, limit: 10});
+      const payload = response?.data?.data || response?.data || {};
+      const requests =
+        Array.isArray(payload.requests)
+          ? payload.requests
+          : Array.isArray(payload.items)
+          ? payload.items
+          : Array.isArray(payload)
+          ? payload
+          : [];
+      setJoinRequests(requests);
+    } catch (error) {
+      console.log('Community management join requests error', error?.response?.data || error?.message);
+      setJoinRequests([]);
+    } finally {
+      setJoinRequestsLoading(false);
+    }
+  }, [communityId, canModerateMembers]);
+
+  useEffect(() => {
+    membersFetchedRef.current = false;
+  }, [communityId]);
 
   useEffect(() => {
     fetchCommunityDetails().then(() => {
@@ -550,7 +614,7 @@ const CommunityManagement = ({route, navigation}) => {
       fetchMembers(true);
     });
   }, [fetchCommunityDetails, fetchFeed, fetchMembers]);
-
+  
   useEffect(() => {
     if (canModerateMembers) {
       fetchJoinRequests();
@@ -604,32 +668,6 @@ const CommunityManagement = ({route, navigation}) => {
       null
     );
   }, []);
-
-  const fetchJoinRequests = useCallback(async () => {
-    if (!canModerateMembers) {
-      return;
-    }
-
-    setJoinRequestsLoading(true);
-    try {
-      const response = await getJoinRequestsApi(communityId, {status: 'pending', page: 1, limit: 10});
-      const payload = response?.data?.data || response?.data || {};
-      const requests =
-        Array.isArray(payload.requests)
-          ? payload.requests
-          : Array.isArray(payload.items)
-          ? payload.items
-          : Array.isArray(payload)
-          ? payload
-          : [];
-      setJoinRequests(requests);
-    } catch (error) {
-      console.log('Community management join requests error', error?.response?.data || error?.message);
-      setJoinRequests([]);
-    } finally {
-      setJoinRequestsLoading(false);
-    }
-  }, [communityId, canModerateMembers]);
 
   const handleJoinRequestAction = useCallback(
     async (request, action) => {
@@ -747,11 +785,89 @@ const CommunityManagement = ({route, navigation}) => {
     setEngagementModalVisible(false);
   }, []);
 
-  const userRole = useMemo(() => (membership?.role || '').toLowerCase(), [membership?.role]);
-  const canModerateMembers = useMemo(
-    () => ['owner', 'admin', 'moderator'].includes(userRole),
-    [userRole],
-  );
+  const handleScrollToMembers = useCallback(() => {
+    if (scrollRef.current) {
+      const targetY = membershipSectionY > 0 ? Math.max(membershipSectionY - nh(40), 0) : 0;
+      scrollRef.current.scrollTo({y: targetY, animated: true});
+    }
+  }, [membershipSectionY]);
+
+  // Announcement modal handlers
+  const handleOpenAnnouncementModal = useCallback(() => {
+    setAnnouncementModalVisible(true);
+    setAnnouncementData({
+      title: '',
+      content: '',
+      priority: 'normal',
+      requireReadReceipt: false,
+      targetAllMembers: true,
+    });
+  }, []);
+
+  const handleCloseAnnouncementModal = useCallback(() => {
+    if (isSubmittingAnnouncement) return;
+    setAnnouncementModalVisible(false);
+  }, [isSubmittingAnnouncement]);
+
+  const handleSubmitAnnouncement = useCallback(async () => {
+    if (!announcementData.title.trim()) {
+      Alert.alert('Error', 'Please enter an announcement title');
+      return;
+    }
+    
+    if (!announcementData.content.trim()) {
+      Alert.alert('Error', 'Please enter announcement content');
+      return;
+    }
+    
+    setIsSubmittingAnnouncement(true);
+    
+    try {
+      const payload = {
+        postType: 'announcement',
+        title: announcementData.title.trim(),
+        content: {
+          text: announcementData.content.trim(),
+        },
+        visibility: 'members',
+        announcement: {
+          priority: announcementData.priority,
+          readReceipts: {
+            required: announcementData.requireReadReceipt,
+          },
+          targetAudience: {
+            allMembers: announcementData.targetAllMembers,
+          },
+        },
+      };
+      
+      await createCommunityPostApi(communityId, payload);
+      
+      Alert.alert(
+        'Success',
+        'Announcement shared successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setAnnouncementModalVisible(false);
+              handleRefresh();
+            },
+          },
+        ]
+      );
+      
+    } catch (error) {
+      console.error('Error creating announcement:', error?.response?.data || error?.message);
+      
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to create announcement. Please try again.',
+      );
+    } finally {
+      setIsSubmittingAnnouncement(false);
+    }
+  }, [announcementData, communityId, handleRefresh]);
 
   const metrics = useMemo(() => {
     const stats = community?.stats || {};
@@ -913,6 +1029,7 @@ const CommunityManagement = ({route, navigation}) => {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
@@ -941,13 +1058,16 @@ const CommunityManagement = ({route, navigation}) => {
             icon="paper-plane"
             title="Share announcement"
             subtitle="Create a post to reach everyone"
-            onPress={() =>
-              navigation.navigate(Routes.CreateCommunityPost, {
-                communityId,
-                communityName: community?.name,
-              })
-            }
+            onPress={handleOpenAnnouncementModal}
           />
+          {canModerateMembers ? (
+            <QuickActionCard
+              icon="people"
+              title="Manage members"
+              subtitle="Review requests and roles"
+              onPress={handleScrollToMembers}
+            />
+          ) : null}
           <QuickActionCard
             icon="settings"
             title="Review settings"
@@ -1013,7 +1133,13 @@ const CommunityManagement = ({route, navigation}) => {
           ) : null}
         </View>
 
-        <View style={styles.sectionCard}>
+        <View
+          style={styles.sectionCard}
+          onLayout={(event) => {
+            const {y} = event.nativeEvent.layout;
+            setMembershipSectionY((prev) => (Math.abs(prev - y) > 1 ? y : prev));
+          }}
+        >
           <Text style={styles.sectionTitle}>Membership snapshot</Text>
           {membersLoading && !members.length ? (
             <ActivityIndicator color={PALETTE.primary} style={{marginTop: nh(12)}} />
@@ -1139,6 +1265,162 @@ const CommunityManagement = ({route, navigation}) => {
             </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+      
+      {/* IMPROVED Announcement Creation Modal */}
+      <Modal
+        visible={announcementModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseAnnouncementModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalKeyboardAvoidingView}
+        >
+          <Pressable
+            style={[StyleSheet.absoluteFill, styles.modalBackdrop]}
+            onPress={isSubmittingAnnouncement ? undefined : handleCloseAnnouncementModal}
+          />
+          <View style={styles.announcementModalContainer}>
+            <View style={styles.modalDragHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>New Announcement</Text>
+              <TouchableOpacity
+                onPress={handleCloseAnnouncementModal}
+                disabled={isSubmittingAnnouncement}
+                style={styles.modalCloseIcon}
+              >
+                <Icon name="close" size={nw(24)} color={PALETTE.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Title *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g., Q3 All-Hands Meeting"
+                  placeholderTextColor={PALETTE.subtle}
+                  value={announcementData.title}
+                  onChangeText={(text) => setAnnouncementData(prev => ({ ...prev, title: text }))}
+                  maxLength={200}
+                  editable={!isSubmittingAnnouncement}
+                />
+                <Text style={styles.charCount}>
+                  {announcementData.title.length}/200
+                </Text>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Content *</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  placeholder="Share details, updates, or news here..."
+                  placeholderTextColor={PALETTE.subtle}
+                  value={announcementData.content}
+                  onChangeText={(text) => setAnnouncementData(prev => ({ ...prev, content: text }))}
+                  multiline
+                  numberOfLines={6}
+                  maxLength={2000}
+                  textAlignVertical="top"
+                  editable={!isSubmittingAnnouncement}
+                />
+                <Text style={styles.charCount}>
+                  {announcementData.content.length}/2000
+                </Text>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Priority</Text>
+                <View style={styles.priorityOptions}>
+                  {['low', 'normal', 'high', 'urgent'].map((priority) => (
+                    <TouchableOpacity
+                      key={priority}
+                      style={[
+                        styles.priorityButton,
+                        announcementData.priority === priority && styles.priorityButtonActive,
+                      ]}
+                      onPress={() => setAnnouncementData(prev => ({ ...prev, priority }))}
+                      disabled={isSubmittingAnnouncement}
+                    >
+                      <Icon
+                        name={
+                          priority === 'urgent' ? 'alert-circle' :
+                          priority === 'high' ? 'warning' :
+                          priority === 'normal' ? 'information-circle' :
+                          'flag'
+                        }
+                        size={nw(16)}
+                        color={
+                          announcementData.priority === priority 
+                            ? COLORS.whiteFFFFFF 
+                            : PALETTE.primary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.priorityText,
+                          announcementData.priority === priority && styles.priorityTextActive,
+                        ]}
+                      >
+                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              
+              <View style={styles.toggleGroup}>
+                <View style={styles.toggleInfo}>
+                  <Icon name="checkmark-circle" size={nw(20)} color={PALETTE.primary} />
+                  <View style={styles.toggleTextContainer}>
+                    <Text style={styles.toggleLabel}>Require Read Receipt</Text>
+                    <Text style={styles.toggleDescription}>
+                      Track when members have read this announcement
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.toggle,
+                    announcementData.requireReadReceipt && styles.toggleActive,
+                  ]}
+                  onPress={() => setAnnouncementData(prev => ({
+                    ...prev,
+                    requireReadReceipt: !prev.requireReadReceipt,
+                  }))}
+                  disabled={isSubmittingAnnouncement}
+                >
+                  <View
+                    style={[
+                      styles.toggleThumb,
+                      announcementData.requireReadReceipt && styles.toggleThumbActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              </View>
+              
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalSubmitButton]}
+                onPress={handleSubmitAnnouncement}
+                disabled={isSubmittingAnnouncement}
+              >
+                {isSubmittingAnnouncement ? (
+                  <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
+                ) : (
+                  <>
+                    <Icon name="send" size={nw(16)} color={COLORS.whiteFFFFFF} />
+                    <Text style={styles.modalSubmitText}>Share Announcement</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -1351,8 +1633,6 @@ const styles = StyleSheet.create({
     fontSize: nw(11),
     marginTop: nh(4),
   },
-  
-  // FeedCard Styles
   feedCardContainer: {
     backgroundColor: PALETTE.background,
     borderRadius: nw(12),
@@ -1439,8 +1719,6 @@ const styles = StyleSheet.create({
     fontSize: nw(11),
     color: PALETTE.subtle,
   },
-  
-  // Poll specific styles
   feedCardPoll: {
     backgroundColor: PALETTE.primary + '08',
     padding: nw(10),
@@ -1462,8 +1740,6 @@ const styles = StyleSheet.create({
     fontSize: nw(11),
     color: PALETTE.muted,
   },
-  
-  // Event specific styles
   feedCardEvent: {
     backgroundColor: PALETTE.accent + '15',
     padding: nw(10),
@@ -1490,8 +1766,6 @@ const styles = StyleSheet.create({
     color: PALETTE.muted,
     marginTop: nh(2),
   },
-  
-  // Announcement specific styles
   feedCardAnnouncement: {
     backgroundColor: PALETTE.accent + '10',
     padding: nw(10),
@@ -1503,7 +1777,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: nh(6),
   },
-  
   moreButton: {
     marginTop: nh(10),
     alignSelf: 'flex-start',
@@ -1817,6 +2090,182 @@ const styles = StyleSheet.create({
     height: nh(14),
     backgroundColor: PALETTE.border,
     borderRadius: nw(10),
+  },
+  // IMPROVED ANNOUNCEMENT MODAL STYLES
+  modalKeyboardAvoidingView: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  announcementModalContainer: {
+    backgroundColor: PALETTE.surface,
+    borderTopLeftRadius: nw(24),
+    borderTopRightRadius: nw(24),
+    maxHeight: '90%',
+    paddingBottom: Platform.OS === 'ios' ? nh(20) : 0,
+  },
+  modalDragHandle: {
+    width: nw(40),
+    height: nh(5),
+    backgroundColor: PALETTE.border,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: nh(12),
+    marginBottom: nh(8),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: nw(24),
+    paddingVertical: nh(16),
+    borderBottomWidth: 1,
+    borderBottomColor: PALETTE.border,
+  },
+  modalTitle: {
+    fontSize: nw(18),
+    fontWeight: '700',
+    color: PALETTE.primary,
+  },
+  modalCloseIcon: {
+    padding: nw(4),
+  },
+  modalBody: {
+    paddingHorizontal: nw(24),
+  },
+  modalFooter: {
+    paddingHorizontal: nw(24),
+    paddingTop: nh(16),
+    paddingBottom: nh(Platform.OS === 'ios' ? 16 : 24),
+    borderTopWidth: 1,
+    borderTopColor: PALETTE.border,
+  },
+  inputGroup: {
+    marginBottom: nh(20),
+  },
+  inputLabel: {
+    fontSize: nw(13),
+    fontWeight: '600',
+    color: PALETTE.primary,
+    marginBottom: nh(8),
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(12),
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(12),
+    fontSize: nw(14),
+    color: PALETTE.primary,
+    backgroundColor: PALETTE.background,
+  },
+  textArea: {
+    minHeight: nh(120),
+    textAlignVertical: 'top',
+  },
+  charCount: {
+    fontSize: nw(11),
+    color: PALETTE.subtle,
+    textAlign: 'right',
+    marginTop: nh(4),
+  },
+  priorityOptions: {
+    flexDirection: 'row',
+    gap: nw(8),
+  },
+  priorityButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(4),
+    paddingVertical: nh(10),
+    borderRadius: nw(10),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    backgroundColor: PALETTE.background,
+  },
+  priorityButtonActive: {
+    backgroundColor: PALETTE.primary,
+    borderColor: PALETTE.primary,
+  },
+  priorityText: {
+    fontSize: nw(11),
+    fontWeight: '600',
+    color: PALETTE.primary,
+  },
+  priorityTextActive: {
+    color: COLORS.whiteFFFFFF,
+  },
+  toggleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: nh(12),
+    paddingHorizontal: nw(14),
+    backgroundColor: PALETTE.background,
+    borderRadius: nw(12),
+    marginBottom: nh(16),
+  },
+  toggleInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(12),
+  },
+  toggleTextContainer: {
+    flex: 1,
+  },
+  toggleLabel: {
+    fontSize: nw(13),
+    fontWeight: '600',
+    color: PALETTE.primary,
+  },
+  toggleDescription: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+    marginTop: nh(2),
+  },
+  toggle: {
+    width: nw(44),
+    height: nh(24),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.border,
+    padding: nw(2),
+    justifyContent: 'center',
+  },
+  toggleActive: {
+    backgroundColor: PALETTE.accent,
+  },
+  toggleThumb: {
+    width: nh(20),
+    height: nh(20),
+    borderRadius: nw(10),
+    backgroundColor: COLORS.whiteFFFFFF,
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(8),
+    paddingVertical: nh(14),
+    borderRadius: nw(14),
+  },
+  modalSubmitButton: {
+    backgroundColor: PALETTE.primary,
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalSubmitText: {
+    fontSize: nw(14),
+    fontWeight: '600',
+    color: COLORS.whiteFFFFFF,
   },
 });
 
