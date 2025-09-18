@@ -27,6 +27,9 @@ import {
   getCommunityDetailsApi,
   getCommunityMembersApi,
   getCommunityFeedApi,
+  getJoinRequestsApi,
+  respondToJoinRequestApi,
+  updateMemberRoleApi,
 } from '../../services/apiService';
 import { throttle } from '../../helper/commonFunctions';
 import Routes from '../../helper/routes';
@@ -343,7 +346,7 @@ const FeedCard = ({post}) => {
   );
 };
 
-const MemberRow = ({member}) => {
+const MemberRow = ({member, onManage, showActions}) => {
   const name = member?.user
     ? `${member.user.firstname || ''} ${member.user.lastname || ''}`.trim() || member.user.username
     : member?.name || 'Member';
@@ -363,6 +366,11 @@ const MemberRow = ({member}) => {
         <Text style={styles.memberName}>{name}</Text>
         <Text style={styles.memberRoleText}>{role}</Text>
       </View>
+      {showActions ? (
+        <TouchableOpacity style={styles.memberManageButton} onPress={onManage}>
+          <Text style={styles.memberManageText}>Manage</Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 };
@@ -374,6 +382,66 @@ const EmptyState = ({title, subtitle}) => (
     <Text style={styles.emptySubtitle}>{subtitle}</Text>
   </View>
 );
+
+const JoinRequestRow = ({request, onApprove, onReject, processing}) => {
+  if (!request) {
+    return null;
+  }
+
+  const applicant = request.user || request.applicant || {};
+  const fullName =
+    applicant.username ||
+    [applicant.firstname, applicant.lastname].filter(Boolean).join(' ').trim() ||
+    applicant.email ||
+    'Applicant';
+  const submittedAt = request.createdAt || request.submittedAt;
+  const formattedDate = submittedAt ? formatDate(submittedAt) : null;
+
+  return (
+    <View style={styles.joinRequestRow}>
+      <View style={styles.joinRequestInfo}>
+        <View style={styles.joinRequestAvatar}>
+          <Text style={styles.joinRequestAvatarText}>
+            {(fullName?.[0] || '?').toUpperCase()}
+          </Text>
+        </View>
+        <View style={{flex: 1}}>
+          <Text style={styles.joinRequestName}>{fullName}</Text>
+          {applicant.email ? (
+            <Text style={styles.joinRequestEmail}>{applicant.email}</Text>
+          ) : null}
+          {formattedDate ? (
+            <Text style={styles.joinRequestDate}>Requested {formattedDate}</Text>
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.joinRequestActions}>
+        <TouchableOpacity
+          style={[styles.requestButton, styles.requestRejectButton]}
+          onPress={onReject}
+          disabled={processing}
+        >
+          {processing ? (
+            <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
+          ) : (
+            <Text style={styles.requestButtonText}>Reject</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.requestButton, styles.requestApproveButton]}
+          onPress={onApprove}
+          disabled={processing}
+        >
+          {processing ? (
+            <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
+          ) : (
+            <Text style={styles.requestButtonText}>Approve</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 const Skeleton = () => (
   <SafeAreaView style={styles.safeArea}>
@@ -409,6 +477,12 @@ const CommunityManagement = ({route, navigation}) => {
   const [members, setMembers] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
   const [engagementModalVisible, setEngagementModalVisible] = useState(false);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  const [requestProcessing, setRequestProcessing] = useState({});
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [roleUpdating, setRoleUpdating] = useState(false);
 
   const fetchCommunityDetails = useCallback(async () => {
     try {
@@ -454,34 +528,50 @@ const CommunityManagement = ({route, navigation}) => {
     [communityId],
   );
 
-  const fetchMembers = useCallback(async () => {
-    if (membersLoading || members.length) return;
-    setMembersLoading(true);
-    try {
-      const response = await getCommunityMembersApi(communityId);
-      setMembers(extractMembers(response?.data));
-    } catch (error) {
-      console.log('Community management members error', error?.response?.data || error?.message);
-    } finally {
-      setMembersLoading(false);
-    }
-  }, [communityId, members.length, membersLoading]);
+  const fetchMembers = useCallback(
+    async (force = false) => {
+      if (!force && (membersLoading || members.length)) return;
+      setMembersLoading(true);
+      try {
+        const response = await getCommunityMembersApi(communityId);
+        setMembers(extractMembers(response?.data));
+      } catch (error) {
+        console.log('Community management members error', error?.response?.data || error?.message);
+      } finally {
+        setMembersLoading(false);
+      }
+    },
+    [communityId, members.length, membersLoading],
+  );
 
   useEffect(() => {
     fetchCommunityDetails().then(() => {
       fetchFeed({pageParam: 1, replace: true});
-      fetchMembers();
+      fetchMembers(true);
     });
   }, [fetchCommunityDetails, fetchFeed, fetchMembers]);
+
+  useEffect(() => {
+    if (canModerateMembers) {
+      fetchJoinRequests();
+    } else {
+      setJoinRequests([]);
+    }
+  }, [canModerateMembers, fetchJoinRequests]);
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     setHasMoreFeed(true);
     fetchCommunityDetails().then(() => {
       fetchFeed({pageParam: 1, replace: true});
-      fetchMembers();
+      fetchMembers(true);
+      if (canModerateMembers) {
+        fetchJoinRequests();
+      } else {
+        setJoinRequests([]);
+      }
     });
-  }, [fetchCommunityDetails, fetchFeed, fetchMembers]);
+  }, [fetchCommunityDetails, fetchFeed, fetchMembers, fetchJoinRequests, canModerateMembers]);
 
   const handleLoadMore = useCallback(
     throttle(() => {
@@ -492,6 +582,163 @@ const CommunityManagement = ({route, navigation}) => {
     [fetchFeed, feedLoading, feedPage, hasMoreFeed, loadingMore],
   );
 
+  const resolveRequestId = useCallback((request) => {
+    return (
+      request?.id ||
+      request?._id ||
+      request?.requestId ||
+      request?.uuid ||
+      request?.request_id ||
+      request?.joinRequestId ||
+      null
+    );
+  }, []);
+
+  const resolveMemberId = useCallback((member) => {
+    return (
+      member?.id ||
+      member?._id ||
+      member?.user?.id ||
+      member?.user?._id ||
+      member?.memberId ||
+      null
+    );
+  }, []);
+
+  const fetchJoinRequests = useCallback(async () => {
+    if (!canModerateMembers) {
+      return;
+    }
+
+    setJoinRequestsLoading(true);
+    try {
+      const response = await getJoinRequestsApi(communityId, {status: 'pending', page: 1, limit: 10});
+      const payload = response?.data?.data || response?.data || {};
+      const requests =
+        Array.isArray(payload.requests)
+          ? payload.requests
+          : Array.isArray(payload.items)
+          ? payload.items
+          : Array.isArray(payload)
+          ? payload
+          : [];
+      setJoinRequests(requests);
+    } catch (error) {
+      console.log('Community management join requests error', error?.response?.data || error?.message);
+      setJoinRequests([]);
+    } finally {
+      setJoinRequestsLoading(false);
+    }
+  }, [communityId, canModerateMembers]);
+
+  const handleJoinRequestAction = useCallback(
+    async (request, action) => {
+      const requestId = resolveRequestId(request);
+      if (!requestId) {
+        Alert.alert('Error', 'Could not identify this request. Please refresh and try again.');
+        return;
+      }
+
+      setRequestProcessing((prev) => ({...prev, [requestId]: true}));
+      try {
+        await respondToJoinRequestApi(communityId, requestId, {action});
+        setJoinRequests((prev) => prev.filter((item) => resolveRequestId(item) !== requestId));
+        if (action === 'approve') {
+          fetchMembers(true);
+        }
+        Alert.alert('Success', action === 'approve' ? 'Member approved successfully.' : 'Request rejected.');
+      } catch (error) {
+        console.log('Join request action error', error?.response?.data || error?.message);
+        Alert.alert('Error', error?.response?.data?.message || 'Unable to update the request right now.');
+      } finally {
+        setRequestProcessing((prev) => {
+          const next = {...prev};
+          delete next[requestId];
+          return next;
+        });
+      }
+    },
+    [communityId, fetchMembers, resolveRequestId],
+  );
+
+  const handleApproveRequest = useCallback(
+    (request) => {
+      handleJoinRequestAction(request, 'approve');
+    },
+    [handleJoinRequestAction],
+  );
+
+  const handleRejectRequest = useCallback(
+    (request) => {
+      Alert.alert(
+        'Reject request',
+        'Are you sure you want to reject this join request?',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Reject',
+            style: 'destructive',
+            onPress: () => handleJoinRequestAction(request, 'reject'),
+          },
+        ],
+      );
+    },
+    [handleJoinRequestAction],
+  );
+
+  const handleOpenRoleModal = useCallback((member) => {
+    setSelectedMember(member);
+    setRoleModalVisible(true);
+  }, []);
+
+  const handleCloseRoleModal = useCallback(() => {
+    if (roleUpdating) {
+      return;
+    }
+    setRoleModalVisible(false);
+    setSelectedMember(null);
+  }, [roleUpdating]);
+
+  const handleRoleSelection = useCallback(
+    async (role) => {
+      if (!selectedMember) {
+        return;
+      }
+
+      const memberId = resolveMemberId(selectedMember);
+      if (!memberId) {
+        Alert.alert('Error', 'Could not identify this member. Please refresh and try again.');
+        return;
+      }
+
+      const currentRole = (selectedMember?.role || '').toLowerCase();
+      if (currentRole === role) {
+        handleCloseRoleModal();
+        return;
+      }
+
+      setRoleUpdating(true);
+      try {
+        await updateMemberRoleApi(communityId, memberId, {role});
+        setMembers((prev) =>
+          prev.map((member) =>
+            resolveMemberId(member) === memberId ? {...member, role} : member,
+          ),
+        );
+        setSelectedMember((prev) => (prev ? {...prev, role} : prev));
+        Alert.alert('Success', `Member role updated to ${role}.`);
+        setRoleModalVisible(false);
+        setSelectedMember(null);
+      } catch (error) {
+        console.log('Update member role error', error?.response?.data || error?.message);
+        Alert.alert('Error', error?.response?.data?.message || 'Unable to update the member role right now.');
+      } finally {
+        setRoleUpdating(false);
+      }
+    },
+    [communityId, resolveMemberId, selectedMember, handleCloseRoleModal],
+  );
+
   const handleTrackEngagement = useCallback(() => {
     setEngagementModalVisible(true);
   }, []);
@@ -499,6 +746,12 @@ const CommunityManagement = ({route, navigation}) => {
   const handleCloseEngagement = useCallback(() => {
     setEngagementModalVisible(false);
   }, []);
+
+  const userRole = useMemo(() => (membership?.role || '').toLowerCase(), [membership?.role]);
+  const canModerateMembers = useMemo(
+    () => ['owner', 'admin', 'moderator'].includes(userRole),
+    [userRole],
+  );
 
   const metrics = useMemo(() => {
     const stats = community?.stats || {};
@@ -606,6 +859,44 @@ const CommunityManagement = ({route, navigation}) => {
 
   const membersPreview = useMemo(() => members.slice(0, 6), [members]);
   const moderationFeed = useMemo(() => feed.slice(0, 5), [feed]);
+  const visibleJoinRequests = useMemo(() => joinRequests.slice(0, 5), [joinRequests]);
+  const selectedMemberRole = useMemo(
+    () => (selectedMember?.role || '').toLowerCase(),
+    [selectedMember?.role],
+  );
+  const selectedMemberName = useMemo(() => {
+    if (!selectedMember) {
+      return '';
+    }
+    const member = selectedMember.user || selectedMember;
+    return (
+      member.username ||
+      [member.firstname, member.lastname].filter(Boolean).join(' ').trim() ||
+      member.email ||
+      'Member'
+    );
+  }, [selectedMember]);
+
+  const roleOptions = useMemo(
+    () => [
+      {
+        key: 'admin',
+        label: 'Admin',
+        description: 'Can manage settings and other members.',
+      },
+      {
+        key: 'moderator',
+        label: 'Moderator',
+        description: 'Can moderate content and approve requests.',
+      },
+      {
+        key: 'member',
+        label: 'Member',
+        description: 'Standard access to community content.',
+      },
+    ],
+    [],
+  );
 
   if (loading && !community) {
     return <Skeleton />;
@@ -676,6 +967,36 @@ const CommunityManagement = ({route, navigation}) => {
           />
         </View>
 
+        {canModerateMembers ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Pending join requests</Text>
+            {joinRequestsLoading ? (
+              <ActivityIndicator color={PALETTE.primary} style={{marginTop: nh(12)}} />
+            ) : visibleJoinRequests.length ? (
+              <View style={styles.joinRequestList}>
+                {visibleJoinRequests.map((request) => {
+                  const requestId = resolveRequestId(request);
+                  const processing = !!requestProcessing[requestId];
+                  return (
+                    <JoinRequestRow
+                      key={requestId || JSON.stringify(request)}
+                      request={request}
+                      processing={processing}
+                      onApprove={() => handleApproveRequest(request)}
+                      onReject={() => handleRejectRequest(request)}
+                    />
+                  );
+                })}
+              </View>
+            ) : (
+              <EmptyState
+                title="No pending requests"
+                subtitle="You're all caught up on membership approvals."
+              />
+            )}
+          </View>
+        ) : null}
+
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Moderate recent posts</Text>
           {feedLoading && !feed.length ? (
@@ -699,7 +1020,12 @@ const CommunityManagement = ({route, navigation}) => {
           ) : membersPreview.length ? (
             <View style={styles.membersGrid}>
               {membersPreview.map((member) => (
-                <MemberRow key={member.id || member.user?.id || member.user?._id || member._id} member={member} />
+                <MemberRow
+                  key={member.id || member.user?.id || member.user?._id || member._id}
+                  member={member}
+                  showActions={canModerateMembers && (member?.role || '').toLowerCase() !== 'owner'}
+                  onManage={() => handleOpenRoleModal(member)}
+                />
               ))}
             </View>
           ) : (
@@ -758,6 +1084,58 @@ const CommunityManagement = ({route, navigation}) => {
             </View>
             <TouchableOpacity style={styles.modalCloseButton} onPress={handleCloseEngagement}>
               <Text style={styles.modalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={roleModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseRoleModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={roleUpdating ? undefined : handleCloseRoleModal}
+          />
+          <View style={styles.roleModalCard}>
+            <Text style={styles.roleModalTitle}>Manage member</Text>
+            <Text style={styles.roleModalSubtitle}>{selectedMemberName}</Text>
+            <View style={styles.roleOptionsContainer}>
+              {roleOptions.map((option) => {
+                const isActive = selectedMemberRole === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.roleOption, isActive && styles.roleOptionActive]}
+                    disabled={roleUpdating || isActive}
+                    onPress={() => handleRoleSelection(option.key)}
+                  >
+                    <View style={styles.roleOptionTextBlock}>
+                      <Text
+                        style={[styles.roleOptionLabel, isActive && styles.roleOptionLabelActive]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text style={styles.roleOptionDescription}>{option.description}</Text>
+                    </View>
+                    {isActive ? (
+                      <Icon name="checkmark-circle" size={nw(20)} color={PALETTE.primary} />
+                    ) : (
+                      <Icon name="chevron-forward" size={nw(18)} color={PALETTE.subtle} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, roleUpdating && styles.modalCloseButtonDisabled]}
+              onPress={handleCloseRoleModal}
+              disabled={roleUpdating}
+            >
+              <Text style={styles.modalCloseText}>{roleUpdating ? 'Processing…' : 'Close'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1139,6 +1517,75 @@ const styles = StyleSheet.create({
     fontSize: nw(12),
     fontWeight: '600',
   },
+  joinRequestList: {
+    gap: nh(12),
+    marginTop: nh(12),
+  },
+  joinRequestRow: {
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(14),
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(12),
+  },
+  joinRequestInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: nh(10),
+  },
+  joinRequestAvatar: {
+    width: nw(40),
+    height: nw(40),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: nw(12),
+  },
+  joinRequestAvatarText: {
+    color: PALETTE.primary,
+    fontSize: nw(16),
+    fontWeight: '700',
+  },
+  joinRequestName: {
+    color: PALETTE.primary,
+    fontSize: nw(13),
+    fontWeight: '600',
+  },
+  joinRequestEmail: {
+    color: PALETTE.muted,
+    fontSize: nw(11),
+    marginTop: nh(2),
+  },
+  joinRequestDate: {
+    color: PALETTE.subtle,
+    fontSize: nw(10),
+    marginTop: nh(2),
+  },
+  joinRequestActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: nw(10),
+  },
+  requestButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: nw(90),
+    paddingVertical: nh(8),
+    borderRadius: nw(12),
+  },
+  requestApproveButton: {
+    backgroundColor: '#2E7D32',
+  },
+  requestRejectButton: {
+    backgroundColor: '#C62828',
+  },
+  requestButtonText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(12),
+    fontWeight: '600',
+  },
   membersGrid: {
     gap: nh(12),
   },
@@ -1178,6 +1625,17 @@ const styles = StyleSheet.create({
     color: PALETTE.muted,
     fontSize: nw(11),
     marginTop: nh(2),
+  },
+  memberManageButton: {
+    paddingHorizontal: nw(12),
+    paddingVertical: nh(6),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.primary + '12',
+  },
+  memberManageText: {
+    color: PALETTE.primary,
+    fontSize: nw(11),
+    fontWeight: '600',
   },
   comingSoonContainer: {
     marginTop: nh(12),
@@ -1259,11 +1717,73 @@ const styles = StyleSheet.create({
     borderRadius: nw(14),
     backgroundColor: PALETTE.primary,
   },
+  modalCloseButtonDisabled: {
+    opacity: 0.6,
+  },
   modalCloseText: {
     color: COLORS.whiteFFFFFF,
     fontSize: nw(12),
     fontWeight: '600',
     letterSpacing: 0.3,
+  },
+  roleModalCard: {
+    width: '100%',
+    maxWidth: nw(340),
+    borderRadius: nw(20),
+    backgroundColor: PALETTE.surface,
+    paddingHorizontal: nw(24),
+    paddingVertical: nh(24),
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 6,
+  },
+  roleModalTitle: {
+    fontSize: nw(16),
+    fontWeight: '700',
+    color: PALETTE.primary,
+    marginBottom: nh(6),
+  },
+  roleModalSubtitle: {
+    fontSize: nw(13),
+    color: PALETTE.muted,
+    marginBottom: nh(18),
+  },
+  roleOptionsContainer: {
+    gap: nh(12),
+  },
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(16),
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(12),
+  },
+  roleOptionActive: {
+    borderColor: PALETTE.primary,
+    backgroundColor: PALETTE.primary + '12',
+  },
+  roleOptionTextBlock: {
+    flex: 1,
+    marginRight: nw(12),
+  },
+  roleOptionLabel: {
+    fontSize: nw(13),
+    fontWeight: '600',
+    color: PALETTE.primary,
+    marginBottom: nh(4),
+  },
+  roleOptionLabelActive: {
+    color: PALETTE.primary,
+  },
+  roleOptionDescription: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+    lineHeight: nh(16),
   },
   emptyState: {
     alignItems: 'center',
