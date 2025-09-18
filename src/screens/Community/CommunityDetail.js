@@ -33,8 +33,14 @@ import {
   getCommunityFeedApi,
   joinCommunityApi,
   getCommunityMembersApi,
-  likeCommunityPostApi,
+  voteCommunityPostApi,
   voteOnPollApi,
+  rsvpToEventApi,
+  bookmarkCommunityPostApi,
+  shareCommunityPostApi,
+  commentOnCommunityPostApi,
+  getPostInteractionsApi,
+  getCommunityPostDetailsApi, // Add this API call for getting full post details
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 
@@ -74,41 +80,160 @@ const formatEventDate = (dateString) => {
   });
 };
 
-// Custom Post Card Component
-const PostCard = React.memo(({ post, communityId, navigation, isMember }) => {
+// Custom Post Card Component with Fixed Poll Handling
+const PostCard = React.memo(({ post, communityId, navigation, isMember, currentUserId }) => {
   const [expanded, setExpanded] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [votedOptionId, setVotedOptionId] = useState(null);
+  const [userVote, setUserVote] = useState(null);
+  const [upvoteCount, setUpvoteCount] = useState(0);
+  const [downvoteCount, setDownvoteCount] = useState(0);
+  const [bookmarked, setBookmarked] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
+  const [votedOptionIds, setVotedOptionIds] = useState([]);
   const [pollVotes, setPollVotes] = useState({});
+  const [selectedRSVP, setSelectedRSVP] = useState(null);
+  const [pollOptions, setPollOptions] = useState([]);
+  const [loadingPollDetails, setLoadingPollDetails] = useState(false);
   
+  // Add comprehensive logging for debugging
   useEffect(() => {
-    // Initialize like state and count
-    setLiked(post?.isLiked || false);
-    setLikeCount(post?.metrics?.upvotes || post?.metrics?.likes || post?.likes || 0);
+    console.log('===== POST DATA STRUCTURE =====');
+    console.log('Full post object:', JSON.stringify(post, null, 2));
+    console.log('Post Type:', post?.postType);
+    console.log('Preview field:', post?.preview);
     
-    // Initialize poll votes if it's a poll
-    if (post?.postType === 'poll' && post?.poll) {
-      const votes = {};
-      post.poll.options?.forEach(option => {
-        votes[option.id || option._id] = option.votes || 0;
-      });
-      setPollVotes(votes);
-      setVotedOptionId(post?.poll?.userVotedOption);
+    // Log poll data if present
+    if (post?.postType === 'poll') {
+      console.log('===== POLL DATA =====');
+      console.log('Poll in preview:', post?.preview);
+      console.log('Poll field:', post?.poll);
+      console.log('Poll options in preview:', post?.preview?.pollOptions);
     }
     
-    console.log('PostCard initialized:', {
-      postId: post?.id || post?._id,
-      postType: post?.postType,
-      liked: post?.isLiked,
-      likeCount: post?.metrics?.upvotes || post?.metrics?.likes || 0,
-      pollData: post?.poll,
-      eventData: post?.event
-    });
+    // Log event data if present
+    if (post?.postType === 'event') {
+      console.log('===== EVENT DATA =====');
+      console.log('Event in preview:', post?.preview);
+      console.log('Event field:', post?.event);
+      console.log('Event title in preview:', post?.preview?.eventTitle);
+      console.log('Event date in preview:', post?.preview?.eventDate);
+    }
+    
+    console.log('===== END POST DATA =====');
+  }, [post]);
+
+  // Fetch poll details if it's encrypted or missing options
+  useEffect(() => {
+    const fetchPollDetails = async () => {
+      if (post?.postType === 'poll' && post?.isEncrypted && !pollOptions.length && !loadingPollDetails) {
+        setLoadingPollDetails(true);
+        try {
+          // If there's an API to get full post details, use it
+          if (getCommunityPostDetailsApi) {
+            const response = await getCommunityPostDetailsApi(communityId, post.id || post._id);
+            console.log('Full poll details response:', response?.data);
+            
+            const fullPost = response?.data?.data || response?.data || {};
+            const options = fullPost.poll?.options || 
+                          fullPost.preview?.pollOptions || 
+                          [];
+            
+            if (Array.isArray(options) && options.length > 0) {
+              setPollOptions(options);
+              
+              // Initialize poll votes
+              const votes = {};
+              options.forEach((option, index) => {
+                const optionId = option._id || option.id || `option_${index}`;
+                const optionVotes = option.votes || option.voteCount || 0;
+                votes[optionId] = optionVotes;
+              });
+              setPollVotes(votes);
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching poll details:', error);
+        } finally {
+          setLoadingPollDetails(false);
+        }
+      }
+    };
+    
+    if (isMember) {
+      fetchPollDetails();
+    }
+  }, [post, communityId, isMember, pollOptions.length, loadingPollDetails]);
+
+  useEffect(() => {
+    // Initialize interaction states
+    const metrics = post?.metrics || {};
+    setUpvoteCount(metrics.upvotes || 0);
+    setDownvoteCount(metrics.downvotes || 0);
+    setCommentCount(metrics.comments || 0);
+    setShareCount(metrics.shares || 0);
+    setBookmarked(post?.userBookmarked || false);
+    
+    // Initialize user vote state
+    if (post?.userVote) {
+      setUserVote(post.userVote);
+    }
+    
+    // Initialize poll data if it's a poll
+    if (post?.postType === 'poll') {
+      const votes = {};
+      
+      // Try to get poll options from different possible locations
+      const options = post?.poll?.options || 
+                     post?.preview?.pollOptions || 
+                     post?.preview?.options || 
+                     [];
+      
+      console.log('Processing poll options for voting:', options);
+      
+      if (Array.isArray(options) && options.length > 0) {
+        setPollOptions(options);
+        
+        options.forEach((option, index) => {
+          const optionId = option._id || option.id || `option_${index}`;
+          const optionVotes = option.votes || option.voteCount || 0;
+          votes[optionId] = optionVotes;
+        });
+      } else if (!post?.isEncrypted) {
+        // For non-encrypted polls without options, create default Yes/No options
+        const defaultOptions = [
+          { id: 'yes', text: 'Yes', votes: 0 },
+          { id: 'no', text: 'No', votes: 0 }
+        ];
+        setPollOptions(defaultOptions);
+        defaultOptions.forEach(option => {
+          votes[option.id] = 0;
+        });
+      }
+      
+      setPollVotes(votes);
+      
+      // Handle user votes
+      const userVotes = post?.poll?.userVotes || 
+                       post?.preview?.userVotes || 
+                       post?.userVotedOption || 
+                       [];
+      setVotedOptionIds(Array.isArray(userVotes) ? userVotes : [userVotes].filter(Boolean));
+    }
+    
+    // Initialize RSVP if it's an event
+    if (post?.postType === 'event') {
+      const userRsvp = post?.event?.userRsvp || 
+                      post?.preview?.userRsvp || 
+                      post?.userRsvp;
+      if (userRsvp) {
+        setSelectedRSVP(typeof userRsvp === 'string' ? userRsvp : userRsvp.status);
+      }
+    }
+    
   }, [post]);
   
   if (!post || typeof post !== 'object') {
-    console.log('PostCard: Invalid post object', post);
+    console.log('Invalid post object:', post);
     return null;
   }
 
@@ -122,112 +247,251 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember }) => {
     media,
     poll,
     event,
+    preview, // Add preview field extraction
     announcement,
     metrics = {},
     publishedAt,
     createdAt,
     isPinned,
     tags = [],
+    isEncrypted,
   } = post;
 
   const postId = id || _id;
   
-  // Extract content text properly
-  const contentText = typeof content === 'string' ? content : content?.text || '';
+  // Check if current user is the author
+  const authorId = author?._id || author?.id || author;
+  const isOwnPost = currentUserId && authorId && (
+    authorId === currentUserId || 
+    authorId.toString() === currentUserId.toString()
+  );
+  
+  // Extract content text - handle different structures
+  let contentText = '';
+  if (typeof content === 'string') {
+    contentText = content;
+  } else if (content?.text) {
+    contentText = content.text;
+  } else if (content?.html) {
+    // Strip HTML tags if only HTML content is available
+    contentText = content.html.replace(/<[^>]*>/g, '');
+  }
+  
   const truncatedContent = contentText.length > 200 && !expanded 
     ? contentText.substring(0, 200) + '...' 
     : contentText;
 
-  console.log('PostCard render:', {
-    postId,
-    postType,
-    contentText: contentText.substring(0, 50) + '...',
-    pollData: poll,
-    eventData: event,
-    hasTitle: !!title
-  });
-
-  const handleLike = async () => {
+  const handleVote = async (voteType) => {
     if (!isMember) {
-      Alert.alert('Join Community', 'You need to be a member to like posts');
+      Alert.alert('Join Community', 'You need to be a member to vote on posts');
+      return;
+    }
+    
+    if (isOwnPost) {
+      Alert.alert('Cannot Vote', 'You cannot vote on your own post');
       return;
     }
     
     try {
-      console.log('Attempting to like post:', postId, 'in community:', communityId);
+      const prevVote = userVote;
+      const prevUpvotes = upvoteCount;
+      const prevDownvotes = downvoteCount;
       
-      // Toggle like state optimistically
-      const newLikedState = !liked;
-      setLiked(newLikedState);
-      setLikeCount(prev => newLikedState ? prev + 1 : Math.max(0, prev - 1));
+      if (userVote === voteType) {
+        setUserVote(null);
+        if (voteType === 'upvote') {
+          setUpvoteCount(prev => Math.max(0, prev - 1));
+        } else {
+          setDownvoteCount(prev => Math.max(0, prev - 1));
+        }
+      } else {
+        if (userVote === 'upvote') {
+          setUpvoteCount(prev => Math.max(0, prev - 1));
+        } else if (userVote === 'downvote') {
+          setDownvoteCount(prev => Math.max(0, prev - 1));
+        }
+        
+        setUserVote(voteType);
+        if (voteType === 'upvote') {
+          setUpvoteCount(prev => prev + 1);
+        } else {
+          setDownvoteCount(prev => prev + 1);
+        }
+      }
       
-      // Call API
-      const response = await likeCommunityPostApi(communityId, postId);
-      console.log('Like API response:', response.data);
+      const response = await voteCommunityPostApi(communityId, postId, { 
+        voteType: voteType
+      });
       
-      // Update with server response if available
-      if (response.data?.likes !== undefined) {
-        setLikeCount(response.data.likes);
+      if (response.data?.data?.metrics) {
+        setUpvoteCount(response.data.data.metrics.upvotes || 0);
+        setDownvoteCount(response.data.data.metrics.downvotes || 0);
+      }
+      if (response.data?.data?.voteType !== undefined) {
+        setUserVote(response.data.data.voteType);
       }
     } catch (error) {
-      console.error('Error liking post:', error);
-      // Revert optimistic update
-      setLiked(!liked);
-      setLikeCount(prev => liked ? prev + 1 : Math.max(0, prev - 1));
-      Alert.alert('Error', 'Could not update like status');
+      console.error('Error voting:', error);
+      setUserVote(userVote);
+      setUpvoteCount(upvoteCount);
+      setDownvoteCount(downvoteCount);
+      
+      const errorMessage = error.response?.data?.message || 'Could not update vote';
+      if (!errorMessage.includes('cannot vote on your own post')) {
+        Alert.alert('Error', errorMessage);
+      }
     }
   };
 
-  const handleVote = async (optionId) => {
+  const handlePollVote = async (optionId) => {
     if (!isMember) {
       Alert.alert('Join Community', 'You need to be a member to vote');
       return;
     }
     
-    if (votedOptionId) {
-      Alert.alert('Already Voted', 'You have already voted on this poll');
+    console.log('Attempting to vote on poll option:', optionId);
+    
+    // Get poll settings from wherever they might be
+    const pollSettings = poll?.settings || preview?.pollSettings || {};
+    
+    if (votedOptionIds.length > 0 && !pollSettings.changeVote) {
+      Alert.alert('Already Voted', 'You have already voted on this poll and changes are not allowed');
       return;
     }
     
     try {
-      console.log('Voting on poll:', postId, 'option:', optionId);
+      let newVotedIds;
+      if (pollSettings.multipleChoice) {
+        if (votedOptionIds.includes(optionId)) {
+          newVotedIds = votedOptionIds.filter(id => id !== optionId);
+        } else {
+          newVotedIds = [...votedOptionIds, optionId];
+        }
+      } else {
+        newVotedIds = [optionId];
+      }
       
-      // Update UI optimistically
-      setVotedOptionId(optionId);
-      setPollVotes(prev => ({
-        ...prev,
-        [optionId]: (prev[optionId] || 0) + 1
-      }));
+      console.log('Sending vote with optionIds:', newVotedIds);
       
-      // Call API
-      const response = await voteOnPollApi(communityId, postId, { optionId });
-      console.log('Vote API response:', response.data);
+      setVotedOptionIds(newVotedIds);
       
-      // Update with server data if available
-      if (response.data?.poll?.options) {
-        const newVotes = {};
-        response.data.poll.options.forEach(option => {
-          newVotes[option.id || option._id] = option.votes || 0;
+      const newVotes = { ...pollVotes };
+      votedOptionIds.forEach(id => {
+        if (!newVotedIds.includes(id)) {
+          newVotes[id] = Math.max(0, (newVotes[id] || 0) - 1);
+        }
+      });
+      newVotedIds.forEach(id => {
+        if (!votedOptionIds.includes(id)) {
+          newVotes[id] = (newVotes[id] || 0) + 1;
+        }
+      });
+      setPollVotes(newVotes);
+      
+      const response = await voteOnPollApi(communityId, postId, { 
+        optionIds: newVotedIds 
+      });
+      
+      console.log('Poll vote response:', response.data);
+      
+      // Update with server response
+      if (response.data?.data?.poll?.options || response.data?.data?.preview?.pollOptions) {
+        const updatedOptions = response.data?.data?.poll?.options || response.data?.data?.preview?.pollOptions;
+        setPollOptions(updatedOptions);
+        const updatedVotes = {};
+        updatedOptions.forEach(option => {
+          updatedVotes[option.id || option._id] = option.votes || option.voteCount || 0;
         });
-        setPollVotes(newVotes);
+        setPollVotes(updatedVotes);
       }
     } catch (error) {
-      console.error('Error voting:', error);
-      // Revert optimistic update
-      setVotedOptionId(null);
-      setPollVotes(prev => ({
-        ...prev,
-        [optionId]: Math.max(0, (prev[optionId] || 0) - 1)
-      }));
-      Alert.alert('Error', 'Could not submit vote');
+      console.error('Error voting on poll:', error);
+      Alert.alert('Error', error.response?.data?.message || 'Could not submit vote');
     }
   };
 
+  const handleRSVP = async (status) => {
+    if (!isMember) {
+      Alert.alert('Join Community', 'You need to be a member to RSVP');
+      return;
+    }
+    
+    console.log('RSVP with status:', status);
+    
+    try {
+      setSelectedRSVP(status);
+      
+      const response = await rsvpToEventApi(communityId, postId, {
+        status: status,
+        seats: 1
+      });
+      
+      console.log('RSVP response:', response.data);
+      
+      if (response.data?.data?.event?.userRsvp || response.data?.data?.preview?.userRsvp) {
+        const rsvpData = response.data?.data?.event?.userRsvp || response.data?.data?.preview?.userRsvp;
+        setSelectedRSVP(typeof rsvpData === 'string' ? rsvpData : rsvpData.status);
+      }
+      
+      Alert.alert('Success', `You're ${status === 'going' ? 'attending' : status === 'interested' ? 'interested in' : 'not attending'} this event`);
+    } catch (error) {
+      console.error('Error RSVP:', error);
+      setSelectedRSVP(null);
+      Alert.alert('Error', error.response?.data?.message || 'Could not update RSVP');
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!isMember) {
+      Alert.alert('Join Community', 'You need to be a member to bookmark posts');
+      return;
+    }
+    
+    try {
+      const newBookmarkState = !bookmarked;
+      setBookmarked(newBookmarkState);
+      
+      await bookmarkCommunityPostApi(communityId, postId);
+      
+    } catch (error) {
+      console.error('Error bookmarking:', error);
+      setBookmarked(!bookmarked);
+      Alert.alert('Error', 'Could not update bookmark');
+    }
+  };
+
+  const handleShare = async () => {
+    try {
+      setShareCount(prev => prev + 1);
+      
+      await shareCommunityPostApi(communityId, postId, {
+        platform: 'internal',
+        message: 'Check out this post!'
+      });
+      
+      Alert.alert('Success', 'Post shared successfully');
+    } catch (error) {
+      console.error('Error sharing:', error);
+      setShareCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleComment = () => {
+    Alert.alert(
+      'Comments', 
+      `This post has ${commentCount} comment${commentCount !== 1 ? 's' : ''}`,
+      [
+        { text: 'OK' }
+      ]
+    );
+  };
+
   const renderPostContent = () => {
+    console.log(`Rendering ${postType} content`);
+    
     switch (postType) {
       case 'text':
       case 'link':
-        console.log('Rendering text/link post');
         return (
           <>
             {title && <Text style={styles.postTitle}>{title}</Text>}
@@ -245,143 +509,253 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember }) => {
         );
 
       case 'poll':
-        console.log('Rendering poll post:', { poll, pollVotes, votedOptionId });
+        // Get poll data from preview or poll field
+        const pollData = poll || preview;
+        const pollQuestion = pollData?.pollQuestion || pollData?.question || title || 'Poll';
+        const pollSettings = pollData?.pollSettings || pollData?.settings || {};
+        const pollEndsAt = pollData?.pollEndsAt || pollData?.endsAt;
         
-        if (!poll) {
-          console.warn('Poll post without poll data');
+        console.log('Rendering poll with options:', pollOptions);
+        
+        // Show loading state for encrypted polls
+        if (isEncrypted && loadingPollDetails) {
           return (
-            <>
-              {title && <Text style={styles.postTitle}>{title}</Text>}
-              <Text style={styles.postContent}>{contentText || 'Poll data not available'}</Text>
-            </>
+            <View style={styles.pollContainer}>
+              <Text style={styles.pollQuestion}>{pollQuestion}</Text>
+              <View style={styles.pollLoadingContainer}>
+                <ActivityIndicator color={COLORS.blue043142} />
+                <Text style={styles.pollLoadingText}>Loading poll options...</Text>
+              </View>
+            </View>
           );
         }
         
-        const pollOptions = Array.isArray(poll.options) ? poll.options : [];
-        const totalVotes = Object.values(pollVotes).reduce((sum, votes) => sum + votes, 0) || poll.totalVotes || 0;
+        // If it's encrypted but not a member, show locked state
+        if (isEncrypted && !isMember) {
+          return (
+            <View style={styles.pollContainer}>
+              <Text style={styles.pollQuestion}>{pollQuestion}</Text>
+              <View style={styles.pollLockedContainer}>
+                <Icon name="lock-closed" size={nw(24)} color={COLORS.grey999999} />
+                <Text style={styles.pollLockedText}>Join the community to participate in this poll</Text>
+              </View>
+            </View>
+          );
+        }
+        
+        const totalVotes = Object.values(pollVotes).reduce((sum, votes) => sum + votes, 0) || 
+                          pollData?.totalVotes || 0;
         
         return (
           <View style={styles.pollContainer}>
-            <Text style={styles.pollQuestion}>{poll.question || title || 'Poll'}</Text>
+            <Text style={styles.pollQuestion}>{pollQuestion}</Text>
             {contentText && <Text style={styles.pollDescription}>{contentText}</Text>}
             
-            {pollOptions.map((option, index) => {
-              const optionId = option.id || option._id || index;
-              const optionText = typeof option === 'string' ? option : (option.text || option.option || '');
-              const optionVotes = pollVotes[optionId] || option.votes || 0;
-              const votePercentage = totalVotes > 0 
-                ? Math.round((optionVotes / totalVotes) * 100) 
-                : 0;
-              const isVoted = votedOptionId === optionId;
-              
-              return (
-                <TouchableOpacity
-                  key={optionId}
-                  style={[styles.pollOption, isVoted && styles.pollOptionVoted]}
-                  onPress={() => handleVote(optionId)}
-                  disabled={!!votedOptionId || !isMember}
-                >
-                  <View style={styles.pollOptionContent}>
-                    <Text style={[styles.pollOptionText, isVoted && styles.pollOptionTextVoted]}>
-                      {optionText}
-                    </Text>
-                    <Text style={[styles.pollVotes, isVoted && styles.pollVotesVoted]}>
-                      {votedOptionId ? `${votePercentage}%` : ''}
-                    </Text>
-                  </View>
-                  {votedOptionId && (
-                    <View 
-                      style={[
-                        styles.pollProgressBar,
-                        { width: `${votePercentage}%` },
-                        isVoted && styles.pollProgressBarVoted
-                      ]}
-                    />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-            
-            {totalVotes > 0 && (
-              <Text style={styles.pollTotalVotes}>
-                {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
-                {poll.endsAt && ` • Ends ${formatDate(poll.endsAt)}`}
-              </Text>
+            {pollOptions.length > 0 ? (
+              <>
+                {pollOptions.map((option, index) => {
+                  let optionId, optionText, optionVotes;
+                  
+                  if (typeof option === 'string') {
+                    optionId = `option_${index}`;
+                    optionText = option;
+                    optionVotes = pollVotes[optionId] || 0;
+                  } else {
+                    optionId = option._id || option.id || `option_${index}`;
+                    optionText = option.text || option.option || option.label || '';
+                    optionVotes = pollVotes[optionId] || option.votes || option.voteCount || 0;
+                  }
+                  
+                  const votePercentage = totalVotes > 0 
+                    ? Math.round((optionVotes / totalVotes) * 100) 
+                    : 0;
+                  const isVoted = votedOptionIds.includes(optionId);
+                  
+                  return (
+                    <TouchableOpacity
+                      key={optionId}
+                      style={[styles.pollOption, isVoted && styles.pollOptionVoted]}
+                      onPress={() => handlePollVote(optionId)}
+                      disabled={(!pollSettings.changeVote && votedOptionIds.length > 0) || !isMember}
+                    >
+                      <View style={styles.pollOptionContent}>
+                        <Text style={[styles.pollOptionText, isVoted && styles.pollOptionTextVoted]}>
+                          {optionText}
+                        </Text>
+                        {(votedOptionIds.length > 0 || pollSettings.showResults === 'always') && (
+                          <Text style={[styles.pollVotes, isVoted && styles.pollVotesVoted]}>
+                            {votePercentage}%
+                          </Text>
+                        )}
+                      </View>
+                      {(votedOptionIds.length > 0 || pollSettings.showResults === 'always') && (
+                        <View 
+                          style={[
+                            styles.pollProgressBar,
+                            { width: `${votePercentage}%` },
+                            isVoted && styles.pollProgressBarVoted
+                          ]}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+                
+                {(totalVotes > 0 || pollEndsAt) && (
+                  <Text style={styles.pollTotalVotes}>
+                    {totalVotes > 0 && `${totalVotes} ${totalVotes === 1 ? 'vote' : 'votes'}`}
+                    {totalVotes > 0 && pollEndsAt && ' • '}
+                    {pollEndsAt && `Ends ${formatDate(pollEndsAt)}`}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <View style={styles.pollEmptyContainer}>
+                <Text style={styles.pollEmptyText}>Poll options are being loaded...</Text>
+              </View>
             )}
           </View>
         );
 
       case 'event':
-        console.log('Rendering event post:', { event, title, contentText });
+        // Extract event data from preview field or event field
+        const eventData = event || preview || {};
+        const eventTitle = eventData.eventTitle || eventData.title || eventData.name || title;
+        const eventDate = eventData.eventDate || eventData.startDate || eventData.date;
+        const eventEndDate = eventData.eventEndDate || eventData.endDate;
+        const eventLocation = eventData.eventLocation || eventData.location;
+        const eventDescription = eventData.eventDescription || eventData.description || contentText;
+        const eventVenue = eventData.eventVenue || eventData.venue || eventLocation?.venue;
+        const eventRSVP = eventData.rsvp || eventData.requiresRSVP;
         
-        if (!event && !title && !contentText) {
-          console.warn('Event post without event data');
+        console.log('Rendering event with extracted data:', {
+          eventTitle,
+          eventDate,
+          eventLocation,
+          eventVenue
+        });
+        
+        if (!eventTitle && !eventDate && !contentText) {
           return <Text style={styles.postContent}>Event details not available</Text>;
         }
         
         return (
           <View style={styles.eventContainer}>
-            <Text style={styles.eventTitle}>{event?.name || event?.title || title || 'Event'}</Text>
+            <Text style={styles.eventTitle}>{eventTitle}</Text>
             
-            {(event?.description || contentText) && (
-              <Text style={styles.eventDescription}>
-                {event?.description || contentText}
-              </Text>
+            {eventDescription && (
+              <Text style={styles.eventDescription}>{eventDescription}</Text>
             )}
             
-            {(event?.startDate || event?.date) && (
+            {eventDate && (
               <View style={styles.eventDetail}>
                 <Icon name="calendar-outline" size={nw(16)} color={COLORS.grey666666} />
                 <Text style={styles.eventDetailText}>
-                  {formatEventDate(event.startDate || event.date)}
+                  {formatEventDate(eventDate)}
                 </Text>
               </View>
             )}
             
-            {event?.endDate && (
+            {eventEndDate && (
               <View style={styles.eventDetail}>
                 <Icon name="time-outline" size={nw(16)} color={COLORS.grey666666} />
                 <Text style={styles.eventDetailText}>
-                  Ends: {formatEventDate(event.endDate)}
+                  Ends: {formatEventDate(eventEndDate)}
                 </Text>
               </View>
             )}
             
-            {(event?.location?.venue || event?.location || event?.venue) && (
+            {eventVenue && (
               <View style={styles.eventDetail}>
                 <Icon name="location-outline" size={nw(16)} color={COLORS.grey666666} />
-                <Text style={styles.eventDetailText}>
-                  {event?.location?.venue || event?.location || event?.venue}
-                </Text>
+                <Text style={styles.eventDetailText}>{eventVenue}</Text>
               </View>
             )}
             
-            {(event?.location?.online || event?.meetingLink) && (
+            {eventLocation?.type === 'virtual' && (
               <View style={styles.eventDetail}>
                 <Icon name="videocam-outline" size={nw(16)} color={COLORS.grey666666} />
                 <Text style={styles.eventDetailText}>Online Event</Text>
               </View>
             )}
             
-            {event?.attendees && (
-              <View style={styles.eventDetail}>
-                <Icon name="people-outline" size={nw(16)} color={COLORS.grey666666} />
-                <Text style={styles.eventDetailText}>
-                  {event.attendees.going || 0} going • {event.attendees.interested || 0} interested
-                </Text>
+            {/* Show RSVP section for events - enable by default */}
+            {isMember && (
+              <View style={styles.rsvpContainer}>
+                <Text style={styles.rsvpTitle}>RSVP</Text>
+                <View style={styles.rsvpButtons}>
+                  <TouchableOpacity
+                    style={[styles.rsvpButton, selectedRSVP === 'going' && styles.rsvpButtonActive]}
+                    onPress={() => handleRSVP('going')}
+                    disabled={!isMember}
+                  >
+                    <Icon 
+                      name="checkmark-circle" 
+                      size={nw(18)} 
+                      color={selectedRSVP === 'going' ? '#4CAF50' : COLORS.grey666666}
+                    />
+                    <Text style={[styles.rsvpButtonText, selectedRSVP === 'going' && styles.rsvpButtonTextActive]}>
+                      Going
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.rsvpButton, selectedRSVP === 'interested' && styles.rsvpButtonActive]}
+                    onPress={() => handleRSVP('interested')}
+                    disabled={!isMember}
+                  >
+                    <Icon 
+                      name="star" 
+                      size={nw(18)} 
+                      color={selectedRSVP === 'interested' ? COLORS.yellowF5BE00 : COLORS.grey666666}
+                    />
+                    <Text style={[styles.rsvpButtonText, selectedRSVP === 'interested' && styles.rsvpButtonTextActive]}>
+                      Interested
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.rsvpButton, selectedRSVP === 'not_going' && styles.rsvpButtonActive]}
+                    onPress={() => handleRSVP('not_going')}
+                    disabled={!isMember}
+                  >
+                    <Icon 
+                      name="close-circle" 
+                      size={nw(18)} 
+                      color={selectedRSVP === 'not_going' ? COLORS.redFF0000 : COLORS.grey666666}
+                    />
+                    <Text style={[styles.rsvpButtonText, selectedRSVP === 'not_going' && styles.rsvpButtonTextActive]}>
+                      Can't Go
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                
+                {eventData.attendees && Array.isArray(eventData.attendees) && (
+                  <Text style={styles.rsvpSummary}>
+                    {eventData.attendees.filter(a => a.status === 'going').length || 0} going • 
+                    {' '}{eventData.attendees.filter(a => a.status === 'interested').length || 0} interested
+                  </Text>
+                )}
               </View>
             )}
           </View>
         );
 
       case 'announcement':
-        console.log('Rendering announcement post');
+        // Get announcement data from preview or announcement field
+        const announcementData = announcement || preview || {};
+        const announcementPriority = announcementData.announcementPriority || 
+                                     announcementData.priority || 
+                                     'normal';
+        
+        console.log('Rendering announcement with priority:', announcementPriority);
+        
         return (
           <View style={styles.announcementContainer}>
             <View style={styles.announcementHeader}>
               <Icon name="megaphone" size={nw(18)} color={COLORS.yellowF5BE00} />
               <Text style={styles.announcementBadge}>
-                {announcement?.priority?.toUpperCase() || 'ANNOUNCEMENT'}
+                {announcementPriority.toUpperCase()}
               </Text>
             </View>
             {title && <Text style={styles.announcementTitle}>{title}</Text>}
@@ -390,7 +764,7 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember }) => {
         );
 
       default:
-        console.log('Rendering default post type');
+        console.log('Rendering default/unknown post type:', postType);
         return (
           <>
             {title && <Text style={styles.postTitle}>{title}</Text>}
@@ -428,13 +802,14 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember }) => {
       <View style={styles.postBody}>
         {renderPostContent()}
         
-        {media?.images?.length > 0 && (
+        {/* Handle media images from media field or preview field */}
+        {(media?.images?.length > 0 || preview?.images?.length > 0) && (
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
             style={styles.mediaContainer}
           >
-            {media.images.map((image, index) => (
+            {(media?.images || preview?.images || []).map((image, index) => (
               <Image
                 key={index}
                 source={{ uri: image.url || image }}
@@ -457,15 +832,60 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember }) => {
       </View>
 
       <View style={styles.postFooter}>
-        <TouchableOpacity style={styles.postAction} onPress={handleLike}>
+        <TouchableOpacity 
+          style={styles.postAction} 
+          onPress={() => handleVote('upvote')}
+          disabled={isOwnPost}
+        >
           <Icon 
-            name={liked ? "heart" : "heart-outline"} 
+            name={userVote === 'upvote' ? "arrow-up-circle" : "arrow-up-circle-outline"} 
             size={nw(20)} 
-            color={liked ? COLORS.redFF0000 : COLORS.grey666666} 
+            color={isOwnPost ? COLORS.greyC4C4C4 : userVote === 'upvote' ? COLORS.blue043142 : COLORS.grey666666} 
           />
-          <Text style={[styles.postActionText, liked && styles.postActionTextLiked]}>
-            {likeCount}
+          <Text style={[
+            styles.postActionText, 
+            userVote === 'upvote' && styles.postActionTextActive,
+            isOwnPost && styles.postActionTextDisabled
+          ]}>
+            {upvoteCount}
           </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.postAction} 
+          onPress={() => handleVote('downvote')}
+          disabled={isOwnPost}
+        >
+          <Icon 
+            name={userVote === 'downvote' ? "arrow-down-circle" : "arrow-down-circle-outline"} 
+            size={nw(20)} 
+            color={isOwnPost ? COLORS.greyC4C4C4 : userVote === 'downvote' ? COLORS.redFF0000 : COLORS.grey666666} 
+          />
+          <Text style={[
+            styles.postActionText, 
+            userVote === 'downvote' && styles.postActionTextDownvoted,
+            isOwnPost && styles.postActionTextDisabled
+          ]}>
+            {downvoteCount}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.postAction} onPress={handleComment}>
+          <Icon name="chatbubble-outline" size={nw(18)} color={COLORS.grey666666} />
+          <Text style={styles.postActionText}>{commentCount}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.postAction} onPress={handleShare}>
+          <Icon name="share-outline" size={nw(18)} color={COLORS.grey666666} />
+          <Text style={styles.postActionText}>{shareCount}</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.postAction} onPress={handleBookmark}>
+          <Icon 
+            name={bookmarked ? "bookmark" : "bookmark-outline"} 
+            size={nw(18)} 
+            color={bookmarked ? COLORS.yellowF5BE00 : COLORS.grey666666} 
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -480,7 +900,6 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
   const handleJoin = async () => {
     setBusy(true);
     try {
-      console.log('Joining community:', community?.id || community?._id);
       await joinCommunityApi(community?.id || community?._id, { 
         acceptRules: true, 
         joinReason: reason 
@@ -556,6 +975,7 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
 const CommunityDetail = ({ route, navigation }) => {
   const communityId = route.params?.communityId || route.params?.id;
   const user = useSelector((state) => state?.userData?.user);
+  const currentUserId = user?.id || user?._id;
 
   const [community, setCommunity] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -574,18 +994,14 @@ const CommunityDetail = ({ route, navigation }) => {
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Refs to prevent multiple API calls
   const isInitialMount = useRef(true);
   const fetchingPosts = useRef(false);
   const fetchingMembers = useRef(false);
 
   const scrollY = useSharedValue(0);
 
-  // Fetch posts with debouncing
   const fetchPosts = useCallback(async (page = 1, isRefresh = false) => {
-    // Prevent multiple simultaneous calls
     if (fetchingPosts.current || (!isRefresh && (feedLoading || !hasMoreFeed))) {
-      console.log('Skipping fetchPosts - already in progress or no more data');
       return;
     }
     
@@ -608,7 +1024,7 @@ const CommunityDetail = ({ route, navigation }) => {
       console.log('Parsed feed data:', {
         postsCount: newPosts.length,
         pagination,
-        samplePost: newPosts[0]
+        firstPost: newPosts[0]
       });
       
       if (isRefresh) {
@@ -621,7 +1037,6 @@ const CommunityDetail = ({ route, navigation }) => {
       setFeedPage(pagination.hasNext ? page + 1 : page);
     } catch (error) {
       console.error('Error fetching posts:', error);
-      // Don't set empty posts on error if we already have data
       if (isRefresh || posts.length === 0) {
         setPosts([]);
       }
@@ -632,10 +1047,8 @@ const CommunityDetail = ({ route, navigation }) => {
     }
   }, [communityId, feedLoading, hasMoreFeed, posts.length]);
 
-  // Fetch members with debouncing
   const fetchMembers = useCallback(async () => {
     if (fetchingMembers.current || membersLoaded) {
-      console.log('Skipping fetchMembers - already loaded or in progress');
       return;
     }
     
@@ -661,11 +1074,8 @@ const CommunityDetail = ({ route, navigation }) => {
     }
   }, [communityId, membersLoaded]);
 
-  // Fetch initial data
   const fetchInitialData = useCallback(async (isRefresh = false) => {
-    // Prevent infinite loop
     if (!isRefresh && hasError) {
-      console.log('Skipping fetchInitialData - previous error state');
       return;
     }
     
@@ -680,9 +1090,7 @@ const CommunityDetail = ({ route, navigation }) => {
       
       const data = response?.data?.data || response?.data || {};
       
-      // If no community data, set error state
       if (!data.community && !data.name) {
-        console.error('No community data found');
         setHasError(true);
         setLoading(false);
         Alert.alert('Error', 'Community not found');
@@ -693,20 +1101,16 @@ const CommunityDetail = ({ route, navigation }) => {
       setCommunity(data.community || data);
       setHasError(false);
       
-      // Check admin/owner status FIRST
       const membership = data.userMembership || data.membership;
       const userRole = membership?.role;
       
       console.log('User membership data:', {
         membership,
         userRole,
-        userId: user?.id || user?._id
+        userId: currentUserId
       });
       
-      // Check if user is admin/owner/moderator
       const isUserAdmin = userRole && ['owner', 'admin', 'moderator'].includes(userRole.toLowerCase());
-      
-      // If user is admin, they are definitely a member
       const isUserMember = isUserAdmin || !!membership;
       
       console.log('User status:', {
@@ -715,12 +1119,10 @@ const CommunityDetail = ({ route, navigation }) => {
         membershipStatus: membership?.status
       });
       
-      // Set states
       setIsAdmin(isUserAdmin);
       setIsMember(isUserMember);
       setMembershipStatus(membership?.status || (isUserMember ? 'active' : null));
       
-      // Fetch posts based on community privacy and membership
       const communityData = data.community || data;
       if (communityData?.privacy === 'public' || isUserMember) {
         await fetchPosts(1, true);
@@ -730,8 +1132,8 @@ const CommunityDetail = ({ route, navigation }) => {
         setHasMoreFeed(false);
       }
       
-      // Fetch members if user is a member (but don't wait for it)
-      if (isUserMember && !membersLoaded) {
+      // Only fetch members once when user is a member
+      if (isUserMember && !membersLoaded && !isRefresh) {
         fetchMembers();
       }
       
@@ -745,34 +1147,31 @@ const CommunityDetail = ({ route, navigation }) => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [communityId, navigation, fetchPosts, fetchMembers, hasError, membersLoaded, user]);
+  }, [communityId, navigation, fetchPosts, fetchMembers, hasError, membersLoaded, currentUserId]);
 
-  // Initial mount effect
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       console.log('Initial mount - fetching data for community:', communityId);
       fetchInitialData();
     }
-  }, []); // Empty dependency array - only run once
+  }, []);
 
   const onRefresh = useCallback(() => {
     console.log('Refreshing community data');
     setRefreshing(true);
-    setMembersLoaded(false); // Reset members loaded state on refresh
+    setMembersLoaded(false);
     fetchInitialData(true);
   }, [fetchInitialData]);
 
   const onTabChange = useCallback((tab) => {
     console.log('Tab changed to:', tab);
     setActiveTab(tab);
-    // Fetch members when switching to Members tab if not already loaded
     if (tab === 'Members' && !membersLoaded && !membersLoading) {
       fetchMembers();
     }
   }, [membersLoaded, membersLoading, fetchMembers]);
 
-  // Navigate to Community Management (for admin/owner)
   const navigateToCommunityManagement = useCallback(() => {
     console.log('Navigating to Community Management');
     navigation.navigate(Routes.CommunityManagement, { 
@@ -781,7 +1180,6 @@ const CommunityDetail = ({ route, navigation }) => {
     });
   }, [navigation, communityId, community?.name]);
 
-  // Animations
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     height: interpolate(
       scrollY.value,
@@ -809,15 +1207,15 @@ const CommunityDetail = ({ route, navigation }) => {
     ),
   }));
 
-  // Render functions
   const renderPost = useCallback(({ item }) => (
     <PostCard 
       post={item} 
       communityId={communityId}
       navigation={navigation}
       isMember={isMember}
+      currentUserId={currentUserId}
     />
-  ), [communityId, navigation, isMember]);
+  ), [communityId, navigation, isMember, currentUserId]);
 
   const ListHeaderComponent = useMemo(() => (
     <>
@@ -1417,21 +1815,27 @@ const styles = StyleSheet.create({
     paddingTop: nh(10),
     paddingHorizontal: nw(12),
     paddingBottom: nh(10),
+    justifyContent: 'space-between',
   },
   postAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nw(6),
-    flex: 1,
-    justifyContent: 'center',
+    gap: nw(4),
+    paddingHorizontal: nw(8),
   },
   postActionText: {
-    fontSize: nw(13),
+    fontSize: nw(12),
     color: COLORS.grey666666,
     fontWeight: '500',
   },
-  postActionTextLiked: {
+  postActionTextActive: {
+    color: COLORS.blue043142,
+  },
+  postActionTextDownvoted: {
     color: COLORS.redFF0000,
+  },
+  postActionTextDisabled: {
+    color: COLORS.greyC4C4C4,
   },
   
   // Poll Styles
@@ -1502,6 +1906,37 @@ const styles = StyleSheet.create({
     marginTop: nh(8),
     textAlign: 'center',
   },
+  pollLoadingContainer: {
+    alignItems: 'center',
+    paddingVertical: nh(20),
+  },
+  pollLoadingText: {
+    fontSize: nw(13),
+    color: COLORS.grey666666,
+    marginTop: nh(8),
+  },
+  pollLockedContainer: {
+    alignItems: 'center',
+    paddingVertical: nh(30),
+    backgroundColor: COLORS.greyF0F0F0,
+    borderRadius: nw(10),
+  },
+  pollLockedText: {
+    fontSize: nw(13),
+    color: COLORS.grey666666,
+    marginTop: nh(8),
+    textAlign: 'center',
+  },
+  pollEmptyContainer: {
+    alignItems: 'center',
+    paddingVertical: nh(20),
+    backgroundColor: COLORS.greyF7F7F7,
+    borderRadius: nw(10),
+  },
+  pollEmptyText: {
+    fontSize: nw(13),
+    color: COLORS.grey999999,
+  },
   
   // Event Styles
   eventContainer: {
@@ -1529,6 +1964,53 @@ const styles = StyleSheet.create({
     lineHeight: nh(20),
     marginTop: nh(4),
     marginBottom: nh(10),
+  },
+  
+  // RSVP styles
+  rsvpContainer: {
+    marginTop: nh(12),
+    paddingTop: nh(12),
+    borderTopWidth: 1,
+    borderTopColor: COLORS.greyF0F0F0,
+  },
+  rsvpTitle: {
+    fontSize: nw(13),
+    fontWeight: '600',
+    color: COLORS.grey666666,
+    marginBottom: nh(8),
+  },
+  rsvpButtons: {
+    flexDirection: 'row',
+    gap: nw(8),
+  },
+  rsvpButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(4),
+    paddingVertical: nh(8),
+    borderWidth: 1,
+    borderColor: COLORS.greyE0E0E0,
+    borderRadius: nw(8),
+  },
+  rsvpButtonActive: {
+    backgroundColor: COLORS.blue043142 + '10',
+    borderColor: COLORS.blue043142,
+  },
+  rsvpButtonText: {
+    fontSize: nw(12),
+    color: COLORS.grey666666,
+  },
+  rsvpButtonTextActive: {
+    color: COLORS.blue043142,
+    fontWeight: '600',
+  },
+  rsvpSummary: {
+    fontSize: nw(12),
+    color: COLORS.grey999999,
+    marginTop: nh(8),
+    textAlign: 'center',
   },
   
   // Announcement Styles

@@ -2388,24 +2388,92 @@ export const deleteCommunityPostApi = (communityId: string, postId: string) => {
 
 // -- User Interactions on Content --
 
+// Types for better type safety
+interface VotePayload {
+  voteType: 'upvote' | 'downvote';
+}
+
+interface CommentPayload {
+  content: {
+    text: string;
+    html?: string;
+  };
+  parentCommentId?: string;
+  attachments?: Array<{
+    type: 'image' | 'gif' | 'link';
+    url: string;
+    thumbnailUrl?: string;
+    metadata?: any;
+  }>;
+  markAsBestAnswer?: boolean;
+}
+
+interface PollVotePayload {
+  optionIds: string[];
+}
+
+interface EventRSVPPayload {
+  status: 'going' | 'interested' | 'not_going';
+  seats?: number; // 1-10
+}
+
+interface BookmarkPayload {
+  notes?: string;
+  tags?: string[];
+  collectionId?: string;
+  isPrivate?: boolean;
+}
+
+interface SharePayload {
+  platform: 'internal' | 'whatsapp' | 'twitter' | 'facebook' | 'linkedin' | 'telegram' | 'copy_link' | 'email' | 'other';
+  message?: string;
+  sharedTo?: {
+    communities?: string[];
+    users?: string[];
+  };
+}
+
+interface ReportPayload {
+  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
+  description: string;
+}
+
+interface InteractionsParams {
+  includeComments?: boolean;
+  includeVoters?: boolean;
+  commentSort?: 'best' | 'newest' | 'oldest' | 'top';
+  page?: number;
+  limit?: number;
+}
+
 /**
- * Likes or unlikes a post.
+ * Votes on a post (upvote/downvote with toggle).
  * @param communityId - The ID of the community.
  * @param postId - The ID of the post.
+ * @param payload - Vote type (upvote or downvote).
  */
-export const likeCommunityPostApi = (communityId: string, postId: string) => {
+export const voteCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: VotePayload
+) => {
   return axiosInstance.post(
-    API.COMMUNITY_POST_LIKE.replace(':communityId', communityId).replace(':postId', postId)
+    API.COMMUNITY_POST_VOTE.replace(':communityId', communityId).replace(':postId', postId),
+    payload
   );
 };
 
 /**
- * Adds a comment to a post.
+ * Adds a comment to a post with rich content support.
  * @param communityId - The ID of the community.
  * @param postId - The ID of the post.
- * @param payload - The comment content.
+ * @param payload - The comment content with optional mentions, attachments, and parent comment.
  */
-export const commentOnCommunityPostApi = (communityId: string, postId: string, payload: any) => {
+export const commentOnCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: CommentPayload
+) => {
   return axiosInstance.post(
     API.COMMUNITY_POST_COMMENT.replace(':communityId', communityId).replace(':postId', postId),
     payload
@@ -2413,12 +2481,16 @@ export const commentOnCommunityPostApi = (communityId: string, postId: string, p
 };
 
 /**
- * Submits a vote on a poll.
+ * Submits a vote on a poll with support for multiple choice.
  * @param communityId - The ID of the community.
  * @param postId - The ID of the poll post.
- * @param payload - The selected option(s).
+ * @param payload - Array of selected option IDs.
  */
-export const voteOnPollApi = (communityId: string, postId: string, payload: any) => {
+export const voteOnPollApi = (
+  communityId: string, 
+  postId: string, 
+  payload: PollVotePayload
+) => {
   return axiosInstance.post(
     API.COMMUNITY_POLL_VOTE.replace(':communityId', communityId).replace(':postId', postId),
     payload
@@ -2426,15 +2498,87 @@ export const voteOnPollApi = (communityId: string, postId: string, payload: any)
 };
 
 /**
- * Responds to an event invitation (RSVP).
+ * Responds to an event invitation (RSVP) with seat selection.
  * @param communityId - The ID of the community.
  * @param postId - The ID of the event post.
- * @param payload - The RSVP response ('going', 'maybe', 'not_going').
+ * @param payload - RSVP status and optional seat count.
  */
-export const rsvpToEventApi = (communityId: string, postId: string, payload: any) => {
+export const rsvpToEventApi = (
+  communityId: string, 
+  postId: string, 
+  payload: EventRSVPPayload
+) => {
   return axiosInstance.post(
     API.COMMUNITY_EVENT_RSVP.replace(':communityId', communityId).replace(':postId', postId),
     payload
+  );
+};
+
+/**
+ * Bookmarks or unbookmarks a post (toggle).
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Optional bookmark metadata (notes, tags, collection).
+ */
+export const bookmarkCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload?: BookmarkPayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_BOOKMARK.replace(':communityId', communityId).replace(':postId', postId),
+    payload || {}
+  );
+};
+
+/**
+ * Shares a post to various platforms with tracking.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Share platform and optional message.
+ */
+export const shareCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: SharePayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_SHARE.replace(':communityId', communityId).replace(':postId', postId),
+    payload
+  );
+};
+
+/**
+ * Reports a post for moderation review.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Report reason and description.
+ */
+export const reportCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: ReportPayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_REPORT.replace(':communityId', communityId).replace(':postId', postId),
+    payload
+  );
+};
+
+/**
+ * Gets comprehensive interaction analytics for a post.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param params - Query parameters for filtering interactions.
+ */
+export const getPostInteractionsApi = (
+  communityId: string, 
+  postId: string, 
+  params?: InteractionsParams
+) => {
+  return axiosInstance.get(
+    API.COMMUNITY_POST_INTERACTIONS.replace(':communityId', communityId).replace(':postId', postId),
+    { params }
   );
 };
 
