@@ -40,7 +40,7 @@ import {
   shareCommunityPostApi,
   commentOnCommunityPostApi,
   getPostInteractionsApi,
-  getCommunityPostDetailsApi, // Add this API call for getting full post details
+  getCommunityPostDetailsApi,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 
@@ -80,7 +80,41 @@ const formatEventDate = (dateString) => {
   });
 };
 
-// Custom Post Card Component with Fixed Poll Handling
+// Helper function to safely extract text from potentially encrypted data
+const extractSafeText = (textData) => {
+  if (!textData) return '';
+  
+  // If it's a string, return as-is
+  if (typeof textData === 'string') {
+    return textData;
+  }
+  
+  // If it's an encrypted object (has 'encrypted' property)
+  if (typeof textData === 'object' && textData.encrypted) {
+    console.warn('Text is still encrypted:', textData);
+    return '[Encrypted]';
+  }
+  
+  // If it's an object with nested 'text' property
+  if (typeof textData === 'object' && textData.text) {
+    return String(textData.text);
+  }
+  
+  // If it's an object with 'isEncrypted' false and has 'text' property
+  if (typeof textData === 'object' && textData.isEncrypted === false && textData.text) {
+    return String(textData.text);
+  }
+  
+  // Fallback - try to convert to string
+  try {
+    return String(textData);
+  } catch (error) {
+    console.error('Failed to extract text:', error);
+    return '';
+  }
+};
+
+// Custom Post Card Component with Enhanced RSVP
 const PostCard = React.memo(({ post, communityId, navigation, isMember, currentUserId }) => {
   const [expanded, setExpanded] = useState(false);
   const [userVote, setUserVote] = useState(null);
@@ -95,40 +129,21 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
   const [pollOptions, setPollOptions] = useState([]);
   const [loadingPollDetails, setLoadingPollDetails] = useState(false);
   
-  // Add comprehensive logging for debugging
+  // Debug logging for RSVP state
   useEffect(() => {
-    console.log('===== POST DATA STRUCTURE =====');
-    console.log('Full post object:', JSON.stringify(post, null, 2));
-    console.log('Post Type:', post?.postType);
-    console.log('Preview field:', post?.preview);
-    
-    // Log poll data if present
-    if (post?.postType === 'poll') {
-      console.log('===== POLL DATA =====');
-      console.log('Poll in preview:', post?.preview);
-      console.log('Poll field:', post?.poll);
-      console.log('Poll options in preview:', post?.preview?.pollOptions);
-    }
-    
-    // Log event data if present
     if (post?.postType === 'event') {
-      console.log('===== EVENT DATA =====');
-      console.log('Event in preview:', post?.preview);
-      console.log('Event field:', post?.event);
-      console.log('Event title in preview:', post?.preview?.eventTitle);
-      console.log('Event date in preview:', post?.preview?.eventDate);
+      console.log('Event post detected:', post?.title || post?.preview?.eventTitle);
+      console.log('Current selectedRSVP state:', selectedRSVP);
+      console.log('User RSVP from post data:', post?.event?.userRsvp || post?.preview?.userRsvp);
     }
-    
-    console.log('===== END POST DATA =====');
-  }, [post]);
+  }, [post, selectedRSVP]);
 
-  // Fetch poll details if it's encrypted or missing options
+  // Fetch poll details if encrypted
   useEffect(() => {
     const fetchPollDetails = async () => {
       if (post?.postType === 'poll' && post?.isEncrypted && !pollOptions.length && !loadingPollDetails) {
         setLoadingPollDetails(true);
         try {
-          // If there's an API to get full post details, use it
           if (getCommunityPostDetailsApi) {
             const response = await getCommunityPostDetailsApi(communityId, post.id || post._id);
             console.log('Full poll details response:', response?.data);
@@ -141,7 +156,6 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
             if (Array.isArray(options) && options.length > 0) {
               setPollOptions(options);
               
-              // Initialize poll votes
               const votes = {};
               options.forEach((option, index) => {
                 const optionId = option._id || option.id || `option_${index}`;
@@ -178,28 +192,22 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       setUserVote(post.userVote);
     }
     
-    // Initialize poll data if it's a poll
+    // Initialize poll data
     if (post?.postType === 'poll') {
       const votes = {};
-      
-      // Try to get poll options from different possible locations
       const options = post?.poll?.options || 
                      post?.preview?.pollOptions || 
                      post?.preview?.options || 
                      [];
       
-      console.log('Processing poll options for voting:', options);
-      
       if (Array.isArray(options) && options.length > 0) {
         setPollOptions(options);
-        
         options.forEach((option, index) => {
           const optionId = option._id || option.id || `option_${index}`;
           const optionVotes = option.votes || option.voteCount || 0;
           votes[optionId] = optionVotes;
         });
       } else if (!post?.isEncrypted) {
-        // For non-encrypted polls without options, create default Yes/No options
         const defaultOptions = [
           { id: 'yes', text: 'Yes', votes: 0 },
           { id: 'no', text: 'No', votes: 0 }
@@ -212,7 +220,6 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       
       setPollVotes(votes);
       
-      // Handle user votes
       const userVotes = post?.poll?.userVotes || 
                        post?.preview?.userVotes || 
                        post?.userVotedOption || 
@@ -220,13 +227,17 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       setVotedOptionIds(Array.isArray(userVotes) ? userVotes : [userVotes].filter(Boolean));
     }
     
-    // Initialize RSVP if it's an event
+    // Initialize RSVP for events with better state extraction
     if (post?.postType === 'event') {
       const userRsvp = post?.event?.userRsvp || 
                       post?.preview?.userRsvp || 
-                      post?.userRsvp;
+                      post?.userRsvp ||
+                      post?.rsvpStatus;
+      
       if (userRsvp) {
-        setSelectedRSVP(typeof userRsvp === 'string' ? userRsvp : userRsvp.status);
+        const rsvpStatus = typeof userRsvp === 'string' ? userRsvp : userRsvp.status;
+        console.log('Setting initial RSVP status to:', rsvpStatus);
+        setSelectedRSVP(rsvpStatus);
       }
     }
     
@@ -247,7 +258,7 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
     media,
     poll,
     event,
-    preview, // Add preview field extraction
+    preview,
     announcement,
     metrics = {},
     publishedAt,
@@ -259,21 +270,18 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
 
   const postId = id || _id;
   
-  // Check if current user is the author
   const authorId = author?._id || author?.id || author;
   const isOwnPost = currentUserId && authorId && (
     authorId === currentUserId || 
     authorId.toString() === currentUserId.toString()
   );
   
-  // Extract content text - handle different structures
   let contentText = '';
   if (typeof content === 'string') {
     contentText = content;
   } else if (content?.text) {
     contentText = content.text;
   } else if (content?.html) {
-    // Strip HTML tags if only HTML content is available
     contentText = content.html.replace(/<[^>]*>/g, '');
   }
   
@@ -349,9 +357,6 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       return;
     }
     
-    console.log('Attempting to vote on poll option:', optionId);
-    
-    // Get poll settings from wherever they might be
     const pollSettings = poll?.settings || preview?.pollSettings || {};
     
     if (votedOptionIds.length > 0 && !pollSettings.changeVote) {
@@ -370,8 +375,6 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       } else {
         newVotedIds = [optionId];
       }
-      
-      console.log('Sending vote with optionIds:', newVotedIds);
       
       setVotedOptionIds(newVotedIds);
       
@@ -392,15 +395,26 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
         optionIds: newVotedIds 
       });
       
-      console.log('Poll vote response:', response.data);
-      
-      // Update with server response
+      // Handle response with encryption safety
       if (response.data?.data?.poll?.options || response.data?.data?.preview?.pollOptions) {
         const updatedOptions = response.data?.data?.poll?.options || response.data?.data?.preview?.pollOptions;
-        setPollOptions(updatedOptions);
+        
+        // Sanitize options before setting state
+        const sanitizedOptions = updatedOptions.map(opt => {
+          let safeText = extractSafeText(opt.text);
+          return {
+            ...opt,
+            text: safeText,
+            _id: opt._id || opt.id,
+            votes: opt.votes || opt.voteCount || 0
+          };
+        });
+        
+        setPollOptions(sanitizedOptions);
+        
         const updatedVotes = {};
-        updatedOptions.forEach(option => {
-          updatedVotes[option.id || option._id] = option.votes || option.voteCount || 0;
+        sanitizedOptions.forEach(option => {
+          updatedVotes[option._id || option.id] = option.votes || 0;
         });
         setPollVotes(updatedVotes);
       }
@@ -416,27 +430,37 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       return;
     }
     
-    console.log('RSVP with status:', status);
+    console.log('RSVP button clicked - Status:', status);
+    console.log('Previous RSVP status:', selectedRSVP);
+    
+    // Toggle if clicking the same status, otherwise set new status
+    const newStatus = selectedRSVP === status ? null : status;
     
     try {
-      setSelectedRSVP(status);
+      setSelectedRSVP(newStatus);
       
       const response = await rsvpToEventApi(communityId, postId, {
-        status: status,
+        status: newStatus || 'cancel',
         seats: 1
       });
       
-      console.log('RSVP response:', response.data);
+      console.log('RSVP API response:', response.data);
       
       if (response.data?.data?.event?.userRsvp || response.data?.data?.preview?.userRsvp) {
         const rsvpData = response.data?.data?.event?.userRsvp || response.data?.data?.preview?.userRsvp;
-        setSelectedRSVP(typeof rsvpData === 'string' ? rsvpData : rsvpData.status);
+        const responseStatus = typeof rsvpData === 'string' ? rsvpData : rsvpData.status;
+        setSelectedRSVP(responseStatus === 'cancel' ? null : responseStatus);
+        console.log('RSVP status updated to:', responseStatus);
       }
       
-      Alert.alert('Success', `You're ${status === 'going' ? 'attending' : status === 'interested' ? 'interested in' : 'not attending'} this event`);
+      if (newStatus) {
+        Alert.alert('Success', `You're ${newStatus === 'going' ? 'attending' : newStatus === 'interested' ? 'interested in' : 'not attending'} this event`);
+      } else {
+        Alert.alert('Success', 'RSVP cancelled');
+      }
     } catch (error) {
-      console.error('Error RSVP:', error);
-      setSelectedRSVP(null);
+      console.error('Error updating RSVP:', error);
+      setSelectedRSVP(selectedRSVP);
       Alert.alert('Error', error.response?.data?.message || 'Could not update RSVP');
     }
   };
@@ -480,21 +504,17 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
     Alert.alert(
       'Comments', 
       `This post has ${commentCount} comment${commentCount !== 1 ? 's' : ''}`,
-      [
-        { text: 'OK' }
-      ]
+      [{ text: 'OK' }]
     );
   };
 
   const renderPostContent = () => {
-    console.log(`Rendering ${postType} content`);
-    
     switch (postType) {
       case 'text':
       case 'link':
         return (
           <>
-            {title && <Text style={styles.postTitle}>{title}</Text>}
+            {title && <Text style={styles.postTitle}>{extractSafeText(title)}</Text>}
             {contentText && (
               <TouchableOpacity onPress={() => setExpanded(!expanded)} disabled={contentText.length <= 200}>
                 <Text style={styles.postContent}>{truncatedContent}</Text>
@@ -509,15 +529,11 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
         );
 
       case 'poll':
-        // Get poll data from preview or poll field
         const pollData = poll || preview;
-        const pollQuestion = pollData?.pollQuestion || pollData?.question || title || 'Poll';
+        const pollQuestion = extractSafeText(pollData?.pollQuestion || pollData?.question || title || 'Poll');
         const pollSettings = pollData?.pollSettings || pollData?.settings || {};
         const pollEndsAt = pollData?.pollEndsAt || pollData?.endsAt;
         
-        console.log('Rendering poll with options:', pollOptions);
-        
-        // Show loading state for encrypted polls
         if (isEncrypted && loadingPollDetails) {
           return (
             <View style={styles.pollContainer}>
@@ -530,7 +546,6 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
           );
         }
         
-        // If it's encrypted but not a member, show locked state
         if (isEncrypted && !isMember) {
           return (
             <View style={styles.pollContainer}>
@@ -562,7 +577,10 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
                     optionVotes = pollVotes[optionId] || 0;
                   } else {
                     optionId = option._id || option.id || `option_${index}`;
-                    optionText = option.text || option.option || option.label || '';
+                    
+                    // Use the safe text extraction function
+                    optionText = extractSafeText(option.text || option.option || option.label || '');
+                    
                     optionVotes = pollVotes[optionId] || option.votes || option.voteCount || 0;
                   }
                   
@@ -618,22 +636,15 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
         );
 
       case 'event':
-        // Extract event data from preview field or event field
         const eventData = event || preview || {};
-        const eventTitle = eventData.eventTitle || eventData.title || eventData.name || title;
+        const eventTitle = extractSafeText(eventData.eventTitle || eventData.title || eventData.name || title);
         const eventDate = eventData.eventDate || eventData.startDate || eventData.date;
         const eventEndDate = eventData.eventEndDate || eventData.endDate;
         const eventLocation = eventData.eventLocation || eventData.location;
-        const eventDescription = eventData.eventDescription || eventData.description || contentText;
-        const eventVenue = eventData.eventVenue || eventData.venue || eventLocation?.venue;
-        const eventRSVP = eventData.rsvp || eventData.requiresRSVP;
+        const eventDescription = extractSafeText(eventData.eventDescription || eventData.description || contentText);
+        const eventVenue = extractSafeText(eventData.eventVenue || eventData.venue || eventLocation?.venue);
         
-        console.log('Rendering event with extracted data:', {
-          eventTitle,
-          eventDate,
-          eventLocation,
-          eventVenue
-        });
+        console.log('Rendering event RSVP buttons - Current selection:', selectedRSVP);
         
         if (!eventTitle && !eventDate && !contentText) {
           return <Text style={styles.postContent}>Event details not available</Text>;
@@ -679,52 +690,70 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
               </View>
             )}
             
-            {/* Show RSVP section for events - enable by default */}
+            {/* Enhanced RSVP Section */}
             {isMember && (
               <View style={styles.rsvpContainer}>
                 <Text style={styles.rsvpTitle}>RSVP</Text>
                 <View style={styles.rsvpButtons}>
                   <TouchableOpacity
-                    style={[styles.rsvpButton, selectedRSVP === 'going' && styles.rsvpButtonActive]}
+                    style={[
+                      styles.rsvpButton,
+                      selectedRSVP === 'going' && styles.rsvpButtonGoing
+                    ]}
                     onPress={() => handleRSVP('going')}
                     disabled={!isMember}
                   >
                     <Icon 
-                      name="checkmark-circle" 
-                      size={nw(18)} 
-                      color={selectedRSVP === 'going' ? '#4CAF50' : COLORS.grey666666}
+                      name={selectedRSVP === 'going' ? "checkmark-circle" : "checkmark-circle-outline"} 
+                      size={nw(20)} 
+                      color={selectedRSVP === 'going' ? '#00C853' : COLORS.grey666666}
                     />
-                    <Text style={[styles.rsvpButtonText, selectedRSVP === 'going' && styles.rsvpButtonTextActive]}>
+                    <Text style={[
+                      styles.rsvpButtonText, 
+                      selectedRSVP === 'going' && styles.rsvpButtonTextActive
+                    ]}>
                       Going
                     </Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    style={[styles.rsvpButton, selectedRSVP === 'interested' && styles.rsvpButtonActive]}
+                    style={[
+                      styles.rsvpButton,
+                      selectedRSVP === 'interested' && styles.rsvpButtonInterested
+                    ]}
                     onPress={() => handleRSVP('interested')}
                     disabled={!isMember}
                   >
                     <Icon 
-                      name="star" 
-                      size={nw(18)} 
-                      color={selectedRSVP === 'interested' ? COLORS.yellowF5BE00 : COLORS.grey666666}
+                      name={selectedRSVP === 'interested' ? "star" : "star-outline"} 
+                      size={nw(20)} 
+                      color={selectedRSVP === 'interested' ? '#FFA000' : COLORS.grey666666}
                     />
-                    <Text style={[styles.rsvpButtonText, selectedRSVP === 'interested' && styles.rsvpButtonTextActive]}>
+                    <Text style={[
+                      styles.rsvpButtonText, 
+                      selectedRSVP === 'interested' && styles.rsvpButtonTextActive
+                    ]}>
                       Interested
                     </Text>
                   </TouchableOpacity>
                   
                   <TouchableOpacity
-                    style={[styles.rsvpButton, selectedRSVP === 'not_going' && styles.rsvpButtonActive]}
+                    style={[
+                      styles.rsvpButton,
+                      selectedRSVP === 'not_going' && styles.rsvpButtonNotGoing
+                    ]}
                     onPress={() => handleRSVP('not_going')}
                     disabled={!isMember}
                   >
                     <Icon 
-                      name="close-circle" 
-                      size={nw(18)} 
-                      color={selectedRSVP === 'not_going' ? COLORS.redFF0000 : COLORS.grey666666}
+                      name={selectedRSVP === 'not_going' ? "close-circle" : "close-circle-outline"} 
+                      size={nw(20)} 
+                      color={selectedRSVP === 'not_going' ? '#F44336' : COLORS.grey666666}
                     />
-                    <Text style={[styles.rsvpButtonText, selectedRSVP === 'not_going' && styles.rsvpButtonTextActive]}>
+                    <Text style={[
+                      styles.rsvpButtonText, 
+                      selectedRSVP === 'not_going' && styles.rsvpButtonTextActive
+                    ]}>
                       Can't Go
                     </Text>
                   </TouchableOpacity>
@@ -742,13 +771,10 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
         );
 
       case 'announcement':
-        // Get announcement data from preview or announcement field
         const announcementData = announcement || preview || {};
         const announcementPriority = announcementData.announcementPriority || 
                                      announcementData.priority || 
                                      'normal';
-        
-        console.log('Rendering announcement with priority:', announcementPriority);
         
         return (
           <View style={styles.announcementContainer}>
@@ -758,16 +784,15 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
                 {announcementPriority.toUpperCase()}
               </Text>
             </View>
-            {title && <Text style={styles.announcementTitle}>{title}</Text>}
+            {title && <Text style={styles.announcementTitle}>{extractSafeText(title)}</Text>}
             <Text style={styles.announcementContent}>{contentText}</Text>
           </View>
         );
 
       default:
-        console.log('Rendering default/unknown post type:', postType);
         return (
           <>
-            {title && <Text style={styles.postTitle}>{title}</Text>}
+            {title && <Text style={styles.postTitle}>{extractSafeText(title)}</Text>}
             <Text style={styles.postContent}>{contentText}</Text>
           </>
         );
@@ -802,7 +827,6 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       <View style={styles.postBody}>
         {renderPostContent()}
         
-        {/* Handle media images from media field or preview field */}
         {(media?.images?.length > 0 || preview?.images?.length > 0) && (
           <ScrollView 
             horizontal 
@@ -1132,7 +1156,6 @@ const CommunityDetail = ({ route, navigation }) => {
         setHasMoreFeed(false);
       }
       
-      // Only fetch members once when user is a member
       if (isUserMember && !membersLoaded && !isRefresh) {
         fetchMembers();
       }
@@ -1966,7 +1989,7 @@ const styles = StyleSheet.create({
     marginBottom: nh(10),
   },
   
-  // RSVP styles
+  // Enhanced RSVP styles
   rsvpContainer: {
     marginTop: nh(12),
     paddingTop: nh(12),
@@ -1989,22 +2012,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: nw(4),
-    paddingVertical: nh(8),
-    borderWidth: 1,
+    paddingVertical: nh(10),
+    borderWidth: 1.5,
     borderColor: COLORS.greyE0E0E0,
     borderRadius: nw(8),
+    backgroundColor: COLORS.whiteFFFFFF,
   },
-  rsvpButtonActive: {
-    backgroundColor: COLORS.blue043142 + '10',
-    borderColor: COLORS.blue043142,
+  rsvpButtonGoing: {
+    backgroundColor: '#00C853' + '15',
+    borderColor: '#00C853',
+    borderWidth: 2,
+    shadowColor: '#00C853',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  rsvpButtonInterested: {
+    backgroundColor: '#FFA000' + '15',
+    borderColor: '#FFA000',
+    borderWidth: 2,
+    shadowColor: '#FFA000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  rsvpButtonNotGoing: {
+    backgroundColor: '#F44336' + '15',
+    borderColor: '#F44336',
+    borderWidth: 2,
+    shadowColor: '#F44336',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   rsvpButtonText: {
     fontSize: nw(12),
     color: COLORS.grey666666,
+    fontWeight: '500',
   },
   rsvpButtonTextActive: {
-    color: COLORS.blue043142,
-    fontWeight: '600',
+    color: COLORS.grey222222,
+    fontWeight: '700',
   },
   rsvpSummary: {
     fontSize: nw(12),

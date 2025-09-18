@@ -375,12 +375,15 @@ INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
   COMMUNITY_DELETE_POST: 'communities/:communityId/posts/', // DELETE with /:postId
 
   // -- User Interactions on Content --
-  COMMUNITY_POST_LIKE: 'communities/:communityId/posts/:postId/like', // POST
-  COMMUNITY_POST_COMMENT: 'communities/:communityId/posts/:postId/comments', // POST
-  COMMUNITY_POLL_VOTE: 'communities/:communityId/posts/:postId/poll/vote', // POST
-  COMMUNITY_EVENT_RSVP: 'communities/:communityId/posts/:postId/event/rsvp', // POST
-  COMMUNITY_POST_SAVE: 'communities/:communityId/posts/:postId/save', // POST
-  COMMUNITY_POST_SHARE: 'communities/:communityId/posts/:postId/share', // POST
+  // Community Post Interactions
+COMMUNITY_POST_VOTE: 'communities/:communityId/posts/:postId/vote', // POST - Body: { voteType: 'upvote'|'downvote' }
+COMMUNITY_POST_COMMENT: 'communities/:communityId/posts/:postId/comments', // POST - Body: { content: { text, html }, parentCommentId?, attachments? }
+COMMUNITY_POLL_VOTE: 'communities/:communityId/posts/:postId/poll/vote', // POST - Body: { optionIds: [] }
+COMMUNITY_EVENT_RSVP: 'communities/:communityId/posts/:postId/event/rsvp', // POST - Body: { status: 'going'|'interested'|'not_going', seats? }
+COMMUNITY_POST_BOOKMARK: 'communities/:communityId/posts/:postId/bookmark', // POST - Body: { notes?, tags?, collectionId?, isPrivate? }
+COMMUNITY_POST_SHARE: 'communities/:communityId/posts/:postId/share', // POST - Body: { platform, message?, sharedTo? }
+COMMUNITY_POST_REPORT: 'communities/:communityId/posts/:postId/report', // POST - Body: { reason, description }
+COMMUNITY_POST_INTERACTIONS: 'communities/:communityId/posts/:postId/interactions', // GET - Query: ?includeComments=true&commentSort=best&page=1&limit=20
 
   // -- Administration & Analytics --
   COMMUNITY_UPDATE_SETTINGS: 'communities/:communityId/settings', // PUT
