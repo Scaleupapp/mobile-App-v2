@@ -1153,17 +1153,19 @@ style={styles.icon}
                   </View>
                 )}
                 <View style={styles.inputContainer}>
-                  <Icon
-                    type="material-community"
-                    name="image-plus"
-                    size={20}
-                    style={{
-                      alignSelf: 'center',
-                      marginRight: 10,
-                      marginLeft: -10,
-                    }}
-                    onPress={openGallery}
-                  />
+  {/* TEMPORARILY DISABLED - COMMENT OUT THIS SECTION
+  <Icon
+    type="material-community"
+    name="image-plus"
+    size={20}
+    style={{
+      alignSelf: 'center',
+      marginRight: 10,
+      marginLeft: -10,
+    }}
+    onPress={openGallery}
+  />
+  */}
                   <TextInput
                     style={styles.textInput}
                     placeholder="Type a message..."

@@ -2197,1276 +2197,423 @@ export const addDomainToWhitelistApi = (payload: any) => {
   return axiosInstance.post(API.DOMAIN_WHITELIST_ADD, payload);
 };
 
-// ==========================================
-// COMMUNITY PLATFORM API FUNCTIONS
-// ==========================================
 
 // ==========================================
-// COMMUNITY MANAGEMENT - DISCOVERY & CORE
+// COMMUNITY FEATURE API SERVICES
 // ==========================================
 
-// Get all communities with advanced filtering
-export const getCommunitiesApi = (params?: {
-  search?: string;
-  type?: string | string[];
-  category?: string | string[];
-  privacy?: string;
-  hierarchyLevel?: number;
-  parentCommunity?: string;
-  verified?: string;
-  userDomain?: string;
-  myCommunitiesOnly?: string;
-  includeJoined?: string;
-  sort?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES}?${queryString}`);
+// -- Community Management & Discovery --
+
+/**
+ * Creates a new community.
+ * @param payload - The community creation data.
+ */
+export const createCommunityApi = (payload: any) => {
+  return axiosInstance.post(API.COMMUNITY_CREATE, payload);
 };
 
-// Advanced search communities
-export const searchCommunitiesApi = (params?: {
-  q?: string;
-  type?: string | string[];
-  category?: string | string[];
-  privacy?: string | string[];
-  hierarchyLevel?: number;
-  verified?: string;
-  memberCountMin?: number;
-  memberCountMax?: number;
-  sort?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_SEARCH}?${queryString}`);
+/**
+ * Fetches a paginated or filtered list of all communities.
+ * @param params - Optional query parameters for filtering, sorting, and pagination.
+ */
+export const listAllCommunitiesApi = (params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_LIST_ALL, { params });
 };
 
-// Get featured communities
-export const getFeaturedCommunitiesApi = (limit?: number) => {
-  return axiosInstance.get(`${API.COMMUNITIES_FEATURED}?limit=${limit || 10}`);
-};
-
-// Get trending communities
-export const getTrendingCommunitiesApi = (params?: {
-  limit?: number;
-  timeframe?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_TRENDING}?${queryString}`);
-};
-
-// Get community categories
-export const getCommunityCategoriesApi = () => {
-  return axiosInstance.get(API.COMMUNITIES_CATEGORIES);
-};
-
-
-
-// Get community types
-export const getCommunityTypesApi = () => {
-  return axiosInstance.get(API.COMMUNITIES_TYPES);
-};
-
-// Get platform-wide statistics
-export const getCommunityPlatformStatsApi = () => {
-  return axiosInstance.get(API.COMMUNITIES_PLATFORM_STATS);
-};
-
-// Get user's communities list
-export const getMyCommunitiesApi = (params?: {
-  role?: string | string[];
-  type?: string | string[];
-  sort?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_MY_LIST}?${queryString}`);
-};
-
-// Get user's community summary
-export const getMyCommunitySmammarayApi = () => {
-  return axiosInstance.get(API.COMMUNITIES_MY_SUMMARY);
-};
-
-// Get institutional community suggestions
-export const getInstitutionalSuggestionsApi = () => {
-  return axiosInstance.get(API.COMMUNITIES_SUGGESTIONS_INSTITUTIONAL);
-};
-
-// Auto-join domain communities
-export const autoJoinDomainCommunitiesApi = () => {
-  return axiosInstance.post(API.COMMUNITIES_AUTO_JOIN_DOMAIN);
-};
-
-// Get personalized recommendations
-export const getPersonalizedRecommendationsApi = (limit?: number) => {
-  return axiosInstance.get(`${API.COMMUNITIES_RECOMMENDATIONS_PERSONALIZED}?limit=${limit || 10}`);
-};
-
-// Bulk join communities
-export const bulkJoinCommunitiesApi = (payload: {
-  communityIds: string[];
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_BULK_JOIN, payload);
-};
-
-// Bulk leave communities
-export const bulkLeaveCommunitiesApi = (payload: {
-  communityIds: string[];
-  reason?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_BULK_LEAVE, payload);
-};
-
-// Get communities by location
-export const getCommunitiesByLocationApi = (location: string, params?: {
-  radius?: number;
-  sort?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_LOCATION.replace(':location', location)}?${queryString}`);
-};
-
-// ==========================================
-// COMMUNITY MANAGEMENT - CRUD OPERATIONS
-// ==========================================
-
-// Create new community
-export const createCommunityApi = (formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITIES_CREATE, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-// Create community from template
-export const createCommunityFromTemplateApi = (formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITIES_CREATE_FROM_TEMPLATE, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-// Get community details
+/**
+ * Retrieves detailed information for a single community by its ID.
+ * @param communityId - The ID of the community.
+ */
 export const getCommunityDetailsApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_DETAILS.replace(':communityId', communityId));
+  return axiosInstance.get(`${API.COMMUNITY_DETAILS}${communityId}`);
 };
 
-// Update community
-export const updateCommunityApi = (communityId: string, formData: FormData) => {
-  return axiosInstance.put(API.COMMUNITIES_UPDATE.replace(':communityId', communityId), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+/**
+ * Updates an existing community's information.
+ * @param communityId - The ID of the community to update.
+ * @param payload - The data to be updated.
+ */
+export const updateCommunityApi = (communityId: string, payload: any) => {
+  return axiosInstance.put(`${API.COMMUNITY_UPDATE}${communityId}`, payload);
 };
 
-// Delete community
-export const deleteCommunityApi = (communityId: string) => {
-  return axiosInstance.delete(API.COMMUNITIES_DELETE.replace(':communityId', communityId));
+/**
+ * Searches for communities based on various criteria.
+ * @param params - Search query parameters (e.g., q, type, tags).
+ */
+export const searchCommunitiesApi = (params: any) => {
+  return axiosInstance.get(API.COMMUNITY_SEARCH, { params });
 };
 
-// Archive community
-export const archiveCommunityApi = (communityId: string, payload?: {
-  reason?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_ARCHIVE.replace(':communityId', communityId), payload);
+/**
+ * Gets personalized community recommendations for the current user.
+ * @param params - Optional query parameters (e.g., limit, type).
+ */
+export const getCommunityRecommendationsApi = (params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_RECOMMENDATIONS, { params });
 };
 
-// Restore community
-export const restoreCommunityApi = (communityId: string) => {
-  return axiosInstance.post(API.COMMUNITIES_RESTORE.replace(':communityId', communityId));
+/**
+ * Fetches a list of currently trending communities.
+ * @param params - Optional query parameters (e.g., period, limit).
+ */
+export const getTrendingCommunitiesApi = (params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_TRENDING, { params });
 };
 
-// Transfer ownership
-export const transferCommunityOwnershipApi = (communityId: string, payload: {
-  newOwnerId: string;
-  reason?: string;
-  confirmPassword?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_TRANSFER_OWNERSHIP.replace(':communityId', communityId), payload);
+// -- Community Membership --
+
+/**
+ * Allows a user to join or request to join a community.
+ * @param communityId - The ID of the community.
+ * @param payload - Reason for joining, if required.
+ */
+export const joinCommunityApi = (communityId: string, payload: any) => {
+  return axiosInstance.post(API.COMMUNITY_JOIN.replace(':communityId', communityId), payload);
 };
 
-// ==========================================
-// COMMUNITY MANAGEMENT - ANALYTICS & INSIGHTS
-// ==========================================
-
-// Get detailed community statistics
-export const getCommunityStatsApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_STATS.replace(':communityId', communityId));
+/**
+ * Allows a user to leave a community.
+ * @param communityId - The ID of the community.
+ * @param payload - Optional reason for leaving.
+ */
+export const leaveCommunityApi = (communityId: string, payload?: any) => {
+  return axiosInstance.post(API.COMMUNITY_LEAVE.replace(':communityId', communityId), payload);
 };
 
-// Get public community statistics
-export const getCommunityPublicStatsApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_STATS_PUBLIC.replace(':communityId', communityId));
+/**
+ * Fetches the list of members for a specific community.
+ * @param communityId - The ID of the community.
+ * @param params - Optional query parameters for filtering and pagination.
+ */
+export const getCommunityMembersApi = (communityId: string, params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_MEMBERS.replace(':communityId', communityId), { params });
 };
 
-// Get detailed analytics
-export const getCommunityAnalyticsApi = (communityId: string, timeframe?: string) => {
-  return axiosInstance.get(`${API.COMMUNITIES_ANALYTICS.replace(':communityId', communityId)}?timeframe=${timeframe || '30d'}`);
-};
-
-// Get community health score
-export const getCommunityHealthApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_HEALTH.replace(':communityId', communityId));
-};
-
-// Get community activity
-export const getCommunityActivityApi = (communityId: string, params?: {
-  limit?: number;
-  type?: string;
-  timeframe?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_ACTIVITY.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Get AI-powered insights
-export const getCommunityInsightsApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_INSIGHTS.replace(':communityId', communityId));
-};
-
-// ==========================================
-// COMMUNITY MANAGEMENT - STRUCTURE & ORGANIZATION
-// ==========================================
-
-// Get community hierarchy
-export const getCommunityHierarchyApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_HIERARCHY.replace(':communityId', communityId));
-};
-
-// Get sub-communities
-export const getSubCommunitiesApi = (communityId: string, params?: {
-  page?: number;
-  limit?: number;
-  sort?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_SUB_COMMUNITIES.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Get similar communities
-export const getSimilarCommunitiesApi = (communityId: string, limit?: number) => {
-  return axiosInstance.get(`${API.COMMUNITIES_SIMILAR.replace(':communityId', communityId)}?limit=${limit || 8}`);
-};
-
-// Export community data
-export const exportCommunityApi = (communityId: string, params?: {
-  format?: string;
-  includeMembers?: string;
-  includePosts?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITIES_EXPORT.replace(':communityId', communityId)}?${queryString}`, {
-    responseType: 'blob'
-  });
-};
-
-// Generate community report
-export const generateCommunityReportApi = (communityId: string, payload?: {
-  reportType?: string;
-  timeframe?: string;
-  format?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_GENERATE_REPORT.replace(':communityId', communityId), payload);
-};
-
-// Duplicate community
-export const duplicateCommunityApi = (communityId: string, payload: {
-  name: string;
-  includeMembers?: boolean;
-  includeContent?: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_DUPLICATE.replace(':communityId', communityId), payload);
-};
-
-// Get community template
-export const getCommunityTemplateApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_TEMPLATE.replace(':communityId', communityId));
-};
-
-// ==========================================
-// COMMUNITY MANAGEMENT - USER INTERACTIONS
-// ==========================================
-
-// Bookmark community
-export const bookmarkCommunityApi = (communityId: string) => {
-  return axiosInstance.post(API.COMMUNITIES_BOOKMARK.replace(':communityId', communityId));
-};
-
-// Remove bookmark
-export const removeBookmarkCommunityApi = (communityId: string) => {
-  return axiosInstance.delete(API.COMMUNITIES_REMOVE_BOOKMARK.replace(':communityId', communityId));
-};
-
-// Follow community
-export const followCommunityApi = (communityId: string) => {
-  return axiosInstance.post(API.COMMUNITIES_FOLLOW.replace(':communityId', communityId));
-};
-
-// Unfollow community
-export const unfollowCommunityApi = (communityId: string) => {
-  return axiosInstance.delete(API.COMMUNITIES_UNFOLLOW.replace(':communityId', communityId));
-};
-
-// Report community
-export const reportCommunityApi = (communityId: string, payload: {
-  reason: string;
-  description?: string;
-  evidence?: string[];
-}) => {
-  return axiosInstance.post(API.COMMUNITIES_REPORT.replace(':communityId', communityId), payload);
-};
-
-// Request institutional verification
-export const requestInstitutionalVerificationApi = (communityId: string, formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITIES_VERIFY_INSTITUTIONAL.replace(':communityId', communityId), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-// ==========================================
-// COMMUNITY MANAGEMENT - FEED CONFIGURATION
-// ==========================================
-
-// Get feed configuration
-export const getCommunityFeedConfigApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITIES_FEED_CONFIG.replace(':communityId', communityId));
-};
-
-// Update feed configuration
-export const updateCommunityFeedConfigApi = (communityId: string, payload: {
-  postTypes?: any;
-  sortBy?: string;
-  showPinned?: boolean;
-  showFeatured?: boolean;
-  notificationLevel?: string;
-  digestFrequency?: string;
-  hideSeenPosts?: boolean;
-  prioritizeFromFollowing?: boolean;
-}) => {
-  return axiosInstance.put(API.COMMUNITIES_FEED_CONFIG_UPDATE.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY POSTS - CORE OPERATIONS
-// ==========================================
-
-// Get community posts feed
-export const getCommunityPostsApi = (communityId: string, params?: {
-  page?: number;
-  limit?: number;
-  sort?: string;
-  postType?: string;
-  author?: string;
-  timeframe?: string;
-  search?: string;
-  pinned?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_POSTS.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Create community post
-export const createCommunityPostApi = (communityId: string, formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITY_POST_CREATE.replace(':communityId', communityId), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-// Get post details
-export const getCommunityPostDetailsApi = (communityId: string, postId: string) => {
-  return axiosInstance.get(
-    API.COMMUNITY_POST_DETAILS
-      .replace(':communityId', communityId)
-      .replace(':postId', postId)
+/**
+ * Updates the role of a community member (promote/demote).
+ * @param communityId - The ID of the community.
+ * @param memberId - The ID of the member.
+ * @param payload - The new role and reason.
+ */
+export const updateMemberRoleApi = (communityId: string, memberId: string, payload: any) => {
+  return axiosInstance.post(
+    API.COMMUNITY_UPDATE_MEMBER_ROLE.replace(':communityId', communityId).replace(':memberId', memberId),
+    payload
   );
 };
 
-// Update post
-export const updateCommunityPostApi = (communityId: string, postId: string, formData: FormData) => {
-  return axiosInstance.put(
-    API.COMMUNITY_POST_UPDATE
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-};
-
-// Delete post
-export const deleteCommunityPostApi = (communityId: string, postId: string, payload?: {
-  hardDelete?: boolean;
-  reason?: string;
-}) => {
+/**
+ * Removes a member from a community.
+ * @param communityId - The ID of the community.
+ * @param memberId - The ID of the member to remove.
+ */
+export const removeMemberApi = (communityId: string, memberId: string) => {
   return axiosInstance.delete(
-    API.COMMUNITY_POST_DELETE
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    { data: payload }
+    API.COMMUNITY_REMOVE_MEMBER.replace(':communityId', communityId).replace(':memberId', memberId)
   );
 };
 
-// Search posts
-export const searchCommunityPostsApi = (communityId: string, params?: {
-  q?: string;
-  type?: string;
-  author?: string;
-  tags?: string;
-  limit?: number;
-  page?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_POST_SEARCH.replace(':communityId', communityId)}?${queryString}`);
+// -- Join Requests (For Admins) --
+
+/**
+ * Fetches pending join requests for a community.
+ * @param communityId - The ID of the community.
+ * @param params - Optional query parameters for status filtering.
+ */
+export const getJoinRequestsApi = (communityId: string, params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_LIST_JOIN_REQUESTS.replace(':communityId', communityId), { params });
 };
 
-// ==========================================
-// COMMUNITY POSTS - MEDIA & UPLOADS
-// ==========================================
-
-// Upload media for posts
-export const uploadCommunityPostMediaApi = (communityId: string, formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_UPLOAD_MEDIA.replace(':communityId', communityId), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-// ==========================================
-// COMMUNITY POSTS - POST TYPES
-// ==========================================
-
-// Create poll post
-export const createCommunityPollApi = (communityId: string, payload: {
-  title?: string;
-  pollQuestion: string;
-  pollOptions: string[];
-  pollSettings?: any;
-  pollEndsAt?: string;
-  content?: any;
-  tags?: string[];
-}) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_POLL.replace(':communityId', communityId), payload);
-};
-
-// Create event post
-export const createCommunityEventApi = (communityId: string, payload: {
-  eventData: any;
-  content?: any;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_EVENT.replace(':communityId', communityId), payload);
-};
-
-// Create announcement
-export const createCommunityAnnouncementApi = (communityId: string, payload: {
-  title: string;
-  content: any;
-  announcementData?: any;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_ANNOUNCEMENT.replace(':communityId', communityId), payload);
-};
-
-// Schedule post
-export const scheduleCommunityPostApi = (communityId: string, payload: {
-  scheduledFor: string;
-  // ... all other createPost fields
-}) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_SCHEDULE.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY POSTS - MODERATION & MANAGEMENT
-// ==========================================
-
-// Pin/unpin post
-export const pinCommunityPostApi = (communityId: string, postId: string, payload: {
-  isPinned: boolean;
-}) => {
+/**
+ * Responds to a join request (approve/reject).
+ * @param communityId - The ID of the community.
+ * @param requestId - The ID of the join request.
+ * @param payload - The action ('approve' or 'reject') and a message.
+ */
+export const respondToJoinRequestApi = (communityId: string, requestId: string, payload: any) => {
   return axiosInstance.post(
-    API.COMMUNITY_POSTS_PIN
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
+    API.COMMUNITY_RESPOND_JOIN_REQUEST.replace(':communityId', communityId).replace(':requestId', requestId),
     payload
   );
 };
 
-// Feature/unfeature post
-export const featureCommunityPostApi = (communityId: string, postId: string, payload: {
-  isFeatured: boolean;
-  featuredUntil?: string;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POSTS_FEATURE
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
+// -- Content Management (Posts, Polls, Events) --
+
+/**
+ * Creates a new post, poll, or event within a community.
+ * @param communityId - The ID of the community.
+ * @param payload - The content of the post.
+ */
+export const createCommunityPostApi = (communityId: string, payload: any) => {
+  return axiosInstance.post(API.COMMUNITY_CREATE_POST.replace(':communityId', communityId), payload);
 };
 
-// Bulk pin posts
-export const bulkPinCommunityPostsApi = (communityId: string, payload: {
-  postIds: string[];
-  isPinned: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_BULK_PIN.replace(':communityId', communityId), payload);
+/**
+ * Fetches the content feed for a community.
+ * @param communityId - The ID of the community.
+ * @param params - Optional query parameters for sorting and pagination.
+ */
+export const getCommunityFeedApi = (communityId: string, params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_GET_FEED.replace(':communityId', communityId), { params });
 };
 
-// Bulk delete posts
-export const bulkDeleteCommunityPostsApi = (communityId: string, payload: {
-  postIds: string[];
-  hardDelete?: boolean;
-  reason?: string;
-}) => {
-  return axiosInstance.delete(API.COMMUNITY_POSTS_BULK_DELETE.replace(':communityId', communityId), {
-    data: payload
-  });
+/**
+ * Retrieves a single post by its ID.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ */
+export const getCommunityPostApi = (communityId: string, postId: string) => {
+  return axiosInstance.get(`${API.COMMUNITY_GET_POST.replace(':communityId', communityId)}${postId}`);
 };
 
-// ==========================================
-// COMMUNITY POSTS - ANALYTICS
-// ==========================================
-
-// Get post analytics
-export const getCommunityPostAnalyticsApi = (communityId: string, postId: string) => {
-  return axiosInstance.get(
-    API.COMMUNITY_POSTS_ANALYTICS
-      .replace(':communityId', communityId)
-      .replace(':postId', postId)
-  );
+/**
+ * Updates an existing post.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post to update.
+ * @param payload - The updated post data.
+ */
+export const updateCommunityPostApi = (communityId: string, postId: string, payload: any) => {
+  return axiosInstance.put(`${API.COMMUNITY_UPDATE_POST.replace(':communityId', communityId)}${postId}`, payload);
 };
 
-// Get content overview
-export const getCommunityContentOverviewApi = (communityId: string, timeframe?: string) => {
-  return axiosInstance.get(`${API.COMMUNITY_POSTS_CONTENT_OVERVIEW.replace(':communityId', communityId)}?timeframe=${timeframe || '30d'}`);
+/**
+ * Deletes a post.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post to delete.
+ */
+export const deleteCommunityPostApi = (communityId: string, postId: string) => {
+  return axiosInstance.delete(`${API.COMMUNITY_DELETE_POST.replace(':communityId', communityId)}${postId}`);
 };
 
-// ==========================================
-// COMMUNITY POSTS - ENCRYPTION
-// ==========================================
+// -- User Interactions on Content --
 
-// Test encryption service
-export const testCommunityEncryptionApi = () => {
-  return axiosInstance.get(API.COMMUNITY_POSTS_TEST_ENCRYPTION);
-};
+// Types for better type safety
+interface VotePayload {
+  voteType: 'upvote' | 'downvote';
+}
 
-// Get post encryption status
-export const getCommunityPostEncryptionStatusApi = (communityId: string, postId: string) => {
-  return axiosInstance.get(
-    API.COMMUNITY_POSTS_ENCRYPTION_STATUS
-      .replace(':communityId', communityId)
-      .replace(':postId', postId)
-  );
-};
+interface CommentPayload {
+  content: {
+    text: string;
+    html?: string;
+  };
+  parentCommentId?: string;
+  attachments?: Array<{
+    type: 'image' | 'gif' | 'link';
+    url: string;
+    thumbnailUrl?: string;
+    metadata?: any;
+  }>;
+  markAsBestAnswer?: boolean;
+}
 
-// Get encryption statistics
-export const getCommunityEncryptionStatsApi = (communityId: string) => {
-  return axiosInstance.get(API.COMMUNITY_POSTS_ENCRYPTION_STATS.replace(':communityId', communityId));
-};
-
-// Migrate posts to encrypted format
-export const migrateCommunityEncryptionApi = (communityId: string, payload?: {
-  batchSize?: number;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_POSTS_MIGRATE_ENCRYPTION.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY INTERACTIONS - POST INTERACTIONS
-// ==========================================
-
-// Vote on post
-export const voteCommunityPostApi = (communityId: string, postId: string, payload: {
-  voteType: string;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_VOTE
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
-};
-
-// Add comment to post
-export const addCommunityPostCommentApi = (communityId: string, postId: string, formData: FormData) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_COMMENTS
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-};
-
-// Vote on poll
-export const voteCommunityPollApi = (communityId: string, postId: string, payload: {
+interface PollVotePayload {
   optionIds: string[];
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_POLL_VOTE
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
-};
+}
 
-// RSVP to event
-export const rsvpCommunityEventApi = (communityId: string, postId: string, payload: {
-  status: string;
-  seats?: number;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_EVENT_RSVP
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
-};
+interface EventRSVPPayload {
+  status: 'going' | 'interested' | 'not_going';
+  seats?: number; // 1-10
+}
 
-// Share post
-export const shareCommunityPostApi = (communityId: string, postId: string, payload: {
-  platform: string;
-  message?: string;
-  sharedTo?: any;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_SHARE
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
-};
-
-// Bookmark post
-export const bookmarkCommunityPostApi = (communityId: string, postId: string, payload?: {
+interface BookmarkPayload {
   notes?: string;
   tags?: string[];
   collectionId?: string;
   isPrivate?: boolean;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_BOOKMARK
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
-};
+}
 
-// Report post
-export const reportCommunityPostApi = (communityId: string, postId: string, payload: {
-  reason: string;
+interface SharePayload {
+  platform: 'internal' | 'whatsapp' | 'twitter' | 'facebook' | 'linkedin' | 'telegram' | 'copy_link' | 'email' | 'other';
+  message?: string;
+  sharedTo?: {
+    communities?: string[];
+    users?: string[];
+  };
+}
+
+interface ReportPayload {
+  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
   description: string;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_REPORT
-      .replace(':communityId', communityId)
-      .replace(':postId', postId),
-    payload
-  );
-};
+}
 
-// Get post interactions
-export const getCommunityPostInteractionsApi = (
+interface InteractionsParams {
+  includeComments?: boolean;
+  includeVoters?: boolean;
+  commentSort?: 'best' | 'newest' | 'oldest' | 'top';
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Votes on a post (upvote/downvote with toggle).
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Vote type (upvote or downvote).
+ */
+export const voteCommunityPostApi = (
   communityId: string, 
   postId: string, 
-  params?: {
-    includeComments?: string;
-    includeVoters?: string;
-    commentSort?: string;
-    page?: number;
-    limit?: number;
-  }
+  payload: VotePayload
 ) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(
-    `${API.COMMUNITY_POST_INTERACTIONS
-      .replace(':communityId', communityId)
-      .replace(':postId', postId)}?${queryString}`
-  );
-};
-
-// ==========================================
-// COMMUNITY MEMBERS - CORE OPERATIONS
-// ==========================================
-
-// Get community members
-export const getCommunityMembersApi = (communityId: string, params?: {
-  page?: number;
-  limit?: number;
-  search?: string;
-  role?: string;
-  sortBy?: string;
-  sortOrder?: string;
-  status?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_MEMBERS.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Join community
-export const joinCommunityApi = (communityId: string, payload?: {
-  joinReason?: string;
-  referralCode?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_MEMBERS_JOIN.replace(':communityId', communityId), payload);
-};
-
-// Leave community
-export const leaveCommunityApi = (communityId: string, payload?: {
-  reason?: string;
-}) => {
-  return axiosInstance.delete(API.COMMUNITY_MEMBERS_LEAVE.replace(':communityId', communityId), {
-    data: payload
-  });
-};
-
-// Get member details
-export const getCommunityMemberDetailsApi = (communityId: string, memberId: string) => {
-  return axiosInstance.get(
-    API.COMMUNITY_MEMBER_DETAILS
-      .replace(':communityId', communityId)
-      .replace(':memberId', memberId)
-  );
-};
-
-// Search members
-export const searchCommunityMembersApi = (communityId: string, params?: {
-  q?: string;
-  role?: string | string[];
-  joinedAfter?: string;
-  joinedBefore?: string;
-  minPoints?: number;
-  isActive?: boolean;
-  hasVerifiedDomain?: boolean;
-  page?: number;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_MEMBERS_SEARCH.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Export members
-export const exportCommunityMembersApi = (communityId: string, params?: {
-  format?: string;
-  includeStats?: boolean;
-  roleFilter?: string;
-  includeInactive?: boolean;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_MEMBERS_EXPORT.replace(':communityId', communityId)}?${queryString}`, {
-    responseType: 'blob'
-  });
-};
-
-// ==========================================
-// COMMUNITY MEMBERS - INVITATIONS & REQUESTS
-// ==========================================
-
-// Invite members
-export const inviteCommunityMembersApi = (communityId: string, payload: {
-  invites: Array<{
-    email: string;
-    suggestedRole?: string;
-  }>;
-  message?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_MEMBERS_INVITE.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY MEMBERS - ROLE MANAGEMENT
-// ==========================================
-
-// Update member role
-export const updateCommunityMemberRoleApi = (communityId: string, memberId: string, payload: {
-  newRole: string;
-  reason?: string;
-}) => {
-  return axiosInstance.put(
-    API.COMMUNITY_MEMBER_UPDATE_ROLE
-      .replace(':communityId', communityId)
-      .replace(':memberId', memberId),
-    payload
-  );
-};
-
-// Update member impact points
-export const updateCommunityMemberImpactPointsApi = (communityId: string, memberId: string, payload: {
-  points: number;
-  reason: string;
-  actionType?: string;
-}) => {
-  return axiosInstance.put(
-    API.COMMUNITY_MEMBER_UPDATE_IMPACT_POINTS
-      .replace(':communityId', communityId)
-      .replace(':memberId', memberId),
-    payload
-  );
-};
-
-// ==========================================
-// COMMUNITY MEMBERS - ANALYTICS & LEADERBOARD
-// ==========================================
-
-// Get member analytics
-export const getCommunityMemberAnalyticsApi = (communityId: string, memberId: string, timeframe?: string) => {
-  return axiosInstance.get(
-    `${API.COMMUNITY_MEMBER_ANALYTICS
-      .replace(':communityId', communityId)
-      .replace(':memberId', memberId)}?timeframe=${timeframe || '30d'}`
-  );
-};
-
-// Get community leaderboard
-export const getCommunityLeaderboardApi = (communityId: string, params?: {
-  type?: string;
-  timeframe?: string;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_LEADERBOARD.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// ==========================================
-// COMMUNITY MEMBERS - BULK OPERATIONS
-// ==========================================
-
-// Bulk member operations
-export const bulkCommunityMemberOperationsApi = (communityId: string, payload: {
-  operation: string;
-  memberIds: string[];
-  data?: any;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_MEMBERS_BULK.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY MEMBERS - MODERATION
-// ==========================================
-
-// Suspend member
-export const suspendCommunityMemberApi = (communityId: string, userId: string, payload: {
-  duration: number;
-  reason: string;
-  notifyUser?: boolean;
-}) => {
   return axiosInstance.post(
-    API.COMMUNITY_MEMBER_SUSPEND
-      .replace(':communityId', communityId)
-      .replace(':userId', userId),
+    API.COMMUNITY_POST_VOTE.replace(':communityId', communityId).replace(':postId', postId),
     payload
   );
 };
 
-// Ban member
-export const banCommunityMemberApi = (communityId: string, userId: string, payload: {
-  reason: string;
-  deleteContent?: boolean;
-  notifyUser?: boolean;
-}) => {
+/**
+ * Adds a comment to a post with rich content support.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - The comment content with optional mentions, attachments, and parent comment.
+ */
+export const commentOnCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: CommentPayload
+) => {
   return axiosInstance.post(
-    API.COMMUNITY_MEMBER_BAN
-      .replace(':communityId', communityId)
-      .replace(':userId', userId),
+    API.COMMUNITY_POST_COMMENT.replace(':communityId', communityId).replace(':postId', postId),
     payload
   );
 };
 
-// ==========================================
-// COMMUNITY MEMBERS - NOTIFICATIONS
-// ==========================================
-
-// Update notification preferences
-export const updateCommunityMemberNotificationsApi = (communityId: string, payload: {
-  notificationPreferences: any;
-}) => {
-  return axiosInstance.put(API.COMMUNITY_MEMBERS_NOTIFICATIONS.replace(':communityId', communityId), payload);
+/**
+ * Submits a vote on a poll with support for multiple choice.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the poll post.
+ * @param payload - Array of selected option IDs.
+ */
+export const voteOnPollApi = (
+  communityId: string, 
+  postId: string, 
+  payload: PollVotePayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POLL_VOTE.replace(':communityId', communityId).replace(':postId', postId),
+    payload
+  );
 };
 
-// ==========================================
-// COMMUNITY MODERATION - CONTENT MODERATION
-// ==========================================
+/**
+ * Responds to an event invitation (RSVP) with seat selection.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the event post.
+ * @param payload - RSVP status and optional seat count.
+ */
+export const rsvpToEventApi = (
+  communityId: string, 
+  postId: string, 
+  payload: EventRSVPPayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_EVENT_RSVP.replace(':communityId', communityId).replace(':postId', postId),
+    payload
+  );
+};
 
-// Moderate content
-export const moderateCommunityContentApi = (communityId: string, formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITY_MODERATION_CONTENT.replace(':communityId', communityId), formData, {
+/**
+ * Bookmarks or unbookmarks a post (toggle).
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Optional bookmark metadata (notes, tags, collection).
+ */
+export const bookmarkCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload?: BookmarkPayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_BOOKMARK.replace(':communityId', communityId).replace(':postId', postId),
+    payload || {}
+  );
+};
+
+/**
+ * Shares a post to various platforms with tracking.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Share platform and optional message.
+ */
+export const shareCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: SharePayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_SHARE.replace(':communityId', communityId).replace(':postId', postId),
+    payload
+  );
+};
+
+/**
+ * Reports a post for moderation review.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param payload - Report reason and description.
+ */
+export const reportCommunityPostApi = (
+  communityId: string, 
+  postId: string, 
+  payload: ReportPayload
+) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_REPORT.replace(':communityId', communityId).replace(':postId', postId),
+    payload
+  );
+};
+
+/**
+ * Gets comprehensive interaction analytics for a post.
+ * @param communityId - The ID of the community.
+ * @param postId - The ID of the post.
+ * @param params - Query parameters for filtering interactions.
+ */
+export const getPostInteractionsApi = (
+  communityId: string, 
+  postId: string, 
+  params?: InteractionsParams
+) => {
+  return axiosInstance.get(
+    API.COMMUNITY_POST_INTERACTIONS.replace(':communityId', communityId).replace(':postId', postId),
+    { params }
+  );
+};
+
+// -- Administration --
+
+/**
+ * Updates detailed settings for a community.
+ * @param communityId - The ID of the community.
+ * @param payload - The settings object.
+ */
+export const updateCommunitySettingsApi = (communityId: string, payload: any) => {
+  return axiosInstance.put(API.COMMUNITY_UPDATE_SETTINGS.replace(':communityId', communityId), payload);
+};
+
+/**
+ * Fetches analytics data for a community.
+ * @param communityId - The ID of the community.
+ * @param params - Optional query parameters for time period and metrics.
+ */
+export const getCommunityAnalyticsApi = (communityId: string, params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_ANALYTICS.replace(':communityId', communityId), { params });
+};
+
+// -- File & Media Uploads --
+
+/**
+ * Uploads a file to be used in posts, profiles, etc.
+ * @param formData - The file data packaged as FormData.
+ */
+export const uploadFileApi = (formData: FormData) => {
+  return axiosInstance.post(API.FILE_UPLOAD, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
-};
-
-// Ban user (moderation)
-export const banCommunityUserApi = (communityId: string, userId: string, formData: FormData) => {
-  return axiosInstance.post(
-    API.COMMUNITY_MODERATION_USER_BAN
-      .replace(':communityId', communityId)
-      .replace(':userId', userId),
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-};
-
-// Auto moderate
-export const autoModerateCommunityApi = (communityId: string, payload: {
-  contentType: string;
-  contentId: string;
-  triggerType: string;
-  confidence: number;
-  details: any;
-  suggestedAction?: string;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_MODERATION_AUTO_MODERATE.replace(':communityId', communityId), payload);
-};
-
-// Get moderation queue
-export const getCommunityModerationQueueApi = (communityId: string, params?: {
-  status?: string;
-  priority?: string;
-  actionType?: string;
-  source?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: string;
-  search?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_MODERATION_QUEUE.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Update moderation settings
-export const updateCommunityModerationSettingsApi = (communityId: string, payload: {
-  automationRules?: any;
-  contentFilters?: any;
-  moderationPolicies?: any;
-  appealSettings?: any;
-  notificationSettings?: any;
-}) => {
-  return axiosInstance.put(API.COMMUNITY_MODERATION_SETTINGS.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY MODERATION - APPEALS
-// ==========================================
-
-// Review appeal
-export const reviewCommunityAppealApi = (communityId: string, appealId: string, payload: {
-  decision: string;
-  reviewNotes: string;
-  reversalAction?: string;
-}) => {
-  return axiosInstance.post(
-    API.COMMUNITY_MODERATION_APPEAL_REVIEW
-      .replace(':communityId', communityId)
-      .replace(':appealId', appealId),
-    payload
-  );
-};
-
-// ==========================================
-// COMMUNITY NOTIFICATIONS - CORE
-// ==========================================
-
-// Create notification
-export const createCommunityNotificationApi = (communityId: string, payload: {
-  recipientId: string;
-  notificationType: string;
-  templateData: any;
-  priority?: string;
-  scheduledFor?: string;
-  forceChannels?: any;
-  groupable?: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_NOTIFICATIONS_CREATE.replace(':communityId', communityId), payload);
-};
-
-// Get notifications
-export const getCommunityNotificationsApi = (communityId: string, params?: {
-  type?: string;
-  status?: string;
-  priority?: string;
-  grouped?: boolean;
-  page?: number;
-  limit?: number;
-  includeDismissed?: boolean;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_NOTIFICATIONS.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Update notification
-export const updateCommunityNotificationApi = (communityId: string, notificationId: string, payload: {
-  action: string;
-  snoozeUntil?: string;
-  readChannel?: string;
-  feedback?: any;
-}) => {
-  return axiosInstance.put(
-    API.COMMUNITY_NOTIFICATION_UPDATE
-      .replace(':communityId', communityId)
-      .replace(':notificationId', notificationId),
-    payload
-  );
-};
-
-// Update notification preferences
-export const updateCommunityNotificationPreferencesApi = (communityId: string, payload: {
-  preferences: any;
-}) => {
-  return axiosInstance.put(API.COMMUNITY_NOTIFICATIONS_PREFERENCES.replace(':communityId', communityId), payload);
-};
-
-// Generate digest
-export const generateCommunityNotificationDigestApi = (communityId: string, payload?: {
-  period?: string;
-  forceGenerate?: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_NOTIFICATIONS_DIGEST.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY REQUESTS - REQUEST MANAGEMENT
-// ==========================================
-
-// Create request
-export const createCommunityRequestApi = (communityId: string, formData: FormData) => {
-  return axiosInstance.post(API.COMMUNITY_REQUESTS_CREATE.replace(':communityId', communityId), formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-};
-
-// Process request
-export const processCommunityRequestApi = (communityId: string, requestId: string, payload: {
-  action: string;
-  processingNotes?: string;
-  assignedRole?: string;
-  customPermissions?: any;
-  rejectionReason?: string;
-  notifyUser?: boolean;
-}) => {
-  return axiosInstance.put(
-    API.COMMUNITY_REQUESTS_PROCESS
-      .replace(':communityId', communityId)
-      .replace(':requestId', requestId),
-    payload
-  );
-};
-
-// Bulk invite
-export const bulkInviteCommunityApi = (communityId: string, payload: {
-  inviteList: Array<{
-    email: string;
-    name?: string;
-    role?: string;
-  }>;
-  customMessage?: string;
-  expiryDays?: number;
-  autoApprove?: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_REQUESTS_BULK_INVITE.replace(':communityId', communityId), payload);
-};
-
-// Get request queue
-export const getCommunityRequestQueueApi = (communityId: string, params?: {
-  status?: string;
-  requestType?: string;
-  priority?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: string;
-  search?: string;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_REQUESTS_QUEUE.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Cancel request
-export const cancelCommunityRequestApi = (communityId: string, requestId: string, payload?: {
-  cancelReason?: string;
-}) => {
-  return axiosInstance.delete(
-    API.COMMUNITY_REQUESTS_CANCEL
-      .replace(':communityId', communityId)
-      .replace(':requestId', requestId),
-    { data: payload }
-  );
-};
-
-// Get request history
-export const getCommunityRequestHistoryApi = (communityId: string, params?: {
-  timeframe?: string;
-  requestType?: string;
-  status?: string;
-  userId?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_REQUESTS_HISTORY.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Auto process requests
-export const autoProcessCommunityRequestsApi = (communityId: string, payload?: {
-  rules?: any[];
-  dryRun?: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_REQUESTS_AUTO_PROCESS.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY SETTINGS - CONFIGURATION
-// ==========================================
-
-// Get community settings
-export const getCommunitySettingsApi = (communityId: string, params?: {
-  section?: string;
-  includeInactive?: boolean;
-  includeStatistics?: boolean;
-  includeAuditLog?: boolean;
-}) => {
-  const queryString = new URLSearchParams(params as any).toString();
-  return axiosInstance.get(`${API.COMMUNITY_SETTINGS.replace(':communityId', communityId)}?${queryString}`);
-};
-
-// Update community settings
-export const updateCommunitySettingsApi = (communityId: string, payload: {
-  section: string;
-  updates: any;
-  reason?: string;
-}) => {
-  return axiosInstance.put(API.COMMUNITY_SETTINGS_UPDATE.replace(':communityId', communityId), payload);
-};
-
-// Create automation rule
-export const createCommunityAutomationApi = (communityId: string, payload: {
-  ruleName: string;
-  description?: string;
-  triggers: any;
-  actions: any[];
-  priority?: number;
-  isActive?: boolean;
-  testMode?: boolean;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_SETTINGS_AUTOMATION.replace(':communityId', communityId), payload);
-};
-
-// Manage integrations
-export const manageCommunityIntegrationsApi = (communityId: string, payload: {
-  action: string;
-  type: string;
-  data: any;
-}) => {
-  return axiosInstance.post(API.COMMUNITY_SETTINGS_INTEGRATIONS.replace(':communityId', communityId), payload);
-};
-
-// ==========================================
-// COMMUNITY HELPER FUNCTIONS
-// ==========================================
-
-// Validate community creation payload
-export const validateCommunityCreationPayload = (payload: any) => {
-  const errors: string[] = [];
-  
-  if (!payload.name?.trim()) {
-    errors.push('Community name is required');
-  }
-  
-  if (!payload.description?.trim()) {
-    errors.push('Community description is required');
-  }
-  
-  if (!payload.type?.trim()) {
-    errors.push('Community type is required');
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-};
-
-// Format community error messages
-export const formatCommunityError = (error: any) => {
-  if (error.response?.data?.message) {
-    return error.response.data.message;
-  } else if (error.message) {
-    return error.message;
-  } else {
-    return 'Something went wrong with the community operation. Please try again.';
-  }
-};
-
-// Check if user has community permissions
-export const checkCommunityPermissions = (userRole: string, requiredRole: string) => {
-  const roleHierarchy = ['member', 'contributor', 'moderator', 'admin', 'owner'];
-  const userRoleIndex = roleHierarchy.indexOf(userRole);
-  const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
-  
-  return userRoleIndex >= requiredRoleIndex;
-};
-
-// Calculate community engagement score
-export const calculateCommunityEngagementScore = (metrics: {
-  views: number;
-  upvotes: number;
-  comments: number;
-  shares: number;
-  timeDecay?: number;
-}) => {
-  const { views, upvotes, comments, shares, timeDecay = 1 } = metrics;
-  return Math.round((upvotes * 2 + comments * 3 + shares * 4 + views * 0.1) * timeDecay);
-};
-
-// Parse community notification preferences
-export const parseCommunityNotificationPreferences = (preferences: any) => {
-  return {
-    newPosts: preferences.newPosts || { enabled: true, frequency: 'instant' },
-    announcements: preferences.announcements || { enabled: true, frequency: 'instant' },
-    comments: preferences.comments || { enabled: true, frequency: 'instant' },
-    events: preferences.events || { enabled: true, frequency: 'instant' },
-    moderation: preferences.moderation || { enabled: true, frequency: 'instant' },
-    achievements: preferences.achievements || { enabled: true, frequency: 'instant' },
-    digestFrequency: preferences.digestFrequency || 'daily',
-    channels: preferences.channels || {
-      inApp: true,
-      email: true,
-      push: true,
-      sms: false
-    },
-    quietHours: preferences.quietHours || {
-      enabled: false,
-      start: '22:00',
-      end: '08:00',
-      timezone: 'UTC'
-    }
-  };
 };
 
 // ==========================================

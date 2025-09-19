@@ -1,2285 +1,2421 @@
-// src/screens/Community/CommunityManagement.js
-/**
- * Community Management Screen - Slack-Inspired Design
- * Production-grade UI with real backend integration
- * All mock data removed, fully functional components
- */
+'use strict';
 
-import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  View,
-  RefreshControl,
   ActivityIndicator,
-  FlatList,
-  TouchableOpacity,
-  Dimensions,
-  Platform,
-  TextInput,
   Alert,
   Image,
+  RefreshControl,
+  SafeAreaView,
   ScrollView,
   Modal,
-  Switch,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  FadeIn,
-  FadeInDown,
-  Layout,
-} from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
-import {BlurView} from '@react-native-community/blur';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import {COLORS} from '../../helper/colors';
-import {DEVICE_HEIGHT, DEVICE_WIDTH, nh, nw} from '../../helper/scales';
-import MainHeader from '../../components/MainHeader';
 import Text from '../../components/Text';
-
-// Import ALL available API functions from the service
+import {COLORS} from '../../helper/colors';
+import {nh, nw} from '../../helper/scales';
 import {
-  // Analytics & Dashboard APIs
-  getCommunityAnalyticsApi,
-  getCommunityInsightsApi,
-  getCommunityActivityApi,
-  getCommunityContentOverviewApi,
-  getCommunityHealthApi,
-  
-  // Member Management APIs
+  getCommunityDetailsApi,
   getCommunityMembersApi,
-  searchCommunityMembersApi,
-  updateCommunityMemberRoleApi,
-  bulkCommunityMemberOperationsApi,
-  getCommunityLeaderboardApi,
-  getCommunityMemberAnalyticsApi,
-  
-  // Moderation APIs
-  getCommunityModerationQueueApi,
-  moderateContentApi,
-  updateCommunityModerationSettingsApi,
-  processModerationAppealApi,
-  
-  // Content & Posts APIs
-  getCommunityPostsApi,
-  searchCommunityPostsApi,
-  
-  // Request Management APIs
-  getCommunityRequestQueueApi,
-  getCommunityRequestHistoryApi,
-  processCommunityRequestApi,
-  bulkInviteCommunityUsersApi,
-  
-  // Settings & Configuration APIs
-  getCommunitySettingsApi,
-  updateCommunitySettingsApi,
-  createCommunityAutomationApi,
-  manageCommunityIntegrationsApi,
-  
-  // Helper functions
-  formatCommunityError,
-  checkCommunityPermissions,
+  getCommunityFeedApi,
+  getJoinRequestsApi,
+  respondToJoinRequestApi,
+  updateMemberRoleApi,
+  createCommunityPostApi,
+  deleteCommunityPostApi,
 } from '../../services/apiService';
+import { throttle } from '../../helper/commonFunctions';
+import Routes from '../../helper/routes';
 
-// Slack-inspired color scheme
-const SLACK_COLORS = {
-  primary: '#4A154B',      // Slack purple
-  secondary: '#ECE2E6',    // Light purple
-  accent: '#1264A3',       // Slack blue
-  success: '#2BAC76',      // Slack green
-  warning: '#E9A820',      // Slack yellow
-  danger: '#E01E5A',       // Slack red
-  
-  // Backgrounds
-  background: '#FFFFFF',
-  surface: '#F8F8F8',
-  surfaceElevated: '#FFFFFF',
-  
-  // Sidebar colors (Slack-style)
-  sidebarBg: '#3F0E40',
-  sidebarActive: '#1264A3',
-  sidebarHover: '#532952',
-  
-  // Text colors
-  textPrimary: '#1D1C1D',
-  textSecondary: '#616061',
-  textMuted: '#868686',
-  textInverse: '#FFFFFF',
-  
-  // Borders & dividers
-  border: '#E1E1E1',
-  borderLight: '#F0F0F0',
-  
-  // Status colors
-  online: '#2BAC76',
-  away: '#E9A820',
-  offline: '#868686',
-  
-  // Role colors
-  owner: '#E01E5A',
-  admin: '#E9A820',
-  moderator: '#1264A3',
-  member: '#2BAC76',
+const FEED_PAGE_SIZE = 10;
+
+const PALETTE = {
+  background: COLORS.greyF7F7F7,
+  surface: COLORS.whiteFFFFFF,
+  primary: COLORS.blue043142,
+  accent: COLORS.yellowF5BE00,
+  muted: COLORS.grey777777,
+  subtle: COLORS.grey999999,
+  border: COLORS.greyEEEEEE,
 };
 
-const CommunityManagement = ({route, navigation}) => {
-  const {communityData, userRole} = route.params;
-  const communityId = communityData?._id || communityData?.id;
+const formatNumber = (value) => {
+  const num = Number(value || 0);
+  if (!num) return '0';
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}k`;
+  return `${num}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const resolvePostId = (post) =>
+  post?.id ||
+  post?._id ||
+  post?.postId ||
+  post?.uuid ||
+  post?.post_id ||
+  post?.metadata?.postId ||
+  post?.metadata?._id ||
+  null;
+
+const parseFeedResponse = (response, page) => {
+  const root = response?.data ?? {};
   
-  // ===============================
-  // STATE MANAGEMENT - NO MOCK DATA
-  // ===============================
+  const posts = Array.isArray(root.posts)
+    ? root.posts
+    : Array.isArray(root.data?.posts)
+    ? root.data.posts
+    : Array.isArray(root.feed)
+    ? root.feed
+    : Array.isArray(root.data?.feed)
+    ? root.data.feed
+    : Array.isArray(root.content)
+    ? root.content
+    : [];
+
+  const pagination = root?.pagination || root?.data?.pagination || {};
+  const hasMoreExplicit =
+    pagination?.hasMore ?? pagination?.has_more ?? pagination?.hasNext ?? pagination?.has_next;
+  const fallbackHasMore = posts.length >= FEED_PAGE_SIZE;
+  const hasMore = typeof hasMoreExplicit === 'boolean' ? hasMoreExplicit : fallbackHasMore;
+  const nextPage = hasMore ? page + 1 : page;
+
+  return {posts, hasMore, nextPage};
+};
+
+const extractMembers = (payload) => {
+  let members = [];
+  if (!payload) {
+    members = [];
+  } else if (Array.isArray(payload.members)) {
+    members = payload.members;
+  } else if (Array.isArray(payload.data?.members)) {
+    members = payload.data.members;
+  } else if (Array.isArray(payload.data)) {
+    members = payload.data;
+  } else if (Array.isArray(payload)) {
+    members = payload;
+  }
+
+  return members;
+};
+
+const getNestedValue = (obj, path) => {
+  if (!obj) {
+    return undefined;
+  }
+
+  return path.split('.').reduce((acc, segment) => {
+    if (acc === undefined || acc === null) {
+      return undefined;
+    }
+    return acc[segment];
+  }, obj);
+};
+
+// BALANCED COMPACT HERO COMPONENT - SPACIOUS
+const CompactManagementHero = ({community, membership, navigation}) => {
+  const avatar = community?.avatar?.url || community?.avatar;
+  const visibility = community?.privacy?.visibility || community?.privacy;
+  const joinMethod = community?.privacy?.joinMethod || community?.joinMethod;
   
-  // Loading states
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  
-  // Dashboard data - ONLY from backend
-  const [analytics, setAnalytics] = useState(null);
-  const [insights, setInsights] = useState(null);
-  const [activity, setActivity] = useState([]);
-  const [healthScore, setHealthScore] = useState(null);
-  
-  // Members data - ONLY from backend
-  const [members, setMembers] = useState([]);
-  const [memberStats, setMemberStats] = useState(null);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMembers, setSelectedMembers] = useState([]);
-  
-  // Content & Moderation data - ONLY from backend
-  const [moderationQueue, setModerationQueue] = useState([]);
-  const [contentOverview, setContentOverview] = useState(null);
-  const [posts, setPosts] = useState([]);
-  
-  // Requests data - ONLY from backend
-  const [requestQueue, setRequestQueue] = useState([]);
-  const [requestHistory, setRequestHistory] = useState([]);
-  
-  // Settings data - ONLY from backend
-  const [communitySettings, setCommunitySettings] = useState(null);
-  const [automationRules, setAutomationRules] = useState([]);
-  const [integrations, setIntegrations] = useState([]);
-  
-  // UI states
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState('');
-  const [modalData, setModalData] = useState(null);
-  const [bulkActionMode, setBulkActionMode] = useState(false);
-  const [error, setError] = useState(null);
-  
-  // Permission checks
-  const hasManagementAccess = useMemo(() => {
-    return checkCommunityPermissions(userRole, 'moderator');
-  }, [userRole]);
-  
-  const hasOwnerAccess = useMemo(() => {
-    return checkCommunityPermissions(userRole, 'owner');
-  }, [userRole]);
-  
-  const hasAdminAccess = useMemo(() => {
-    return checkCommunityPermissions(userRole, 'admin');
-  }, [userRole]);
-
-  // ===============================
-  // TAB CONFIGURATION - Slack Style
-  // ===============================
-  const tabs = useMemo(() => {
-    const baseTabs = [
-      {
-        id: 'dashboard',
-        name: 'Overview',
-        icon: 'analytics',
-        iconType: 'Ionicons',
-        description: 'Community insights & analytics'
-      },
-      {
-        id: 'members',
-        name: 'People',
-        icon: 'people',
-        iconType: 'Ionicons', 
-        description: 'Member management & roles'
-      },
-      {
-        id: 'content',
-        name: 'Content',
-        icon: 'library',
-        iconType: 'Ionicons',
-        description: 'Posts & moderation queue'
-      }
-    ];
-    
-    if (hasAdminAccess) {
-      baseTabs.push(
-        {
-          id: 'requests',
-          name: 'Requests',
-          icon: 'mail',
-          iconType: 'Ionicons',
-          description: 'Join requests & invitations'
-        }
-      );
-    }
-    
-    if (hasOwnerAccess) {
-      baseTabs.push(
-        {
-          id: 'settings',
-          name: 'Settings',
-          icon: 'settings',
-          iconType: 'Ionicons',
-          description: 'Community configuration'
-        }
-      );
-    }
-    
-    return baseTabs;
-  }, [hasAdminAccess, hasOwnerAccess]);
-
-  // ===============================
-  // API FUNCTIONS - FIXED IMPLEMENTATIONS
-  // ===============================
-  
-  const showError = (message) => {
-    setError(message);
-    setTimeout(() => setError(null), 5000);
+  const stats = community?.stats || {};
+  const metrics = {
+    members: formatNumber(stats.memberCount || stats.totalMembers || 0),
+    weekly: formatNumber(stats.weeklyActivity || stats.activeWeeklyUsers || stats.activeThisWeek || 0),
+    engagement: stats.engagementRate ? `${Math.round(stats.engagementRate)}%` : '0%',
+    growth: stats.monthlyGrowth || stats.memberGrowthRate || '+0%',
   };
 
-  const showSuccess = (message) => {
-    // You can implement a success toast here
-    console.log('✅ Success:', message);
-  };
+  const visibilityIcon = visibility === 'public' ? 'earth' : 'lock-closed';
+  const joinMethodText = joinMethod === 'approval' ? 'Approval' : 
+                         joinMethod === 'invite_only' ? 'Invite only' : 'Open';
 
-  // Dashboard API calls
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch analytics with proper error handling
-      try {
-        const analyticsResponse = await getCommunityAnalyticsApi(communityId, {
-          timeframe: '30d',
-          includeComparisons: true
-        });
-        
-        if (analyticsResponse?.data?.success) {
-          setAnalytics(analyticsResponse.data.data);
-        }
-      } catch (err) {
-        console.error('Analytics fetch failed:', formatCommunityError(err));
-      }
-
-      // Fetch insights
-      try {
-        const insightsResponse = await getCommunityInsightsApi(communityId, {
-          includeRecommendations: true
-        });
-        
-        if (insightsResponse?.data?.success) {
-          setInsights(insightsResponse.data.data);
-        }
-      } catch (err) {
-        console.error('Insights fetch failed:', formatCommunityError(err));
-      }
-
-      // Fetch recent activity
-      try {
-        const activityResponse = await getCommunityActivityApi(communityId, {
-          limit: 20,
-          includeSystemEvents: true
-        });
-        
-        if (activityResponse?.data?.success) {
-          setActivity(activityResponse.data.data || []);
-        }
-      } catch (err) {
-        console.error('Activity fetch failed:', formatCommunityError(err));
-      }
-
-      // Fetch health score
-      try {
-        const healthResponse = await getCommunityHealthApi(communityId);
-        
-        if (healthResponse?.data?.success) {
-          setHealthScore(healthResponse.data.data);
-        }
-      } catch (err) {
-        console.error('Health score fetch failed:', formatCommunityError(err));
-      }
-
-    } catch (error) {
-      showError('Failed to load dashboard data');
-      console.error('Dashboard data fetch error:', formatCommunityError(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Members API calls
-  const fetchMembers = async (search = '', role = '') => {
-    try {
-      const response = await getCommunityMembersApi(communityId, {
-        page: 1,
-        limit: 50,
-        search: search || searchQuery,
-        role,
-        sortBy: 'joinedAt',
-        sortOrder: 'desc',
-        includeStats: true
-      });
-      
-      if (response?.data?.success) {
-        setMembers(response.data.data?.members || []);
-        setMemberStats(response.data.data?.stats);
-      }
-    } catch (error) {
-      showError('Failed to load members');
-      console.error('Members fetch error:', formatCommunityError(error));
-    }
-  };
-
-  const fetchLeaderboard = async () => {
-    try {
-      const response = await getCommunityLeaderboardApi(communityId, {
-        type: 'points',
-        timeframe: '30d',
-        limit: 10
-      });
-      
-      if (response?.data?.success) {
-        setLeaderboard(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Leaderboard fetch error:', formatCommunityError(error));
-    }
-  };
-
-  // Content & Moderation API calls
-  const fetchModerationQueue = async () => {
-    try {
-      const response = await getCommunityModerationQueueApi(communityId, {
-        status: 'pending',
-        page: 1,
-        limit: 20,
-        sortBy: 'priority',
-        sortOrder: 'desc'
-      });
-      
-      if (response?.data?.success) {
-        setModerationQueue(response.data.data?.items || []);
-      }
-    } catch (error) {
-      console.error('Moderation queue fetch error:', formatCommunityError(error));
-    }
-  };
-
-  const fetchContentOverview = async () => {
-    try {
-      const response = await getCommunityContentOverviewApi(communityId, {
-        timeframe: '30d'
-      });
-      
-      if (response?.data?.success) {
-        setContentOverview(response.data.data);
-      }
-    } catch (error) {
-      console.error('Content overview fetch error:', formatCommunityError(error));
-    }
-  };
-
-  const fetchPosts = async () => {
-    try {
-      const response = await getCommunityPostsApi(communityId, {
-        page: 1,
-        limit: 20,
-        sortBy: 'created',
-        sortOrder: 'desc'
-      });
-      
-      if (response?.data?.success) {
-        setPosts(response.data.data?.posts || []);
-      }
-    } catch (error) {
-      console.error('Posts fetch error:', formatCommunityError(error));
-    }
-  };
-
-  // Requests API calls
-  const fetchRequestQueue = async () => {
-    try {
-      const response = await getCommunityRequestQueueApi(communityId, {
-        status: 'pending',
-        page: 1,
-        limit: 20,
-        sortBy: 'priority',
-        sortOrder: 'desc'
-      });
-      
-      if (response?.data?.success) {
-        setRequestQueue(response.data.data?.requests || []);
-      }
-    } catch (error) {
-      console.error('Request queue fetch error:', formatCommunityError(error));
-    }
-  };
-
-  const fetchRequestHistory = async () => {
-    try {
-      const response = await getCommunityRequestHistoryApi(communityId, {
-        timeframe: '30d',
-        page: 1,
-        limit: 20
-      });
-      
-      if (response?.data?.success) {
-        setRequestHistory(response.data.data?.requests || []);
-      }
-    } catch (error) {
-      console.error('Request history fetch error:', formatCommunityError(error));
-    }
-  };
-
-  // Settings API calls
-  const fetchSettings = async () => {
-    try {
-      const response = await getCommunitySettingsApi(communityId, {
-        section: 'all',
-        includeStatistics: true
-      });
-      
-      if (response?.data?.success) {
-        const settings = response.data.data;
-        setCommunitySettings(settings.general);
-        setAutomationRules(settings.automation?.rules || []);
-        setIntegrations(settings.integrations || []);
-      }
-    } catch (error) {
-      console.error('Settings fetch error:', formatCommunityError(error));
-    }
-  };
-
-  // Action handlers
-  const handleMemberAction = async (memberId, action, data = {}) => {
-    try {
-      if (action === 'updateRole') {
-        await updateCommunityMemberRoleApi(communityId, memberId, {
-          newRole: data.role,
-          reason: data.reason
-        });
-        showSuccess('Member role updated successfully');
-        fetchMembers();
-      } else if (action === 'bulk') {
-        await bulkCommunityMemberOperationsApi(communityId, {
-          memberIds: selectedMembers,
-          operation: data.operation,
-          parameters: data.parameters
-        });
-        showSuccess('Bulk operation completed successfully');
-        setSelectedMembers([]);
-        setBulkActionMode(false);
-        fetchMembers();
-      }
-    } catch (error) {
-      showError(formatCommunityError(error));
-    }
-  };
-
-  const handleModerationAction = async (itemId, action, data = {}) => {
-    try {
-      await moderateContentApi(communityId, {
-        targetId: itemId,
-        action,
-        reason: data.reason,
-        description: data.description
-      });
-      showSuccess('Moderation action completed');
-      fetchModerationQueue();
-    } catch (error) {
-      showError(formatCommunityError(error));
-    }
-  };
-
-  const handleRequestAction = async (requestId, action, data = {}) => {
-    try {
-      await processCommunityRequestApi(communityId, requestId, {
-        action,
-        processingNotes: data.notes,
-        assignedRole: data.role
-      });
-      showSuccess('Request processed successfully');
-      fetchRequestQueue();
-      fetchRequestHistory();
-    } catch (error) {
-      showError(formatCommunityError(error));
-    }
-  };
-
-  // ===============================
-  // EFFECT HOOKS
-  // ===============================
-  
-  useEffect(() => {
-    if (!hasManagementAccess) {
-      Alert.alert(
-        'Access Denied',
-        'You do not have permission to access community management.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
-      return;
-    }
-
-    // Load initial data based on active tab
-    switch (activeTab) {
-      case 'dashboard':
-        fetchDashboardData();
-        break;
-      case 'members':
-        fetchMembers();
-        fetchLeaderboard();
-        break;
-      case 'content':
-        fetchModerationQueue();
-        fetchContentOverview();
-        fetchPosts();
-        break;
-      case 'requests':
-        if (hasAdminAccess) {
-          fetchRequestQueue();
-          fetchRequestHistory();
-        }
-        break;
-      case 'settings':
-        if (hasOwnerAccess) {
-          fetchSettings();
-        }
-        break;
-    }
-  }, [activeTab, hasManagementAccess, hasAdminAccess, hasOwnerAccess]);
-
-  // Search effect for members
-  useEffect(() => {
-    if (activeTab === 'members') {
-      const debounceTimeout = setTimeout(() => {
-        fetchMembers(searchQuery);
-      }, 300);
-      
-      return () => clearTimeout(debounceTimeout);
-    }
-  }, [searchQuery, activeTab]);
-
-  // ===============================
-  // UTILITY FUNCTIONS
-  // ===============================
-  
-  const formatNumber = (num) => {
-    if (!num) return '0';
-    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
-    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
-  };
-
-  const getRelativeTime = (date) => {
-    if (!date) return 'Never';
-    const now = new Date();
-    const past = new Date(date);
-    const diffMs = now - past;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 30) return `${diffDays}d ago`;
-    return past.toLocaleDateString();
-  };
-
-  const getRoleColor = (role) => {
-    const roleColors = {
-      owner: SLACK_COLORS.owner,
-      admin: SLACK_COLORS.admin,
-      moderator: SLACK_COLORS.moderator,
-      member: SLACK_COLORS.member,
-    };
-    return roleColors[role?.toLowerCase()] || SLACK_COLORS.member;
-  };
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    
-    // Refresh current tab data
-    switch (activeTab) {
-      case 'dashboard':
-        fetchDashboardData();
-        break;
-      case 'members':
-        fetchMembers();
-        fetchLeaderboard();
-        break;
-      case 'content':
-        fetchModerationQueue();
-        fetchContentOverview();
-        fetchPosts();
-        break;
-      case 'requests':
-        fetchRequestQueue();
-        fetchRequestHistory();
-        break;
-      case 'settings':
-        fetchSettings();
-        break;
-    }
-    
-    setRefreshing(false);
-  };
-
-  // ===============================
-  // RENDER COMPONENTS
-  // ===============================
-  
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.headerLeft}>
-        <TouchableOpacity
-          style={styles.backButton}
+  return (
+    <LinearGradient 
+      colors={[PALETTE.primary, '#0B4558']} 
+      style={styles.balancedHero}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+    >
+      {/* Header Section */}
+      <View style={styles.heroTopSection}>
+        <TouchableOpacity 
+          style={styles.heroBackButton} 
           onPress={() => navigation.goBack()}
-          activeOpacity={0.7}>
-          <Icon name="arrow-back" size={nw(24)} color={SLACK_COLORS.textPrimary} />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>
-            {communityData?.name || 'Community'} Management
-          </Text>
-          <Text style={styles.headerSubtitle}>
-            {tabs.find(tab => tab.id === activeTab)?.description}
-          </Text>
-        </View>
-      </View>
-      
-      <View style={styles.headerActions}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={handleRefresh}
-          activeOpacity={0.7}>
-          <Icon name="refresh" size={nw(20)} color={SLACK_COLORS.textSecondary} />
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-back" size={nw(22)} color={COLORS.whiteFFFFFF} />
         </TouchableOpacity>
         
-        {hasOwnerAccess && (
-          <TouchableOpacity
-            style={[styles.headerButton, { marginLeft: nw(8) }]}
-            onPress={() => setModalType('export')}
-            activeOpacity={0.7}>
-            <Icon name="download-outline" size={nw(20)} color={SLACK_COLORS.textSecondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
-
-  const renderSidebar = () => (
-    <View style={styles.sidebar}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          const IconComponent = 
-            tab.iconType === 'MaterialIcons' ? MaterialIcons :
-            tab.iconType === 'MaterialCommunityIcons' ? MaterialCommunityIcons :
-            Icon;
-
-          return (
-            <TouchableOpacity
-              key={tab.id}
-              style={[
-                styles.sidebarItem,
-                isActive && styles.sidebarItemActive
-              ]}
-              onPress={() => setActiveTab(tab.id)}
-              activeOpacity={0.7}>
-              <IconComponent
-                name={tab.icon}
-                size={nw(20)}
-                color={isActive ? SLACK_COLORS.textInverse : SLACK_COLORS.textMuted}
-              />
-              <Text style={[
-                styles.sidebarItemText,
-                isActive && styles.sidebarItemTextActive
-              ]}>
-                {tab.name}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-
-  // Dashboard Tab Content
-  const renderDashboard = () => (
-    <ScrollView 
-      style={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }>
-      
-      {/* Quick Stats Grid */}
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>
-            {formatNumber(analytics?.members?.total || 0)}
-          </Text>
-          <Text style={styles.statLabel}>Total Members</Text>
-          <Text style={[styles.statChange, { color: SLACK_COLORS.success }]}>
-            +{analytics?.members?.growth || 0} this month
-          </Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>
-            {formatNumber(analytics?.posts?.total || 0)}
-          </Text>
-          <Text style={styles.statLabel}>Total Posts</Text>
-          <Text style={[styles.statChange, { color: SLACK_COLORS.success }]}>
-            +{analytics?.posts?.thisMonth || 0} this month
-          </Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>
-            {analytics?.engagement?.rate || 0}%
-          </Text>
-          <Text style={styles.statLabel}>Engagement Rate</Text>
-          <Text style={[styles.statChange, { 
-            color: (analytics?.engagement?.trend || 0) > 0 ? SLACK_COLORS.success : SLACK_COLORS.danger 
-          }]}>
-            {(analytics?.engagement?.trend || 0) > 0 ? '+' : ''}{analytics?.engagement?.trend || 0}%
-          </Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>
-            {healthScore?.overall || 0}/100
-          </Text>
-          <Text style={styles.statLabel}>Health Score</Text>
-          <Text style={[styles.statChange, { 
-            color: (healthScore?.overall || 0) > 70 ? SLACK_COLORS.success : SLACK_COLORS.warning 
-          }]}>
-            {healthScore?.status || 'Good'}
-          </Text>
-        </View>
-      </View>
-
-      {/* Recent Activity */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Recent Activity</Text>
-          <TouchableOpacity>
-            <Text style={styles.viewAllLink}>View All</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.activityList}>
-          {activity.slice(0, 5).map((item, index) => (
-            <View key={index} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Icon 
-                  name={item.type === 'join' ? 'person-add' : 'create'} 
-                  size={nw(16)} 
-                  color={SLACK_COLORS.accent} 
-                />
+        <View style={styles.heroCenterContent}>
+          <View style={styles.heroIdentity}>
+            {avatar ? (
+              <Image source={{uri: avatar}} style={styles.heroProfileAvatar} />
+            ) : (
+              <View style={[styles.heroProfileAvatar, styles.heroProfileAvatarFallback]}>
+                <Text style={styles.heroProfileAvatarText}>
+                  {community?.name?.[0]?.toUpperCase() || '?'}
+                </Text>
               </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>{item.description}</Text>
-                <Text style={styles.activityTime}>{getRelativeTime(item.timestamp)}</Text>
-              </View>
-            </View>
-          ))}
-          
-          {activity.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No recent activity</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Insights */}
-      {insights && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Community Insights</Text>
-          <View style={styles.insightsList}>
-            {insights.recommendations?.map((insight, index) => (
-              <View key={index} style={styles.insightItem}>
-                <Icon name="bulb" size={nw(16)} color={SLACK_COLORS.warning} />
-                <Text style={styles.insightText}>{insight.message}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-    </ScrollView>
-  );
-
-  // Members Tab Content
-  const renderMembers = () => (
-    <View style={styles.content}>
-      {/* Search and Actions */}
-      <View style={styles.actionBar}>
-        <View style={styles.searchContainer}>
-          <Icon name="search" size={nw(20)} color={SLACK_COLORS.textMuted} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search members..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor={SLACK_COLORS.textMuted}
-          />
-        </View>
-        
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setBulkActionMode(!bulkActionMode)}
-          activeOpacity={0.7}>
-          <Icon name="checkmark-circle" size={nw(20)} color={SLACK_COLORS.accent} />
-          <Text style={styles.actionButtonText}>Select</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Bulk Actions Bar */}
-      {bulkActionMode && selectedMembers.length > 0 && (
-        <Animated.View 
-          entering={FadeInDown}
-          style={styles.bulkActionsBar}>
-          <Text style={styles.bulkActionsText}>
-            {selectedMembers.length} selected
-          </Text>
-          <View style={styles.bulkActionsButtons}>
-            <TouchableOpacity
-              style={[styles.bulkActionBtn, { backgroundColor: SLACK_COLORS.accent }]}
-              onPress={() => setModalType('bulkRole')}
-              activeOpacity={0.7}>
-              <Text style={[styles.bulkActionBtnText, { color: SLACK_COLORS.textInverse }]}>
-                Change Role
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.bulkActionBtn, { backgroundColor: SLACK_COLORS.danger }]}
-              onPress={() => setModalType('bulkRemove')}
-              activeOpacity={0.7}>
-              <Text style={[styles.bulkActionBtnText, { color: SLACK_COLORS.textInverse }]}>
-                Remove
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Members List */}
-      <FlatList
-        data={members}
-        keyExtractor={(item) => item._id || item.id}
-        renderItem={({ item }) => (
-          <View style={styles.memberCard}>
-            {bulkActionMode && (
-              <TouchableOpacity
-                style={styles.memberCheckbox}
-                onPress={() => {
-                  const memberId = item._id || item.id;
-                  setSelectedMembers(prev => 
-                    prev.includes(memberId)
-                      ? prev.filter(id => id !== memberId)
-                      : [...prev, memberId]
-                  );
-                }}
-                activeOpacity={0.7}>
-                <Icon
-                  name={selectedMembers.includes(item._id || item.id) ? 'checkmark-circle' : 'ellipse-outline'}
-                  size={nw(24)}
-                  color={selectedMembers.includes(item._id || item.id) ? SLACK_COLORS.accent : SLACK_COLORS.textMuted}
-                />
-              </TouchableOpacity>
             )}
             
-            <Image
-              source={{ uri: item.user?.profilePicture || item.profilePicture || 'https://via.placeholder.com/50' }}
-              style={styles.memberAvatar}
-            />
-            
-            <View style={styles.memberInfo}>
-              <View style={styles.memberHeader}>
-                <Text style={styles.memberName}>
-                  {item.user?.displayName || item.displayName || 'Unknown User'}
+            <View style={styles.heroTextContent}>
+              <View style={styles.heroNameContainer}>
+                <Text style={styles.heroCommunityName} numberOfLines={1}>
+                  {community?.name || 'Community'}
                 </Text>
-                <View style={[styles.memberRole, { backgroundColor: getRoleColor(item.role) + '20' }]}>
-                  <Text style={[styles.memberRoleText, { color: getRoleColor(item.role) }]}>
-                    {item.role}
-                  </Text>
+                {community?.verificationStatus === 'verified' && (
+                  <Icon name="shield-checkmark" size={nw(16)} color={PALETTE.accent} />
+                )}
+              </View>
+              
+              <View style={styles.heroBadgesContainer}>
+                <View style={styles.heroBadgeItem}>
+                  <Icon name={visibilityIcon} size={nw(13)} color={COLORS.whiteFFFFFF + 'CC'} />
+                  <Text style={styles.heroBadgeText}>{visibility}</Text>
                 </View>
-              </View>
-              
-              <Text style={styles.memberEmail}>
-                {item.user?.email || item.email || 'No email'}
-              </Text>
-              
-              <Text style={styles.memberJoined}>
-                Joined {getRelativeTime(item.joinedAt)}
-              </Text>
-              
-              {item.lastActivity && (
-                <Text style={[styles.memberStatus, { color: SLACK_COLORS.online }]}>
-                  Last active {getRelativeTime(item.lastActivity)}
-                </Text>
-              )}
-            </View>
-            
-            {!bulkActionMode && (
-              <TouchableOpacity
-                style={styles.memberActions}
-                onPress={() => {
-                  setModalData(item);
-                  setModalType('memberActions');
-                  setModalVisible(true);
-                }}
-                activeOpacity={0.7}>
-                <Icon name="ellipsis-horizontal" size={nw(20)} color={SLACK_COLORS.textMuted} />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={() => (
-          <View style={styles.emptyState}>
-            <Icon name="people-outline" size={nw(48)} color={SLACK_COLORS.textMuted} />
-            <Text style={styles.emptyStateText}>No members found</Text>
-          </View>
-        )}
-      />
-    </View>
-  );
-
-  // Content Tab Content
-  const renderContent = () => (
-    <View style={styles.content}>
-      {/* Content Overview */}
-      {contentOverview && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Content Overview</Text>
-          <View style={styles.contentStatsGrid}>
-            <View style={styles.contentStatItem}>
-              <Text style={styles.contentStatValue}>
-                {formatNumber(contentOverview.totalPosts || 0)}
-              </Text>
-              <Text style={styles.contentStatLabel}>Total Posts</Text>
-            </View>
-            
-            <View style={styles.contentStatItem}>
-              <Text style={styles.contentStatValue}>
-                {formatNumber(contentOverview.thisMonth || 0)}
-              </Text>
-              <Text style={styles.contentStatLabel}>This Month</Text>
-            </View>
-            
-            <View style={styles.contentStatItem}>
-              <Text style={styles.contentStatValue}>
-                {formatNumber(contentOverview.pendingReview || 0)}
-              </Text>
-              <Text style={styles.contentStatLabel}>Pending Review</Text>
-            </View>
-            
-            <View style={styles.contentStatItem}>
-              <Text style={styles.contentStatValue}>
-                {formatNumber(contentOverview.reported || 0)}
-              </Text>
-              <Text style={styles.contentStatLabel}>Reported</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Moderation Queue */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Moderation Queue</Text>
-          <Text style={styles.queueCount}>
-            {moderationQueue.length} pending
-          </Text>
-        </View>
-        
-        <View style={styles.moderationList}>
-          {moderationQueue.slice(0, 5).map((item, index) => (
-            <View key={index} style={styles.moderationItem}>
-              <View style={[
-                styles.moderationPriority,
-                { backgroundColor: item.priority === 'high' ? SLACK_COLORS.danger : SLACK_COLORS.warning }
-              ]} />
-              
-              <View style={styles.moderationContent}>
-                <Text style={styles.moderationTitle}>
-                  {item.contentType === 'post' ? 'Post' : 'Comment'} - {item.title || 'Untitled'}
-                </Text>
-                <Text style={styles.moderationReason}>
-                  Reason: {item.reason || 'No reason provided'}
-                </Text>
-                <Text style={styles.moderationTime}>
-                  Reported {getRelativeTime(item.reportedAt)}
-                </Text>
-              </View>
-              
-              <View style={styles.moderationActions}>
-                <TouchableOpacity
-                  style={[styles.moderationBtn, { backgroundColor: SLACK_COLORS.success }]}
-                  onPress={() => handleModerationAction(item._id, 'approve')}
-                  activeOpacity={0.7}>
-                  <Icon name="checkmark" size={nw(16)} color={SLACK_COLORS.textInverse} />
-                </TouchableOpacity>
                 
-                <TouchableOpacity
-                  style={[styles.moderationBtn, { backgroundColor: SLACK_COLORS.danger }]}
-                  onPress={() => handleModerationAction(item._id, 'remove')}
-                  activeOpacity={0.7}>
-                  <Icon name="close" size={nw(16)} color={SLACK_COLORS.textInverse} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-          
-          {moderationQueue.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No items in moderation queue</Text>
-            </View>
-          )}
-          
-          {moderationQueue.length > 5 && (
-            <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>View All ({moderationQueue.length})</Text>
-              <Icon name="chevron-forward" size={nw(16)} color={SLACK_COLORS.accent} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Recent Posts */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Recent Posts</Text>
-        <View style={styles.postsList}>
-          {posts.slice(0, 5).map((post, index) => (
-            <View key={index} style={styles.postItem}>
-              <View style={styles.postContent}>
-                <Text style={styles.postTitle}>
-                  {post.title || 'Untitled Post'}
-                </Text>
-                <Text style={styles.postAuthor}>
-                  by {post.author?.displayName || 'Unknown Author'}
-                </Text>
-                <Text style={styles.postTime}>
-                  {getRelativeTime(post.createdAt)}
-                </Text>
-              </View>
-              
-              <View style={styles.postStats}>
-                <Text style={styles.postStat}>
-                  {post.metrics?.upvotes || 0} ↑
-                </Text>
-                <Text style={styles.postStat}>
-                  {post.metrics?.comments || 0} 💬
-                </Text>
-              </View>
-            </View>
-          ))}
-          
-          {posts.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No posts yet</Text>
-            </View>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-
-  // Requests Tab Content
-  const renderRequests = () => (
-    <ScrollView 
-      style={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }>
-      
-      {/* Pending Requests */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Pending Requests</Text>
-          <Text style={styles.queueCount}>
-            {requestQueue.length} pending
-          </Text>
-        </View>
-        
-        <View style={styles.requestsList}>
-          {requestQueue.map((request, index) => (
-            <View key={index} style={styles.requestItem}>
-              <Image
-                source={{ uri: request.user?.profilePicture || 'https://via.placeholder.com/40' }}
-                style={styles.requestAvatar}
-              />
-              
-              <View style={styles.requestContent}>
-                <Text style={styles.requestName}>
-                  {request.user?.displayName || 'Unknown User'}
-                </Text>
-                <Text style={styles.requestType}>
-                  {request.requestType || 'Join Request'}
-                </Text>
-                <Text style={styles.requestTime}>
-                  {getRelativeTime(request.createdAt)}
-                </Text>
-              </View>
-              
-              <View style={styles.requestActions}>
-                <TouchableOpacity
-                  style={[styles.requestBtn, { backgroundColor: SLACK_COLORS.success }]}
-                  onPress={() => handleRequestAction(request._id, 'approve')}
-                  activeOpacity={0.7}>
-                  <Text style={[styles.requestBtnText, { color: SLACK_COLORS.textInverse }]}>
-                    Approve
-                  </Text>
-                </TouchableOpacity>
+                <Text style={styles.heroBadgeSeparator}>•</Text>
                 
-                <TouchableOpacity
-                  style={[styles.requestBtn, { backgroundColor: SLACK_COLORS.danger, marginLeft: nw(8) }]}
-                  onPress={() => handleRequestAction(request._id, 'reject')}
-                  activeOpacity={0.7}>
-                  <Text style={[styles.requestBtnText, { color: SLACK_COLORS.textInverse }]}>
-                    Reject
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.heroBadgeItem}>
+                  <Icon name="people" size={nw(13)} color={COLORS.whiteFFFFFF + 'CC'} />
+                  <Text style={styles.heroBadgeText}>{joinMethodText}</Text>
+                </View>
+                
+                <Text style={styles.heroBadgeSeparator}>•</Text>
+                
+                <Text style={styles.heroRoleBadge}>{membership?.role || 'member'}</Text>
               </View>
             </View>
-          ))}
-          
-          {requestQueue.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No pending requests</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsList}>
-          <TouchableOpacity
-            style={styles.quickActionItem}
-            onPress={() => setModalType('bulkInvite')}
-            activeOpacity={0.7}>
-            <Icon name="person-add" size={nw(24)} color={SLACK_COLORS.accent} />
-            <Text style={styles.quickActionText}>Bulk Invite Users</Text>
-            <Icon name="chevron-forward" size={nw(20)} color={SLACK_COLORS.textMuted} />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.quickActionItem}
-            onPress={() => setModalType('requestSettings')}
-            activeOpacity={0.7}>
-            <Icon name="settings" size={nw(24)} color={SLACK_COLORS.accent} />
-            <Text style={styles.quickActionText}>Request Settings</Text>
-            <Icon name="chevron-forward" size={nw(20)} color={SLACK_COLORS.textMuted} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
-  );
-
-  // Settings Tab Content
-  const renderSettings = () => (
-    <ScrollView 
-      style={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }>
-      
-      {/* General Settings */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>General Settings</Text>
-        <View style={styles.settingsList}>
-          {communitySettings && Object.entries(communitySettings).map(([key, value], index) => (
-            <View key={index} style={styles.settingItem}>
-              <View style={styles.settingIcon}>
-                <Icon name="settings" size={nw(20)} color={SLACK_COLORS.accent} />
-              </View>
-              <View style={styles.settingContent}>
-                <Text style={styles.settingTitle}>
-                  {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                </Text>
-                <Text style={styles.settingDesc}>
-                  {typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : String(value)}
-                </Text>
-              </View>
-              <Switch
-                value={typeof value === 'boolean' ? value : false}
-                onValueChange={(newValue) => {
-                  // Handle setting change
-                  console.log(`Setting ${key} to ${newValue}`);
-                }}
-                trackColor={{false: SLACK_COLORS.border, true: SLACK_COLORS.accent}}
-                thumbColor={SLACK_COLORS.background}
-              />
-            </View>
-          ))}
-        </View>
-      </View>
-
-      {/* Automation Rules */}
-      <View style={styles.card}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardTitle}>Automation Rules</Text>
-          <TouchableOpacity
-            onPress={() => setModalType('createRule')}
-            activeOpacity={0.7}>
-            <Text style={styles.viewAllLink}>Add Rule</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.automationList}>
-          {automationRules.map((rule, index) => (
-            <View key={index} style={styles.automationItem}>
-              <View style={styles.automationContent}>
-                <Text style={styles.automationName}>
-                  {rule.ruleName || 'Untitled Rule'}
-                </Text>
-                <Text style={styles.automationTrigger}>
-                  {rule.description || 'No description'}
-                </Text>
-              </View>
-              <Switch
-                value={rule.isActive || false}
-                onValueChange={(newValue) => {
-                  // Handle rule toggle
-                  console.log(`Rule ${rule._id} toggled to ${newValue}`);
-                }}
-                trackColor={{false: SLACK_COLORS.border, true: SLACK_COLORS.accent}}
-                thumbColor={SLACK_COLORS.background}
-              />
-            </View>
-          ))}
-          
-          {automationRules.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No automation rules configured</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Integrations */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Integrations</Text>
-        <View style={styles.integrationsList}>
-          {integrations.map((integration, index) => (
-            <View key={index} style={styles.integrationItem}>
-              <View style={styles.integrationIcon}>
-                <Icon name="link" size={nw(20)} color={SLACK_COLORS.accent} />
-              </View>
-              <View style={styles.integrationContent}>
-                <Text style={styles.integrationName}>
-                  {integration.name || 'Unknown Integration'}
-                </Text>
-                <Text style={[
-                  styles.integrationStatus,
-                  { color: integration.status === 'connected' ? SLACK_COLORS.success : SLACK_COLORS.danger }
-                ]}>
-                  {integration.status || 'Unknown'}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.integrationButton,
-                  { 
-                    backgroundColor: integration.status === 'connected' ? SLACK_COLORS.danger : SLACK_COLORS.accent 
-                  }
-                ]}
-                activeOpacity={0.7}>
-                <Text style={[styles.integrationButtonText, { color: SLACK_COLORS.textInverse }]}>
-                  {integration.status === 'connected' ? 'Disconnect' : 'Connect'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-          
-          {integrations.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No integrations configured</Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Danger Zone */}
-      {hasOwnerAccess && (
-        <View style={styles.card}>
-          <Text style={[styles.cardTitle, { color: SLACK_COLORS.danger }]}>Danger Zone</Text>
-          <View style={styles.dangerZone}>
-            <TouchableOpacity
-              style={[styles.dangerButton, { backgroundColor: SLACK_COLORS.danger + '20' }]}
-              onPress={() => {
-                Alert.alert(
-                  'Archive Community',
-                  'This will archive the community. Are you sure?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Archive', style: 'destructive' }
-                  ]
-                );
-              }}
-              activeOpacity={0.7}>
-              <Text style={[styles.dangerButtonText, { color: SLACK_COLORS.danger }]}>
-                Archive Community
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.dangerButton, { backgroundColor: SLACK_COLORS.danger + '20' }]}
-              onPress={() => {
-                Alert.alert(
-                  'Delete Community',
-                  'This action cannot be undone. Are you absolutely sure?',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Delete', style: 'destructive' }
-                  ]
-                );
-              }}
-              activeOpacity={0.7}>
-              <Text style={[styles.dangerButtonText, { color: SLACK_COLORS.danger }]}>
-                Delete Community
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
-      )}
-    </ScrollView>
-  );
+        
+        <TouchableOpacity 
+          style={styles.heroSettingsButton}
+          onPress={() =>
+            navigation.navigate(Routes.CommunitySettings, {
+              communityId: community?.id,
+              communityName: community?.name,
+            })
+          }
+          activeOpacity={0.7}
+        >
+          <Icon name="settings-outline" size={nw(22)} color={COLORS.whiteFFFFFF} />
+        </TouchableOpacity>
+      </View>
 
-  // Modal Content
-  const renderModalContent = () => {
-    switch (modalType) {
-      case 'memberActions':
+      {/* Metrics Section */}
+      <View style={styles.heroMetricsSection}>
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="people" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.members}</Text>
+            <Text style={styles.heroMetricTitle}>Members</Text>
+          </View>
+        </View>
+        
+        <View style={styles.heroMetricDivider} />
+        
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="pulse" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.weekly}</Text>
+            <Text style={styles.heroMetricTitle}>Active</Text>
+          </View>
+        </View>
+        
+        <View style={styles.heroMetricDivider} />
+        
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="trending-up" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.engagement}</Text>
+            <Text style={styles.heroMetricTitle}>Engaged</Text>
+          </View>
+        </View>
+        
+        <View style={styles.heroMetricDivider} />
+        
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="bar-chart" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.growth}</Text>
+            <Text style={styles.heroMetricTitle}>Growth</Text>
+          </View>
+        </View>
+      </View>
+    </LinearGradient>
+  );
+};
+
+const InsightCard = ({icon, value, label, trend}) => (
+  <View style={styles.insightCard}>
+    <View style={styles.insightIconWrap}>
+      <Icon name={icon} size={nw(18)} color={PALETTE.primary} />
+    </View>
+    <View style={styles.insightTextBlock}>
+      <Text style={styles.insightValue}>{value}</Text>
+      <Text style={styles.insightLabel}>{label}</Text>
+      {trend ? <Text style={styles.insightTrend}>{trend}</Text> : null}
+    </View>
+  </View>
+);
+
+const QuickActionCard = ({icon, title, subtitle, onPress}) => (
+  <TouchableOpacity style={styles.quickActionCard} onPress={onPress} activeOpacity={0.85}>
+    <View style={styles.quickActionIcon}>
+      <Icon name={icon} size={nw(20)} color={PALETTE.primary} />
+    </View>
+    <View style={styles.quickActionText}>
+      <Text style={styles.quickActionTitle}>{title}</Text>
+      <Text style={styles.quickActionSubtitle}>{subtitle}</Text>
+    </View>
+    <Icon name="chevron-forward" size={nw(18)} color={PALETTE.subtle} />
+  </TouchableOpacity>
+);
+
+const FeedCard = ({post, canDelete, onDelete, deleting}) => {
+  if (!post) return null;
+
+  const extractText = (data) => {
+    if (!data) return '';
+    if (typeof data === 'string') return data;
+    if (data.text) return data.text;
+    if (data.content) return data.content;
+    return '';
+  };
+
+  const postId = post?.id || post?._id;
+  const postType = post?.postType || 'text';
+  const authorName = post?.author?.username || 
+                      post?.author?.name || 
+                      `${post?.author?.firstname || ''} ${post?.author?.lastname || ''}`.trim() ||
+                      'Anonymous';
+  const authorAvatar = post?.author?.profilePicture || post?.author?.avatar;
+  const postTitle = extractText(post?.title);
+  const postContent = extractText(post?.content);
+  const truncatedContent = postContent.length > 150 
+    ? postContent.substring(0, 150) + '...' 
+    : postContent;
+  
+  const metrics = post?.metrics || {};
+  const upvotes = metrics.upvotes || 0;
+  const downvotes = metrics.downvotes || 0;
+  const comments = metrics.comments || 0;
+  const shares = metrics.shares || 0;
+  
+  const createdAt = post?.publishedAt || post?.createdAt;
+  const formattedDate = formatDate(createdAt);
+
+  const renderTypeSpecificContent = () => {
+    switch (postType) {
+      case 'poll':
+        const pollQuestion = extractText(post?.poll?.question || post?.preview?.pollQuestion || postTitle);
+        const options = post?.poll?.options || post?.preview?.pollOptions || [];
         return (
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Member Actions</Text>
-            <Text style={styles.modalSubtitle}>
-              {modalData?.user?.displayName || modalData?.displayName}
-            </Text>
-            
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => {
-                setModalVisible(false);
-                // Handle view profile
-              }}
-              activeOpacity={0.7}>
-              <Icon name="person" size={nw(20)} color={SLACK_COLORS.accent} />
-              <Text style={styles.modalOptionText}>View Profile</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => {
-                setModalVisible(false);
-                // Handle change role
-              }}
-              activeOpacity={0.7}>
-              <Icon name="shield" size={nw(20)} color={SLACK_COLORS.accent} />
-              <Text style={styles.modalOptionText}>Change Role</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.modalOption}
-              onPress={() => {
-                setModalVisible(false);
-                // Handle send message
-              }}
-              activeOpacity={0.7}>
-              <Icon name="mail" size={nw(20)} color={SLACK_COLORS.accent} />
-              <Text style={styles.modalOptionText}>Send Message</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.modalOption, { borderTopWidth: nw(1), borderTopColor: SLACK_COLORS.border }]}
-              onPress={() => {
-                setModalVisible(false);
-                // Handle remove member
-              }}
-              activeOpacity={0.7}>
-              <Icon name="person-remove" size={nw(20)} color={SLACK_COLORS.danger} />
-              <Text style={[styles.modalOptionText, { color: SLACK_COLORS.danger }]}>Remove Member</Text>
-            </TouchableOpacity>
+          <View style={styles.feedCardPoll}>
+            <Text style={styles.feedCardPollLabel}>📊 Poll</Text>
+            <Text style={styles.feedCardPollQuestion}>{pollQuestion}</Text>
+            <Text style={styles.feedCardPollOptions}>{options.length} options</Text>
+          </View>
+        );
+      
+      case 'event':
+        const eventTitle = extractText(post?.event?.title || post?.preview?.eventTitle || postTitle);
+        const eventDate = post?.event?.startDate || post?.preview?.eventDate;
+        const eventVenue = post?.event?.location?.venue || post?.preview?.eventLocation?.venue;
+        return (
+          <View style={styles.feedCardEvent}>
+            <Text style={styles.feedCardEventLabel}>📅 Event</Text>
+            <Text style={styles.feedCardEventTitle}>{eventTitle}</Text>
+            {eventDate && <Text style={styles.feedCardEventDate}>{formatDate(eventDate)}</Text>}
+            {eventVenue && <Text style={styles.feedCardEventVenue}>📍 {eventVenue}</Text>}
+          </View>
+        );
+      
+      case 'announcement':
+        return (
+          <View style={styles.feedCardAnnouncement}>
+            <Text style={styles.feedCardAnnouncementLabel}>📢 Announcement</Text>
+            {postTitle && <Text style={styles.feedCardTitle}>{postTitle}</Text>}
+            {truncatedContent && <Text style={styles.feedCardContent}>{truncatedContent}</Text>}
           </View>
         );
       
       default:
         return (
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Feature Coming Soon</Text>
-            <Text style={styles.modalSubtitle}>This feature is currently under development.</Text>
-          </View>
+          <>
+            {postTitle && <Text style={styles.feedCardTitle}>{postTitle}</Text>}
+            {truncatedContent && <Text style={styles.feedCardContent}>{truncatedContent}</Text>}
+          </>
         );
     }
   };
 
-  // ===============================
-  // MAIN RENDER
-  // ===============================
+  return (
+    <View style={styles.feedCardContainer}>
+      <View style={styles.feedCardHeader}>
+        <View style={styles.feedCardAuthorInfo}>
+          {authorAvatar ? (
+            <Image source={{uri: authorAvatar}} style={styles.feedCardAvatar} />
+          ) : (
+            <View style={styles.feedCardAvatarFallback}>
+              <Text style={styles.feedCardAvatarText}>{authorName[0]?.toUpperCase()}</Text>
+            </View>
+          )}
+          <View>
+            <Text style={styles.feedCardAuthor}>{authorName}</Text>
+            <Text style={styles.feedCardDate}>{formattedDate}</Text>
+          </View>
+        </View>
+        <View style={styles.feedCardHeaderRight}>
+          <View style={styles.feedCardTypeBadge}>
+            <Text style={styles.feedCardType}>{postType}</Text>
+          </View>
+          {canDelete ? (
+            <TouchableOpacity
+              style={styles.feedCardDeleteButton}
+              onPress={() => onDelete?.(post)}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color={COLORS.redFF0000} />
+              ) : (
+                <Icon name="trash-outline" size={nw(18)} color={COLORS.redFF0000} />
+              )}
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+      
+      <View style={styles.feedCardBody}>
+        {renderTypeSpecificContent()}
+      </View>
+      
+      <View style={styles.feedCardStats}>
+        <Text style={styles.feedCardStat}>👍 {upvotes}</Text>
+        <Text style={styles.feedCardStat}>👎 {downvotes}</Text>
+        <Text style={styles.feedCardStat}>💬 {comments}</Text>
+        <Text style={styles.feedCardStat}>📤 {shares}</Text>
+      </View>
+    </View>
+  );
+};
 
-  if (!hasManagementAccess) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor={SLACK_COLORS.background} />
-        <View style={styles.accessDenied}>
-          <Icon name="lock-closed" size={nw(48)} color={SLACK_COLORS.danger} />
-          <Text style={styles.accessDeniedText}>Access Denied</Text>
-          <Text style={styles.accessDeniedSubtext}>
-            You need moderator permissions to access community management.
+const MemberRow = ({member, onManage, showActions}) => {
+  const name = member?.user
+    ? `${member.user.firstname || ''} ${member.user.lastname || ''}`.trim() || member.user.username
+    : member?.name || 'Member';
+  const role = member?.role || 'member';
+  const avatar = member?.user?.profilePicture || member?.user?.avatar;
+
+  return (
+    <View style={styles.memberRow}>
+      {avatar ? (
+        <Image source={{uri: avatar}} style={styles.memberAvatar} />
+      ) : (
+        <View style={styles.memberAvatarFallback}>
+          <Text style={styles.memberAvatarText}>{name?.[0] || '?'}</Text>
+        </View>
+      )}
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>{name}</Text>
+        <Text style={styles.memberRoleText}>{role}</Text>
+      </View>
+      {showActions ? (
+        <TouchableOpacity style={styles.memberManageButton} onPress={onManage}>
+          <Text style={styles.memberManageText}>Manage</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+};
+
+const EmptyState = ({title, subtitle}) => (
+  <View style={styles.emptyState}>
+    <Icon name="compass-outline" size={nw(36)} color={PALETTE.subtle} />
+    <Text style={styles.emptyTitle}>{title}</Text>
+    <Text style={styles.emptySubtitle}>{subtitle}</Text>
+  </View>
+);
+
+const JoinRequestRow = ({request, onApprove, onReject, processing}) => {
+  if (!request) {
+    return null;
+  }
+
+  const applicant = request.user || request.applicant || {};
+  const fullName =
+    applicant.username ||
+    [applicant.firstname, applicant.lastname].filter(Boolean).join(' ').trim() ||
+    applicant.email ||
+    'Applicant';
+  const submittedAt = request.createdAt || request.submittedAt;
+  const formattedDate = submittedAt ? formatDate(submittedAt) : null;
+
+  return (
+    <View style={styles.joinRequestRow}>
+      <View style={styles.joinRequestInfo}>
+        <View style={styles.joinRequestAvatar}>
+          <Text style={styles.joinRequestAvatarText}>
+            {(fullName?.[0] || '?').toUpperCase()}
           </Text>
         </View>
-      </SafeAreaView>
+        <View style={{flex: 1}}>
+          <Text style={styles.joinRequestName}>{fullName}</Text>
+          {applicant.email ? (
+            <Text style={styles.joinRequestEmail}>{applicant.email}</Text>
+          ) : null}
+          {formattedDate ? (
+            <Text style={styles.joinRequestDate}>Requested {formattedDate}</Text>
+          ) : null}
+        </View>
+      </View>
+      <View style={styles.joinRequestActions}>
+        <TouchableOpacity
+          style={[styles.requestButton, styles.requestRejectButton]}
+          onPress={onReject}
+          disabled={processing}
+        >
+          {processing ? (
+            <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
+          ) : (
+            <Text style={styles.requestButtonText}>Reject</Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.requestButton, styles.requestApproveButton]}
+          onPress={onApprove}
+          disabled={processing}
+        >
+          {processing ? (
+            <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
+          ) : (
+            <Text style={styles.requestButtonText}>Approve</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const Skeleton = () => (
+  <SafeAreaView style={styles.safeArea}>
+    <StatusBar barStyle="light-content" backgroundColor={PALETTE.primary} />
+    <View style={styles.heroSkeleton}>
+      <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
+    </View>
+    <View style={styles.sectionCard}>
+      <View style={[styles.skeletonLine, {width: '40%', marginBottom: nh(12)}]} />
+      <View style={[styles.skeletonLine, {width: '90%', marginBottom: nh(8)}]} />
+      <View style={[styles.skeletonLine, {width: '75%'}]} />
+    </View>
+    <View style={styles.sectionCard}>
+      <View style={[styles.skeletonLine, {width: '30%', marginBottom: nh(12)}]} />
+      <View style={[styles.skeletonLine, {width: '100%', marginBottom: nh(8)}]} />
+      <View style={[styles.skeletonLine, {width: '95%'}]} />
+    </View>
+  </SafeAreaView>
+);
+
+const CommunityManagement = ({route, navigation}) => {
+  const {communityId} = route.params;
+
+  const [community, setCommunity] = useState(null);
+  const [membership, setMembership] = useState(null);
+  const [feed, setFeed] = useState([]);
+  const [feedPage, setFeedPage] = useState(1);
+  const [hasMoreFeed, setHasMoreFeed] = useState(true);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [engagementModalVisible, setEngagementModalVisible] = useState(false);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [joinRequestsLoading, setJoinRequestsLoading] = useState(false);
+  const [requestProcessing, setRequestProcessing] = useState({});
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [roleUpdating, setRoleUpdating] = useState(false);
+  const [deletingPosts, setDeletingPosts] = useState({});
+  const membersFetchedRef = useRef(false);
+  const membersLoadingRef = useRef(false);
+  const scrollRef = useRef(null);
+  const [membershipSectionY, setMembershipSectionY] = useState(0);
+
+  // Announcement modal state
+  const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
+  const [announcementData, setAnnouncementData] = useState({
+    title: '',
+    content: '',
+    priority: 'normal',
+    requireReadReceipt: false,
+    targetAllMembers: true,
+  });
+  const [isSubmittingAnnouncement, setIsSubmittingAnnouncement] = useState(false);
+
+  const fetchCommunityDetails = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await getCommunityDetailsApi(communityId);
+      
+      const responseData = response?.data?.data || {};
+      
+      setCommunity(responseData.community || null);
+      setMembership(responseData.userMembership || null);
+    } catch (error) {
+      console.log('Community management detail error', error?.response?.data || error?.message);
+      Alert.alert('Error', 'Unable to load community details right now.');
+    } finally {
+      setLoading(false);
+    }
+  }, [communityId]);
+
+  const fetchFeed = useCallback(
+    async ({pageParam = 1, replace = false} = {}) => {
+      if (replace) setFeedLoading(true);
+      else setLoadingMore(true);
+
+      try {
+        const response = await getCommunityFeedApi(communityId, {page: pageParam, limit: FEED_PAGE_SIZE});
+        const {posts, hasMore, nextPage} = parseFeedResponse(response, pageParam);
+        
+        setFeed((prev) => (replace ? posts : [...prev, ...posts]));
+        setHasMoreFeed(hasMore);
+        setFeedPage(nextPage);
+      } catch (error) {
+        console.log('Community management feed error', error?.response?.data || error?.message);
+      } finally {
+        if (replace) {
+          setFeedLoading(false);
+          setRefreshing(false);
+        } else {
+          setLoadingMore(false);
+        }
+      }
+    },
+    [communityId],
+  );
+
+  const fetchMembers = useCallback(
+    async (force = false) => {
+      if (force) {
+        membersFetchedRef.current = false;
+      }
+
+      if (membersLoadingRef.current) {
+        return;
+      }
+
+      if (!force && membersFetchedRef.current) {
+        return;
+      }
+
+      membersLoadingRef.current = true;
+      setMembersLoading(true);
+      try {
+        const response = await getCommunityMembersApi(communityId);
+        const parsedMembers = extractMembers(response?.data);
+        setMembers(parsedMembers);
+        membersFetchedRef.current = true;
+      } catch (error) {
+        console.log('Community management members error', error?.response?.data || error?.message);
+      } finally {
+        membersLoadingRef.current = false;
+        setMembersLoading(false);
+      }
+    },
+    [communityId],
+  );
+
+  const userRole = useMemo(() => (membership?.role || '').toLowerCase(), [membership?.role]);
+  const canModerateMembers = useMemo(
+    () => ['owner', 'admin', 'moderator'].includes(userRole),
+    [userRole],
+  );
+
+  const fetchJoinRequests = useCallback(async () => {
+    if (!canModerateMembers) {
+      return;
+    }
+
+    setJoinRequestsLoading(true);
+    try {
+      const response = await getJoinRequestsApi(communityId, {status: 'pending', page: 1, limit: 10});
+      const payload = response?.data?.data || response?.data || {};
+      const requests =
+        Array.isArray(payload.requests)
+          ? payload.requests
+          : Array.isArray(payload.items)
+          ? payload.items
+          : Array.isArray(payload)
+          ? payload
+          : [];
+      setJoinRequests(requests);
+    } catch (error) {
+      console.log('Community management join requests error', error?.response?.data || error?.message);
+      setJoinRequests([]);
+    } finally {
+      setJoinRequestsLoading(false);
+    }
+  }, [communityId, canModerateMembers]);
+
+  useEffect(() => {
+    membersFetchedRef.current = false;
+  }, [communityId]);
+
+  useEffect(() => {
+    fetchCommunityDetails().then(() => {
+      fetchFeed({pageParam: 1, replace: true});
+      fetchMembers(true);
+    });
+  }, [fetchCommunityDetails, fetchFeed, fetchMembers]);
+  
+  useEffect(() => {
+    if (canModerateMembers) {
+      fetchJoinRequests();
+    } else {
+      setJoinRequests([]);
+    }
+  }, [canModerateMembers, fetchJoinRequests]);
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true);
+    setHasMoreFeed(true);
+    fetchCommunityDetails().then(() => {
+      fetchFeed({pageParam: 1, replace: true});
+      fetchMembers(true);
+      if (canModerateMembers) {
+        fetchJoinRequests();
+      } else {
+        setJoinRequests([]);
+      }
+    });
+  }, [fetchCommunityDetails, fetchFeed, fetchMembers, fetchJoinRequests, canModerateMembers]);
+
+  const handleLoadMore = useCallback(
+    throttle(() => {
+      if (hasMoreFeed && !feedLoading && !loadingMore) {
+        fetchFeed({pageParam: feedPage, replace: false});
+      }
+    }, 900),
+    [fetchFeed, feedLoading, feedPage, hasMoreFeed, loadingMore],
+  );
+
+  const handleDeletePost = useCallback(
+    async (post) => {
+      if (!canModerateMembers) {
+        return;
+      }
+
+      const postId = resolvePostId(post);
+      if (!postId) {
+        Alert.alert('Error', 'Unable to identify this post. Please refresh and try again.');
+        return;
+      }
+
+      setDeletingPosts((prev) => ({...prev, [postId]: true}));
+      try {
+        await deleteCommunityPostApi(communityId, postId);
+        setFeed((prev) => prev.filter((item) => resolvePostId(item) !== postId));
+        Alert.alert('Post deleted', 'The post has been removed from the community.');
+      } catch (error) {
+        console.log('Delete community post error', error?.response?.data || error?.message);
+        Alert.alert('Error', error?.response?.data?.message || 'Unable to delete the post right now.');
+      } finally {
+        setDeletingPosts((prev) => {
+          const next = {...prev};
+          delete next[postId];
+          return next;
+        });
+      }
+    },
+    [canModerateMembers, communityId],
+  );
+
+  const confirmDeletePost = useCallback(
+    (post) => {
+      if (!canModerateMembers) {
+        return;
+      }
+
+      const postId = resolvePostId(post);
+      if (!postId) {
+        Alert.alert('Error', 'Unable to identify this post. Please refresh and try again.');
+        return;
+      }
+
+      Alert.alert(
+        'Delete post',
+        'This will remove the post for all members. Are you sure you want to continue?',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {text: 'Delete', style: 'destructive', onPress: () => handleDeletePost(post)},
+        ],
+      );
+    },
+    [canModerateMembers, handleDeletePost],
+  );
+
+  const resolveRequestId = useCallback((request) => {
+    return (
+      request?.id ||
+      request?._id ||
+      request?.requestId ||
+      request?.uuid ||
+      request?.request_id ||
+      request?.joinRequestId ||
+      null
     );
+  }, []);
+
+  const resolveMemberId = useCallback((member) => {
+    return (
+      member?.id ||
+      member?._id ||
+      member?.user?.id ||
+      member?.user?._id ||
+      member?.memberId ||
+      null
+    );
+  }, []);
+
+  const handleJoinRequestAction = useCallback(
+    async (request, action) => {
+      const requestId = resolveRequestId(request);
+      if (!requestId) {
+        Alert.alert('Error', 'Could not identify this request. Please refresh and try again.');
+        return;
+      }
+
+      setRequestProcessing((prev) => ({...prev, [requestId]: true}));
+      try {
+        await respondToJoinRequestApi(communityId, requestId, {action});
+        setJoinRequests((prev) => prev.filter((item) => resolveRequestId(item) !== requestId));
+        if (action === 'approve') {
+          fetchMembers(true);
+        }
+        Alert.alert('Success', action === 'approve' ? 'Member approved successfully.' : 'Request rejected.');
+      } catch (error) {
+        console.log('Join request action error', error?.response?.data || error?.message);
+        Alert.alert('Error', error?.response?.data?.message || 'Unable to update the request right now.');
+      } finally {
+        setRequestProcessing((prev) => {
+          const next = {...prev};
+          delete next[requestId];
+          return next;
+        });
+      }
+    },
+    [communityId, fetchMembers, resolveRequestId],
+  );
+
+  const handleApproveRequest = useCallback(
+    (request) => {
+      handleJoinRequestAction(request, 'approve');
+    },
+    [handleJoinRequestAction],
+  );
+
+  const handleRejectRequest = useCallback(
+    (request) => {
+      Alert.alert(
+        'Reject request',
+        'Are you sure you want to reject this join request?',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {
+            text: 'Reject',
+            style: 'destructive',
+            onPress: () => handleJoinRequestAction(request, 'reject'),
+          },
+        ],
+      );
+    },
+    [handleJoinRequestAction],
+  );
+
+  const handleOpenRoleModal = useCallback((member) => {
+    setSelectedMember(member);
+    setRoleModalVisible(true);
+  }, []);
+
+  const handleCloseRoleModal = useCallback(() => {
+    if (roleUpdating) {
+      return;
+    }
+    setRoleModalVisible(false);
+    setSelectedMember(null);
+  }, [roleUpdating]);
+
+  const handleRoleSelection = useCallback(
+    async (role) => {
+      if (!selectedMember) {
+        return;
+      }
+
+      const memberId = resolveMemberId(selectedMember);
+      if (!memberId) {
+        Alert.alert('Error', 'Could not identify this member. Please refresh and try again.');
+        return;
+      }
+
+      const currentRole = (selectedMember?.role || '').toLowerCase();
+      if (currentRole === role) {
+        handleCloseRoleModal();
+        return;
+      }
+
+      setRoleUpdating(true);
+      try {
+        await updateMemberRoleApi(communityId, memberId, {role});
+        setMembers((prev) =>
+          prev.map((member) =>
+            resolveMemberId(member) === memberId ? {...member, role} : member,
+          ),
+        );
+        setSelectedMember((prev) => (prev ? {...prev, role} : prev));
+        Alert.alert('Success', `Member role updated to ${role}.`);
+        setRoleModalVisible(false);
+        setSelectedMember(null);
+      } catch (error) {
+        console.log('Update member role error', error?.response?.data || error?.message);
+        Alert.alert('Error', error?.response?.data?.message || 'Unable to update the member role right now.');
+      } finally {
+        setRoleUpdating(false);
+      }
+    },
+    [communityId, resolveMemberId, selectedMember, handleCloseRoleModal],
+  );
+
+  const handleTrackEngagement = useCallback(() => {
+    setEngagementModalVisible(true);
+  }, []);
+
+  const handleCloseEngagement = useCallback(() => {
+    setEngagementModalVisible(false);
+  }, []);
+
+  const handleScrollToMembers = useCallback(() => {
+    if (scrollRef.current) {
+      const targetY = membershipSectionY > 0 ? Math.max(membershipSectionY - nh(40), 0) : 0;
+      scrollRef.current.scrollTo({y: targetY, animated: true});
+    }
+  }, [membershipSectionY]);
+
+  // Announcement modal handlers
+  const handleOpenAnnouncementModal = useCallback(() => {
+    setAnnouncementModalVisible(true);
+    setAnnouncementData({
+      title: '',
+      content: '',
+      priority: 'normal',
+      requireReadReceipt: false,
+      targetAllMembers: true,
+    });
+  }, []);
+
+  const handleCloseAnnouncementModal = useCallback(() => {
+    if (isSubmittingAnnouncement) return;
+    setAnnouncementModalVisible(false);
+  }, [isSubmittingAnnouncement]);
+
+  const handleSubmitAnnouncement = useCallback(async () => {
+    if (!announcementData.title.trim()) {
+      Alert.alert('Error', 'Please enter an announcement title');
+      return;
+    }
+    
+    if (!announcementData.content.trim()) {
+      Alert.alert('Error', 'Please enter announcement content');
+      return;
+    }
+    
+    setIsSubmittingAnnouncement(true);
+    
+    try {
+      const payload = {
+        postType: 'announcement',
+        title: announcementData.title.trim(),
+        content: {
+          text: announcementData.content.trim(),
+        },
+        visibility: 'members',
+        announcement: {
+          priority: announcementData.priority,
+          readReceipts: {
+            required: announcementData.requireReadReceipt,
+          },
+          targetAudience: {
+            allMembers: announcementData.targetAllMembers,
+          },
+        },
+      };
+      
+      await createCommunityPostApi(communityId, payload);
+      
+      Alert.alert(
+        'Success',
+        'Announcement shared successfully!',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setAnnouncementModalVisible(false);
+              handleRefresh();
+            },
+          },
+        ]
+      );
+      
+    } catch (error) {
+      console.error('Error creating announcement:', error?.response?.data || error?.message);
+      
+      Alert.alert(
+        'Error',
+        error?.response?.data?.message || 'Failed to create announcement. Please try again.',
+      );
+    } finally {
+      setIsSubmittingAnnouncement(false);
+    }
+  }, [announcementData, communityId, handleRefresh]);
+
+  const feedBreakdown = useMemo(() => {
+    return feed.reduce(
+      (acc, item) => {
+        const type = (item?.postType || '').toLowerCase();
+
+        if (type === 'poll') {
+          acc.polls += 1;
+        } else if (type === 'event') {
+          acc.events += 1;
+        } else {
+          acc.posts += 1;
+        }
+
+        return acc;
+      },
+      {posts: 0, polls: 0, events: 0},
+    );
+  }, [feed]);
+
+  const resolveStatValue = useCallback(
+    (paths, fallback) => {
+      const stats = community?.stats;
+      if (!stats) {
+        return fallback;
+      }
+
+      for (const path of paths) {
+        const value = getNestedValue(stats, path);
+        if (value !== undefined && value !== null) {
+          return value;
+        }
+      }
+
+      return fallback;
+    },
+    [community?.stats],
+  );
+
+  const engagementStats = useMemo(() => {
+    const membersValue = resolveStatValue(
+      ['memberCount', 'totalMembers', 'members.total'],
+      members.length,
+    );
+    const postsValue = resolveStatValue(
+      ['postCount', 'posts.total', 'posts.count', 'totalPosts'],
+      feedBreakdown.posts,
+    );
+    const pollsValue = resolveStatValue(
+      ['pollCount', 'polls.total', 'polls.count', 'posts.poll', 'contentBreakdown.polls'],
+      feedBreakdown.polls,
+    );
+    const eventsValue = resolveStatValue(
+      ['eventCount', 'events.total', 'events.count', 'posts.event', 'contentBreakdown.events'],
+      feedBreakdown.events,
+    );
+    const weeklyFallback =
+      community?.stats?.weeklyActivity ||
+      community?.stats?.activeWeeklyUsers ||
+      community?.stats?.activeThisWeek ||
+      0;
+    const weeklyValue = resolveStatValue(
+      ['weeklyActivity', 'activeWeeklyUsers', 'activeThisWeek'],
+      weeklyFallback,
+    );
+
+    return [
+      {
+        key: 'members',
+        label: 'Members',
+        value: formatNumber(membersValue),
+      },
+      {
+        key: 'posts',
+        label: 'Posts',
+        value: formatNumber(postsValue),
+      },
+      {
+        key: 'polls',
+        label: 'Polls',
+        value: formatNumber(pollsValue),
+      },
+      {
+        key: 'events',
+        label: 'Events',
+        value: formatNumber(eventsValue),
+      },
+      {
+        key: 'weekly',
+        label: 'Active this week',
+        value: formatNumber(weeklyValue),
+      },
+    ];
+  }, [resolveStatValue, feedBreakdown, members.length, community?.stats]);
+
+  const membersPreview = useMemo(() => members.slice(0, 6), [members]);
+  const moderationFeed = useMemo(() => feed.slice(0, 5), [feed]);
+  const visibleJoinRequests = useMemo(() => joinRequests.slice(0, 5), [joinRequests]);
+  const selectedMemberRole = useMemo(
+    () => (selectedMember?.role || '').toLowerCase(),
+    [selectedMember?.role],
+  );
+  const selectedMemberName = useMemo(() => {
+    if (!selectedMember) {
+      return '';
+    }
+    const member = selectedMember.user || selectedMember;
+    return (
+      member.username ||
+      [member.firstname, member.lastname].filter(Boolean).join(' ').trim() ||
+      member.email ||
+      'Member'
+    );
+  }, [selectedMember]);
+
+  const roleOptions = useMemo(
+    () => [
+      {
+        key: 'admin',
+        label: 'Admin',
+        description: 'Can manage settings and other members.',
+      },
+      {
+        key: 'moderator',
+        label: 'Moderator',
+        description: 'Can moderate content and approve requests.',
+      },
+      {
+        key: 'member',
+        label: 'Member',
+        description: 'Standard access to community content.',
+      },
+    ],
+    [],
+  );
+
+  if (loading && !community) {
+    return <Skeleton />;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={SLACK_COLORS.background} />
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor={PALETTE.primary} />
       
-      {renderHeader()}
+      {/* New Compact Hero */}
+      <CompactManagementHero
+        community={community}
+        membership={membership}
+        navigation={navigation}
+      />
       
-      {/* Error Banner */}
-      {error && (
-        <Animated.View entering={FadeInDown} style={styles.errorBanner}>
-          <Icon name="warning" size={nw(20)} color={SLACK_COLORS.textInverse} />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={() => setError(null)}>
-            <Icon name="close" size={nw(20)} color={SLACK_COLORS.textInverse} />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
-      
-      <View style={styles.mainContent}>
-        {renderSidebar()}
-        
-        <View style={styles.contentArea}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={SLACK_COLORS.accent} />
-              <Text style={styles.loadingText}>Loading...</Text>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={PALETTE.primary}
+          />
+        }>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Quick actions</Text>
+          <QuickActionCard
+            icon="paper-plane"
+            title="Share announcement"
+            subtitle="Create a post to reach everyone"
+            onPress={handleOpenAnnouncementModal}
+          />
+          {canModerateMembers ? (
+            <QuickActionCard
+              icon="people"
+              title="Manage members"
+              subtitle="Review requests and roles"
+              onPress={handleScrollToMembers}
+            />
+          ) : null}
+          <QuickActionCard
+            icon="analytics"
+            title="Track engagement"
+            subtitle="Check growth and activity trends"
+            onPress={handleTrackEngagement}
+          />
+        </View>
+
+        {canModerateMembers ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Pending join requests</Text>
+            {joinRequestsLoading ? (
+              <ActivityIndicator color={PALETTE.primary} style={{marginTop: nh(12)}} />
+            ) : visibleJoinRequests.length ? (
+              <View style={styles.joinRequestList}>
+                {visibleJoinRequests.map((request) => {
+                  const requestId = resolveRequestId(request);
+                  const processing = !!requestProcessing[requestId];
+                  return (
+                    <JoinRequestRow
+                      key={requestId || JSON.stringify(request)}
+                      request={request}
+                      processing={processing}
+                      onApprove={() => handleApproveRequest(request)}
+                      onReject={() => handleRejectRequest(request)}
+                    />
+                  );
+                })}
+              </View>
+            ) : (
+              <EmptyState
+                title="No pending requests"
+                subtitle="You're all caught up on membership approvals."
+              />
+            )}
+          </View>
+        ) : null}
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Moderate recent posts</Text>
+          {feedLoading && !feed.length ? (
+            <ActivityIndicator color={PALETTE.primary} style={{marginTop: nh(12)}} />
+          ) : moderationFeed.length ? (
+            moderationFeed.map((post) => {
+              const postId = resolvePostId(post);
+              return (
+                <FeedCard
+                  key={postId || post.id || post._id}
+                  post={post}
+                  canDelete={canModerateMembers}
+                  deleting={!!(postId && deletingPosts[postId])}
+                  onDelete={confirmDeletePost}
+                />
+              );
+            })
+          ) : (
+            <EmptyState title="No posts yet" subtitle="Once members post, you can moderate from here." />
+          )}
+          {hasMoreFeed && feed.length > 0 ? (
+            <TouchableOpacity style={styles.moreButton} onPress={handleLoadMore}>
+              <Text style={styles.moreButtonText}>Load more posts</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <View
+          style={styles.sectionCard}
+          onLayout={(event) => {
+            const {y} = event.nativeEvent.layout;
+            setMembershipSectionY((prev) => (Math.abs(prev - y) > 1 ? y : prev));
+          }}
+        >
+          <Text style={styles.sectionTitle}>Membership snapshot</Text>
+          {membersLoading && !members.length ? (
+            <ActivityIndicator color={PALETTE.primary} style={{marginTop: nh(12)}} />
+          ) : membersPreview.length ? (
+            <View style={styles.membersGrid}>
+              {membersPreview.map((member) => (
+                <MemberRow
+                  key={member.id || member.user?.id || member.user?._id || member._id}
+                  member={member}
+                  showActions={canModerateMembers && (member?.role || '').toLowerCase() !== 'owner'}
+                  onManage={() => handleOpenRoleModal(member)}
+                />
+              ))}
             </View>
           ) : (
-            <>
-              {activeTab === 'dashboard' && renderDashboard()}
-              {activeTab === 'members' && renderMembers()}
-              {activeTab === 'content' && renderContent()}
-              {activeTab === 'requests' && renderRequests()}
-              {activeTab === 'settings' && renderSettings()}
-            </>
+            <EmptyState title="No members yet" subtitle="Invite a few peers to get things started." />
           )}
+          {members.length > membersPreview.length ? (
+            <TouchableOpacity
+              style={styles.moreButton}
+              onPress={() => navigation.navigate(Routes.CommunityDetail, { communityId })}
+            >
+              <Text style={styles.moreButtonText}>View all members</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-      </View>
 
-      {/* Modal */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Setup checklist</Text>
+          <View style={styles.comingSoonContainer}>
+            <Icon name="time-outline" size={nw(18)} color={PALETTE.subtle} />
+            <Text style={styles.comingSoonText}>Coming soon</Text>
+          </View>
+          <Text style={styles.comingSoonSubtext}>
+            We'll surface guided setup tasks here to help you launch faster.
+          </Text>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Community notes</Text>
+          <TextInput
+            style={styles.notesInput}
+            multiline
+            editable={false}
+            placeholder="Keep notes for your mod team (coming soon)."
+            placeholderTextColor={PALETTE.subtle}
+          />
+        </View>
+      </ScrollView>
+
       <Modal
-        visible={modalVisible}
+        visible={engagementModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setModalVisible(false)}>
+        onRequestClose={handleCloseEngagement}
+      >
         <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            {renderModalContent()}
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setModalVisible(false)}
-              activeOpacity={0.7}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseEngagement} />
+          <View style={styles.engagementCard}>
+            <Text style={styles.engagementTitle}>Engagement snapshot</Text>
+            <View style={styles.engagementStatsList}>
+              {engagementStats.map((stat) => (
+                <View key={stat.key} style={styles.engagementStatRow}>
+                  <Text style={styles.engagementStatLabel}>{stat.label}</Text>
+                  <Text style={styles.engagementStatValue}>{stat.value}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={handleCloseEngagement}>
               <Text style={styles.modalCloseText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={roleModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseRoleModal}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={roleUpdating ? undefined : handleCloseRoleModal}
+          />
+          <View style={styles.roleModalCard}>
+            <Text style={styles.roleModalTitle}>Manage member</Text>
+            <Text style={styles.roleModalSubtitle}>{selectedMemberName}</Text>
+            <View style={styles.roleOptionsContainer}>
+              {roleOptions.map((option) => {
+                const isActive = selectedMemberRole === option.key;
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    style={[styles.roleOption, isActive && styles.roleOptionActive]}
+                    disabled={roleUpdating || isActive}
+                    onPress={() => handleRoleSelection(option.key)}
+                  >
+                    <View style={styles.roleOptionTextBlock}>
+                      <Text
+                        style={[styles.roleOptionLabel, isActive && styles.roleOptionLabelActive]}
+                      >
+                        {option.label}
+                      </Text>
+                      <Text style={styles.roleOptionDescription}>{option.description}</Text>
+                    </View>
+                    {isActive ? (
+                      <Icon name="checkmark-circle" size={nw(20)} color={PALETTE.primary} />
+                    ) : (
+                      <Icon name="chevron-forward" size={nw(18)} color={PALETTE.subtle} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <TouchableOpacity
+              style={[styles.modalCloseButton, roleUpdating && styles.modalCloseButtonDisabled]}
+              onPress={handleCloseRoleModal}
+              disabled={roleUpdating}
+            >
+              <Text style={styles.modalCloseText}>{roleUpdating ? 'Processing…' : 'Close'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      
+      {/* IMPROVED Announcement Creation Modal */}
+      <Modal
+        visible={announcementModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseAnnouncementModal}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalKeyboardAvoidingView}
+        >
+          <Pressable
+            style={[StyleSheet.absoluteFill, styles.modalBackdrop]}
+            onPress={isSubmittingAnnouncement ? undefined : handleCloseAnnouncementModal}
+          />
+          <View style={styles.announcementModalContainer}>
+            <View style={styles.modalDragHandle} />
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>New Announcement</Text>
+              <TouchableOpacity
+                onPress={handleCloseAnnouncementModal}
+                disabled={isSubmittingAnnouncement}
+                style={styles.modalCloseIcon}
+              >
+                <Icon name="close" size={nw(24)} color={PALETTE.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Title *</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g., Q3 All-Hands Meeting"
+                  placeholderTextColor={PALETTE.subtle}
+                  value={announcementData.title}
+                  onChangeText={(text) => setAnnouncementData(prev => ({ ...prev, title: text }))}
+                  maxLength={200}
+                  editable={!isSubmittingAnnouncement}
+                />
+                <Text style={styles.charCount}>
+                  {announcementData.title.length}/200
+                </Text>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Content *</Text>
+                <TextInput
+                  style={[styles.textInput, styles.textArea]}
+                  placeholder="Share details, updates, or news here..."
+                  placeholderTextColor={PALETTE.subtle}
+                  value={announcementData.content}
+                  onChangeText={(text) => setAnnouncementData(prev => ({ ...prev, content: text }))}
+                  multiline
+                  numberOfLines={6}
+                  maxLength={2000}
+                  textAlignVertical="top"
+                  editable={!isSubmittingAnnouncement}
+                />
+                <Text style={styles.charCount}>
+                  {announcementData.content.length}/2000
+                </Text>
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Priority</Text>
+                <View style={styles.priorityOptions}>
+                  {['low', 'normal', 'high', 'urgent'].map((priority) => (
+                    <TouchableOpacity
+                      key={priority}
+                      style={[
+                        styles.priorityButton,
+                        announcementData.priority === priority && styles.priorityButtonActive,
+                      ]}
+                      onPress={() => setAnnouncementData(prev => ({ ...prev, priority }))}
+                      disabled={isSubmittingAnnouncement}
+                    >
+                      <Icon
+                        name={
+                          priority === 'urgent' ? 'alert-circle' :
+                          priority === 'high' ? 'warning' :
+                          priority === 'normal' ? 'information-circle' :
+                          'flag'
+                        }
+                        size={nw(16)}
+                        color={
+                          announcementData.priority === priority 
+                            ? COLORS.whiteFFFFFF 
+                            : PALETTE.primary
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.priorityText,
+                          announcementData.priority === priority && styles.priorityTextActive,
+                        ]}
+                      >
+                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              
+              <View style={styles.toggleGroup}>
+                <View style={styles.toggleInfo}>
+                  <Icon name="checkmark-circle" size={nw(20)} color={PALETTE.primary} />
+                  <View style={styles.toggleTextContainer}>
+                    <Text style={styles.toggleLabel}>Require Read Receipt</Text>
+                    <Text style={styles.toggleDescription}>
+                      Track when members have read this announcement
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[
+                    styles.toggle,
+                    announcementData.requireReadReceipt && styles.toggleActive,
+                  ]}
+                  onPress={() => setAnnouncementData(prev => ({
+                    ...prev,
+                    requireReadReceipt: !prev.requireReadReceipt,
+                  }))}
+                  disabled={isSubmittingAnnouncement}
+                >
+                  <View
+                    style={[
+                      styles.toggleThumb,
+                      announcementData.requireReadReceipt && styles.toggleThumbActive,
+                    ]}
+                  />
+                </TouchableOpacity>
+              </View>
+              
+            </ScrollView>
+            
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalSubmitButton]}
+                onPress={handleSubmitAnnouncement}
+                disabled={isSubmittingAnnouncement}
+              >
+                {isSubmittingAnnouncement ? (
+                  <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
+                ) : (
+                  <>
+                    <Icon name="send" size={nw(16)} color={COLORS.whiteFFFFFF} />
+                    <Text style={styles.modalSubmitText}>Share Announcement</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-// ===============================
-// STYLES - Slack-Inspired Design
-// ===============================
-
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: SLACK_COLORS.background,
+    backgroundColor: PALETTE.background,
+  },
+  scrollContent: {
+    paddingBottom: nh(32),
   },
   
-  // Header Styles
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: nw(20),
-    paddingVertical: nh(16),
-    backgroundColor: SLACK_COLORS.background,
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
+  // BALANCED HERO STYLES - MORE SPACIOUS
+  balancedHero: {
+    paddingTop: Platform.OS === 'ios' ? nh(14) : nh(16),
+    paddingBottom: nh(20),
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 4,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  backButton: {
-    padding: nw(8),
-    marginRight: nw(12),
-  },
-  headerInfo: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: nw(18),
-    fontWeight: 'bold',
-    color: SLACK_COLORS.textPrimary,
-  },
-  headerSubtitle: {
-    fontSize: nw(14),
-    color: SLACK_COLORS.textSecondary,
-    marginTop: nh(2),
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerButton: {
-    padding: nw(8),
-  },
-  
-  // Error Banner
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: SLACK_COLORS.danger,
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(12),
-    gap: nw(8),
-  },
-  errorText: {
-    flex: 1,
-    fontSize: nw(14),
-    color: SLACK_COLORS.textInverse,
-  },
-  
-  // Main Content Layout
-  mainContent: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  
-  // Sidebar Styles (Slack-inspired)
-  sidebar: {
-    width: nw(200),
-    backgroundColor: SLACK_COLORS.sidebarBg,
-    paddingVertical: nh(20),
-  },
-  sidebarItem: {
+  heroTopSection: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: nw(20),
-    paddingVertical: nh(12),
-    marginHorizontal: nw(8),
-    borderRadius: nw(6),
-    gap: nw(12),
+    paddingBottom: nh(18),
   },
-  sidebarItemActive: {
-    backgroundColor: SLACK_COLORS.sidebarActive,
+  heroBackButton: {
+    padding: nw(8),
+    marginLeft: nw(-8),
+    marginRight: nw(8),
   },
-  sidebarItemText: {
-    fontSize: nw(14),
-    fontWeight: '500',
-    color: SLACK_COLORS.textMuted,
-  },
-  sidebarItemTextActive: {
-    color: SLACK_COLORS.textInverse,
-    fontWeight: '600',
-  },
-  
-  // Content Area
-  contentArea: {
+  heroCenterContent: {
     flex: 1,
-    backgroundColor: SLACK_COLORS.surface,
   },
-  content: {
-    flex: 1,
-    padding: nw(20),
+  heroIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  
-  // Loading States
-  loadingContainer: {
-    flex: 1,
+  heroProfileAvatar: {
+    width: nw(54),
+    height: nw(54),
+    borderRadius: nw(16),
+    marginRight: nw(14),
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  heroProfileAvatarFallback: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: nw(16),
-    color: SLACK_COLORS.textSecondary,
-    marginTop: nh(12),
+  heroProfileAvatarText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(20),
+    fontWeight: '700',
   },
-  
-  // Card Styles
-  card: {
-    backgroundColor: SLACK_COLORS.surfaceElevated,
-    borderRadius: nw(12),
-    padding: nw(20),
-    marginBottom: nh(16),
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: nh(16),
-  },
-  cardTitle: {
-    fontSize: nw(18),
-    fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-  },
-  
-  // Stats Grid
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nw(16),
-    marginBottom: nh(16),
-  },
-  statCard: {
+  heroTextContent: {
     flex: 1,
-    minWidth: nw(140),
-    backgroundColor: SLACK_COLORS.surfaceElevated,
-    borderRadius: nw(12),
-    padding: nw(16),
+    justifyContent: 'center',
+  },
+  heroNameContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: nw(6),
+    marginBottom: nh(6),
   },
-  statValue: {
-    fontSize: nw(24),
-    fontWeight: 'bold',
-    color: SLACK_COLORS.textPrimary,
+  heroCommunityName: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(19),
+    fontWeight: '700',
+    flex: 1,
   },
-  statLabel: {
+  heroBadgesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroBadgeItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(4),
+  },
+  heroBadgeText: {
+    color: COLORS.whiteFFFFFF + 'CC',
+    fontSize: nw(13),
+    fontWeight: '500',
+  },
+  heroBadgeSeparator: {
+    color: COLORS.whiteFFFFFF + '66',
     fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(4),
-    textAlign: 'center',
+    marginHorizontal: nw(10),
   },
-  statChange: {
-    fontSize: nw(12),
+  heroRoleBadge: {
+    color: PALETTE.accent,
+    fontSize: nw(13),
     fontWeight: '600',
-    marginTop: nh(4),
+    textTransform: 'capitalize',
+  },
+  heroSettingsButton: {
+    padding: nw(8),
+    marginRight: nw(-8),
+    marginLeft: nw(8),
+  },
+  heroMetricsSection: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    marginHorizontal: nw(20),
+    borderRadius: nw(14),
+    paddingVertical: nh(14),
+  },
+  heroMetricBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(8),
+    paddingHorizontal: nw(4),
+  },
+  heroMetricIconWrapper: {
+    width: nw(32),
+    height: nw(32),
+    borderRadius: nw(10),
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroMetricContent: {
+    alignItems: 'flex-start',
+  },
+  heroMetricNumber: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(17),
+    fontWeight: '700',
+    lineHeight: nh(20),
+  },
+  heroMetricTitle: {
+    color: COLORS.whiteFFFFFF + 'B3',
+    fontSize: nw(11),
+    fontWeight: '500',
+    marginTop: nh(2),
+  },
+  heroMetricDivider: {
+    width: 1,
+    height: nh(36),
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   
-  // Activity List
-  activityList: {
-    gap: nh(12),
+  sectionCard: {
+    marginHorizontal: nw(20),
+    marginTop: nh(18),
+    borderRadius: nw(20),
+    backgroundColor: PALETTE.surface,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    paddingHorizontal: nw(18),
+    paddingVertical: nh(16),
   },
-  activityItem: {
+  sectionTitle: {
+    color: PALETTE.primary,
+    fontSize: nw(14),
+    fontWeight: '700',
+    marginBottom: nh(12),
+  },
+  insightRow: {
+    flexDirection: 'row',
+    gap: nw(12),
+    marginBottom: nh(12),
+  },
+  insightCard: {
+    flex: 1,
+    backgroundColor: PALETTE.background,
+    borderRadius: nw(16),
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(14),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    gap: nh(6),
+  },
+  insightIconWrap: {
+    width: nw(28),
+    height: nw(28),
+    borderRadius: nw(14),
+    backgroundColor: PALETTE.primary + '12',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  insightTextBlock: {},
+  insightValue: {
+    color: PALETTE.primary,
+    fontSize: nw(16),
+    fontWeight: '700',
+  },
+  insightLabel: {
+    color: PALETTE.muted,
+    fontSize: nw(11),
+  },
+  insightTrend: {
+    color: PALETTE.accent,
+    fontSize: nw(11),
+    marginTop: nh(4),
+  },
+  quickActionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(12),
+    paddingVertical: nh(14),
+    borderBottomWidth: 1,
+    borderColor: PALETTE.border,
   },
-  activityIcon: {
+  quickActionIcon: {
+    width: nw(36),
+    height: nw(36),
+    borderRadius: nw(18),
+    backgroundColor: PALETTE.primary + '12',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickActionText: {
+    flex: 1,
+  },
+  quickActionTitle: {
+    color: PALETTE.primary,
+    fontSize: nw(13),
+    fontWeight: '600',
+  },
+  quickActionSubtitle: {
+    color: PALETTE.muted,
+    fontSize: nw(11),
+    marginTop: nh(4),
+  },
+  feedCardContainer: {
+    backgroundColor: PALETTE.background,
+    borderRadius: nw(12),
+    padding: nw(12),
+    marginBottom: nh(10),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+  },
+  feedCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: nh(10),
+  },
+  feedCardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(8),
+  },
+  feedCardAuthorInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  feedCardAvatar: {
     width: nw(32),
     height: nw(32),
     borderRadius: nw(16),
-    backgroundColor: SLACK_COLORS.accent + '20',
+    marginRight: nw(8),
+  },
+  feedCardAvatarFallback: {
+    width: nw(32),
+    height: nw(32),
+    borderRadius: nw(16),
+    backgroundColor: PALETTE.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: nw(8),
+  },
+  feedCardAvatarText: {
+    color: PALETTE.primary,
+    fontSize: nw(14),
+    fontWeight: '600',
+  },
+  feedCardAuthor: {
+    fontSize: nw(13),
+    color: PALETTE.primary,
+    fontWeight: '600',
+  },
+  feedCardDate: {
+    fontSize: nw(11),
+    color: PALETTE.subtle,
+    marginTop: nh(2),
+  },
+  feedCardTypeBadge: {
+    backgroundColor: PALETTE.primary + '10',
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(3),
+    borderRadius: nw(8),
+  },
+  feedCardType: {
+    fontSize: nw(10),
+    color: PALETTE.primary,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  feedCardDeleteButton: {
+    padding: nw(6),
+    borderRadius: nw(10),
+    backgroundColor: COLORS.redFF0000 + '12',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  activityContent: {
-    flex: 1,
+  feedCardBody: {
+    marginBottom: nh(10),
   },
-  activityText: {
+  feedCardTitle: {
     fontSize: nw(14),
-    color: SLACK_COLORS.textPrimary,
+    fontWeight: '600',
+    color: PALETTE.primary,
+    marginBottom: nh(6),
   },
-  activityTime: {
+  feedCardContent: {
     fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
+    color: PALETTE.muted,
+    lineHeight: nh(18),
+  },
+  feedCardStats: {
+    flexDirection: 'row',
+    gap: nw(16),
+    paddingTop: nh(8),
+    borderTopWidth: 1,
+    borderTopColor: PALETTE.border,
+  },
+  feedCardStat: {
+    fontSize: nw(11),
+    color: PALETTE.subtle,
+  },
+  feedCardPoll: {
+    backgroundColor: PALETTE.primary + '08',
+    padding: nw(10),
+    borderRadius: nw(8),
+  },
+  feedCardPollLabel: {
+    fontSize: nw(11),
+    color: PALETTE.primary,
+    fontWeight: '600',
+    marginBottom: nh(4),
+  },
+  feedCardPollQuestion: {
+    fontSize: nw(13),
+    color: PALETTE.primary,
+    fontWeight: '500',
+    marginBottom: nh(4),
+  },
+  feedCardPollOptions: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+  },
+  feedCardEvent: {
+    backgroundColor: PALETTE.accent + '15',
+    padding: nw(10),
+    borderRadius: nw(8),
+  },
+  feedCardEventLabel: {
+    fontSize: nw(11),
+    color: PALETTE.primary,
+    fontWeight: '600',
+    marginBottom: nh(4),
+  },
+  feedCardEventTitle: {
+    fontSize: nw(13),
+    color: PALETTE.primary,
+    fontWeight: '500',
+    marginBottom: nh(4),
+  },
+  feedCardEventDate: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+  },
+  feedCardEventVenue: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
     marginTop: nh(2),
   },
-  
-  // Action Bar
-  actionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: nw(20),
-    paddingVertical: nh(16),
-    backgroundColor: SLACK_COLORS.surfaceElevated,
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
-    gap: nw(12),
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: SLACK_COLORS.surface,
+  feedCardAnnouncement: {
+    backgroundColor: PALETTE.accent + '10',
+    padding: nw(10),
     borderRadius: nw(8),
-    paddingHorizontal: nw(12),
+  },
+  feedCardAnnouncementLabel: {
+    fontSize: nw(11),
+    color: PALETTE.accent,
+    fontWeight: '700',
+    marginBottom: nh(6),
+  },
+  moreButton: {
+    marginTop: nh(10),
+    alignSelf: 'flex-start',
+    paddingHorizontal: nw(14),
     paddingVertical: nh(8),
-    gap: nw(8),
+    borderRadius: nw(14),
+    backgroundColor: PALETTE.primary + '12',
   },
-  searchInput: {
-    flex: 1,
-    fontSize: nw(14),
-    color: SLACK_COLORS.textPrimary,
-    paddingVertical: 0,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: SLACK_COLORS.accent + '20',
-    paddingHorizontal: nw(12),
-    paddingVertical: nh(8),
-    borderRadius: nw(8),
-    gap: nw(6),
-  },
-  actionButtonText: {
-    fontSize: nw(14),
+  moreButtonText: {
+    color: PALETTE.primary,
+    fontSize: nw(12),
     fontWeight: '600',
-    color: SLACK_COLORS.accent,
   },
-  
-  // Bulk Actions
-  bulkActionsBar: {
+  joinRequestList: {
+    gap: nh(12),
+    marginTop: nh(12),
+  },
+  joinRequestRow: {
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(14),
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(12),
+  },
+  joinRequestInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: SLACK_COLORS.accent + '20',
-    marginHorizontal: nw(20),
-    marginBottom: nh(8),
-    padding: nw(16),
-    borderRadius: nw(12),
+    marginBottom: nh(10),
   },
-  bulkActionsText: {
+  joinRequestAvatar: {
+    width: nw(40),
+    height: nw(40),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: nw(12),
+  },
+  joinRequestAvatarText: {
+    color: PALETTE.primary,
     fontSize: nw(16),
-    fontWeight: '600',
-    color: SLACK_COLORS.accent,
+    fontWeight: '700',
   },
-  bulkActionsButtons: {
+  joinRequestName: {
+    color: PALETTE.primary,
+    fontSize: nw(13),
+    fontWeight: '600',
+  },
+  joinRequestEmail: {
+    color: PALETTE.muted,
+    fontSize: nw(11),
+    marginTop: nh(2),
+  },
+  joinRequestDate: {
+    color: PALETTE.subtle,
+    fontSize: nw(10),
+    marginTop: nh(2),
+  },
+  joinRequestActions: {
     flexDirection: 'row',
-    gap: nw(8),
+    justifyContent: 'flex-end',
+    gap: nw(10),
   },
-  bulkActionBtn: {
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(8),
-    borderRadius: nw(8),
-  },
-  bulkActionBtnText: {
-    fontSize: nw(14),
-    fontWeight: '600',
-  },
-  
-  // Member Card
-  memberCard: {
+  requestButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: SLACK_COLORS.surfaceElevated,
-    marginHorizontal: nw(20),
-    marginBottom: nh(8),
-    padding: nw(16),
+    justifyContent: 'center',
+    minWidth: nw(90),
+    paddingVertical: nh(8),
     borderRadius: nw(12),
-    gap: nw(12),
   },
-  memberCheckbox: {
-    padding: nw(4),
+  requestApproveButton: {
+    backgroundColor: '#2E7D32',
+  },
+  requestRejectButton: {
+    backgroundColor: '#C62828',
+  },
+  requestButtonText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(12),
+    fontWeight: '600',
+  },
+  membersGrid: {
+    gap: nh(12),
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   memberAvatar: {
-    width: nw(50),
-    height: nw(50),
-    borderRadius: nw(25),
+    width: nw(40),
+    height: nw(40),
+    borderRadius: nw(12),
+    marginRight: nw(12),
+  },
+  memberAvatarFallback: {
+    width: nw(40),
+    height: nw(40),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.primary + '18',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: nw(12),
+  },
+  memberAvatarText: {
+    color: PALETTE.primary,
+    fontSize: nw(16),
+    fontWeight: '700',
   },
   memberInfo: {
     flex: 1,
   },
-  memberHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: nh(4),
-  },
   memberName: {
-    fontSize: nw(16),
+    color: PALETTE.primary,
+    fontSize: nw(13),
     fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-    flex: 1,
-  },
-  memberRole: {
-    paddingHorizontal: nw(8),
-    paddingVertical: nh(4),
-    borderRadius: nw(6),
   },
   memberRoleText: {
+    color: PALETTE.muted,
     fontSize: nw(11),
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
-  memberEmail: {
-    fontSize: nw(14),
-    color: SLACK_COLORS.textMuted,
-  },
-  memberJoined: {
-    fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
     marginTop: nh(2),
   },
-  memberStatus: {
-    fontSize: nw(12),
-    marginTop: nh(2),
-  },
-  memberActions: {
-    padding: nw(8),
-  },
-  
-  // Content Stats
-  contentStatsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nw(12),
-  },
-  contentStatItem: {
-    flex: 1,
-    minWidth: nw(120),
-    alignItems: 'center',
-    padding: nw(12),
-    backgroundColor: SLACK_COLORS.surface,
-    borderRadius: nw(8),
-  },
-  contentStatValue: {
-    fontSize: nw(20),
-    fontWeight: 'bold',
-    color: SLACK_COLORS.textPrimary,
-  },
-  contentStatLabel: {
-    fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(4),
-  },
-  
-  // Moderation Queue
-  queueCount: {
-    fontSize: nw(14),
-    color: SLACK_COLORS.textSecondary,
-    backgroundColor: SLACK_COLORS.surface,
-    paddingHorizontal: nw(8),
-    paddingVertical: nh(4),
-    borderRadius: nw(6),
-  },
-  moderationList: {
-    gap: nh(12),
-  },
-  moderationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: nh(12),
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
-    gap: nw(12),
-  },
-  moderationPriority: {
-    width: nw(4),
-    height: nh(50),
-    borderRadius: nw(2),
-  },
-  moderationContent: {
-    flex: 1,
-  },
-  moderationTitle: {
-    fontSize: nw(14),
-    fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-  },
-  moderationReason: {
-    fontSize: nw(13),
-    color: SLACK_COLORS.textSecondary,
-    marginTop: nh(2),
-  },
-  moderationTime: {
-    fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(2),
-  },
-  moderationActions: {
-    flexDirection: 'row',
-    gap: nw(8),
-  },
-  moderationBtn: {
-    padding: nw(8),
-    borderRadius: nw(8),
-  },
-  
-  // Posts List
-  postsList: {
-    gap: nh(12),
-  },
-  postItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: nh(12),
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
-  },
-  postContent: {
-    flex: 1,
-  },
-  postTitle: {
-    fontSize: nw(14),
-    fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-  },
-  postAuthor: {
-    fontSize: nw(13),
-    color: SLACK_COLORS.textSecondary,
-    marginTop: nh(2),
-  },
-  postTime: {
-    fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(2),
-  },
-  postStats: {
-    flexDirection: 'row',
-    gap: nw(12),
-  },
-  postStat: {
-    fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
-  },
-  
-  // Requests
-  requestsList: {
-    gap: nh(12),
-  },
-  requestItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: nh(12),
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
-    gap: nw(12),
-  },
-  requestAvatar: {
-    width: nw(40),
-    height: nw(40),
-    borderRadius: nw(20),
-  },
-  requestContent: {
-    flex: 1,
-  },
-  requestName: {
-    fontSize: nw(14),
-    fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-  },
-  requestType: {
-    fontSize: nw(13),
-    color: SLACK_COLORS.textSecondary,
-    marginTop: nh(2),
-  },
-  requestTime: {
-    fontSize: nw(12),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(2),
-  },
-  requestActions: {
-    flexDirection: 'row',
-  },
-  requestBtn: {
+  memberManageButton: {
     paddingHorizontal: nw(12),
     paddingVertical: nh(6),
-    borderRadius: nw(6),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.primary + '12',
   },
-  requestBtnText: {
-    fontSize: nw(12),
+  memberManageText: {
+    color: PALETTE.primary,
+    fontSize: nw(11),
     fontWeight: '600',
   },
-  
-  // Quick Actions
-  quickActionsList: {
-    gap: nh(8),
-  },
-  quickActionItem: {
+  comingSoonContainer: {
+    marginTop: nh(12),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: nh(16),
-    paddingHorizontal: nw(16),
-    backgroundColor: SLACK_COLORS.surface,
-    borderRadius: nw(8),
-    gap: nw(12),
+    gap: nw(8),
   },
-  quickActionText: {
+  comingSoonText: {
+    color: PALETTE.muted,
+    fontSize: nw(13),
+    fontWeight: '600',
+  },
+  comingSoonSubtext: {
+    marginTop: nh(6),
+    color: PALETTE.subtle,
+    fontSize: nw(12),
+    lineHeight: nh(18),
+  },
+  notesInput: {
+    marginTop: nh(10),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(16),
+    padding: nw(14),
+    color: PALETTE.subtle,
+    minHeight: nh(100),
+    textAlignVertical: 'top',
+  },
+  modalOverlay: {
     flex: 1,
-    fontSize: nw(14),
-    fontWeight: '500',
-    color: SLACK_COLORS.textPrimary,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: nw(20),
   },
-  
-  // Settings
-  settingsList: {
-    gap: nh(8),
+  engagementCard: {
+    width: '100%',
+    maxWidth: nw(320),
+    borderRadius: nw(20),
+    backgroundColor: PALETTE.surface,
+    paddingHorizontal: nw(20),
+    paddingVertical: nh(20),
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 6,
   },
-  settingItem: {
+  engagementTitle: {
+    fontSize: nw(16),
+    fontWeight: '700',
+    color: PALETTE.primary,
+    marginBottom: nh(12),
+    textAlign: 'center',
+  },
+  engagementStatsList: {
+    gap: nh(10),
+  },
+  engagementStatRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: nh(12),
-    gap: nw(12),
+    justifyContent: 'space-between',
+    paddingVertical: nh(4),
   },
-  settingIcon: {
-    width: nw(40),
-    height: nw(40),
+  engagementStatLabel: {
+    fontSize: nw(13),
+    color: PALETTE.muted,
+  },
+  engagementStatValue: {
+    fontSize: nw(14),
+    fontWeight: '600',
+    color: PALETTE.primary,
+  },
+  modalCloseButton: {
+    marginTop: nh(18),
+    alignSelf: 'center',
+    paddingHorizontal: nw(20),
+    paddingVertical: nh(10),
+    borderRadius: nw(14),
+    backgroundColor: PALETTE.primary,
+  },
+  modalCloseButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalCloseText: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(12),
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  roleModalCard: {
+    width: '100%',
+    maxWidth: nw(340),
     borderRadius: nw(20),
-    backgroundColor: SLACK_COLORS.surface,
+    backgroundColor: PALETTE.surface,
+    paddingHorizontal: nw(24),
+    paddingVertical: nh(24),
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 6,
+  },
+  roleModalTitle: {
+    fontSize: nw(16),
+    fontWeight: '700',
+    color: PALETTE.primary,
+    marginBottom: nh(6),
+  },
+  roleModalSubtitle: {
+    fontSize: nw(13),
+    color: PALETTE.muted,
+    marginBottom: nh(18),
+  },
+  roleOptionsContainer: {
+    gap: nh(12),
+  },
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(16),
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(12),
+  },
+  roleOptionActive: {
+    borderColor: PALETTE.primary,
+    backgroundColor: PALETTE.primary + '12',
+  },
+  roleOptionTextBlock: {
+    flex: 1,
+    marginRight: nw(12),
+  },
+  roleOptionLabel: {
+    fontSize: nw(13),
+    fontWeight: '600',
+    color: PALETTE.primary,
+    marginBottom: nh(4),
+  },
+  roleOptionLabelActive: {
+    color: PALETTE.primary,
+  },
+  roleOptionDescription: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+    lineHeight: nh(16),
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: nh(40),
+    paddingHorizontal: nw(18),
+  },
+  emptyTitle: {
+    color: PALETTE.primary,
+    fontSize: nw(15),
+    fontWeight: '700',
+    marginTop: nh(12),
+  },
+  emptySubtitle: {
+    color: PALETTE.muted,
+    fontSize: nw(12),
+    textAlign: 'center',
+    marginTop: nh(6),
+    lineHeight: nh(18),
+  },
+  heroSkeleton: {
+    height: nh(140),
+    backgroundColor: PALETTE.primary + '0F',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  settingContent: {
+  skeletonLine: {
+    height: nh(14),
+    backgroundColor: PALETTE.border,
+    borderRadius: nw(10),
+  },
+  // IMPROVED ANNOUNCEMENT MODAL STYLES
+  modalKeyboardAvoidingView: {
     flex: 1,
+    justifyContent: 'flex-end',
   },
-  settingTitle: {
-    fontSize: nw(16),
+  modalBackdrop: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  announcementModalContainer: {
+    backgroundColor: PALETTE.surface,
+    borderTopLeftRadius: nw(24),
+    borderTopRightRadius: nw(24),
+    maxHeight: '90%',
+    paddingBottom: Platform.OS === 'ios' ? nh(20) : 0,
+  },
+  modalDragHandle: {
+    width: nw(40),
+    height: nh(5),
+    backgroundColor: PALETTE.border,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: nh(12),
+    marginBottom: nh(8),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: nw(24),
+    paddingVertical: nh(16),
+    borderBottomWidth: 1,
+    borderBottomColor: PALETTE.border,
+  },
+  modalTitle: {
+    fontSize: nw(18),
+    fontWeight: '700',
+    color: PALETTE.primary,
+  },
+  modalCloseIcon: {
+    padding: nw(4),
+  },
+  modalBody: {
+    paddingHorizontal: nw(24),
+  },
+  modalFooter: {
+    paddingHorizontal: nw(24),
+    paddingTop: nh(16),
+    paddingBottom: nh(Platform.OS === 'ios' ? 16 : 24),
+    borderTopWidth: 1,
+    borderTopColor: PALETTE.border,
+  },
+  inputGroup: {
+    marginBottom: nh(20),
+  },
+  inputLabel: {
+    fontSize: nw(13),
     fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
+    color: PALETTE.primary,
+    marginBottom: nh(8),
   },
-  settingDesc: {
+  textInput: {
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    borderRadius: nw(12),
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(12),
     fontSize: nw(14),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(2),
+    color: PALETTE.primary,
+    backgroundColor: PALETTE.background,
   },
-  
-  // Automation
-  automationList: {
-    gap: nh(8),
+  textArea: {
+    minHeight: nh(120),
+    textAlignVertical: 'top',
   },
-  automationItem: {
+  charCount: {
+    fontSize: nw(11),
+    color: PALETTE.subtle,
+    textAlign: 'right',
+    marginTop: nh(4),
+  },
+  priorityOptions: {
+    flexDirection: 'row',
+    gap: nw(8),
+  },
+  priorityButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(4),
+    paddingVertical: nh(10),
+    borderRadius: nw(10),
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    backgroundColor: PALETTE.background,
+  },
+  priorityButtonActive: {
+    backgroundColor: PALETTE.primary,
+    borderColor: PALETTE.primary,
+  },
+  priorityText: {
+    fontSize: nw(11),
+    fontWeight: '600',
+    color: PALETTE.primary,
+  },
+  priorityTextActive: {
+    color: COLORS.whiteFFFFFF,
+  },
+  toggleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: nh(12),
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
-  },
-  automationContent: {
-    flex: 1,
-  },
-  automationName: {
-    fontSize: nw(16),
-    fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-  },
-  automationTrigger: {
-    fontSize: nw(14),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(2),
-  },
-  
-  // Integrations
-  integrationsList: {
-    gap: nh(8),
-  },
-  integrationItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: nh(12),
-    borderBottomWidth: nw(1),
-    borderBottomColor: SLACK_COLORS.border,
-    gap: nw(12),
-  },
-  integrationIcon: {
-    width: nw(40),
-    height: nw(40),
-    borderRadius: nw(20),
-    backgroundColor: SLACK_COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  integrationContent: {
-    flex: 1,
-  },
-  integrationName: {
-    fontSize: nw(16),
-    fontWeight: '600',
-    color: SLACK_COLORS.textPrimary,
-  },
-  integrationStatus: {
-    fontSize: nw(14),
-    marginTop: nh(2),
-  },
-  integrationButton: {
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(8),
-    borderRadius: nw(8),
-  },
-  integrationButtonText: {
-    fontSize: nw(14),
-    fontWeight: '600',
-  },
-  
-  // Danger Zone
-  dangerZone: {
-    gap: nw(12),
-  },
-  dangerButton: {
-    padding: nw(16),
+    paddingHorizontal: nw(14),
+    backgroundColor: PALETTE.background,
     borderRadius: nw(12),
-    alignItems: 'center',
-  },
-  dangerButtonText: {
-    fontSize: nw(16),
-    fontWeight: '600',
-  },
-  
-  // View All
-  viewAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: nh(12),
-    marginTop: nh(8),
-    gap: nw(8),
-  },
-  viewAllText: {
-    fontSize: nw(14),
-    fontWeight: '600',
-    color: SLACK_COLORS.accent,
-  },
-  viewAllLink: {
-    fontSize: nw(14),
-    fontWeight: '600',
-    color: SLACK_COLORS.accent,
-  },
-  
-  // Insights
-  insightsList: {
-    gap: nh(8),
-  },
-  insightItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: nw(8),
-  },
-  insightText: {
-    flex: 1,
-    fontSize: nw(14),
-    color: SLACK_COLORS.textPrimary,
-    lineHeight: nw(20),
-  },
-  
-  // Empty States
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: nh(40),
-  },
-  emptyStateText: {
-    fontSize: nw(16),
-    color: SLACK_COLORS.textMuted,
-    marginTop: nh(8),
-  },
-  
-  // Access Denied
-  accessDenied: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: nw(40),
-  },
-  accessDeniedText: {
-    fontSize: nw(24),
-    fontWeight: 'bold',
-    color: SLACK_COLORS.danger,
-    marginTop: nh(16),
-  },
-  accessDeniedSubtext: {
-    fontSize: nw(16),
-    color: SLACK_COLORS.textMuted,
-    textAlign: 'center',
-    marginTop: nh(8),
-  },
-  
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: nw(20),
-  },
-  modal: {
-    backgroundColor: SLACK_COLORS.surfaceElevated,
-    borderRadius: nw(16),
-    padding: nw(20),
-    maxWidth: nw(400),
-    width: '100%',
-  },
-  modalContent: {
-    marginBottom: nh(20),
-  },
-  modalTitle: {
-    fontSize: nw(20),
-    fontWeight: 'bold',
-    color: SLACK_COLORS.textPrimary,
-    marginBottom: nh(8),
-  },
-  modalSubtitle: {
-    fontSize: nw(16),
-    color: SLACK_COLORS.textSecondary,
     marginBottom: nh(16),
   },
-  modalOption: {
+  toggleInfo: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: nh(12),
-    paddingHorizontal: nw(16),
-    borderRadius: nw(8),
     gap: nw(12),
-    marginBottom: nh(8),
   },
-  modalOptionText: {
-    fontSize: nw(16),
-    color: SLACK_COLORS.textPrimary,
+  toggleTextContainer: {
+    flex: 1,
   },
-  modalCloseButton: {
-    backgroundColor: SLACK_COLORS.accent,
-    paddingVertical: nh(12),
-    borderRadius: nw(8),
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: nw(16),
+  toggleLabel: {
+    fontSize: nw(13),
     fontWeight: '600',
-    color: SLACK_COLORS.textInverse,
+    color: PALETTE.primary,
+  },
+  toggleDescription: {
+    fontSize: nw(11),
+    color: PALETTE.muted,
+    marginTop: nh(2),
+  },
+  toggle: {
+    width: nw(44),
+    height: nh(24),
+    borderRadius: nw(12),
+    backgroundColor: PALETTE.border,
+    padding: nw(2),
+    justifyContent: 'center',
+  },
+  toggleActive: {
+    backgroundColor: PALETTE.accent,
+  },
+  toggleThumb: {
+    width: nh(20),
+    height: nh(20),
+    borderRadius: nw(10),
+    backgroundColor: COLORS.whiteFFFFFF,
+  },
+  toggleThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(8),
+    paddingVertical: nh(14),
+    borderRadius: nw(14),
+  },
+  modalSubmitButton: {
+    backgroundColor: PALETTE.primary,
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  modalSubmitText: {
+    fontSize: nw(14),
+    fontWeight: '600',
+    color: COLORS.whiteFFFFFF,
   },
 });
 
