@@ -33,6 +33,7 @@ import {
   respondToJoinRequestApi,
   updateMemberRoleApi,
   createCommunityPostApi,
+  deleteCommunityPostApi,
 } from '../../services/apiService';
 import { throttle } from '../../helper/commonFunctions';
 import Routes from '../../helper/routes';
@@ -67,6 +68,16 @@ const formatDate = (value) => {
     year: 'numeric',
   });
 };
+
+const resolvePostId = (post) =>
+  post?.id ||
+  post?._id ||
+  post?.postId ||
+  post?.uuid ||
+  post?.post_id ||
+  post?.metadata?.postId ||
+  post?.metadata?._id ||
+  null;
 
 const parseFeedResponse = (response, page) => {
   const root = response?.data ?? {};
@@ -232,7 +243,7 @@ const QuickActionCard = ({icon, title, subtitle, onPress}) => (
   </TouchableOpacity>
 );
 
-const FeedCard = ({post}) => {
+const FeedCard = ({post, canDelete, onDelete, deleting}) => {
   if (!post) return null;
 
   const extractText = (data) => {
@@ -326,8 +337,23 @@ const FeedCard = ({post}) => {
             <Text style={styles.feedCardDate}>{formattedDate}</Text>
           </View>
         </View>
-        <View style={styles.feedCardTypeBadge}>
-          <Text style={styles.feedCardType}>{postType}</Text>
+        <View style={styles.feedCardHeaderRight}>
+          <View style={styles.feedCardTypeBadge}>
+            <Text style={styles.feedCardType}>{postType}</Text>
+          </View>
+          {canDelete ? (
+            <TouchableOpacity
+              style={styles.feedCardDeleteButton}
+              onPress={() => onDelete?.(post)}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <ActivityIndicator size="small" color={COLORS.redFF0000} />
+              ) : (
+                <Icon name="trash-outline" size={nw(18)} color={COLORS.redFF0000} />
+              )}
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
       
@@ -482,6 +508,7 @@ const CommunityManagement = ({route, navigation}) => {
   const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [roleUpdating, setRoleUpdating] = useState(false);
+  const [deletingPosts, setDeletingPosts] = useState({});
   const membersFetchedRef = useRef(false);
   const membersLoadingRef = useRef(false);
   const scrollRef = useRef(null);
@@ -644,6 +671,61 @@ const CommunityManagement = ({route, navigation}) => {
       }
     }, 900),
     [fetchFeed, feedLoading, feedPage, hasMoreFeed, loadingMore],
+  );
+
+  const handleDeletePost = useCallback(
+    async (post) => {
+      if (!canModerateMembers) {
+        return;
+      }
+
+      const postId = resolvePostId(post);
+      if (!postId) {
+        Alert.alert('Error', 'Unable to identify this post. Please refresh and try again.');
+        return;
+      }
+
+      setDeletingPosts((prev) => ({...prev, [postId]: true}));
+      try {
+        await deleteCommunityPostApi(communityId, postId);
+        setFeed((prev) => prev.filter((item) => resolvePostId(item) !== postId));
+        Alert.alert('Post deleted', 'The post has been removed from the community.');
+      } catch (error) {
+        console.log('Delete community post error', error?.response?.data || error?.message);
+        Alert.alert('Error', error?.response?.data?.message || 'Unable to delete the post right now.');
+      } finally {
+        setDeletingPosts((prev) => {
+          const next = {...prev};
+          delete next[postId];
+          return next;
+        });
+      }
+    },
+    [canModerateMembers, communityId],
+  );
+
+  const confirmDeletePost = useCallback(
+    (post) => {
+      if (!canModerateMembers) {
+        return;
+      }
+
+      const postId = resolvePostId(post);
+      if (!postId) {
+        Alert.alert('Error', 'Unable to identify this post. Please refresh and try again.');
+        return;
+      }
+
+      Alert.alert(
+        'Delete post',
+        'This will remove the post for all members. Are you sure you want to continue?',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {text: 'Delete', style: 'destructive', onPress: () => handleDeletePost(post)},
+        ],
+      );
+    },
+    [canModerateMembers, handleDeletePost],
   );
 
   const resolveRequestId = useCallback((request) => {
@@ -1122,7 +1204,18 @@ const CommunityManagement = ({route, navigation}) => {
           {feedLoading && !feed.length ? (
             <ActivityIndicator color={PALETTE.primary} style={{marginTop: nh(12)}} />
           ) : moderationFeed.length ? (
-            moderationFeed.map((post) => <FeedCard key={post.id || post._id} post={post} />)
+            moderationFeed.map((post) => {
+              const postId = resolvePostId(post);
+              return (
+                <FeedCard
+                  key={postId || post.id || post._id}
+                  post={post}
+                  canDelete={canModerateMembers}
+                  deleting={!!(postId && deletingPosts[postId])}
+                  onDelete={confirmDeletePost}
+                />
+              );
+            })
           ) : (
             <EmptyState title="No posts yet" subtitle="Once members post, you can moderate from here." />
           )}
@@ -1647,6 +1740,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: nh(10),
   },
+  feedCardHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(8),
+  },
   feedCardAuthorInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1693,6 +1791,13 @@ const styles = StyleSheet.create({
     color: PALETTE.primary,
     textTransform: 'uppercase',
     fontWeight: '600',
+  },
+  feedCardDeleteButton: {
+    padding: nw(6),
+    borderRadius: nw(10),
+    backgroundColor: COLORS.redFF0000 + '12',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   feedCardBody: {
     marginBottom: nh(10),
