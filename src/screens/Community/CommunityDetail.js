@@ -238,6 +238,52 @@ const extractSafeText = (textData) => {
   }
 };
 
+// Content Type Filter Component
+const ContentTypeFilter = React.memo(({ selectedTypes, onTypeToggle }) => {
+  const types = [
+    { key: 'all', label: 'All', icon: 'apps' },
+    { key: 'text', label: 'Posts', icon: 'document-text' },
+    { key: 'poll', label: 'Polls', icon: 'stats-chart' },
+    { key: 'event', label: 'Events', icon: 'calendar' },
+  ];
+
+  return (
+    <View style={styles.filterContainer}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterContent}
+      >
+        {types.map((type) => {
+          const isSelected = type.key === 'all' 
+            ? selectedTypes.length === 0 || selectedTypes.length === 3
+            : selectedTypes.includes(type.key);
+            
+          return (
+            <TouchableOpacity
+              key={type.key}
+              style={[styles.filterChip, isSelected && styles.filterChipActive]}
+              onPress={() => onTypeToggle(type.key)}
+            >
+              <Icon 
+                name={type.icon} 
+                size={nw(14)} 
+                color={isSelected ? COLORS.whiteFFFFFF : COLORS.grey666666} 
+              />
+              <Text style={[
+                styles.filterChipText,
+                isSelected && styles.filterChipTextActive
+              ]}>
+                {type.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+});
+
 // Custom Post Card Component with Enhanced RSVP
 const PostCard = React.memo(({ post, communityId, navigation, isMember, currentUserId, onPostDeleted }) => {
   const [expanded, setExpanded] = useState(false);
@@ -1115,62 +1161,8 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
   );
 });
 
-const AnnouncementCard = ({ item, onPress }) => {
-  if (!item) {
-    return null;
-  }
-
-  const priority = (item.priority || 'normal').toLowerCase();
-  const priorityLabel = priority === 'urgent' ? 'Urgent' : priority === 'high' ? 'High Priority' : 'Announcement';
-
-  const badgeStyle = [
-    styles.announcementCardBadge,
-    priority === 'urgent' && styles.announcementCardBadgeUrgent,
-    priority === 'high' && styles.announcementCardBadgeHigh,
-  ];
-
-  const badgeTextStyle = [
-    styles.announcementCardBadgeText,
-    priority === 'high' && styles.announcementCardBadgeTextDark,
-  ];
-
-  const badgeIconColor = priority === 'high' ? COLORS.grey222222 : COLORS.whiteFFFFFF;
-
-  return (
-    <TouchableOpacity
-      style={styles.announcementCard}
-      activeOpacity={0.9}
-      onPress={() => onPress?.(item)}
-    >
-      <View style={styles.announcementCardHeader}>
-        <View style={badgeStyle}>
-          <Icon name="megaphone" size={nw(14)} color={badgeIconColor} />
-          <Text style={badgeTextStyle}>{priorityLabel}</Text>
-        </View>
-        {item.timestamp ? (
-          <View style={styles.announcementCardTime}>
-            <Icon name="time-outline" size={nw(12)} color={COLORS.grey666666} />
-            <Text style={styles.announcementCardTimeText}>{formatDate(item.timestamp)}</Text>
-          </View>
-        ) : null}
-      </View>
-      <Text style={styles.announcementCardTitle} numberOfLines={1}>
-        {item.title || 'Announcement'}
-      </Text>
-      {item.content ? (
-        <Text style={styles.announcementCardExcerpt} numberOfLines={2}>
-          {item.content}
-        </Text>
-      ) : null}
-      <View style={styles.announcementCardFooter}>
-        <Text style={styles.announcementCardFooterText}>View details</Text>
-        <Icon name="chevron-forward" size={nw(14)} color={COLORS.blue043142} />
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-const AnnouncementPanel = React.memo(({ announcements, onPressAnnouncement }) => {
+// Simplified Announcement Strip
+const AnnouncementStrip = React.memo(({ announcements, onPressAnnouncement }) => {
   const formattedAnnouncements = useMemo(() => {
     const priorityWeight = (value) => {
       const normalized = String(value || '').toLowerCase();
@@ -1223,31 +1215,44 @@ const AnnouncementPanel = React.memo(({ announcements, onPressAnnouncement }) =>
     return null;
   }
 
+  // Get the most recent/highest priority announcement
+  const topAnnouncement = formattedAnnouncements[0];
+  const priority = topAnnouncement.priority?.toLowerCase();
+
   return (
-    <View style={styles.announcementPanelContainer}>
-      <View style={styles.announcementPanelHeader}>
-        <View style={styles.announcementPanelTitleRow}>
-          <Icon name="flag-outline" size={nw(14)} color={COLORS.blue043142} />
-          <Text style={styles.announcementPanelTitle}>Announcements</Text>
-        </View>
-        <Text style={styles.announcementPanelMeta}>
-          {formattedAnnouncements.length} active
-        </Text>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.announcementCardList}
-      >
-        {formattedAnnouncements.map((item, index) => (
-          <AnnouncementCard
-            key={item.id || `announcement-${index}`}
-            item={item}
-            onPress={onPressAnnouncement}
+    <TouchableOpacity 
+      style={[
+        styles.announcementStrip,
+        priority === 'urgent' && styles.announcementStripUrgent,
+        priority === 'high' && styles.announcementStripHigh,
+      ]}
+      onPress={() => onPressAnnouncement(topAnnouncement)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.announcementStripContent}>
+        <View style={styles.announcementStripLeft}>
+          <Icon 
+            name="megaphone" 
+            size={nw(16)} 
+            color={priority === 'high' ? COLORS.grey222222 : COLORS.whiteFFFFFF} 
           />
-        ))}
-      </ScrollView>
-    </View>
+          <Text 
+            style={[
+              styles.announcementStripText,
+              priority === 'high' && styles.announcementStripTextDark
+            ]} 
+            numberOfLines={1}
+          >
+            {topAnnouncement.title || 'Announcement'}
+          </Text>
+        </View>
+        <Icon 
+          name="chevron-forward" 
+          size={nw(16)} 
+          color={priority === 'high' ? COLORS.grey222222 : COLORS.whiteFFFFFF}
+        />
+      </View>
+    </TouchableOpacity>
   );
 });
 
@@ -1400,12 +1405,36 @@ const CommunityDetail = ({ route, navigation }) => {
   const [membersLoading, setMembersLoading] = useState(false);
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [selectedContentTypes, setSelectedContentTypes] = useState([]);
 
   const isInitialMount = useRef(true);
   const fetchingPosts = useRef(false);
   const fetchingMembers = useRef(false);
 
   const scrollY = useSharedValue(0);
+
+  const handleTypeToggle = useCallback((type) => {
+    if (type === 'all') {
+      setSelectedContentTypes([]);
+    } else {
+      setSelectedContentTypes(prev => {
+        if (prev.includes(type)) {
+          return prev.filter(t => t !== type);
+        }
+        return [...prev, type];
+      });
+    }
+  }, []);
+
+  const filteredPosts = useMemo(() => {
+    if (selectedContentTypes.length === 0) {
+      return posts;
+    }
+    return posts.filter(post => {
+      const postType = post?.postType || post?.type || 'text';
+      return selectedContentTypes.includes(postType);
+    });
+  }, [posts, selectedContentTypes]);
 
   const handlePostDeleted = useCallback((deletedPostId) => {
     if (!deletedPostId) {
@@ -1870,11 +1899,19 @@ const CommunityDetail = ({ route, navigation }) => {
         </View>
       </View>
 
-      {activeTab === 'Feed' && announcements.length > 0 && (
-        <AnnouncementPanel
-          announcements={announcements}
-          onPressAnnouncement={handleOpenAnnouncement}
-        />
+      {activeTab === 'Feed' && (
+        <>
+          {announcements.length > 0 && (
+            <AnnouncementStrip
+              announcements={announcements}
+              onPressAnnouncement={handleOpenAnnouncement}
+            />
+          )}
+          <ContentTypeFilter
+            selectedTypes={selectedContentTypes}
+            onTypeToggle={handleTypeToggle}
+          />
+        </>
       )}
     </>
   ), [
@@ -1891,28 +1928,34 @@ const CommunityDetail = ({ route, navigation }) => {
     handleOpenAnnouncement,
     onTabChange,
     navigateToCommunityManagement,
+    selectedContentTypes,
+    handleTypeToggle,
   ]);
 
   const ListFooterComponent = useMemo(() => (
     <View style={styles.footerContainer}>
       {activeTab === 'Feed' && (
         <>
-          {feedLoading && posts.length > 0 && (
+          {feedLoading && filteredPosts.length > 0 && (
             <ActivityIndicator 
               style={styles.loadingMore} 
               color={COLORS.blue043142} 
             />
           )}
-          {!feedLoading && posts.length === 0 && (
+          {!feedLoading && filteredPosts.length === 0 && (
             <View style={styles.emptyState}>
               <Icon name="newspaper-outline" size={nw(48)} color={COLORS.greyC4C4C4} />
-              <Text style={styles.emptyTitle}>No posts yet</Text>
+              <Text style={styles.emptyTitle}>
+                {selectedContentTypes.length > 0 ? 'No matching content' : 'No posts yet'}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                {isMember 
-                  ? "Be the first to share something with the community!"
-                  : community?.privacy === 'public'
-                    ? "Join the community to start posting"
-                    : "This is a private community. Join to see posts."}
+                {selectedContentTypes.length > 0 
+                  ? 'Try selecting different content types'
+                  : isMember 
+                    ? "Be the first to share something with the community!"
+                    : community?.privacy === 'public'
+                      ? "Join the community to start posting"
+                      : "This is a private community. Join to see posts."}
               </Text>
             </View>
           )}
@@ -1991,7 +2034,7 @@ const CommunityDetail = ({ route, navigation }) => {
 
           {Array.isArray(community?.tags) && community.tags.length > 0 && (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutTitle}>Topics you’ll find here</Text>
+              <Text style={styles.aboutTitle}>Topics you'll find here</Text>
               <View style={styles.aboutTagList}>
                 {community.tags.slice(0, 8).map((tag, index) => (
                   <View key={index} style={styles.aboutTagChip}>
@@ -2083,7 +2126,7 @@ const CommunityDetail = ({ route, navigation }) => {
         </View>
       )}
     </View>
-  ), [activeTab, feedLoading, posts.length, isMember, community, members, membersLoading]);
+  ), [activeTab, feedLoading, filteredPosts.length, isMember, community, members, membersLoading, selectedContentTypes]);
 
   const handleLoadMore = useCallback(() => {
     if (activeTab === 'Feed' && hasMoreFeed && !feedLoading && !fetchingPosts.current) {
@@ -2107,7 +2150,7 @@ const CommunityDetail = ({ route, navigation }) => {
       <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
       
       <Animated.FlatList
-        data={activeTab === 'Feed' ? posts : []}
+        data={activeTab === 'Feed' ? filteredPosts : []}
         renderItem={renderPost}
         keyExtractor={(item, index) => item?.id || item?._id || `post-${index}`}
         ListHeaderComponent={ListHeaderComponent}
@@ -2391,115 +2434,77 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
   },
-  announcementPanelContainer: {
-    paddingHorizontal: nw(16),
-    paddingTop: nh(12),
-    paddingBottom: nh(8),
+  
+  // Filter Styles
+  filterContainer: {
     backgroundColor: COLORS.whiteFFFFFF,
+    paddingVertical: nh(10),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.greyEEEEEE,
-    gap: nh(8),
   },
-  announcementPanelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  filterContent: {
+    paddingHorizontal: nw(16),
+    gap: nw(8),
   },
-  announcementPanelTitleRow: {
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(6),
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(8),
+    borderRadius: nw(16),
+    backgroundColor: COLORS.greyF0F0F0,
+    borderWidth: 1,
+    borderColor: COLORS.greyE0E0E0,
   },
-  announcementPanelTitle: {
-    fontSize: nw(14),
-    fontWeight: '700',
-    color: COLORS.blue043142,
+  filterChipActive: {
+    backgroundColor: COLORS.blue043142,
+    borderColor: COLORS.blue043142,
   },
-  announcementPanelMeta: {
-    fontSize: nw(11),
-    fontWeight: '600',
+  filterChipText: {
+    fontSize: nw(13),
+    fontWeight: '500',
     color: COLORS.grey666666,
   },
-  announcementCardList: {
-    paddingRight: nw(10),
+  filterChipTextActive: {
+    color: COLORS.whiteFFFFFF,
   },
-  announcementCard: {
-    width: nw(230),
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(14),
-    borderRadius: nw(14),
-    backgroundColor: COLORS.whiteFFFFFF,
-    borderWidth: 1,
-    borderColor: COLORS.blue043142 + '25',
-    marginRight: nw(12),
-    shadowColor: '#00000020',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 3,
-    gap: nh(8),
-  },
-  announcementCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  announcementCardBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nw(4),
-    paddingHorizontal: nw(10),
-    paddingVertical: nh(4),
-    borderRadius: nw(12),
+  
+  // Announcement Strip
+  announcementStrip: {
     backgroundColor: COLORS.blue043142,
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(12),
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.blue043142 + '40',
   },
-  announcementCardBadgeHigh: {
+  announcementStripHigh: {
     backgroundColor: COLORS.yellowF5BE00,
   },
-  announcementCardBadgeUrgent: {
+  announcementStripUrgent: {
     backgroundColor: COLORS.redFF0000,
   },
-  announcementCardBadgeText: {
-    fontSize: nw(10),
-    fontWeight: '700',
-    color: COLORS.whiteFFFFFF,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  announcementCardBadgeTextDark: {
-    color: COLORS.grey222222,
-  },
-  announcementCardTime: {
+  announcementStripContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nw(4),
+    justifyContent: 'space-between',
   },
-  announcementCardTimeText: {
-    fontSize: nw(10),
-    color: COLORS.grey666666,
-    fontWeight: '600',
+  announcementStripLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(8),
+    flex: 1,
   },
-  announcementCardTitle: {
+  announcementStripText: {
     fontSize: nw(14),
-    fontWeight: '700',
+    fontWeight: '600',
+    color: COLORS.whiteFFFFFF,
+    flex: 1,
+  },
+  announcementStripTextDark: {
     color: COLORS.grey222222,
   },
-  announcementCardExcerpt: {
-    fontSize: nw(12),
-    color: COLORS.grey555555,
-    lineHeight: nh(18),
-  },
-  announcementCardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: nw(6),
-  },
-  announcementCardFooterText: {
-    fontSize: nw(11),
-    color: COLORS.blue043142,
-    fontWeight: '600',
-  },
+  
   announcementModalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
