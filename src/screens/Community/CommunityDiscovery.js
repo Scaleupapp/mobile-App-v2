@@ -42,7 +42,7 @@ import Animated, {
 import LinearGradient from 'react-native-linear-gradient';
 import {BlurView} from '@react-native-community/blur';
 import Slider from '@react-native-community/slider';
-import Voice from '@react-native-voice/voice';
+// import Voice from '@react-native-voice/voice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {COLORS} from '../../helper/colors';
@@ -566,6 +566,24 @@ const FilterChip = ({label, icon, isActive, onPress, count}) => {
 const CommunityDiscovery = ({navigation, route}) => {
   const dispatch = useDispatch();
   const userData = useSelector(state => state?.userData);
+  // Add safe route params handling
+  const params = route?.params || {};
+  const { 
+    communityId = null,
+    searchQuery: initialSearchQuery = '',
+    filter: initialFilter = null
+  } = params;
+
+   useEffect(() => {
+  console.log('\n🚀 COMMUNITY DISCOVERY MOUNTED', {
+    communityId,
+    initialSearchQuery, 
+    initialFilter,
+    userData: userData?.id,
+    routeParamsExists: !!route?.params
+  });
+}, []);
+  
   
   console.log('\n🚀 COMMUNITY DISCOVERY MOUNTED');
   console.log('👤 User Data:', userData);
@@ -620,14 +638,14 @@ const CommunityDiscovery = ({navigation, route}) => {
     });
     
     initializeDiscovery();
-    setupVoiceSearch();
+    // setupVoiceSearch();
     loadUserPreferences();
     
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-      Voice.destroy().then(Voice.removeAllListeners);
+      // Voice.destroy().then(Voice.removeAllListeners);
     };
   }, []);
   
@@ -676,35 +694,35 @@ const CommunityDiscovery = ({navigation, route}) => {
     }
   };
   
-  const setupVoiceSearch = async () => {
-    try {
-      Voice.onSpeechStart = () => {
-        console.log('🎤 Voice search started');
-        setVoiceSearchActive(true);
-        searchScale.value = withSpring(1.1);
-      };
+  // const setupVoiceSearch = async () => {
+  //   try {
+  //     Voice.onSpeechStart = () => {
+  //       console.log('🎤 Voice search started');
+  //       setVoiceSearchActive(true);
+  //       searchScale.value = withSpring(1.1);
+  //     };
       
-      Voice.onSpeechEnd = () => {
-        console.log('🎤 Voice search ended');
-        setVoiceSearchActive(false);
-        searchScale.value = withSpring(1);
-      };
+  //     Voice.onSpeechEnd = () => {
+  //       console.log('🎤 Voice search ended');
+  //       setVoiceSearchActive(false);
+  //       searchScale.value = withSpring(1);
+  //     };
       
-      Voice.onSpeechResults = (e) => {
-        const spokenText = e.value[0];
-        console.log('🎤 Voice result:', spokenText);
-        setSearchQuery(spokenText);
-      };
+  //     Voice.onSpeechResults = (e) => {
+  //       const spokenText = e.value[0];
+  //       console.log('🎤 Voice result:', spokenText);
+  //       setSearchQuery(spokenText);
+  //     };
       
-      Voice.onSpeechError = (e) => {
-        console.log('🎤 Voice error:', e);
-        setVoiceSearchActive(false);
-        searchScale.value = withSpring(1);
-      };
-    } catch (error) {
-      console.log('🎤 Voice setup error:', error);
-    }
-  };
+  //     Voice.onSpeechError = (e) => {
+  //       console.log('🎤 Voice error:', e);
+  //       setVoiceSearchActive(false);
+  //       searchScale.value = withSpring(1);
+  //     };
+  //   } catch (error) {
+  //     console.log('🎤 Voice setup error:', error);
+  //   }
+  // };
   
   const loadUserPreferences = async () => {
     try {
@@ -858,17 +876,17 @@ const CommunityDiscovery = ({navigation, route}) => {
     }, 300);
   }, [searchQuery, selectedCategories, selectedTypes, sortBy]);
   
-  const handleVoiceSearch = async () => {
-    try {
-      if (voiceSearchActive) {
-        await Voice.stop();
-      } else {
-        await Voice.start('en-US');
-      }
-    } catch (error) {
-      console.log('Voice search error:', error);
-    }
-  };
+  // const handleVoiceSearch = async () => {
+  //   try {
+  //     if (voiceSearchActive) {
+  //       await Voice.stop();
+  //     } else {
+  //       await Voice.start('en-US');
+  //     }
+  //   } catch (error) {
+  //     console.log('Voice search error:', error);
+  //   }
+  // };
   
   const handleCommunityPress = useCallback((community) => {
     APILogger.logUserAction('Community Selected', {
@@ -1028,7 +1046,7 @@ const CommunityDiscovery = ({navigation, route}) => {
           {isSearching && (
             <ActivityIndicator size="small" color={REDDIT_DISCORD_COLORS.blurple} />
           )}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[styles.voiceButton, voiceSearchActive && styles.voiceButtonActive]}
             onPress={handleVoiceSearch}
           >
@@ -1037,7 +1055,7 @@ const CommunityDiscovery = ({navigation, route}) => {
               size={18} 
               color={voiceSearchActive ? REDDIT_DISCORD_COLORS.discordRed : REDDIT_DISCORD_COLORS.textMuted} 
             />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
         
         <TouchableOpacity

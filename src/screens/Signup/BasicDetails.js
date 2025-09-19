@@ -59,8 +59,8 @@ const BasicDetails = ({navigation, route}) => {
   const [secureText1, setSecureText1] = useState(true);
 
   // Referral popup state
-  const [showReferralModal, setShowReferralModal] = useState(false);
-  const [referralCode, setReferralCode] = useState('');
+  // const [showReferralModal, setShowReferralModal] = useState(false);
+  // const [referralCode, setReferralCode] = useState('');
 
   // Domain verification state
   const [showDomainVerificationModal, setShowDomainVerificationModal] = useState(false);
@@ -333,7 +333,8 @@ const verifyDomainOTP = async () => {
       });
 
       // Show referral popup
-      setShowReferralModal(true);
+      // setShowReferralModal(true);
+      navigation.navigate(Routes.Preferences);
 
       // Clear the form
       setForm({
@@ -351,33 +352,33 @@ const verifyDomainOTP = async () => {
   };
 
   // Referral code functions
-  const handleApplyReferralCode = async () => {
-    if (!referralCode.trim()) {
-      showToast({type: 'error', title: 'Referral code cannot be empty'});
-      return;
-    }
-    try {
-      mixpanel.track('Attempted_Referral_Submit', {referralCode});
+  // const handleApplyReferralCode = async () => {
+  //   if (!referralCode.trim()) {
+  //     showToast({type: 'error', title: 'Referral code cannot be empty'});
+  //     return;
+  //   }
+  //   try {
+  //     mixpanel.track('Attempted_Referral_Submit', {referralCode});
 
-      const {data} = await applyReferralCodeApi({referralCode});
-      showToast({type: 'success', title: data?.message});
-      setShowReferralModal(false);
-      navigation.navigate(Routes.Preferences);
-    } catch (err) {
-      console.log('applyReferralCode error:', err);
-      if (err?.response?.data?.message) {
-        showToast({type: 'error', title: err.response.data.message});
-      } else {
-        showToast({type: 'error', title: 'Something went wrong'});
-      }
-    }
-  };
+  //     const {data} = await applyReferralCodeApi({referralCode});
+  //     showToast({type: 'success', title: data?.message});
+  //     setShowReferralModal(false);
+  //     navigation.navigate(Routes.Preferences);
+  //   } catch (err) {
+  //     console.log('applyReferralCode error:', err);
+  //     if (err?.response?.data?.message) {
+  //       showToast({type: 'error', title: err.response.data.message});
+  //     } else {
+  //       showToast({type: 'error', title: 'Something went wrong'});
+  //     }
+  //   }
+  // };
 
-  const handleSkipReferral = () => {
-    mixpanel.track('Skipped_Referral');
-    setShowReferralModal(false);
-    navigation.navigate(Routes.Preferences);
-  };
+  // const handleSkipReferral = () => {
+  //   mixpanel.track('Skipped_Referral');
+  //   setShowReferralModal(false);
+  //   navigation.navigate(Routes.Preferences);
+  // };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -522,7 +523,7 @@ const verifyDomainOTP = async () => {
         </View>
       </View>
 
-      {/* Referral Modal */}
+      {/* Referral Modal
       <Modal
         transparent
         animationType="slide"
@@ -554,7 +555,7 @@ const verifyDomainOTP = async () => {
             </View>
           </View>
         </View>
-      </Modal>
+      </Modal> */}
     </SafeAreaView>
   );
 };

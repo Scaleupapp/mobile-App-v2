@@ -124,6 +124,10 @@ const Preferences = ({navigation, route}) => {
     const updatedQuestions = [...questions];
     const currentQuestion = updatedQuestions[currentQuestionIndex];
 
+    if (!currentQuestion.answer) {
+    currentQuestion.answer = [];
+  }
+
     if (currentQuestion.answer.includes(optionTitle)) {
       // Remove option if already selected
       currentQuestion.answer = currentQuestion.answer.filter(
@@ -225,41 +229,41 @@ const Preferences = ({navigation, route}) => {
 
                 {/* Handle Checkboxes */}
                 {currentQuestion.type === 'checkbox' && (
-                  <FlatList
-                    data={currentQuestion.options}
-                    renderItem={({item}) => (
-                      <TouchableOpacity
-                        style={styles.optionContainer}
-                        onPress={() => handleCheckboxChange(item.title)}>
-                        <View
-                          style={[
-                            styles.checkbox,
-                            currentQuestion.answer.includes(item.title) &&
-                              styles.checkboxSelected,
-                          ]}>
-                          {currentQuestion.answer.includes(item.title) && (
-                            <Text
-                              color={COLORS.blue043142}
-                              style={styles.checkboxTick}>
-                              ✔
-                            </Text>
-                          )}
-                        </View>
-                        <View style={styles.optionTextContainer}>
-                          <Text variant="semibold12" color={COLORS.grey999999}>
-                            {item.maintitle}
-                          </Text>
-                          <Text variant="medium12" color={COLORS.grey999999}>
-                            {item.title}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    )}
-                    keyExtractor={(item, index) => `${item.title}-${index}`}
-                    ListFooterComponent={bottomComp}
-                    keyboardShouldPersistTaps="handled"
-                  />
-                )}
+  <FlatList
+    data={currentQuestion.options}
+    renderItem={({item}) => (
+      <TouchableOpacity
+        style={styles.optionContainer}
+        onPress={() => handleCheckboxChange(item.title)}>
+        <View
+          style={[
+            styles.checkbox,
+            (currentQuestion.answer || []).includes(item.title) &&
+              styles.checkboxSelected,
+          ]}>
+          {(currentQuestion.answer || []).includes(item.title) && (
+            <Text
+              color={COLORS.blue043142}
+              style={styles.checkboxTick}>
+              ✔
+            </Text>
+          )}
+        </View>
+        <View style={styles.optionTextContainer}>
+          <Text variant="semibold12" color={COLORS.grey999999}>
+            {item.maintitle}
+          </Text>
+          <Text variant="medium12" color={COLORS.grey999999}>
+            {item.title}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    )}
+    keyExtractor={(item, index) => `${item.title}-${index}`}
+    ListFooterComponent={bottomComp}
+    keyboardShouldPersistTaps="handled"
+  />
+)}
 
                 {/* Handle Text Input */}
                 {currentQuestion.type === 'textinput' && (
