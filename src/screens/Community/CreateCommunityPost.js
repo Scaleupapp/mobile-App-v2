@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   headerGradient: {
     paddingHorizontal: nw(20),
     paddingTop: nh(26),
-    paddingBottom: nh(12),
+    paddingBottom: nh(),
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(12),

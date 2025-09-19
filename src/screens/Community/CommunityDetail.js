@@ -11,6 +11,7 @@ import {
   Image,
   TextInput,
   Modal,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -41,14 +42,137 @@ import {
   commentOnCommunityPostApi,
   getPostInteractionsApi,
   getCommunityPostDetailsApi,
+  deleteCommunityPostApi,
 } from '../../services/apiService';
 import Routes from '../../helper/routes';
 
 // Header Constants
-const HEADER_MAX_HEIGHT = nh(260);
-const HEADER_MIN_HEIGHT = nh(Platform.OS === 'ios' ? 88 : 56 + (StatusBar.currentHeight || 0));
+const HEADER_MAX_HEIGHT = nh(200);
+const HEADER_MIN_HEIGHT = nh(Platform.OS === 'ios' ? 72 : 48 + (StatusBar.currentHeight || 0));
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 const FEED_PAGE_SIZE = 10;
+
+const formatNumber = (value) => {
+  const num = Number(value || 0);
+  if (!num) return '0';
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}k`;
+  return `${num}`;
+};
+
+const POST_ID_CANDIDATES = ['id', '_id', 'postId', 'post_id', 'uuid'];
+
+const resolvePostId = (post) => {
+  if (!post || typeof post !== 'object') {
+    return null;
+  }
+
+  for (const key of POST_ID_CANDIDATES) {
+    if (post[key]) {
+      return String(post[key]);
+    }
+  }
+
+  if (post.metadata && typeof post.metadata === 'object') {
+    for (const key of POST_ID_CANDIDATES) {
+      if (post.metadata[key]) {
+        return String(post.metadata[key]);
+      }
+    }
+  }
+
+  return null;
+};
+
+const ID_CANDIDATE_KEYS = [
+  '_id',
+  'id',
+  'userId',
+  'authorId',
+  'ownerId',
+  'createdBy',
+  'createdById',
+  'createdByUser',
+  'author',
+  'user',
+  'member',
+  'profile',
+  'account',
+  'data',
+  'details',
+  'userProfile',
+  'userProfileInfo',
+  'participant',
+  'creator',
+  'postedBy',
+  'creatorId',
+  'owner',
+];
+
+const normalizeIdentifier = (value, visited = new Set()) => {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const stringValue = value.toString().trim();
+    if (stringValue && stringValue !== '[object Object]') {
+      return stringValue;
+    }
+    return null;
+  }
+
+  if (typeof value !== 'object') {
+    return null;
+  }
+
+  if (visited.has(value)) {
+    return null;
+  }
+  visited.add(value);
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = normalizeIdentifier(item, visited);
+      if (normalized) {
+        return normalized;
+      }
+    }
+    return null;
+  }
+
+  for (const key of ID_CANDIDATE_KEYS) {
+    if (key in value && value[key] !== undefined) {
+      const normalized = normalizeIdentifier(value[key], visited);
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+
+  if (typeof value.toString === 'function') {
+    const objectString = value.toString();
+    if (objectString && objectString !== '[object Object]') {
+      return objectString;
+    }
+  }
+
+  for (const key of Object.keys(value)) {
+    if (ID_CANDIDATE_KEYS.includes(key)) {
+      continue;
+    }
+
+    const nestedValue = value[key];
+    if (nestedValue && typeof nestedValue === 'object') {
+      const normalized = normalizeIdentifier(nestedValue, visited);
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+
+  return null;
+};
 
 // Helper Functions
 const formatDate = (dateString) => {
@@ -115,7 +239,7 @@ const extractSafeText = (textData) => {
 };
 
 // Custom Post Card Component with Enhanced RSVP
-const PostCard = React.memo(({ post, communityId, navigation, isMember, currentUserId }) => {
+const PostCard = React.memo(({ post, communityId, navigation, isMember, currentUserId, onPostDeleted }) => {
   const [expanded, setExpanded] = useState(false);
   const [userVote, setUserVote] = useState(null);
   const [upvoteCount, setUpvoteCount] = useState(0);
@@ -128,6 +252,7 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
   const [selectedRSVP, setSelectedRSVP] = useState(null);
   const [pollOptions, setPollOptions] = useState([]);
   const [loadingPollDetails, setLoadingPollDetails] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   
   // Debug logging for RSVP state
   useEffect(() => {
@@ -269,12 +394,37 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
   } = post;
 
   const postId = id || _id;
-  
-  const authorId = author?._id || author?.id || author;
-  const isOwnPost = currentUserId && authorId && (
-    authorId === currentUserId || 
-    authorId.toString() === currentUserId.toString()
-  );
+
+  const normalizedCurrentUserId = normalizeIdentifier(currentUserId);
+  const candidateAuthorIds = [
+    author,
+    author?._id,
+    author?.id,
+    author?.userId,
+    post?.authorId,
+    post?.author?.id,
+    post?.author?._id,
+    post?.author?.userId,
+    post?.createdBy,
+    post?.createdBy?._id,
+    post?.createdBy?.id,
+    post?.createdBy?.userId,
+    post?.createdBy?.user,
+    post?.createdBy?.member,
+    post?.createdById,
+    post?.userId,
+    post?.user?.id,
+    post?.user?._id,
+    post?.creatorId,
+    post?.ownerId,
+    post?.postedBy,
+  ]
+    .map((candidate) => normalizeIdentifier(candidate))
+    .filter(Boolean);
+
+  const isOwnPost = normalizedCurrentUserId
+    ? candidateAuthorIds.includes(normalizedCurrentUserId)
+    : false;
   
   let contentText = '';
   if (typeof content === 'string') {
@@ -470,7 +620,7 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       Alert.alert('Join Community', 'You need to be a member to bookmark posts');
       return;
     }
-    
+
     try {
       const newBookmarkState = !bookmarked;
       setBookmarked(newBookmarkState);
@@ -483,6 +633,40 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
       Alert.alert('Error', 'Could not update bookmark');
     }
   };
+
+  const handleDeletePost = useCallback(async () => {
+    if (deleteLoading) {
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      await deleteCommunityPostApi(communityId, postId);
+      onPostDeleted?.(postId);
+      Alert.alert('Post Deleted', 'Your post has been removed successfully.');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      const message = error?.response?.data?.message || 'Could not delete the post';
+      Alert.alert('Error', message);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [communityId, deleteLoading, onPostDeleted, postId]);
+
+  const confirmDeletePost = useCallback(() => {
+    if (deleteLoading) {
+      return;
+    }
+
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: handleDeletePost },
+      ]
+    );
+  }, [deleteLoading, handleDeletePost]);
 
   const handleShare = async () => {
     try {
@@ -903,7 +1087,22 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
           <Icon name="share-outline" size={nw(18)} color={COLORS.grey666666} />
           <Text style={styles.postActionText}>{shareCount}</Text>
         </TouchableOpacity>
-        
+
+        {isOwnPost && (
+          <TouchableOpacity
+            style={styles.postAction}
+            onPress={confirmDeletePost}
+            disabled={deleteLoading}
+          >
+            {deleteLoading ? (
+              <ActivityIndicator size="small" color={COLORS.redFF0000} />
+            ) : (
+              <Icon name="trash-outline" size={nw(18)} color={COLORS.redFF0000} />
+            )}
+            <Text style={[styles.postActionText, styles.postActionTextDelete]}>Delete</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.postAction} onPress={handleBookmark}>
           <Icon 
             name={bookmarked ? "bookmark" : "bookmark-outline"} 
@@ -912,6 +1111,142 @@ const PostCard = React.memo(({ post, communityId, navigation, isMember, currentU
           />
         </TouchableOpacity>
       </View>
+    </View>
+  );
+});
+
+const AnnouncementCard = ({ item, onPress }) => {
+  if (!item) {
+    return null;
+  }
+
+  const priority = (item.priority || 'normal').toLowerCase();
+  const priorityLabel = priority === 'urgent' ? 'Urgent' : priority === 'high' ? 'High Priority' : 'Announcement';
+
+  const badgeStyle = [
+    styles.announcementCardBadge,
+    priority === 'urgent' && styles.announcementCardBadgeUrgent,
+    priority === 'high' && styles.announcementCardBadgeHigh,
+  ];
+
+  const badgeTextStyle = [
+    styles.announcementCardBadgeText,
+    priority === 'high' && styles.announcementCardBadgeTextDark,
+  ];
+
+  const badgeIconColor = priority === 'high' ? COLORS.grey222222 : COLORS.whiteFFFFFF;
+
+  return (
+    <TouchableOpacity
+      style={styles.announcementCard}
+      activeOpacity={0.9}
+      onPress={() => onPress?.(item)}
+    >
+      <View style={styles.announcementCardHeader}>
+        <View style={badgeStyle}>
+          <Icon name="megaphone" size={nw(14)} color={badgeIconColor} />
+          <Text style={badgeTextStyle}>{priorityLabel}</Text>
+        </View>
+        {item.timestamp ? (
+          <View style={styles.announcementCardTime}>
+            <Icon name="time-outline" size={nw(12)} color={COLORS.grey666666} />
+            <Text style={styles.announcementCardTimeText}>{formatDate(item.timestamp)}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={styles.announcementCardTitle} numberOfLines={1}>
+        {item.title || 'Announcement'}
+      </Text>
+      {item.content ? (
+        <Text style={styles.announcementCardExcerpt} numberOfLines={2}>
+          {item.content}
+        </Text>
+      ) : null}
+      <View style={styles.announcementCardFooter}>
+        <Text style={styles.announcementCardFooterText}>View details</Text>
+        <Icon name="chevron-forward" size={nw(14)} color={COLORS.blue043142} />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+const AnnouncementPanel = React.memo(({ announcements, onPressAnnouncement }) => {
+  const formattedAnnouncements = useMemo(() => {
+    const priorityWeight = (value) => {
+      const normalized = String(value || '').toLowerCase();
+      if (normalized === 'urgent') return 3;
+      if (normalized === 'high') return 2;
+      if (normalized === 'normal') return 1;
+      return 0;
+    };
+
+    const mapped = (announcements || []).map((post) => {
+      const data = post?.announcement || post?.preview || {};
+      const priority = data?.announcementPriority || data?.priority || post?.priority || 'normal';
+      const timestamp = post?.publishedAt || post?.createdAt;
+      const rawTime = timestamp ? new Date(timestamp).getTime() : 0;
+      const timeValue = Number.isNaN(rawTime) ? 0 : rawTime;
+
+      return {
+        id: resolvePostId(post),
+        title: extractSafeText(
+          post?.title ||
+          data?.title ||
+          data?.headline ||
+          data?.announcementTitle
+        ),
+        content: extractSafeText(
+          post?.content?.text ||
+          post?.content ||
+          data?.content ||
+          data?.body
+        ),
+        timestamp,
+        timeValue,
+        priority,
+        weight: priorityWeight(priority),
+        raw: post,
+      };
+    });
+
+    const sorted = mapped.sort((a, b) => {
+      if (b.weight !== a.weight) {
+        return b.weight - a.weight;
+      }
+      return (b.timeValue || 0) - (a.timeValue || 0);
+    });
+
+    return sorted.map(({ weight, timeValue, ...rest }) => rest);
+  }, [announcements]);
+
+  if (!formattedAnnouncements.length) {
+    return null;
+  }
+
+  return (
+    <View style={styles.announcementPanelContainer}>
+      <View style={styles.announcementPanelHeader}>
+        <View style={styles.announcementPanelTitleRow}>
+          <Icon name="flag-outline" size={nw(14)} color={COLORS.blue043142} />
+          <Text style={styles.announcementPanelTitle}>Announcements</Text>
+        </View>
+        <Text style={styles.announcementPanelMeta}>
+          {formattedAnnouncements.length} active
+        </Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.announcementCardList}
+      >
+        {formattedAnnouncements.map((item, index) => (
+          <AnnouncementCard
+            key={item.id || `announcement-${index}`}
+            item={item}
+            onPress={onPressAnnouncement}
+          />
+        ))}
+      </ScrollView>
     </View>
   );
 });
@@ -998,11 +1333,59 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
 // Main Component
 const CommunityDetail = ({ route, navigation }) => {
   const communityId = route.params?.communityId || route.params?.id;
-  const user = useSelector((state) => state?.userData?.user);
-  const currentUserId = user?.id || user?._id;
+  const rawUserData = useSelector((state) => state?.userData);
+
+  const parsedUserData = useMemo(() => {
+    if (!rawUserData) {
+      return null;
+    }
+
+    if (typeof rawUserData === 'string') {
+      try {
+        return JSON.parse(rawUserData);
+      } catch (error) {
+        console.warn('Failed to parse user data from store:', error);
+        return null;
+      }
+    }
+
+    return rawUserData;
+  }, [rawUserData]);
+
+  const currentUserId = useMemo(() => {
+    if (!parsedUserData) {
+      return null;
+    }
+
+    const candidateSources = [
+      parsedUserData,
+      parsedUserData?.user,
+      parsedUserData?.user?.user,
+      parsedUserData?.data,
+      parsedUserData?.data?.user,
+      parsedUserData?.profile,
+      parsedUserData?.userProfile,
+      parsedUserData?.userProfileInfo,
+      parsedUserData?.account,
+      parsedUserData?.details,
+      parsedUserData?.metadata?.user,
+    ];
+
+    for (const candidate of candidateSources) {
+      const normalized = normalizeIdentifier(candidate);
+      if (normalized) {
+        return normalized;
+      }
+    }
+
+    return null;
+  }, [parsedUserData]);
 
   const [community, setCommunity] = useState(null);
   const [posts, setPosts] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [announcementModalVisible, setAnnouncementModalVisible] = useState(false);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(false);
@@ -1024,6 +1407,116 @@ const CommunityDetail = ({ route, navigation }) => {
 
   const scrollY = useSharedValue(0);
 
+  const handlePostDeleted = useCallback((deletedPostId) => {
+    if (!deletedPostId) {
+      return;
+    }
+
+    setPosts((prevPosts) => prevPosts.filter((item) => {
+      const itemId = resolvePostId(item) || item?.id || item?._id;
+      return itemId !== deletedPostId;
+    }));
+    setAnnouncements((prevAnnouncements) => prevAnnouncements.filter((item) => {
+      const itemId = resolvePostId(item) || item?.id || item?._id;
+      return itemId !== deletedPostId;
+    }));
+    setSelectedAnnouncement((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const itemId = resolvePostId(prev.raw) || prev.id;
+      return itemId === deletedPostId ? null : prev;
+    });
+    if (resolvePostId(selectedAnnouncement?.raw) === deletedPostId) {
+      setAnnouncementModalVisible(false);
+    }
+  }, [selectedAnnouncement?.raw]);
+
+  const handleOpenAnnouncement = useCallback((announcementItem) => {
+    if (!announcementItem) {
+      return;
+    }
+    setSelectedAnnouncement(announcementItem);
+    setAnnouncementModalVisible(true);
+  }, []);
+
+  const handleCloseAnnouncement = useCallback(() => {
+    setAnnouncementModalVisible(false);
+    setSelectedAnnouncement(null);
+  }, []);
+
+  const announcementModalTitle = useMemo(() => {
+    if (!selectedAnnouncement) {
+      return 'Announcement';
+    }
+    if (selectedAnnouncement.title) {
+      return selectedAnnouncement.title;
+    }
+    const raw = selectedAnnouncement.raw;
+    const data = raw?.announcement || raw?.preview || {};
+    return (
+      extractSafeText(
+        raw?.title ||
+        data?.title ||
+        data?.headline ||
+        data?.announcementTitle
+      ) || 'Announcement'
+    );
+  }, [selectedAnnouncement]);
+
+  const announcementModalContent = useMemo(() => {
+    if (!selectedAnnouncement) {
+      return '';
+    }
+    if (selectedAnnouncement.content) {
+      return selectedAnnouncement.content;
+    }
+    const raw = selectedAnnouncement.raw;
+    const data = raw?.announcement || raw?.preview || {};
+    return extractSafeText(
+      raw?.content?.text ||
+      raw?.content ||
+      data?.content ||
+      data?.body
+    );
+  }, [selectedAnnouncement]);
+
+  const announcementModalTimestamp = useMemo(() => {
+    if (!selectedAnnouncement) {
+      return null;
+    }
+    return (
+      selectedAnnouncement.timestamp ||
+      selectedAnnouncement?.raw?.publishedAt ||
+      selectedAnnouncement?.raw?.createdAt ||
+      null
+    );
+  }, [selectedAnnouncement]);
+
+  const announcementModalPriority = useMemo(() => {
+    if (!selectedAnnouncement) {
+      return null;
+    }
+    if (!selectedAnnouncement?.priority) {
+      const rawPriority = selectedAnnouncement?.raw?.announcement?.announcementPriority ||
+        selectedAnnouncement?.raw?.announcement?.priority ||
+        selectedAnnouncement?.raw?.preview?.priority;
+      if (!rawPriority) {
+        return null;
+      }
+      const value = String(rawPriority).toLowerCase();
+      return {
+        value,
+        label: value === 'urgent' ? 'Urgent' : value === 'high' ? 'High Priority' : 'Announcement',
+      };
+    }
+    const value = String(selectedAnnouncement.priority).toLowerCase();
+    return {
+      value,
+      label: value === 'urgent' ? 'Urgent' : value === 'high' ? 'High Priority' : 'Announcement',
+    };
+  }, [selectedAnnouncement]);
+
   const fetchPosts = useCallback(async (page = 1, isRefresh = false) => {
     if (fetchingPosts.current || (!isRefresh && (feedLoading || !hasMoreFeed))) {
       return;
@@ -1043,6 +1536,12 @@ const CommunityDetail = ({ route, navigation }) => {
       
       const feedData = response?.data?.data || response?.data || {};
       const newPosts = feedData.posts || feedData.feed || feedData.content || [];
+      const announcementPosts = newPosts.filter(
+        (item) => (item?.postType || item?.type) === 'announcement'
+      );
+      const regularPosts = newPosts.filter(
+        (item) => (item?.postType || item?.type) !== 'announcement'
+      );
       const pagination = feedData.pagination || {};
       
       console.log('Parsed feed data:', {
@@ -1051,10 +1550,25 @@ const CommunityDetail = ({ route, navigation }) => {
         firstPost: newPosts[0]
       });
       
+      const mergeUniqueById = (base, additions) => {
+        const combined = [...base, ...additions];
+        const seen = new Set();
+        return combined.filter((item) => {
+          const id = resolvePostId(item) || JSON.stringify(item);
+          if (seen.has(id)) {
+            return false;
+          }
+          seen.add(id);
+          return true;
+        });
+      };
+
       if (isRefresh) {
-        setPosts(newPosts);
+        setPosts(mergeUniqueById([], regularPosts));
+        setAnnouncements(mergeUniqueById([], announcementPosts));
       } else {
-        setPosts(prev => [...prev, ...newPosts]);
+        setPosts((prev) => mergeUniqueById(prev, regularPosts));
+        setAnnouncements((prev) => mergeUniqueById(prev, announcementPosts));
       }
       
       setHasMoreFeed(pagination.hasNext || (newPosts.length >= FEED_PAGE_SIZE && newPosts.length > 0));
@@ -1063,6 +1577,9 @@ const CommunityDetail = ({ route, navigation }) => {
       console.error('Error fetching posts:', error);
       if (isRefresh || posts.length === 0) {
         setPosts([]);
+        if (isRefresh) {
+          setAnnouncements([]);
+        }
       }
       setHasMoreFeed(false);
     } finally {
@@ -1237,8 +1754,9 @@ const CommunityDetail = ({ route, navigation }) => {
       navigation={navigation}
       isMember={isMember}
       currentUserId={currentUserId}
+      onPostDeleted={handlePostDeleted}
     />
-  ), [communityId, navigation, isMember, currentUserId]);
+  ), [communityId, navigation, isMember, currentUserId, handlePostDeleted]);
 
   const ListHeaderComponent = useMemo(() => (
     <>
@@ -1351,6 +1869,13 @@ const CommunityDetail = ({ route, navigation }) => {
           ))}
         </View>
       </View>
+
+      {activeTab === 'Feed' && announcements.length > 0 && (
+        <AnnouncementPanel
+          announcements={announcements}
+          onPressAnnouncement={handleOpenAnnouncement}
+        />
+      )}
     </>
   ), [
     community, 
@@ -1362,6 +1887,8 @@ const CommunityDetail = ({ route, navigation }) => {
     headerContentOpacity,
     navigation,
     communityId,
+    announcements,
+    handleOpenAnnouncement,
     onTabChange,
     navigateToCommunityManagement,
   ]);
@@ -1394,23 +1921,99 @@ const CommunityDetail = ({ route, navigation }) => {
       
       {activeTab === 'About' && (
         <View style={styles.aboutContainer}>
-          <View style={styles.aboutSection}>
-            <Text style={styles.aboutTitle}>About</Text>
-            <Text style={styles.aboutText}>
-              {community?.description || 'No description available'}
+          <View style={styles.aboutHeroCard}>
+            <Text style={styles.aboutHeroTitle}>
+              Why join {community?.name || 'this community'}?
             </Text>
+            <Text style={styles.aboutHeroSubtitle}>
+              {community?.tagline || community?.description || 'Discover peers, resources, and conversations curated for members who care about the same topics you do.'}
+            </Text>
+            {!isMember && (
+              <TouchableOpacity
+                style={[styles.aboutJoinButton, membershipStatus === 'pending' && styles.aboutJoinButtonPending]}
+                onPress={() => setJoinModalVisible(true)}
+                disabled={membershipStatus === 'pending'}
+              >
+                <Icon
+                  name={membershipStatus === 'pending' ? 'time-outline' : 'enter-outline'}
+                  size={nw(16)}
+                  color={COLORS.whiteFFFFFF}
+                />
+                <Text style={styles.aboutJoinButtonText}>
+                  {membershipStatus === 'pending' ? 'Request Pending' : 'Request to Join'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
-          
-          {community?.guidelines?.content && (
+
+          <View style={styles.aboutFactsCard}>
+            {[
+              {
+                icon: 'people-outline',
+                label: 'Members',
+                value: formatNumber(community?.stats?.memberCount || community?.memberCount),
+              },
+              {
+                icon: 'chatbubbles-outline',
+                label: 'Posts',
+                value: formatNumber(community?.stats?.postCount || community?.postCount),
+              },
+              {
+                icon: community?.privacy === 'public' ? 'globe-outline' : 'lock-closed-outline',
+                label: 'Privacy',
+                value: community?.privacy ? community?.privacy.charAt(0).toUpperCase() + community?.privacy.slice(1) : '—',
+              },
+              {
+                icon: 'log-in-outline',
+                label: 'Join Method',
+                value: (() => {
+                  const joinMethod = community?.joinMethod || community?.privacySettings?.joinMethod;
+                  if (!joinMethod) return 'Approval required';
+                  const normalized = joinMethod.toLowerCase();
+                  if (normalized.includes('instant')) return 'Instant access';
+                  if (normalized.includes('invite')) return 'Invite only';
+                  if (normalized.includes('approval')) return 'Approval required';
+                  return joinMethod;
+                })(),
+              },
+            ].map((fact, index) => (
+              <View key={index} style={styles.aboutFactRow}>
+                <View style={styles.aboutFactIcon}>
+                  <Icon name={fact.icon} size={nw(16)} color={COLORS.blue043142} />
+                </View>
+                <View style={styles.aboutFactTextBlock}>
+                  <Text style={styles.aboutFactLabel}>{fact.label}</Text>
+                  <Text style={styles.aboutFactValue}>{fact.value || '—'}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {Array.isArray(community?.tags) && community.tags.length > 0 && (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutTitle}>Community Guidelines</Text>
-              <Text style={styles.aboutText}>{community.guidelines.content}</Text>
+              <Text style={styles.aboutTitle}>Topics you’ll find here</Text>
+              <View style={styles.aboutTagList}>
+                {community.tags.slice(0, 8).map((tag, index) => (
+                  <View key={index} style={styles.aboutTagChip}>
+                    <Text style={styles.aboutTagText}>#{tag}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
-          
+
+          {community?.guidelines?.content && (
+            <View style={styles.aboutSection}>
+              <Text style={styles.aboutTitle}>What to expect</Text>
+              <Text style={styles.aboutText} numberOfLines={6}>
+                {extractSafeText(community.guidelines.content)}
+              </Text>
+            </View>
+          )}
+
           {community?.createdAt && (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutTitle}>Created</Text>
+              <Text style={styles.aboutTitle}>Community since</Text>
               <Text style={styles.aboutText}>
                 {new Date(community.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -1549,6 +2152,67 @@ const CommunityDetail = ({ route, navigation }) => {
         </TouchableOpacity>
       )}
 
+      <Modal
+        visible={announcementModalVisible && !!selectedAnnouncement}
+        transparent
+        animationType="fade"
+        onRequestClose={handleCloseAnnouncement}
+      >
+        <View style={styles.announcementModalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleCloseAnnouncement} />
+          <View style={styles.announcementModalContent}>
+            <View style={styles.announcementModalHeader}>
+              <Text style={styles.announcementModalTitle} numberOfLines={2}>
+                {announcementModalTitle}
+              </Text>
+              <TouchableOpacity
+                style={styles.announcementModalCloseButton}
+                onPress={handleCloseAnnouncement}
+              >
+                <Icon name="close" size={nw(18)} color={COLORS.grey666666} />
+              </TouchableOpacity>
+            </View>
+            {announcementModalPriority ? (
+              <View style={[
+                styles.announcementModalPriorityChip,
+                announcementModalPriority.value === 'urgent' && styles.announcementModalPriorityChipUrgent,
+                announcementModalPriority.value === 'high' && styles.announcementModalPriorityChipHigh,
+              ]}>
+                <Icon
+                  name="alert-circle-outline"
+                  size={nw(13)}
+                  color={announcementModalPriority.value === 'high' ? COLORS.grey222222 : COLORS.whiteFFFFFF}
+                />
+                <Text
+                  style={[
+                    styles.announcementModalPriorityText,
+                    announcementModalPriority.value === 'high' && styles.announcementModalPriorityTextDark,
+                  ]}
+                >
+                  {announcementModalPriority.label}
+                </Text>
+              </View>
+            ) : null}
+            {announcementModalTimestamp ? (
+              <View style={styles.announcementModalTimeRow}>
+                <Icon name="time-outline" size={nw(14)} color={COLORS.grey666666} />
+                <Text style={styles.announcementModalTimeText}>
+                  {formatDate(announcementModalTimestamp)}
+                </Text>
+              </View>
+            ) : null}
+            <ScrollView
+              style={styles.announcementModalBody}
+              contentContainerStyle={styles.announcementModalBodyContent}
+            >
+              <Text style={styles.announcementModalBodyText}>
+                {announcementModalContent || 'No additional details available.'}
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       <JoinModal
         visible={joinModalVisible}
         community={community}
@@ -1607,19 +2271,19 @@ const styles = StyleSheet.create({
     paddingBottom: nh(24),
   },
   communityTitle: {
-    fontSize: nw(28),
+    fontSize: nw(24),
     fontWeight: '700',
     color: COLORS.whiteFFFFFF,
-    marginBottom: nh(8),
+    marginBottom: nh(6),
   },
   communityStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: nw(10),
-    marginBottom: nh(8),
+    gap: nw(8),
+    marginBottom: nh(6),
   },
   communityStat: {
-    fontSize: nw(14),
+    fontSize: nw(13),
     color: COLORS.whiteFFFFFF,
     opacity: 0.9,
   },
@@ -1627,29 +2291,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(6),
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: nw(10),
-    paddingVertical: nh(4),
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    paddingHorizontal: nw(8),
+    paddingVertical: nh(3),
     borderRadius: nw(12),
     alignSelf: 'flex-start',
   },
   privacyText: {
-    fontSize: nw(12),
+    fontSize: nw(11),
     color: COLORS.whiteFFFFFF,
   },
   manageButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(6),
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    paddingHorizontal: nw(12),
-    paddingVertical: nh(8),
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: nw(10),
+    paddingVertical: nh(6),
     borderRadius: nw(14),
     alignSelf: 'flex-start',
-    marginTop: nh(12),
+    marginTop: nh(10),
   },
   manageButtonText: {
-    fontSize: nw(13),
+    fontSize: nw(12),
     fontWeight: '600',
     color: COLORS.whiteFFFFFF,
   },
@@ -1726,6 +2390,193 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.blue043142,
     borderTopLeftRadius: 2,
     borderTopRightRadius: 2,
+  },
+  announcementPanelContainer: {
+    paddingHorizontal: nw(16),
+    paddingTop: nh(12),
+    paddingBottom: nh(8),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.greyEEEEEE,
+    gap: nh(8),
+  },
+  announcementPanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  announcementPanelTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(6),
+  },
+  announcementPanelTitle: {
+    fontSize: nw(14),
+    fontWeight: '700',
+    color: COLORS.blue043142,
+  },
+  announcementPanelMeta: {
+    fontSize: nw(11),
+    fontWeight: '600',
+    color: COLORS.grey666666,
+  },
+  announcementCardList: {
+    paddingRight: nw(10),
+  },
+  announcementCard: {
+    width: nw(230),
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(14),
+    borderRadius: nw(14),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderWidth: 1,
+    borderColor: COLORS.blue043142 + '25',
+    marginRight: nw(12),
+    shadowColor: '#00000020',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: nh(8),
+  },
+  announcementCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  announcementCardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(4),
+    paddingHorizontal: nw(10),
+    paddingVertical: nh(4),
+    borderRadius: nw(12),
+    backgroundColor: COLORS.blue043142,
+  },
+  announcementCardBadgeHigh: {
+    backgroundColor: COLORS.yellowF5BE00,
+  },
+  announcementCardBadgeUrgent: {
+    backgroundColor: COLORS.redFF0000,
+  },
+  announcementCardBadgeText: {
+    fontSize: nw(10),
+    fontWeight: '700',
+    color: COLORS.whiteFFFFFF,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  announcementCardBadgeTextDark: {
+    color: COLORS.grey222222,
+  },
+  announcementCardTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(4),
+  },
+  announcementCardTimeText: {
+    fontSize: nw(10),
+    color: COLORS.grey666666,
+    fontWeight: '600',
+  },
+  announcementCardTitle: {
+    fontSize: nw(14),
+    fontWeight: '700',
+    color: COLORS.grey222222,
+  },
+  announcementCardExcerpt: {
+    fontSize: nw(12),
+    color: COLORS.grey555555,
+    lineHeight: nh(18),
+  },
+  announcementCardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: nw(6),
+  },
+  announcementCardFooterText: {
+    fontSize: nw(11),
+    color: COLORS.blue043142,
+    fontWeight: '600',
+  },
+  announcementModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: nw(20),
+  },
+  announcementModalContent: {
+    width: '100%',
+    maxWidth: nw(340),
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nw(18),
+    padding: nw(18),
+  },
+  announcementModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: nw(12),
+    marginBottom: nh(10),
+  },
+  announcementModalTitle: {
+    flex: 1,
+    fontSize: nw(18),
+    fontWeight: '700',
+    color: COLORS.grey222222,
+  },
+  announcementModalCloseButton: {
+    padding: nw(4),
+  },
+  announcementModalPriorityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(6),
+    alignSelf: 'flex-start',
+    paddingHorizontal: nw(10),
+    paddingVertical: nh(4),
+    borderRadius: nw(12),
+    backgroundColor: COLORS.blue043142,
+    marginBottom: nh(10),
+  },
+  announcementModalPriorityChipHigh: {
+    backgroundColor: COLORS.yellowF5BE00,
+  },
+  announcementModalPriorityChipUrgent: {
+    backgroundColor: COLORS.redFF0000,
+  },
+  announcementModalPriorityText: {
+    fontSize: nw(11),
+    fontWeight: '700',
+    color: COLORS.whiteFFFFFF,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  announcementModalPriorityTextDark: {
+    color: COLORS.grey222222,
+  },
+  announcementModalTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(6),
+    marginBottom: nh(12),
+  },
+  announcementModalTimeText: {
+    fontSize: nw(12),
+    color: COLORS.grey666666,
+  },
+  announcementModalBody: {
+    maxHeight: nh(240),
+  },
+  announcementModalBodyContent: {
+    paddingBottom: nh(4),
+  },
+  announcementModalBodyText: {
+    fontSize: nw(13),
+    color: COLORS.grey3A3A3A,
+    lineHeight: nh(20),
   },
   
   // Post Card Styles
@@ -1850,6 +2701,10 @@ const styles = StyleSheet.create({
     fontSize: nw(12),
     color: COLORS.grey666666,
     fontWeight: '500',
+  },
+  postActionTextDelete: {
+    color: COLORS.redFF0000,
+    fontWeight: '600',
   },
   postActionTextActive: {
     color: COLORS.blue043142,
@@ -2125,20 +2980,108 @@ const styles = StyleSheet.create({
   // About Section
   aboutContainer: {
     padding: nw(20),
+    gap: nh(20),
   },
-  aboutSection: {
-    marginBottom: nh(24),
+  aboutHeroCard: {
+    backgroundColor: COLORS.blue043142 + '08',
+    borderWidth: 1,
+    borderColor: COLORS.blue043142 + '20',
+    borderRadius: nw(16),
+    padding: nw(18),
+    gap: nh(12),
   },
-  aboutTitle: {
-    fontSize: nw(16),
+  aboutHeroTitle: {
+    fontSize: nw(18),
+    fontWeight: '700',
+    color: COLORS.blue043142,
+  },
+  aboutHeroSubtitle: {
+    fontSize: nw(14),
+    color: COLORS.grey3A3A3A,
+    lineHeight: nh(22),
+  },
+  aboutJoinButton: {
+    marginTop: nh(6),
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(6),
+    backgroundColor: COLORS.blue043142,
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(10),
+    borderRadius: nw(12),
+  },
+  aboutJoinButtonPending: {
+    backgroundColor: COLORS.grey999999,
+  },
+  aboutJoinButtonText: {
+    fontSize: nw(13),
+    fontWeight: '600',
+    color: COLORS.whiteFFFFFF,
+  },
+  aboutFactsCard: {
+    backgroundColor: COLORS.whiteFFFFFF,
+    borderRadius: nw(16),
+    borderWidth: 1,
+    borderColor: COLORS.greyEEEEEE,
+    paddingHorizontal: nw(16),
+    paddingVertical: nh(14),
+    gap: nh(14),
+  },
+  aboutFactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(12),
+  },
+  aboutFactIcon: {
+    width: nw(34),
+    height: nw(34),
+    borderRadius: nw(17),
+    backgroundColor: COLORS.blue043142 + '12',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  aboutFactTextBlock: {
+    flex: 1,
+  },
+  aboutFactLabel: {
+    fontSize: nw(12),
+    color: COLORS.grey666666,
+  },
+  aboutFactValue: {
+    fontSize: nw(14),
     fontWeight: '600',
     color: COLORS.grey222222,
+  },
+  aboutSection: {
     marginBottom: nh(8),
+  },
+  aboutTitle: {
+    fontSize: nw(15),
+    fontWeight: '600',
+    color: COLORS.grey222222,
+    marginBottom: nh(10),
   },
   aboutText: {
     fontSize: nw(14),
     color: COLORS.grey3A3A3A,
     lineHeight: nh(22),
+  },
+  aboutTagList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: nw(10),
+  },
+  aboutTagChip: {
+    paddingHorizontal: nw(12),
+    paddingVertical: nh(6),
+    borderRadius: nw(14),
+    backgroundColor: COLORS.blue043142 + '12',
+  },
+  aboutTagText: {
+    fontSize: nw(12),
+    color: COLORS.blue043142,
+    fontWeight: '600',
   },
   
   // Members Section

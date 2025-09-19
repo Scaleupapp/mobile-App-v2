@@ -1,4 +1,3 @@
-// src/screens/Community/CommunityManagement.js
 'use strict';
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -134,86 +133,147 @@ const getNestedValue = (obj, path) => {
   }, obj);
 };
 
-const ManagementHero = ({community, membership}) => {
-  const cover = community?.coverImage?.url || community?.coverImage;
+// BALANCED COMPACT HERO COMPONENT - SPACIOUS
+const CompactManagementHero = ({community, membership, navigation}) => {
   const avatar = community?.avatar?.url || community?.avatar;
   const visibility = community?.privacy?.visibility || community?.privacy;
   const joinMethod = community?.privacy?.joinMethod || community?.joinMethod;
-  const createdAt = community?.createdAt;
-  const creator = community?.createdBy || community?.owner;
+  
+  const stats = community?.stats || {};
+  const metrics = {
+    members: formatNumber(stats.memberCount || stats.totalMembers || 0),
+    weekly: formatNumber(stats.weeklyActivity || stats.activeWeeklyUsers || stats.activeThisWeek || 0),
+    engagement: stats.engagementRate ? `${Math.round(stats.engagementRate)}%` : '0%',
+    growth: stats.monthlyGrowth || stats.memberGrowthRate || '+0%',
+  };
+
+  const visibilityIcon = visibility === 'public' ? 'earth' : 'lock-closed';
+  const joinMethodText = joinMethod === 'approval' ? 'Approval' : 
+                         joinMethod === 'invite_only' ? 'Invite only' : 'Open';
 
   return (
-    <View style={styles.heroWrapper}>
-      <LinearGradient colors={[PALETTE.primary + 'E6', PALETTE.primary + 'AA']} style={styles.heroGradient}>
-        <View style={styles.heroHeaderRow}>
-          <View style={styles.heroAvatarShell}>
+    <LinearGradient 
+      colors={[PALETTE.primary, '#0B4558']} 
+      style={styles.balancedHero}
+      start={{x: 0, y: 0}}
+      end={{x: 1, y: 1}}
+    >
+      {/* Header Section */}
+      <View style={styles.heroTopSection}>
+        <TouchableOpacity 
+          style={styles.heroBackButton} 
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Icon name="arrow-back" size={nw(22)} color={COLORS.whiteFFFFFF} />
+        </TouchableOpacity>
+        
+        <View style={styles.heroCenterContent}>
+          <View style={styles.heroIdentity}>
             {avatar ? (
-              <Image source={{uri: avatar}} style={styles.heroAvatar} />
+              <Image source={{uri: avatar}} style={styles.heroProfileAvatar} />
             ) : (
-              <View style={styles.heroAvatarFallback}>
-                <Text style={styles.heroAvatarInitial}>{community?.name?.[0] || '?'}</Text>
+              <View style={[styles.heroProfileAvatar, styles.heroProfileAvatarFallback]}>
+                <Text style={styles.heroProfileAvatarText}>
+                  {community?.name?.[0]?.toUpperCase() || '?'}
+                </Text>
               </View>
             )}
-          </View>
-          <View style={styles.heroHeaderText}>
-            <Text style={styles.heroTitle} numberOfLines={1}>
-              {community?.name || 'Community'}
-            </Text>
-            <Text style={styles.heroSubtitle} numberOfLines={2}>
-              {community?.tagline || community?.description || 'Keep your members engaged, informed, and growing.'}
-            </Text>
-            <View style={styles.heroChipsRow}>
-              {visibility ? (
-                <View style={styles.heroChip}>
-                  <Icon name={visibility === 'public' ? 'earth' : 'lock-closed'} size={nw(12)} color={COLORS.whiteFFFFFF} />
-                  <Text style={styles.heroChipText}>{visibility}</Text>
+            
+            <View style={styles.heroTextContent}>
+              <View style={styles.heroNameContainer}>
+                <Text style={styles.heroCommunityName} numberOfLines={1}>
+                  {community?.name || 'Community'}
+                </Text>
+                {community?.verificationStatus === 'verified' && (
+                  <Icon name="shield-checkmark" size={nw(16)} color={PALETTE.accent} />
+                )}
+              </View>
+              
+              <View style={styles.heroBadgesContainer}>
+                <View style={styles.heroBadgeItem}>
+                  <Icon name={visibilityIcon} size={nw(13)} color={COLORS.whiteFFFFFF + 'CC'} />
+                  <Text style={styles.heroBadgeText}>{visibility}</Text>
                 </View>
-              ) : null}
-              {joinMethod ? (
-                <View style={styles.heroChip}>
-                  <Icon name="people" size={nw(12)} color={COLORS.whiteFFFFFF} />
-                  <Text style={styles.heroChipText}>
-                    {joinMethod === 'approval'
-                      ? 'Approvals on'
-                      : joinMethod === 'invite_only'
-                      ? 'Invite only'
-                      : 'Instant join'}
-                  </Text>
+                
+                <Text style={styles.heroBadgeSeparator}>•</Text>
+                
+                <View style={styles.heroBadgeItem}>
+                  <Icon name="people" size={nw(13)} color={COLORS.whiteFFFFFF + 'CC'} />
+                  <Text style={styles.heroBadgeText}>{joinMethodText}</Text>
                 </View>
-              ) : null}
-              {community?.verificationStatus === 'verified' ? (
-                <View style={styles.heroChip}>
-                  <Icon name="shield-checkmark" size={nw(12)} color={COLORS.whiteFFFFFF} />
-                  <Text style={styles.heroChipText}>Verified</Text>
-                </View>
-              ) : null}
+                
+                <Text style={styles.heroBadgeSeparator}>•</Text>
+                
+                <Text style={styles.heroRoleBadge}>{membership?.role || 'member'}</Text>
+              </View>
             </View>
           </View>
         </View>
+        
+        <TouchableOpacity 
+          style={styles.heroSettingsButton}
+          onPress={() =>
+            navigation.navigate(Routes.CommunitySettings, {
+              communityId: community?.id,
+              communityName: community?.name,
+            })
+          }
+          activeOpacity={0.7}
+        >
+          <Icon name="settings-outline" size={nw(22)} color={COLORS.whiteFFFFFF} />
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.heroMetaRow}>
-          <View style={styles.heroMetaItem}>
-            <Text style={styles.heroMetaLabel}>Created</Text>
-            <Text style={styles.heroMetaValue}>{formatDate(createdAt)}</Text>
+      {/* Metrics Section */}
+      <View style={styles.heroMetricsSection}>
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="people" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
           </View>
-          <View style={styles.heroDivider} />
-          <View style={styles.heroMetaItem}>
-            <Text style={styles.heroMetaLabel}>Owner</Text>
-            <Text style={styles.heroMetaValue} numberOfLines={1}>
-              {creator ? `${creator.firstname || ''} ${creator.lastname || ''}`.trim() || creator.username : '—'}
-            </Text>
-          </View>
-          <View style={styles.heroDivider} />
-          <View style={styles.heroMetaItem}>
-            <Text style={styles.heroMetaLabel}>Role</Text>
-            <Text style={styles.heroMetaValue}>{membership?.role || 'member'}</Text>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.members}</Text>
+            <Text style={styles.heroMetricTitle}>Members</Text>
           </View>
         </View>
-
-      </LinearGradient>
-
-      {cover ? <Image source={{uri: cover}} style={styles.heroCoverImage} /> : null}
-    </View>
+        
+        <View style={styles.heroMetricDivider} />
+        
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="pulse" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.weekly}</Text>
+            <Text style={styles.heroMetricTitle}>Active</Text>
+          </View>
+        </View>
+        
+        <View style={styles.heroMetricDivider} />
+        
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="trending-up" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.engagement}</Text>
+            <Text style={styles.heroMetricTitle}>Engaged</Text>
+          </View>
+        </View>
+        
+        <View style={styles.heroMetricDivider} />
+        
+        <View style={styles.heroMetricBox}>
+          <View style={styles.heroMetricIconWrapper}>
+            <Icon name="bar-chart" size={nw(18)} color={COLORS.whiteFFFFFF + 'CC'} />
+          </View>
+          <View style={styles.heroMetricContent}>
+            <Text style={styles.heroMetricNumber}>{metrics.growth}</Text>
+            <Text style={styles.heroMetricTitle}>Growth</Text>
+          </View>
+        </View>
+      </View>
+    </LinearGradient>
   );
 };
 
@@ -470,7 +530,7 @@ const JoinRequestRow = ({request, onApprove, onReject, processing}) => {
 
 const Skeleton = () => (
   <SafeAreaView style={styles.safeArea}>
-    <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
+    <StatusBar barStyle="light-content" backgroundColor={PALETTE.primary} />
     <View style={styles.heroSkeleton}>
       <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
     </View>
@@ -951,16 +1011,6 @@ const CommunityManagement = ({route, navigation}) => {
     }
   }, [announcementData, communityId, handleRefresh]);
 
-  const metrics = useMemo(() => {
-    const stats = community?.stats || {};
-    return {
-      members: formatNumber(stats.memberCount || stats.totalMembers),
-      weekly: formatNumber(stats.weeklyActivity || stats.activeWeeklyUsers || stats.activeThisWeek),
-      engagement: stats.engagementRate ? `${Math.round(stats.engagementRate)}%` : '—',
-      growth: stats.monthlyGrowth || stats.memberGrowthRate || '—',
-    };
-  }, [community?.stats]);
-
   const feedBreakdown = useMemo(() => {
     return feed.reduce(
       (acc, item) => {
@@ -1100,16 +1150,17 @@ const CommunityManagement = ({route, navigation}) => {
     return <Skeleton />;
   }
 
-  const managementHeader = (
-    <ManagementHero
-      community={community}
-      membership={membership}
-    />
-  );
-
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
+      <StatusBar barStyle="light-content" backgroundColor={PALETTE.primary} />
+      
+      {/* New Compact Hero */}
+      <CompactManagementHero
+        community={community}
+        membership={membership}
+        navigation={navigation}
+      />
+      
       <ScrollView
         ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
@@ -1120,19 +1171,6 @@ const CommunityManagement = ({route, navigation}) => {
             tintColor={PALETTE.primary}
           />
         }>
-        {managementHeader}
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Key health metrics</Text>
-          <View style={styles.insightRow}>
-            <InsightCard icon="people" value={metrics.members} label="Total members" />
-            <InsightCard icon="pulse" value={metrics.weekly} label="Weekly activity" />
-          </View>
-          <View style={styles.insightRow}>
-            <InsightCard icon="stats-chart" value={metrics.engagement} label="Engagement rate" />
-            <InsightCard icon="trending-up" value={metrics.growth} label="Growth rate" />
-          </View>
-        </View>
 
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Quick actions</Text>
@@ -1150,17 +1188,6 @@ const CommunityManagement = ({route, navigation}) => {
               onPress={handleScrollToMembers}
             />
           ) : null}
-          <QuickActionCard
-            icon="settings"
-            title="Review settings"
-            subtitle="Update privacy, features, or branding"
-            onPress={() =>
-              navigation.navigate(Routes.CommunitySettings, {
-                communityId,
-                communityName: community?.name,
-              })
-            }
-          />
           <QuickActionCard
             icon="analytics"
             title="Track engagement"
@@ -1527,122 +1554,143 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: nh(32),
   },
-  heroWrapper: {
-    marginHorizontal: nw(16),
-    marginTop: nh(18),
-    borderRadius: nw(28),
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#0D1E2F',
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 6},
+  
+  // BALANCED HERO STYLES - MORE SPACIOUS
+  balancedHero: {
+    paddingTop: Platform.OS === 'ios' ? nh(14) : nh(16),
+    paddingBottom: nh(20),
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 4,
   },
-  heroGradient: {
-    paddingHorizontal: nw(20),
-    paddingVertical: nh(22),
-    backgroundColor: PALETTE.primary,
-  },
-  heroCoverImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.08,
-  },
-  heroHeaderRow: {
+  heroTopSection: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: nw(20),
+    paddingBottom: nh(18),
   },
-  heroAvatarShell: {
-    width: nw(64),
-    height: nw(64),
-    borderRadius: nw(20),
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: nw(16),
+  heroBackButton: {
+    padding: nw(8),
+    marginLeft: nw(-8),
+    marginRight: nw(8),
   },
-  heroAvatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: nw(20),
-  },
-  heroAvatarFallback: {
-    width: '100%',
-    height: '100%',
-    borderRadius: nw(20),
-    backgroundColor: 'rgba(255,255,255,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroAvatarInitial: {
-    color: PALETTE.primary,
-    fontSize: nw(24),
-    fontWeight: '700',
-  },
-  heroHeaderText: {
+  heroCenterContent: {
     flex: 1,
   },
-  heroTitle: {
+  heroIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroProfileAvatar: {
+    width: nw(54),
+    height: nw(54),
+    borderRadius: nw(16),
+    marginRight: nw(14),
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  heroProfileAvatarFallback: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroProfileAvatarText: {
     color: COLORS.whiteFFFFFF,
-    fontSize: nw(22),
+    fontSize: nw(20),
     fontWeight: '700',
+  },
+  heroTextContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  heroNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(6),
     marginBottom: nh(6),
   },
-  heroSubtitle: {
-    color: COLORS.whiteFFFFFF + 'CC',
-    fontSize: nw(12),
-    lineHeight: nh(18),
+  heroCommunityName: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(19),
+    fontWeight: '700',
+    flex: 1,
   },
-  heroChipsRow: {
+  heroBadgesContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nw(8),
-    marginTop: nh(12),
+    alignItems: 'center',
   },
-  heroChip: {
+  heroBadgeItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(4),
-    paddingHorizontal: nw(10),
-    paddingVertical: nh(4),
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: nw(14),
   },
-  heroChipText: {
-    color: COLORS.whiteFFFFFF,
-    fontSize: nw(11),
+  heroBadgeText: {
+    color: COLORS.whiteFFFFFF + 'CC',
+    fontSize: nw(13),
+    fontWeight: '500',
   },
-  heroMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nh(20),
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: nw(18),
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(12),
+  heroBadgeSeparator: {
+    color: COLORS.whiteFFFFFF + '66',
+    fontSize: nw(12),
+    marginHorizontal: nw(10),
   },
-  heroMetaItem: {
-    flex: 1,
-  },
-  heroMetaLabel: {
-    color: COLORS.whiteFFFFFF + 'AA',
-    fontSize: nw(11),
-  },
-  heroMetaValue: {
-    color: COLORS.whiteFFFFFF,
+  heroRoleBadge: {
+    color: PALETTE.accent,
     fontSize: nw(13),
     fontWeight: '600',
+    textTransform: 'capitalize',
+  },
+  heroSettingsButton: {
+    padding: nw(8),
+    marginRight: nw(-8),
+    marginLeft: nw(8),
+  },
+  heroMetricsSection: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    marginHorizontal: nw(20),
+    borderRadius: nw(14),
+    paddingVertical: nh(14),
+  },
+  heroMetricBox: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: nw(8),
+    paddingHorizontal: nw(4),
+  },
+  heroMetricIconWrapper: {
+    width: nw(32),
+    height: nw(32),
+    borderRadius: nw(10),
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroMetricContent: {
+    alignItems: 'flex-start',
+  },
+  heroMetricNumber: {
+    color: COLORS.whiteFFFFFF,
+    fontSize: nw(17),
+    fontWeight: '700',
+    lineHeight: nh(20),
+  },
+  heroMetricTitle: {
+    color: COLORS.whiteFFFFFF + 'B3',
+    fontSize: nw(11),
+    fontWeight: '500',
     marginTop: nh(2),
   },
-  heroDivider: {
+  heroMetricDivider: {
     width: 1,
-    height: '100%',
-    backgroundColor: COLORS.whiteFFFFFF + '22',
-    marginHorizontal: nw(12),
+    height: nh(36),
+    backgroundColor: 'rgba(255,255,255,0.12)',
   },
+  
   sectionCard: {
     marginHorizontal: nw(20),
     marginTop: nh(18),
@@ -2183,10 +2231,7 @@ const styles = StyleSheet.create({
     lineHeight: nh(18),
   },
   heroSkeleton: {
-    marginHorizontal: nw(20),
-    marginTop: nh(18),
-    borderRadius: nw(28),
-    paddingVertical: nh(60),
+    height: nh(140),
     backgroundColor: PALETTE.primary + '0F',
     justifyContent: 'center',
     alignItems: 'center',

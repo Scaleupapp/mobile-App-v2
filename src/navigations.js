@@ -237,7 +237,7 @@ const FocusedIconWrapper = ({children}) => (
 // A helper function to render the unfocused state style for tab icons
 const UnfocusedIconWrapper = ({children, tabname}) => (
   <View style={{marginTop: nh(isAndroid ? 10 : 15), width: nw(30), height: nw(30), alignItems: 'center', justifyContent: 'center'}}>
-    {tabname === 'create' && <NewBadge />}
+    {tabname === 'nexus' && <NewBadge />}
     {children}
   </View>
 );

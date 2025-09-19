@@ -1,7 +1,11 @@
+// src/screens/Community/CommunityDiscovery.js
+'use strict';
+
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   RefreshControl,
   SafeAreaView,
   StatusBar,
@@ -9,934 +13,594 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
+  ScrollView,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
-import Feather from 'react-native-vector-icons/Feather';
 
 import Text from '../../components/Text';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
-import {listAllCommunitiesApi, searchCommunitiesApi} from '../../services/apiService';
-import {throttle} from '../../helper/commonFunctions';
+import axiosInstance from '../../services/axiosinstance';
 import Routes from '../../helper/routes';
 
-const PAGE_SIZE = 10;
-
-const SORT_OPTIONS = [
-  {key: 'recommended', label: 'Featured'},
-  {key: 'popular', label: 'Most members'},
-  {key: 'newest', label: 'Newest'},
-  {key: 'alphabetical', label: 'A-Z'},
-];
-
+// Consistent Color Palette
 const PALETTE = {
   background: COLORS.greyF7F7F7,
-  card: COLORS.whiteFFFFFF,
+  surface: COLORS.whiteFFFFFF,
   primary: COLORS.blue043142,
+  accent: COLORS.yellowF5BE00,
   muted: COLORS.grey777777,
   subtle: COLORS.grey999999,
   border: COLORS.greyEEEEEE,
-  accent: COLORS.yellowF5BE00,
+  success: '#2E7D32',
+  warning: '#FFA000',
+  danger: COLORS.redEA4335,
 };
 
+// Helper Function
 const formatNumber = (value) => {
   const num = Number(value || 0);
-  if (!num) {
-    return '0';
-  }
-  if (num >= 1_000_000) {
-    return `${(num / 1_000_000).toFixed(1)}M`;
-  }
-  if (num >= 1_000) {
-    return `${(num / 1_000).toFixed(1)}k`;
-  }
+  if (!num) return '0';
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
   return `${num}`;
 };
 
-const extractArray = (payload) => {
-  if (!payload) {
-    return [];
-  }
-  if (Array.isArray(payload)) {
-    return payload;
-  }
-  if (Array.isArray(payload.communities)) {
-    return payload.communities;
-  }
-  if (Array.isArray(payload.items)) {
-    return payload.items;
-  }
-  if (Array.isArray(payload.results)) {
-    return payload.results;
-  }
-  if (Array.isArray(payload.data)) {
-    return payload.data;
-  }
-  return [];
-};
-
-const parseCommunityResponse = (response, pageParam) => {
-  const root = response?.data ?? {};
-  const dataSection = root?.data ?? root;
-  const communities = extractArray(dataSection).length
-    ? extractArray(dataSection)
-    : extractArray(root);
-
-  const pagination =
-    dataSection?.pagination ||
-    root?.pagination ||
-    dataSection?.meta ||
-    {};
-
-  const explicitHasMore =
-    pagination?.hasMore ??
-    pagination?.has_more ??
-    pagination?.hasNext ??
-    pagination?.has_next;
-
-  const nextPageValue =
-    pagination?.nextPage ??
-    pagination?.next_page ??
-    (typeof pagination?.page === 'number' && typeof pagination?.totalPages === 'number'
-      ? pagination.page < pagination.totalPages
-        ? pagination.page + 1
-        : null
-      : null);
-
-  const fallbackHasMore = communities.length >= PAGE_SIZE;
-
-  return {
-    communities,
-    hasMore:
-      typeof explicitHasMore === 'boolean' ? explicitHasMore : nextPageValue != null ? true : fallbackHasMore,
-    nextPage: nextPageValue ?? (fallbackHasMore ? pageParam + 1 : null),
-  };
-};
-
-const getCommunityId = (community) =>
-  community?.id || community?._id || community?.communityId || community?.slug || null;
-
-const mergeUniqueCommunities = (existing, incoming) => {
-  if (!incoming?.length) {
-    return existing;
-  }
-  const seen = new Set(existing.map((item) => getCommunityId(item) || `existing-${Math.random()}`));
-  const merged = [...existing];
-  incoming.forEach((item) => {
-    const id = getCommunityId(item);
-    if (id) {
-      if (!seen.has(id)) {
-        seen.add(id);
-        merged.push(item);
-      }
-    } else {
-      merged.push(item);
-    }
-  });
-  return merged;
-};
-
-const getName = (community) =>
-  community?.name || community?.title || community?.displayName || 'Community';
-
-const getSummary = (community) =>
-  community?.tagline ||
-  community?.shortDescription ||
-  community?.description ||
-  community?.about ||
-  'Stay tuned for updates from this community.';
-
-const getMembersCount = (community) =>
-  community?.stats?.memberCount ??
-  community?.memberCount ??
-  community?.membersCount ??
-  community?.members ??
-  0;
-
-const getCategoryLabel = (community) => {
-  const labels =
-    community?.categories ||
-    community?.topics ||
-    community?.tags ||
-    community?.labels;
-  if (Array.isArray(labels) && labels.length > 0) {
-    return labels[0];
-  }
-  return community?.category || community?.type || null;
-};
-
-const getScheduleLabel = (community) =>
-  community?.meeting ||
-  community?.meetingTime ||
-  community?.meetingSchedule ||
-  community?.nextEvent ||
-  community?.nextMeetup ||
-  community?.schedule ||
-  community?.upcomingEvent ||
-  '';
-
-const getCreatedAtValue = (community) => {
-  const raw =
-    community?.createdAt ||
-    community?.created_at ||
-    community?.createdOn ||
-    community?.meta?.createdAt ||
-    community?.updatedAt ||
-    null;
-  if (!raw) {
-    return 0;
-  }
-  const timestamp = new Date(raw).getTime();
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
-// Floating Action Button Component
-const FloatingActionButton = ({onPress}) => (
-  <TouchableOpacity 
-    style={styles.fab} 
-    onPress={onPress}
-    activeOpacity={0.9}
-  >
-    <LinearGradient 
-      colors={['#0B3E56', '#0F6476']} 
-      style={styles.fabGradient}
-    >
-      <Icon name="add" size={nw(24)} color={COLORS.whiteFFFFFF} />
-    </LinearGradient>
-  </TouchableOpacity>
-);
-
-const HeroBanner = ({community, onPress, loading}) => {
-  if (loading) {
-    return (
-      <LinearGradient colors={['#0B3E56', '#0F6476']} style={styles.heroGradient}>
-        <ActivityIndicator size="small" color={COLORS.whiteFFFFFF} />
-      </LinearGradient>
-    );
-  }
-
-  if (!community) {
-    return (
-      <LinearGradient colors={['#0B3E56', '#0F6476']} style={styles.heroGradient}>
-        <Icon name="sparkles" size={nw(18)} color={COLORS.whiteFFFFFF} />
-        <Text style={styles.heroTitle}>No communities yet</Text>
-        <Text style={styles.heroSubtitle}>
-          New spaces will appear here as soon as students start creating them.
-        </Text>
-      </LinearGradient>
-    );
-  }
-
-  const members = formatNumber(getMembersCount(community));
-  const label = getCategoryLabel(community);
-  const schedule = getScheduleLabel(community);
+// Enhanced Tab Bar Component
+const TabBar = ({activeTab, onTabChange, counts}) => {
+  const tabs = [
+    {id: 'discover', label: 'Discover', icon: 'compass-outline'},
+    {id: 'joined', label: 'My Hubs', icon: 'people-outline'},
+    {id: 'pending', label: 'Requests', icon: 'time-outline'},
+  ];
 
   return (
-    <LinearGradient colors={['#0B3E56', '#0F6476']} style={styles.heroGradient}>
-      {label ? (
-        <View style={styles.heroPill}>
-          <Text style={styles.heroPillText}>#{label}</Text>
-        </View>
-      ) : null}
-      <Text style={styles.heroTitle}>{getName(community)}</Text>
-      <Text style={styles.heroSubtitle}>{getSummary(community)}</Text>
-      <View style={styles.heroStatsRow}>
-        <View style={styles.heroStatBadge}>
-          <Icon name="people" size={nw(16)} color={COLORS.whiteFFFFFF} />
-          <Text style={styles.heroStatLabel}>{members} members</Text>
-        </View>
-        {schedule ? (
-          <View style={styles.heroStatBadge}>
-            <Icon name="time-outline" size={nw(16)} color={COLORS.whiteFFFFFF} />
-            <Text style={styles.heroStatLabel} numberOfLines={1}>
-              {schedule}
-            </Text>
-          </View>
-        ) : null}
-      </View>
-      <TouchableOpacity style={styles.heroButton} onPress={() => onPress(community)} activeOpacity={0.85}>
-        <Text style={styles.heroButtonText}>Open community</Text>
-        <Icon name="arrow-forward" size={nw(16)} color={COLORS.whiteFFFFFF} />
-      </TouchableOpacity>
-    </LinearGradient>
-  );
-};
-
-const StatsStrip = ({totalCommunities, totalMembers, categoryCount}) => (
-  <View style={styles.statsStrip}>
-    <View style={styles.statItem}>
-      <Text style={styles.statValue}>{formatNumber(totalCommunities)}</Text>
-      <Text style={styles.statLabel}>communities</Text>
-    </View>
-    <View style={styles.statDivider} />
-    <View style={styles.statItem}>
-      <Text style={styles.statValue}>{formatNumber(totalMembers)}</Text>
-      <Text style={styles.statLabel}>collective members</Text>
-    </View>
-    <View style={styles.statDivider} />
-    <View style={styles.statItem}>
-      <Text style={styles.statValue}>{formatNumber(categoryCount)}</Text>
-      <Text style={styles.statLabel}>unique tags</Text>
-    </View>
-  </View>
-);
-
-const SortSelector = ({selected, onChange}) => (
-  <View style={styles.sortRow}>
-    <Text style={styles.sortLabel}>Sort by</Text>
-    <View style={styles.sortChipsContainer}>
-      {SORT_OPTIONS.map((option) => {
-        const isActive = option.key === selected;
+    <View style={styles.tabContainer}>
+      {tabs.map(tab => {
+        const isActive = activeTab === tab.id;
         return (
           <TouchableOpacity
-            key={option.key}
-            style={[styles.sortChip, isActive && styles.sortChipActive]}
-            onPress={() => onChange(option.key)}
-            activeOpacity={0.8}>
-            <Text style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>
-              {option.label}
+            key={tab.id}
+            style={[styles.tab, isActive && styles.activeTab]}
+            onPress={() => onTabChange(tab.id)}>
+            <Icon 
+              name={isActive ? tab.icon.replace('-outline', '') : tab.icon} 
+              size={nw(18)} 
+              color={isActive ? PALETTE.primary : PALETTE.muted}
+            />
+            <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+              {tab.label}
             </Text>
+            {counts[tab.id] > 0 && (
+              <View style={styles.tabBadge}>
+                <Text style={styles.tabBadgeText}>{counts[tab.id]}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         );
       })}
     </View>
-  </View>
-);
+  );
+};
 
-const CommunityCard = React.memo(({community, onPress}) => {
-  const members = formatNumber(getMembersCount(community));
-  const label = getCategoryLabel(community);
-  const schedule = getScheduleLabel(community);
+// Enhanced & "Better" Community Card Component
+const CommunityCard = ({item, onPress, onAction, actionType}) => {
+  const userRole = item?.userRole || item?.membership?.role || '';
+  
+  const getActionButton = () => {
+    switch(actionType) {
+      case 'joined':
+        return {
+          text: userRole.charAt(0).toUpperCase() + userRole.slice(1),
+          style: styles.roleButton,
+          textStyle: styles.roleButtonText,
+          action: () => onPress(item),
+        };
+      case 'pending':
+        return {
+          text: 'Cancel',
+          style: styles.cancelButton,
+          textStyle: styles.actionButtonText,
+          action: () => onAction(item, 'cancel'),
+        };
+      case 'discover':
+      default:
+        const requiresApproval = item.joinMethod === 'approval_required' || item.privacy === 'private';
+        return {
+          text: requiresApproval ? 'Request' : 'Join',
+          style: styles.joinButton,
+          textStyle: styles.actionButtonText,
+          action: () => onAction(item, requiresApproval ? 'request' : 'join'),
+        };
+    }
+  };
+
+  const button = getActionButton();
+  const avatarUri = item.avatar?.url || item.avatar;
+  const memberCount = item.stats?.memberCount || item.stats?.totalMembers || item.memberCount || 0;
+  const privacy = item.privacy?.charAt(0).toUpperCase() + item.privacy?.slice(1) || 'Public';
 
   return (
-    <TouchableOpacity style={styles.communityCard} onPress={() => onPress(community)} activeOpacity={0.85}>
-      <View style={styles.communityHeaderRow}>
-        <View style={styles.communityAvatar}>
-          <Icon name="people" size={nw(20)} color={PALETTE.primary} />
-        </View>
-        <View style={styles.communityHeaderText}>
-          <Text style={styles.communityName} numberOfLines={1}>
-            {getName(community)}
+    <TouchableOpacity style={styles.communityCard} onPress={() => onPress(item)} activeOpacity={0.95}>
+      {avatarUri ? (
+        <Image source={{uri: avatarUri}} style={styles.cardAvatar} />
+      ) : (
+        <View style={[styles.cardAvatar, styles.avatarPlaceholder]}>
+          <Text style={styles.avatarPlaceholderText}>
+            {item.name?.[0]?.toUpperCase() || 'C'}
           </Text>
-          {label ? (
-            <Text style={styles.communityLabel}>#{label}</Text>
-          ) : null}
         </View>
-        <Icon name="chevron-forward" size={nw(18)} color={PALETTE.muted} />
+      )}
+
+      <View style={styles.cardContent}>
+        <View style={styles.cardTitleRow}>
+          <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+          {item.isVerified && (
+            <Icon name="shield-checkmark" size={nw(14)} color={PALETTE.accent} />
+          )}
+        </View>
+        <Text style={styles.cardDescription} numberOfLines={1}>
+          {item.description || `${privacy} • ${formatNumber(memberCount)} members`}
+        </Text>
+        <View style={styles.cardStats}>
+          <View style={styles.statItem}>
+            <Icon name="people-outline" size={nw(12)} color={PALETTE.muted} />
+            <Text style={styles.statText}>{formatNumber(memberCount)}</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Icon name="newspaper-outline" size={nw(12)} color={PALETTE.muted} />
+            <Text style={styles.statText}>{formatNumber(item.stats?.postCount || 0)}</Text>
+          </View>
+        </View>
       </View>
-      <Text style={styles.communitySummary} numberOfLines={2}>
-        {getSummary(community)}
-      </Text>
-      <View style={styles.communityMetaRow}>
-        <Icon name="people-circle" size={nw(16)} color={PALETTE.primary} />
-        <Text style={styles.communityMetaText}>{members} members</Text>
-        {schedule ? (
-          <>
-            <View style={styles.metaSeparator} />
-            <Icon name="time-outline" size={nw(16)} color={PALETTE.primary} />
-            <Text style={styles.communityMetaText} numberOfLines={1}>
-              {schedule}
-            </Text>
-          </>
-        ) : null}
-      </View>
+
+      <TouchableOpacity style={[styles.actionButton, button.style]} onPress={button.action}>
+        <Text style={button.textStyle}>{button.text}</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
-});
+};
 
-const SkeletonCard = () => (
-  <View style={styles.skeletonCard}>
-    <View style={styles.skeletonLineWide} />
-    <View style={styles.skeletonLine} />
-    <View style={styles.skeletonLine} />
-  </View>
-);
-
-// Updated EmptyState component with optional create button
-const EmptyState = ({icon = 'compass-outline', title, subtitle, showCreateButton, onCreatePress}) => (
-  <View style={styles.emptyState}>
-    <Icon name={icon} size={nw(36)} color={COLORS.greyBBBBBB} />
-    <Text style={styles.emptyTitle}>{title}</Text>
-    <Text style={styles.emptySubtitle}>{subtitle}</Text>
-    {showCreateButton && (
-      <TouchableOpacity 
-        style={styles.emptyCreateButton} 
-        onPress={onCreatePress}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.emptyCreateButtonText}>Create First Community</Text>
-      </TouchableOpacity>
-    )}
-  </View>
-);
-
-const CommunityDiscovery = ({navigation}) => {
-  const [communities, setCommunities] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+// Main Component
+export default function CommunityDiscovery({navigation}) {
+  const [activeTab, setActiveTab] = useState('discover');
+  const [allCommunities, setAllCommunities] = useState([]);
+  const [joinedCommunities, setJoinedCommunities] = useState([]);
+  const [pendingCommunities, setPendingCommunities] = useState([]);
+  
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [searchApplied, setSearchApplied] = useState('');
-  const [sortOption, setSortOption] = useState('recommended');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const fetchCommunities = useCallback(
-    async ({pageParam = 1, replace = false} = {}) => {
-      if (replace) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
+  const categories = useMemo(() => ['All', 'Academic', 'Tech', 'Creative', 'Business', 'Social'], []);
+
+  const fetchAllCommunities = async () => {
+    try {
+      const response = await axiosInstance.get('communities', { params: { myCommunitiesOnly: false } });
+      if (response?.data?.success) {
+        setAllCommunities(response.data.data.communities || []);
       }
-      setErrorMessage('');
+    } catch (error) {
+      console.error('Failed to fetch all communities:', error);
+    }
+  };
 
-      try {
-        const params = {page: pageParam, limit: PAGE_SIZE};
-        if (searchApplied) {
-          params.q = searchApplied;
-        }
-
-        const response = searchApplied
-          ? await searchCommunitiesApi(params)
-          : await listAllCommunitiesApi(params);
-
-        const {communities: fetched, hasMore: more, nextPage} = parseCommunityResponse(response, pageParam);
-
-        setCommunities((prev) =>
-          replace ? fetched : mergeUniqueCommunities(prev, fetched),
-        );
-        setHasMore(more);
-        setPage(nextPage ?? (more ? pageParam + 1 : pageParam));
-      } catch (error) {
-        console.log('Community discovery fetch error', error?.response?.data || error?.message);
-        if (replace) {
-          setCommunities([]);
-        }
-        setHasMore(false);
-        setErrorMessage(
-          error?.response?.data?.message ||
-            error?.message ||
-            'Unable to load communities right now. Please try again later.',
-        );
-      } finally {
-        if (replace) {
-          setLoading(false);
-        } else {
-          setLoadingMore(false);
-        }
-        setRefreshing(false);
+  const fetchJoinedCommunities = async () => {
+    try {
+      const response = await axiosInstance.get('communities/my-communities/list');
+      if (response?.data?.success) {
+        setJoinedCommunities(response.data.data.communities || []);
       }
-    },
-    [searchApplied],
-  );
+    } catch (error) {
+      console.error('Failed to fetch joined communities:', error);
+    }
+  };
+
+  const fetchPendingRequests = async () => {
+    try {
+      const response = await axiosInstance.get('communities/my-requests/pending');
+      if (response?.data?.success) {
+        setPendingCommunities(response.data.data.requests || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending requests:', error);
+      setPendingCommunities([]);
+    }
+  };
+
+  const handleCommunityAction = async (community, action) => {
+    const communityId = community.id || community._id;
+    try {
+      if (action === 'join' || action === 'request') {
+        const response = await axiosInstance.post(`communities/${communityId}/join`);
+        if (response?.data?.success) {
+          Alert.alert('Success', action === 'request' ? 'Join request sent!' : `Joined ${community.name}!`);
+          loadData(true);
+        }
+      } else if (action === 'cancel') {
+        await axiosInstance.delete(`communities/${communityId}/cancel-request`);
+        Alert.alert('Success', 'Request cancelled');
+        loadData(true);
+      }
+    } catch (error) {
+      console.error(`Action '${action}' failed for community ${communityId}:`, error.response?.data || error.message);
+      Alert.alert('Error', error.response?.data?.message || 'Operation failed');
+    }
+  };
+
+  const loadData = async (isRefresh = false) => {
+    if (!isRefresh) setLoading(true);
+    setRefreshing(true);
+    await Promise.all([
+      fetchAllCommunities(),
+      fetchJoinedCommunities(),
+      fetchPendingRequests(),
+    ]);
+    if (!isRefresh) setLoading(false);
+    setRefreshing(false);
+  };
 
   useEffect(() => {
-    fetchCommunities({pageParam: 1, replace: true});
-  }, [fetchCommunities]);
+    loadData();
+  }, []);
 
-  const handleSearchSubmit = useCallback(() => {
-    const nextQuery = searchText.trim();
-    if (nextQuery === searchApplied) {
-      fetchCommunities({pageParam: 1, replace: true});
-      return;
-    }
-    setSearchApplied(nextQuery);
-  }, [fetchCommunities, searchApplied, searchText]);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchText('');
-    if (searchApplied) {
-      setSearchApplied('');
-    } else {
-      fetchCommunities({pageParam: 1, replace: true});
-    }
-  }, [fetchCommunities, searchApplied]);
-
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    setHasMore(true);
-    fetchCommunities({pageParam: 1, replace: true});
-  }, [fetchCommunities]);
-
-  const handleLoadMore = useCallback(
-    throttle(() => {
-      if (hasMore && !loading && !loadingMore) {
-        fetchCommunities({pageParam: page, replace: false});
-      }
-    }, 900),
-    [fetchCommunities, hasMore, loading, loadingMore, page],
-  );
-
-  const sortedCommunities = useMemo(() => {
-    if (!communities.length) {
-      return [];
-    }
-    const list = [...communities];
-    switch (sortOption) {
-      case 'popular':
-        return list.sort((a, b) => getMembersCount(b) - getMembersCount(a));
-      case 'newest':
-        return list.sort((a, b) => getCreatedAtValue(b) - getCreatedAtValue(a));
-      case 'alphabetical':
-        return list.sort((a, b) => getName(a).localeCompare(getName(b)));
-      case 'recommended':
-      default:
-        return list;
-    }
-  }, [communities, sortOption]);
-
-  const heroCommunity = sortedCommunities[0] || null;
-  const listData = heroCommunity ? sortedCommunities.slice(1) : sortedCommunities;
-
-  const metrics = useMemo(() => {
-    const totalCommunities = sortedCommunities.length;
-    const totalMembers = sortedCommunities.reduce((total, item) => total + getMembersCount(item), 0);
-    const tags = new Set();
-    sortedCommunities.forEach((item) => {
-      const category = getCategoryLabel(item);
-      if (category) {
-        tags.add(category);
-      }
-      const itemTags = Array.isArray(item?.tags) ? item.tags : [];
-      itemTags.forEach((tag) => tags.add(tag));
-    });
-    return {
-      totalCommunities,
-      totalMembers,
-      categoryCount: tags.size,
+  const discoverList = useMemo(() => {
+    const joinedIds = new Set(joinedCommunities.map(c => c.id || c._id));
+    const pendingIds = new Set(pendingCommunities.map(c => c.id || c._id));
+    return allCommunities.filter(c => !joinedIds.has(c.id || c._id) && !pendingIds.has(c.id || c._id));
+  }, [allCommunities, joinedCommunities, pendingCommunities]);
+  
+  const filteredLists = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    const filterFn = c => {
+      const nameMatch = c.name?.toLowerCase().includes(query);
+      const categoryMatch = selectedCategory === 'All' || (c.category?.toLowerCase() === selectedCategory.toLowerCase());
+      return nameMatch && (activeTab !== 'discover' || categoryMatch);
     };
-  }, [sortedCommunities]);
 
-  const listHeader = useMemo(() => (
-    <View>
-      <HeroBanner
-        community={heroCommunity}
-        loading={loading && !communities.length}
-        onPress={(community) => {
-          const communityId = getCommunityId(community);
-          if (communityId) {
-            navigation.navigate(Routes.CommunityDetail, {communityId});
-          }
-        }}
-      />
-      <StatsStrip
-        totalCommunities={metrics.totalCommunities}
-        totalMembers={metrics.totalMembers}
-        categoryCount={metrics.categoryCount}
-      />
-      <View style={styles.searchCard}>
-        <Icon name="search" size={nw(18)} color={PALETTE.subtle} />
+    return {
+      discover: discoverList.filter(filterFn),
+      joined: joinedCommunities.filter(filterFn),
+      pending: pendingCommunities.filter(filterFn),
+    };
+  }, [searchQuery, selectedCategory, activeTab, discoverList, joinedCommunities, pendingCommunities]);
+  
+  const counts = {
+    discover: discoverList.length,
+    joined: joinedCommunities.length,
+    pending: pendingCommunities.length,
+  };
+
+  const renderHeader = () => (
+    <View style={styles.listHeader}>
+      <View style={styles.searchBar}>
+        <Icon name="search-outline" size={nw(20)} color={PALETTE.muted} />
         <TextInput
-          value={searchText}
-          onChangeText={setSearchText}
-          placeholder="Search communities, interests, or friends"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Search for community hubs..."
           placeholderTextColor={PALETTE.subtle}
           style={styles.searchInput}
-          autoCorrect={false}
-          returnKeyType="search"
-          onSubmitEditing={handleSearchSubmit}
         />
-        {searchText.length ? (
-          <TouchableOpacity onPress={handleClearSearch}>
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
             <Icon name="close-circle" size={nw(18)} color={PALETTE.subtle} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity onPress={handleSearchSubmit}>
-            <Feather name="sliders" size={nw(18)} color={PALETTE.primary} />
           </TouchableOpacity>
         )}
       </View>
-      <SortSelector selected={sortOption} onChange={setSortOption} />
-      {errorMessage ? (
-        <View style={styles.errorBanner}>
-          <Icon name="alert-circle" size={nw(18)} color={COLORS.redEA4335} />
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      ) : null}
-    </View>
-  ), [heroCommunity, loading, communities.length, metrics, searchText, sortOption, errorMessage, handleSearchSubmit, handleClearSearch, navigation]);
 
-  if (loading && !communities.length) {
+      {activeTab === 'discover' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroller}>
+          {categories.map(cat => (
+            <TouchableOpacity 
+              key={cat} 
+              style={[styles.categoryPill, selectedCategory === cat && styles.activeCategoryPill]}
+              onPress={() => setSelectedCategory(cat)}
+            >
+              <Text style={[styles.categoryText, selectedCategory === cat && styles.activeCategoryText]}>{cat}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+    </View>
+  );
+
+  const renderCommunity = ({item}) => (
+    <CommunityCard
+      item={item}
+      onPress={(community) => navigation.navigate(Routes.CommunityDetail, { communityId: community.id || community._id })}
+      onAction={handleCommunityAction}
+      actionType={activeTab}
+    />
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Icon name="compass-outline" size={nw(50)} color={PALETTE.subtle} />
+      <Text style={styles.emptyTitle}>
+        {activeTab === 'joined' ? "You're Not in a Hub Yet" : 
+         activeTab === 'pending' ? 'No Pending Requests' : 
+         searchQuery ? 'No Results Found' : 'Nothing to Discover'}
+      </Text>
+      <Text style={styles.emptySubtitle}>
+        {activeTab === 'joined' ? "Join a community hub to start connecting." : 
+         activeTab === 'pending' ? 'Your approved requests will show up in "My Hubs".' : 
+         searchQuery ? 'Try a different search term.' : 'We couldn’t find any communities to show.'}
+      </Text>
+      {activeTab !== 'discover' && (
+        <TouchableOpacity style={styles.emptyButton} onPress={() => setActiveTab('discover')}>
+          <Text style={styles.emptyButtonText}>Discover Hubs</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
-        <FlatList
-          data={[1, 2, 3, 4]}
-          keyExtractor={(item) => `skeleton-${item}`}
-          renderItem={() => <SkeletonCard />}
-          ListHeaderComponent={listHeader}
-          contentContainerStyle={styles.listContent}
-        />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={PALETTE.primary} />
+        </View>
       </SafeAreaView>
     );
   }
 
+  const currentList = filteredLists[activeTab];
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.surface} />
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Community Hubs</Text>
+        <TouchableOpacity style={styles.createButton} onPress={() => navigation.navigate(Routes.CreateCommunity)}>
+          <Icon name="add-circle-outline" size={nw(28)} color={PALETTE.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+
       <FlatList
-        data={listData}
-        keyExtractor={(item, index) => (getCommunityId(item) || `community-${index}`).toString()}
-        renderItem={({item}) => (
-          <CommunityCard
-            community={item}
-            onPress={(community) => {
-              const communityId = getCommunityId(community);
-              if (communityId) {
-                navigation.navigate(Routes.CommunityDetail, {communityId});
-              }
-            }}
-          />
-        )}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={
-          !loading && !loadingMore ? (
-            <EmptyState
-              title={searchApplied ? 'No communities match this search' : 'No communities yet'}
-              subtitle={
-                searchApplied
-                  ? 'Try a different keyword or clear the search to see all communities.'
-                  : 'Be the first to create a community and bring students together!'
-              }
-              showCreateButton={!searchApplied}
-              onCreatePress={() => navigation.navigate('CreateCommunity')}
-            />
-          ) : null
-        }
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={PALETTE.primary} />}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.6}
-        ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color={PALETTE.primary} style={styles.footerLoader} /> : null}
+        data={currentList}
+        keyExtractor={item => item.id || item._id}
+        renderItem={renderCommunity}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
-      />
-      
-      {/* Floating Action Button */}
-      <FloatingActionButton 
-        onPress={() => navigation.navigate('CreateCommunity')}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadData(true)}
+            colors={[PALETTE.primary]}
+            tintColor={PALETTE.primary}
+          />
+        }
       />
     </SafeAreaView>
   );
-};
+}
 
+// Enhanced Styles
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: PALETTE.background,
-  },
-  listContent: {
-    paddingBottom: nh(32),
-  },
-  heroGradient: {
-    marginHorizontal: nw(20),
-    marginTop: nh(16),
-    borderRadius: nw(24),
-    paddingHorizontal: nw(20),
-    paddingVertical: nh(22),
-  },
-  heroPill: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.whiteFFFFFF + '1A',
-    paddingHorizontal: nw(12),
-    paddingVertical: nh(6),
-    borderRadius: nw(14),
-    marginBottom: nh(10),
-  },
-  heroPillText: {
-    color: COLORS.whiteFFFFFF,
-    fontSize: nw(11),
-    fontWeight: '600',
-  },
-  heroTitle: {
-    color: COLORS.whiteFFFFFF,
-    fontSize: nw(22),
-    fontWeight: '700',
-    marginBottom: nh(10),
-  },
-  heroSubtitle: {
-    color: COLORS.whiteFFFFFF + 'CC',
-    fontSize: nw(12),
-    lineHeight: nh(18),
-    marginBottom: nh(18),
-  },
-  heroStatsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nw(10),
-    marginBottom: nh(18),
-  },
-  heroStatBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.whiteFFFFFF + '22',
-    paddingHorizontal: nw(12),
-    paddingVertical: nh(8),
-    borderRadius: nw(16),
-  },
-  heroStatLabel: {
-    color: COLORS.whiteFFFFFF,
-    fontSize: nw(12),
-    marginLeft: nw(6),
-  },
-  heroButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.whiteFFFFFF + '20',
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(10),
-    borderRadius: nw(16),
-    gap: nw(6),
-  },
-  heroButtonText: {
-    color: COLORS.whiteFFFFFF,
-    fontSize: nw(12),
-    fontWeight: '600',
-  },
-  statsStrip: {
-    marginHorizontal: nw(20),
-    marginTop: nh(18),
-    marginBottom: nh(16),
-    borderRadius: nw(18),
-    backgroundColor: PALETTE.card,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
+  container: { flex: 1, backgroundColor: PALETTE.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: PALETTE.background },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: nh(14),
     paddingHorizontal: nw(16),
+    paddingVertical: nh(12),
+    backgroundColor: PALETTE.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: PALETTE.border,
   },
-  statItem: {
+  headerTitle: { fontSize: nw(22), fontWeight: 'bold', color: PALETTE.primary },
+  createButton: { padding: nw(4) },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: PALETTE.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: PALETTE.border,
+  },
+  tab: {
     flex: 1,
-    alignItems: 'center',
-  },
-  statValue: {
-    color: PALETTE.primary,
-    fontSize: nw(16),
-    fontWeight: '700',
-  },
-  statLabel: {
-    color: PALETTE.muted,
-    fontSize: nw(11),
-    marginTop: nh(4),
-  },
-  statDivider: {
-    width: 1,
-    height: '70%',
-    backgroundColor: PALETTE.border,
-  },
-  searchCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: PALETTE.card,
-    borderRadius: nw(18),
+    justifyContent: 'center',
+    paddingVertical: nh(12),
+    gap: nw(6),
+    position: 'relative',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: { borderBottomColor: PALETTE.primary },
+  tabText: { fontSize: nw(13), color: PALETTE.muted, fontWeight: '500' },
+  activeTabText: { color: PALETTE.primary, fontWeight: '600' },
+  tabBadge: {
+    backgroundColor: PALETTE.danger,
+    borderRadius: nw(10),
+    minWidth: nw(18),
+    height: nw(18),
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: nw(5),
+    marginLeft: nw(4),
+  },
+  tabBadgeText: { color: PALETTE.surface, fontSize: nw(10), fontWeight: 'bold' },
+  listHeader: { paddingTop: nh(16) },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: PALETTE.surface,
+    borderRadius: nw(12),
+    marginHorizontal: nw(16),
+    marginBottom: nh(16),
+    paddingHorizontal: nw(12),
     borderWidth: 1,
     borderColor: PALETTE.border,
-    marginHorizontal: nw(20),
-    paddingHorizontal: nw(16),
-    paddingVertical: nh(10),
-    gap: nw(10),
   },
   searchInput: {
     flex: 1,
-    fontSize: nw(13),
-    color: PALETTE.primary,
+    height: nh(44),
+    marginLeft: nw(8),
+    fontSize: nw(14),
+    color: PALETTE.text,
   },
-  sortRow: {
-    marginHorizontal: nw(20),
-    marginTop: nh(14),
-    marginBottom: nh(4),
+  categoryScroller: {
+    paddingHorizontal: nw(16),
+    paddingBottom: nh(16),
   },
-  sortLabel: {
-    color: PALETTE.muted,
-    fontSize: nw(12),
-    marginBottom: nh(8),
-  },
-  sortChipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nw(10),
-  },
-  sortChip: {
-    paddingHorizontal: nw(14),
+  categoryPill: {
+    paddingHorizontal: nw(16),
     paddingVertical: nh(8),
-    borderRadius: nw(16),
+    borderRadius: nw(18),
+    backgroundColor: PALETTE.surface,
     borderWidth: 1,
     borderColor: PALETTE.border,
-    backgroundColor: PALETTE.card,
+    marginRight: nw(8),
   },
-  sortChipActive: {
+  activeCategoryPill: {
     backgroundColor: PALETTE.primary,
     borderColor: PALETTE.primary,
   },
-  sortChipText: {
-    fontSize: nw(12),
-    color: PALETTE.primary,
+  categoryText: {
+    fontSize: nw(13),
     fontWeight: '500',
+    color: PALETTE.primary,
   },
-  sortChipTextActive: {
-    color: COLORS.whiteFFFFFF,
+  activeCategoryText: {
+    color: PALETTE.surface,
   },
-  errorBanner: {
-    marginHorizontal: nw(20),
-    marginTop: nh(12),
+  communityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: nw(16),
+    marginBottom: nh(12),
+    padding: nw(12),
+    backgroundColor: PALETTE.surface,
     borderRadius: nw(16),
-    backgroundColor: COLORS.redEA4335 + '12',
-    borderWidth: 1,
-    borderColor: COLORS.redEA4335 + '40',
-    paddingHorizontal: nw(14),
-    paddingVertical: nh(12),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardAvatar: {
+    width: nw(48),
+    height: nw(48),
+    borderRadius: nw(12),
+    marginRight: nw(12),
+  },
+  avatarPlaceholder: {
+    backgroundColor: PALETTE.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    fontSize: nw(20),
+    fontWeight: 'bold',
+    color: PALETTE.primary,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nw(6),
+  },
+  cardTitle: {
+    fontSize: nw(15),
+    fontWeight: '600',
+    color: PALETTE.primary,
+  },
+  cardDescription: {
+    fontSize: nw(12),
+    color: PALETTE.muted,
+    marginTop: nh(2),
+  },
+  cardStats: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(10),
+    marginTop: nh(6),
   },
-  errorText: {
-    color: COLORS.redEA4335,
-    fontSize: nw(12),
-    flex: 1,
-  },
-  communityCard: {
-    marginHorizontal: nw(20),
-    marginTop: nh(16),
-    backgroundColor: PALETTE.card,
-    borderRadius: nw(20),
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    paddingHorizontal: nw(18),
-    paddingVertical: nh(18),
-    shadowColor: '#132E4D',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  communityHeaderRow: {
+  statItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: nh(12),
+    gap: nw(4),
   },
-  communityAvatar: {
-    width: nw(40),
-    height: nw(40),
-    borderRadius: nw(12),
-    backgroundColor: COLORS.blue043142_light,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  communityHeaderText: {
-    flex: 1,
-    marginLeft: nw(12),
-  },
-  communityName: {
-    fontSize: nw(16),
-    fontWeight: '700',
-    color: PALETTE.primary,
-  },
-  communityLabel: {
-    marginTop: nh(4),
-    fontSize: nw(12),
-    color: PALETTE.muted,
-  },
-  communitySummary: {
-    fontSize: nw(12),
-    color: PALETTE.muted,
-    lineHeight: nh(18),
-    marginBottom: nh(14),
-  },
-  communityMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: nw(6),
-  },
-  communityMetaText: {
+  statText: {
     fontSize: nw(11),
-    color: PALETTE.primary,
-  },
-  metaSeparator: {
-    width: 1,
-    height: nh(12),
-    backgroundColor: PALETTE.border,
-    marginHorizontal: nw(4),
-  },
-  skeletonCard: {
-    marginHorizontal: nw(20),
-    marginTop: nh(16),
-    backgroundColor: PALETTE.card,
-    borderRadius: nw(20),
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    paddingHorizontal: nw(18),
-    paddingVertical: nh(18),
-  },
-  skeletonLineWide: {
-    height: nh(18),
-    backgroundColor: COLORS.greyEEEEEE,
-    borderRadius: nw(8),
-    marginBottom: nh(12),
-  },
-  skeletonLine: {
-    height: nh(14),
-    backgroundColor: COLORS.greyEEEEEE,
-    borderRadius: nw(8),
-    marginBottom: nh(10),
-  },
-  emptyState: {
-    marginHorizontal: nw(20),
-    marginTop: nh(60),
-    alignItems: 'center',
-    gap: nh(12),
-  },
-  emptyTitle: {
-    fontSize: nw(16),
-    fontWeight: '700',
-    color: PALETTE.primary,
-  },
-  emptySubtitle: {
-    fontSize: nw(12),
     color: PALETTE.muted,
-    textAlign: 'center',
-    lineHeight: nh(18),
-    paddingHorizontal: nw(20),
   },
-  emptyCreateButton: {
-    marginTop: nh(16),
-    paddingHorizontal: nw(24),
-    paddingVertical: nh(12),
-    backgroundColor: PALETTE.primary,
+  actionButton: {
+    paddingHorizontal: nw(14),
+    paddingVertical: nh(8),
     borderRadius: nw(18),
+    marginLeft: nw(10),
   },
-  emptyCreateButtonText: {
+  actionButtonText: {
     color: COLORS.whiteFFFFFF,
-    fontSize: nw(13),
+    fontSize: nw(12),
     fontWeight: '600',
   },
-  footerLoader: {
-    marginTop: nh(12),
+  joinButton: {
+    backgroundColor: PALETTE.success,
   },
-  // Floating Action Button styles
-  fab: {
-    position: 'absolute',
-    bottom: nh(24),
-    right: nw(20),
-    width: nw(56),
-    height: nw(56),
-    borderRadius: nw(28),
-    shadowColor: '#132E4D',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+  requestButton: {
+    backgroundColor: PALETTE.accent,
   },
-  fabGradient: {
-    width: '100%',
-    height: '100%',
-    borderRadius: nw(28),
+  cancelButton: {
+    backgroundColor: PALETTE.danger,
+  },
+  roleButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+  },
+  roleButtonText: {
+    color: PALETTE.muted,
+    fontSize: nw(12),
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: nh(60),
+    paddingHorizontal: nw(40),
+  },
+  emptyTitle: {
+    fontSize: nw(18),
+    fontWeight: '600',
+    color: PALETTE.text,
+    marginTop: nh(16),
+  },
+  emptySubtitle: {
+    fontSize: nw(14),
+    color: PALETTE.muted,
+    textAlign: 'center',
+    marginTop: nh(8),
+    lineHeight: nh(22),
+  },
+  emptyButton: {
+    marginTop: nh(20),
+    backgroundColor: PALETTE.primary,
+    paddingHorizontal: nw(24),
+    paddingVertical: nh(12),
+    borderRadius: nw(24),
+  },
+  emptyButtonText: {
+    color: PALETTE.surface,
+    fontSize: nw(14),
+    fontWeight: '600',
+  },
+  listContent: {
+    paddingBottom: nh(20),
+    minHeight: '100%',
   },
 });
-
-export default CommunityDiscovery;
