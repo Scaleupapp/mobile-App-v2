@@ -1,31 +1,26 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState, Suspense, lazy} from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
+  InteractionManager,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
-import {launchImageLibrary} from 'react-native-image-picker';
-import DatePicker from 'react-native-date-picker';
 
 import Text from '../../components/Text';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
-import {createCommunityPostApi, uploadFileApi} from '../../services/apiService';
 
-const PAGE_VARIANTS = ['post', 'poll', 'event'];
-
-const PALETTE = {
+// Constants
+export const PALETTE = {
   background: COLORS.greyF7F7F7,
   surface: COLORS.whiteFFFFFF,
   primary: COLORS.blue043142,
@@ -36,17 +31,19 @@ const PALETTE = {
   danger: COLORS.redEA4335,
 };
 
+const PAGE_VARIANTS = ['post', 'poll', 'event'];
+
+// Lazy load post type components
+const PostContent = lazy(() => import('./PostContent'));
+const PollContent = lazy(() => import('./PollContent'));
+const EventContent = lazy(() => import('./EventContent'));
+
+// Utility functions
 const getCommunityId = (route) => route?.params?.communityId || route?.params?.id;
 const getCommunityName = (route) => route?.params?.communityName || 'Community';
 
-const formatDateTime = (value) => value.toLocaleString(undefined, {
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-const PostTypeSelector = ({value, onChange}) => (
+// Memoized components
+const PostTypeSelector = React.memo(({value, onChange}) => (
   <View style={styles.selectorRow}>
     {PAGE_VARIANTS.map((variant) => {
       const isActive = value === variant;
@@ -63,42 +60,261 @@ const PostTypeSelector = ({value, onChange}) => (
       );
     })}
   </View>
-);
+));
 
-const MediaPreview = ({asset, onRemove}) => (
-  <View style={styles.mediaPreviewCard}>
-    <Image source={{uri: asset?.uri}} style={styles.mediaPreviewImage} />
-    <TouchableOpacity style={styles.mediaRemoveButton} onPress={onRemove}>
-      <Icon name="close-circle" size={nw(22)} color={COLORS.whiteFFFFFF} />
-    </TouchableOpacity>
-  </View>
-);
+const TipCard = React.memo(({postType}) => {
+  const tipText = useMemo(() => {
+    if (postType === 'post') {
+      return 'Share an update, ask a question, or celebrate wins with your community.';
+    }
+    if (postType === 'poll') {
+      return 'Polls help you gauge interest. Add at least two options to get started.';
+    }
+    if (postType === 'event') {
+      return 'Events promote meetups or study sessions. Add a title, time, and description.';
+    }
+    return '';
+  }, [postType]);
+
+  return (
+    <View style={styles.tipCard}>
+      <Icon name="bulb" size={nw(18)} color={PALETTE.accent} />
+      <Text style={styles.tipText}>{tipText}</Text>
+    </View>
+  );
+});
 
 const CreateCommunityPost = ({route, navigation}) => {
   const communityId = getCommunityId(route);
   const communityName = getCommunityName(route);
 
+  // Core state
   const [postType, setPostType] = useState('post');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [mediaAsset, setMediaAsset] = useState(null);
-
-  const [pollQuestion, setPollQuestion] = useState('');
-  const [pollOptions, setPollOptions] = useState(['', '']);
-  const [pollSettings, setPollSettings] = useState({
-    multipleChoice: false,
-    anonymous: false,
-    changeVote: true,
-    showResults: 'after_vote'
-  });
-
-  const [eventTitle, setEventTitle] = useState('');
-  const [eventDescription, setEventDescription] = useState('');
-  const [eventDate, setEventDate] = useState(new Date());
-  const [eventLocation, setEventLocation] = useState('');
-  const [datePickerVisible, setDatePickerVisible] = useState(false);
-
   const [submitting, setSubmitting] = useState(false);
+  
+  // Deferred UI state
+  const [showNonCritical, setShowNonCritical] = useState(false);
+  const [gradientLoaded, setGradientLoaded] = useState(false);
+  
+  // Lazy loaded modules
+  const [uploadModule, setUploadModule] = useState(null);
+  
+  // Post-specific state (lazy initialized)
+  const [postState, setPostState] = useState(() => ({
+    title: '',
+    content: '',
+    mediaAsset: null
+  }));
+  
+  const [pollState, setPollState] = useState(null);
+  const [eventState, setEventState] = useState(null);
+
+  // Initialize state when switching post types
+  useEffect(() => {
+    if (postType === 'poll' && !pollState) {
+      setPollState({
+        pollQuestion: '',
+        pollOptions: ['', ''],
+        pollSettings: {
+          multipleChoice: false,
+          anonymous: false,
+          changeVote: true,
+          showResults: 'after_vote'
+        }
+      });
+    } else if (postType === 'event' && !eventState) {
+      setEventState({
+        eventTitle: '',
+        eventDescription: '',
+        eventDate: new Date(),
+        eventLocation: '',
+        mediaAsset: null
+      });
+    }
+  }, [postType, pollState, eventState]);
+
+  // Defer non-critical UI elements
+  useEffect(() => {
+    InteractionManager.runAfterInteractions(() => {
+      setShowNonCritical(true);
+    });
+    
+    requestAnimationFrame(() => {
+      setGradientLoaded(true);
+    });
+  }, []);
+
+  // Lazy load API service when needed
+  const getUploadModule = useCallback(async () => {
+    if (!uploadModule) {
+      const module = await import('../../services/apiService');
+      setUploadModule(module);
+      return module;
+    }
+    return uploadModule;
+  }, [uploadModule]);
+
+  const canSubmit = useMemo(() => {
+    if (submitting) return false;
+    
+    if (postType === 'post') {
+      return Boolean(postState.content.trim() || postState.mediaAsset);
+    }
+    if (postType === 'poll' && pollState) {
+      const validOptions = pollState.pollOptions.filter((option) => option.trim());
+      return Boolean(pollState.pollQuestion.trim() && validOptions.length >= 2);
+    }
+    if (postType === 'event' && eventState) {
+      return Boolean(eventState.eventTitle.trim() && eventState.eventDescription.trim());
+    }
+    return false;
+  }, [postState, pollState, eventState, postType, submitting]);
+
+  const uploadMediaIfNeeded = useCallback(async (mediaAsset) => {
+    if (!mediaAsset) return null;
+    
+    try {
+      const api = await getUploadModule();
+      const formData = new FormData();
+      formData.append('file', {
+        uri: mediaAsset.uri,
+        type: mediaAsset.type || 'image/jpeg',
+        name: mediaAsset.fileName || `media-${Date.now()}`,
+      });
+      const response = await api.uploadFileApi(formData);
+      return response?.data?.file?.url || null;
+    } catch (error) {
+      console.log('Upload error:', error);
+      return null;
+    }
+  }, [getUploadModule]);
+
+  const buildPayload = useCallback(async () => {
+    try {
+      if (postType === 'post') {
+        const mediaUrl = await uploadMediaIfNeeded(postState.mediaAsset);
+        const payload = {
+          postType: 'text',
+          title: postState.title.trim() || undefined,
+          content: {
+            text: postState.content.trim(),
+          },
+        };
+        
+        if (mediaUrl) {
+          payload.media = {
+            images: [{
+              url: mediaUrl,
+              uploadedAt: new Date().toISOString()
+            }]
+          };
+        }
+        return payload;
+      }
+      
+      if (postType === 'poll' && pollState) {
+        const filteredOptions = pollState.pollOptions.filter((option) => option.trim());
+        return {
+          postType: 'poll',
+          pollQuestion: pollState.pollQuestion.trim(),
+          pollOptions: filteredOptions,
+          pollSettings: pollState.pollSettings,
+        };
+      }
+      
+      if (postType === 'event' && eventState) {
+        const mediaUrl = await uploadMediaIfNeeded(eventState.mediaAsset);
+        const payload = {
+          postType: 'event',
+          title: eventState.eventTitle.trim(),
+          content: {
+            text: eventState.eventDescription.trim()
+          },
+          eventData: {
+            title: eventState.eventTitle.trim(),
+            description: eventState.eventDescription.trim(),
+            startDate: eventState.eventDate.toISOString(),
+            location: {
+              type: 'physical',
+              venue: eventState.eventLocation.trim() || undefined
+            }
+          }
+        };
+        
+        if (mediaUrl) {
+          payload.media = {
+            images: [{
+              url: mediaUrl,
+              uploadedAt: new Date().toISOString()
+            }]
+          };
+        }
+        return payload;
+      }
+      
+      return null;
+    } catch (error) {
+      console.log('Error building payload:', error);
+      throw error;
+    }
+  }, [postState, pollState, eventState, postType, uploadMediaIfNeeded]);
+
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit) return;
+    
+    setSubmitting(true);
+    try {
+      const api = await getUploadModule();
+      const payload = await buildPayload();
+      
+      if (!payload) {
+        throw new Error('Could not prepare post data.');
+      }
+      
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
+      
+      const response = await api.createCommunityPostApi(communityId, payload);
+      console.log('Post created successfully:', response?.data);
+      
+      Alert.alert('Success', 'Your post has been published!', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      console.log('Create community post error', error?.response?.data || error?.message);
+      Alert.alert(
+        'Error', 
+        error?.response?.data?.message || 'Unable to publish your post right now. Please try again.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [buildPayload, canSubmit, communityId, navigation, getUploadModule]);
+
+  // Props for child components
+  const commonProps = {
+    navigation,
+    submitting,
+    uploadMediaIfNeeded,
+    getUploadModule
+  };
+
+  const postProps = {
+    ...commonProps,
+    state: postState,
+    setState: setPostState,
+  };
+
+  const pollProps = {
+    ...commonProps,
+    state: pollState,
+    setState: setPollState,
+  };
+
+  const eventProps = {
+    ...commonProps,
+    state: eventState,
+    setState: setEventState,
+  };
 
   if (!communityId) {
     return (
@@ -116,385 +332,50 @@ const CreateCommunityPost = ({route, navigation}) => {
     );
   }
 
-  const postCharacterLimit = 1000;
-  const eventCharacterLimit = 500;
-
-  const canSubmit = useMemo(() => {
-    if (submitting) {
-      return false;
-    }
-    if (postType === 'post') {
-      return Boolean(content.trim() || mediaAsset);
-    }
-    if (postType === 'poll') {
-      const validOptions = pollOptions.filter((option) => option.trim());
-      return Boolean(pollQuestion.trim() && validOptions.length >= 2);
-    }
-    if (postType === 'event') {
-      return Boolean(eventTitle.trim() && eventDescription.trim());
-    }
-    return false;
-  }, [content, mediaAsset, pollOptions, pollQuestion, postType, eventTitle, eventDescription, submitting]);
-
-  const handleSelectMedia = useCallback(() => {
-    launchImageLibrary({mediaType: 'mixed', quality: 0.85}, (response) => {
-      if (response.didCancel) {
-        return;
-      }
-      if (response.errorCode) {
-        Alert.alert('Error', 'Unable to select media right now.');
-        return;
-      }
-      if (response.assets && response.assets[0]) {
-        setMediaAsset(response.assets[0]);
-      }
-    });
-  }, []);
-
-  const handleAddPollOption = useCallback(() => {
-    if (pollOptions.length >= 5) {
-      Alert.alert('Limit reached', 'You can add up to 5 options only');
-      return;
-    }
-    setPollOptions((prev) => [...prev, '']);
-  }, [pollOptions.length]);
-
-  const handlePollOptionChange = useCallback((text, index) => {
-    setPollOptions((prev) => prev.map((value, idx) => (idx === index ? text : value)));
-  }, []);
-
-  const handleRemovePollOption = useCallback((index) => {
-    setPollOptions((prev) => prev.filter((_, idx) => idx !== index));
-  }, []);
-
-  const uploadMediaIfNeeded = useCallback(async () => {
-    if (!mediaAsset) {
-      return null;
-    }
-    try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: mediaAsset.uri,
-        type: mediaAsset.type || 'image/jpeg',
-        name: mediaAsset.fileName || `media-${Date.now()}`,
-      });
-      const response = await uploadFileApi(formData);
-      return response?.data?.file?.url || null;
-    } catch (error) {
-      console.log('Upload error:', error);
-      return null;
-    }
-  }, [mediaAsset]);
-
-  const buildPayload = useCallback(
-    async () => {
-      try {
-        const mediaUrl = await uploadMediaIfNeeded();
-        
-        if (postType === 'post') {
-          // For regular posts, backend expects postType: 'text'
-          const payload = {
-            postType: 'text',
-            title: title.trim() || undefined,
-            content: {
-              text: content.trim(),
-            },
-          };
-          
-          // Add media if available
-          if (mediaUrl) {
-            payload.media = {
-              images: [{
-                url: mediaUrl,
-                uploadedAt: new Date().toISOString()
-              }]
-            };
-          }
-          
-          return payload;
-        }
-        
-        if (postType === 'poll') {
-          const filteredOptions = pollOptions.filter((option) => option.trim());
-          return {
-            postType: 'poll',
-            pollQuestion: pollQuestion.trim(),
-            pollOptions: filteredOptions,
-            pollSettings: pollSettings,
-          };
-        }
-        
-        if (postType === 'event') {
-          const payload = {
-            postType: 'event',
-            title: eventTitle.trim(),
-            content: {
-              text: eventDescription.trim()
-            },
-            eventData: {
-              title: eventTitle.trim(),
-              description: eventDescription.trim(),
-              startDate: eventDate.toISOString(),
-              location: {
-                type: 'physical',
-                venue: eventLocation.trim() || undefined
-              }
-            }
-          };
-          
-          // Add media if available
-          if (mediaUrl) {
-            payload.media = {
-              images: [{
-                url: mediaUrl,
-                uploadedAt: new Date().toISOString()
-              }]
-            };
-          }
-          
-          return payload;
-        }
-        
-        return null;
-      } catch (error) {
-        console.log('Error building payload:', error);
-        throw error;
-      }
-    },
-    [content, title, eventDate, eventTitle, eventDescription, eventLocation, 
-     pollOptions, pollQuestion, pollSettings, postType, uploadMediaIfNeeded],
-  );
-
-  const handleSubmit = useCallback(async () => {
-    if (!canSubmit) {
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const payload = await buildPayload();
-      if (!payload) {
-        throw new Error('Could not prepare post data.');
-      }
-      
-      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
-      
-      const response = await createCommunityPostApi(communityId, payload);
-      console.log('Post created successfully:', response?.data);
-      
-      Alert.alert('Success', 'Your post has been published!', [
-        { text: 'OK', onPress: () => navigation.goBack() }
-      ]);
-    } catch (error) {
-      console.log('Create community post error', error?.response?.data || error?.message);
-      Alert.alert(
-        'Error', 
-        error?.response?.data?.message || 'Unable to publish your post right now. Please try again.'
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }, [buildPayload, canSubmit, communityId, navigation]);
-
-  const renderContextualTips = () => {
-    if (postType === 'post') {
-      return 'Share an update, ask a question, or celebrate wins with your community.';
-    }
-    if (postType === 'poll') {
-      return 'Polls help you gauge interest. Add at least two options to get started.';
-    }
-    if (postType === 'event') {
-      return 'Events promote meetups or study sessions. Add a title, time, and description.';
-    }
-    return '';
-  };
-
   const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : undefined;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor={PALETTE.background} />
       <KeyboardAvoidingView behavior={keyboardBehavior} style={styles.flex}>
-        <LinearGradient colors={[PALETTE.primary, '#0E4F62']} style={styles.headerGradient}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-            <Icon name="chevron-back" size={nw(20)} color={COLORS.whiteFFFFFF} />
-          </TouchableOpacity>
-          <View style={styles.headerTextBlock}>
-            <Text style={styles.headerTitle}>Create Post</Text>
-            <Text style={styles.headerSubtitle}>{communityName}</Text>
+        {gradientLoaded ? (
+          <LinearGradient colors={[PALETTE.primary, '#0E4F62']} style={styles.headerGradient}>
+            <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+              <Icon name="chevron-back" size={nw(20)} color={COLORS.whiteFFFFFF} />
+            </TouchableOpacity>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.headerTitle}>Create Post</Text>
+              <Text style={styles.headerSubtitle}>{communityName}</Text>
+            </View>
+            <View style={styles.headerSpacer} />
+          </LinearGradient>
+        ) : (
+          <View style={[styles.headerGradient, {backgroundColor: PALETTE.primary}]}>
+            <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+              <Icon name="chevron-back" size={nw(20)} color={COLORS.whiteFFFFFF} />
+            </TouchableOpacity>
+            <View style={styles.headerTextBlock}>
+              <Text style={styles.headerTitle}>Create Post</Text>
+              <Text style={styles.headerSubtitle}>{communityName}</Text>
+            </View>
+            <View style={styles.headerSpacer} />
           </View>
-          <View style={styles.headerSpacer} />
-        </LinearGradient>
+        )}
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           <PostTypeSelector value={postType} onChange={setPostType} />
 
-          <View style={styles.tipCard}>
-            <Icon name="bulb" size={nw(18)} color={PALETTE.accent} />
-            <Text style={styles.tipText}>{renderContextualTips()}</Text>
-          </View>
+          {showNonCritical && <TipCard postType={postType} />}
 
-          {postType === 'post' ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Write your post</Text>
-              
-              <TextInput
-                style={styles.singleLineInput}
-                placeholder="Title (optional)"
-                placeholderTextColor={PALETTE.subtle}
-                value={title}
-                onChangeText={setTitle}
-                maxLength={300}
-              />
-              
-              <TextInput
-                style={styles.multiLineInput}
-                placeholder="Share an update with your community"
-                placeholderTextColor={PALETTE.subtle}
-                multiline
-                value={content}
-                onChangeText={setContent}
-                maxLength={postCharacterLimit}
-              />
-              
-              <View style={styles.cardFooter}>
-                <Text style={styles.charCounter}>{content.length}/{postCharacterLimit}</Text>
-                <TouchableOpacity style={styles.mediaButton} onPress={handleSelectMedia}>
-                  <Icon name="image" size={nw(18)} color={PALETTE.primary} />
-                  <Text style={styles.mediaButtonText}>Add media</Text>
-                </TouchableOpacity>
-              </View>
-              
-              {mediaAsset ? <MediaPreview asset={mediaAsset} onRemove={() => setMediaAsset(null)} /> : null}
+          <Suspense fallback={
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={PALETTE.primary} />
             </View>
-          ) : null}
-
-          {postType === 'poll' ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Create a poll</Text>
-              
-              <TextInput
-                style={styles.pollQuestionInput}
-                placeholder="Ask your community a question"
-                placeholderTextColor={PALETTE.subtle}
-                value={pollQuestion}
-                onChangeText={setPollQuestion}
-                maxLength={200}
-              />
-              
-              <Text style={styles.optionsLabel}>Options</Text>
-              
-              {pollOptions.map((option, index) => (
-                <View key={index} style={styles.pollOptionRow}>
-                  <TextInput
-                    style={styles.pollOptionInput}
-                    placeholder={`Option ${index + 1}`}
-                    placeholderTextColor={PALETTE.subtle}
-                    value={option}
-                    onChangeText={(text) => handlePollOptionChange(text, index)}
-                    maxLength={100}
-                  />
-                  {pollOptions.length > 2 ? (
-                    <TouchableOpacity onPress={() => handleRemovePollOption(index)}>
-                      <Icon name="close-circle" size={nw(20)} color={PALETTE.danger + 'CC'} />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              ))}
-              
-              {pollOptions.length < 5 ? (
-                <TouchableOpacity style={styles.addOptionButton} onPress={handleAddPollOption}>
-                  <Icon name="add-circle" size={nw(18)} color={PALETTE.primary} />
-                  <Text style={styles.addOptionText}>Add option</Text>
-                </TouchableOpacity>
-              ) : null}
-              
-              <View style={styles.pollSettingsContainer}>
-                <TouchableOpacity 
-                  style={styles.checkboxRow}
-                  onPress={() => setPollSettings({...pollSettings, multipleChoice: !pollSettings.multipleChoice})}>
-                  <Icon 
-                    name={pollSettings.multipleChoice ? "checkbox" : "square-outline"} 
-                    size={nw(20)} 
-                    color={PALETTE.primary} 
-                  />
-                  <Text style={styles.checkboxLabel}>Allow multiple choices</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.checkboxRow}
-                  onPress={() => setPollSettings({...pollSettings, anonymous: !pollSettings.anonymous})}>
-                  <Icon 
-                    name={pollSettings.anonymous ? "checkbox" : "square-outline"} 
-                    size={nw(20)} 
-                    color={PALETTE.primary} 
-                  />
-                  <Text style={styles.checkboxLabel}>Anonymous voting</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ) : null}
-
-          {postType === 'event' ? (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Event details</Text>
-              
-              <TextInput
-                style={styles.singleLineInput}
-                placeholder="Event title"
-                placeholderTextColor={PALETTE.subtle}
-                value={eventTitle}
-                onChangeText={setEventTitle}
-                maxLength={150}
-              />
-              
-              <TouchableOpacity style={styles.dateButton} onPress={() => setDatePickerVisible(true)}>
-                <Icon name="calendar" size={nw(18)} color={PALETTE.primary} />
-                <Text style={styles.dateButtonText}>{formatDateTime(eventDate)}</Text>
-              </TouchableOpacity>
-              
-              <DatePicker
-                modal
-                open={datePickerVisible}
-                mode="datetime"
-                minimumDate={new Date()}
-                date={eventDate}
-                onConfirm={(date) => {
-                  setDatePickerVisible(false);
-                  setEventDate(date);
-                }}
-                onCancel={() => setDatePickerVisible(false)}
-              />
-              
-              <TextInput
-                style={styles.singleLineInput}
-                placeholder="Location (optional)"
-                placeholderTextColor={PALETTE.subtle}
-                value={eventLocation}
-                onChangeText={setEventLocation}
-                maxLength={200}
-              />
-              
-              <TextInput
-                style={styles.multiLineInput}
-                placeholder="Describe the event agenda, venue, or logistics"
-                placeholderTextColor={PALETTE.subtle}
-                multiline
-                value={eventDescription}
-                onChangeText={setEventDescription}
-                maxLength={eventCharacterLimit}
-              />
-              
-              <View style={styles.cardFooter}>
-                <Text style={styles.charCounter}>{eventDescription.length}/{eventCharacterLimit}</Text>
-                <TouchableOpacity style={styles.mediaButton} onPress={handleSelectMedia}>
-                  <Icon name="image" size={nw(18)} color={PALETTE.primary} />
-                  <Text style={styles.mediaButtonText}>Add banner</Text>
-                </TouchableOpacity>
-              </View>
-              
-              {mediaAsset ? <MediaPreview asset={mediaAsset} onRemove={() => setMediaAsset(null)} /> : null}
-            </View>
-          ) : null}
+          }>
+            {postType === 'post' && <PostContent {...postProps} />}
+            {postType === 'poll' && pollState && <PollContent {...pollProps} />}
+            {postType === 'event' && eventState && <EventContent {...eventProps} />}
+          </Suspense>
 
           <View style={styles.submitButtonContainer}>
             <TouchableOpacity
@@ -511,7 +392,7 @@ const CreateCommunityPost = ({route, navigation}) => {
               )}
             </TouchableOpacity>
             
-            {!canSubmit && !submitting ? (
+            {!canSubmit && !submitting && showNonCritical ? (
               <Text style={styles.submitHint}>
                 {postType === 'post' ? 'Add some content or media to post' :
                  postType === 'poll' ? 'Fill in your question and at least 2 options' :
@@ -536,7 +417,7 @@ const styles = StyleSheet.create({
   headerGradient: {
     paddingHorizontal: nw(20),
     paddingTop: nh(26),
-    paddingBottom: nh(),
+    paddingBottom: nh(20),
     flexDirection: 'row',
     alignItems: 'center',
     gap: nw(12),
@@ -614,135 +495,10 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: nh(18),
   },
-  card: {
-    borderRadius: nw(20),
-    backgroundColor: PALETTE.surface,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    paddingHorizontal: nw(18),
-    paddingVertical: nh(16),
-    gap: nh(14),
-  },
-  cardTitle: {
-    color: PALETTE.primary,
-    fontSize: nw(14),
-    fontWeight: '700',
-  },
-  multiLineInput: {
-    minHeight: nh(120),
-    color: PALETTE.primary,
-    fontSize: nw(14),
-    textAlignVertical: 'top',
-  },
-  singleLineInput: {
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    borderRadius: nw(12),
-    paddingHorizontal: nw(14),
-    paddingVertical: nh(10),
-    fontSize: nw(14),
-    color: PALETTE.primary,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  charCounter: {
-    color: PALETTE.subtle,
-    fontSize: nw(11),
-  },
-  mediaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nw(6),
-  },
-  mediaButtonText: {
-    color: PALETTE.primary,
-    fontSize: nw(12),
-    fontWeight: '600',
-  },
-  mediaPreviewCard: {
-    borderRadius: nw(16),
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  mediaPreviewImage: {
-    width: '100%',
+  loadingContainer: {
     height: nh(200),
-  },
-  mediaRemoveButton: {
-    position: 'absolute',
-    right: nw(10),
-    top: nh(10),
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: nw(14),
-    padding: nw(4),
-  },
-  pollQuestionInput: {
-    borderBottomWidth: 1,
-    borderColor: PALETTE.border,
-    fontSize: nw(16),
-    fontWeight: '600',
-    paddingBottom: nh(10),
-    color: PALETTE.primary,
-  },
-  optionsLabel: {
-    color: PALETTE.primary,
-    fontSize: nw(13),
-    fontWeight: '600',
-  },
-  pollOptionRow: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: nw(10),
-  },
-  pollOptionInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    borderRadius: nw(12),
-    paddingHorizontal: nw(14),
-    paddingVertical: nh(10),
-    fontSize: nw(13),
-    color: PALETTE.primary,
-  },
-  addOptionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nw(8),
-  },
-  addOptionText: {
-    color: PALETTE.primary,
-    fontSize: nw(12),
-    fontWeight: '600',
-  },
-  pollSettingsContainer: {
-    gap: nh(10),
-    marginTop: nh(8),
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nw(8),
-  },
-  checkboxLabel: {
-    color: PALETTE.primary,
-    fontSize: nw(13),
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nw(8),
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    borderRadius: nw(12),
-    paddingHorizontal: nw(14),
-    paddingVertical: nh(10),
-  },
-  dateButtonText: {
-    color: PALETTE.primary,
-    fontSize: nw(13),
   },
   submitButtonContainer: {
     gap: nh(8),

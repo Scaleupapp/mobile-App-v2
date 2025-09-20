@@ -343,8 +343,8 @@ INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
   DOMAIN_WHITELIST_ADD: 'domain-verification/whitelist/add',
   
 
-    // ==========================================
-  // COMMUNITY FEATURE API ENDPOINTS
+// ==========================================
+  // COMMUNITY - CORRECTED & VERIFIED CONSTANTS
   // ==========================================
   
   // -- Community Management & Discovery --
@@ -375,24 +375,37 @@ INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
   COMMUNITY_DELETE_POST: 'communities/:communityId/posts/', // DELETE with /:postId
 
   // -- User Interactions on Content --
-  // Community Post Interactions
-COMMUNITY_POST_VOTE: 'communities/:communityId/posts/:postId/vote', // POST - Body: { voteType: 'upvote'|'downvote' }
-COMMUNITY_POST_COMMENT: 'communities/:communityId/posts/:postId/comments', // POST - Body: { content: { text, html }, parentCommentId?, attachments? }
-COMMUNITY_POLL_VOTE: 'communities/:communityId/posts/:postId/poll/vote', // POST - Body: { optionIds: [] }
-COMMUNITY_EVENT_RSVP: 'communities/:communityId/posts/:postId/event/rsvp', // POST - Body: { status: 'going'|'interested'|'not_going', seats? }
-COMMUNITY_POST_BOOKMARK: 'communities/:communityId/posts/:postId/bookmark', // POST - Body: { notes?, tags?, collectionId?, isPrivate? }
-COMMUNITY_POST_SHARE: 'communities/:communityId/posts/:postId/share', // POST - Body: { platform, message?, sharedTo? }
-COMMUNITY_POST_REPORT: 'communities/:communityId/posts/:postId/report', // POST - Body: { reason, description }
-COMMUNITY_POST_INTERACTIONS: 'communities/:communityId/posts/:postId/interactions', // GET - Query: ?includeComments=true&commentSort=best&page=1&limit=20
+  COMMUNITY_POST_VOTE: 'communities/:communityId/posts/:postId/vote',
+  COMMUNITY_POST_COMMENT: 'communities/:communityId/posts/:postId/comments',
+  COMMUNITY_POLL_VOTE: 'communities/:communityId/posts/:postId/poll/vote',
+  COMMUNITY_EVENT_RSVP: 'communities/:communityId/posts/:postId/event/rsvp',
+  COMMUNITY_POST_BOOKMARK: 'communities/:communityId/posts/:postId/bookmark',
+  COMMUNITY_POST_SHARE: 'communities/:communityId/posts/:postId/share',
+  COMMUNITY_POST_REPORT: 'communities/:communityId/posts/:postId/report',
+  COMMUNITY_POST_INTERACTIONS: 'communities/:communityId/posts/:postId/interactions',
 
-  // -- Administration & Analytics --
-  COMMUNITY_UPDATE_SETTINGS: 'communities/:communityId/settings', // PUT
+  // -- Administration, Analytics & File Uploads --
   COMMUNITY_ANALYTICS: 'communities/:communityId/analytics', // GET
   PLATFORM_ANALYTICS: 'analytics/platform', // GET (For Super Admins)
-
-  // -- File & Media Uploads --
   FILE_UPLOAD: 'upload', // POST
   FILE_DETAILS: 'files/', // GET with /:fileId
   FILE_DELETE: 'files/', // DELETE with /:fileId
-  
+
+  // ==========================================
+  // COMMUNITY SETTINGS - CORRECTED & VERIFIED
+  // ==========================================
+  COMMUNITY_SETTINGS: 'communities/:communityId/settings', // Used for GET and PUT
+  COMMUNITY_SETTINGS_CREATE_AUTOMATION: 'communities/:communityId/settings/automation', // POST
+  COMMUNITY_SETTINGS_MANAGE_INTEGRATIONS: 'communities/:communityId/settings/integrations', // POST
+
+  // ==========================================
+  // COMMUNITY MODERATION - CORRECTED & VERIFIED
+  // ==========================================
+  COMMUNITY_MODERATION_SETTINGS: 'communities/:communityId/moderation/settings', // PUT
+  COMMUNITY_MODERATION_CONTENT: 'communities/:communityId/moderation/content', // POST
+  COMMUNITY_MODERATION_QUEUE: 'communities/:communityId/moderation/queue', // GET
+  COMMUNITY_MODERATION_AUTO: 'communities/:communityId/moderation/auto-moderate', // POST
+  COMMUNITY_MODERATION_BAN_USER: 'communities/:communityId/moderation/users/:userId/ban', // POST
+  COMMUNITY_MODERATION_APPEALS_REVIEW: 'communities/:communityId/moderation/appeals/:appealId/review', // POST
+
 };

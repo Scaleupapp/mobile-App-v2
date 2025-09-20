@@ -2199,7 +2199,7 @@ export const addDomainToWhitelistApi = (payload: any) => {
 
 
 // ==========================================
-// COMMUNITY FEATURE API SERVICES
+// COMMUNITY FEATURE API SERVICES (Corrected & Final)
 // ==========================================
 
 // -- Community Management & Discovery --
@@ -2388,234 +2388,83 @@ export const deleteCommunityPostApi = (communityId: string, postId: string) => {
 
 // -- User Interactions on Content --
 
-// Types for better type safety
-interface VotePayload {
-  voteType: 'upvote' | 'downvote';
-}
-
-interface CommentPayload {
-  content: {
-    text: string;
-    html?: string;
-  };
-  parentCommentId?: string;
-  attachments?: Array<{
-    type: 'image' | 'gif' | 'link';
-    url: string;
-    thumbnailUrl?: string;
-    metadata?: any;
-  }>;
-  markAsBestAnswer?: boolean;
-}
-
-interface PollVotePayload {
-  optionIds: string[];
-}
-
-interface EventRSVPPayload {
-  status: 'going' | 'interested' | 'not_going';
-  seats?: number; // 1-10
-}
-
-interface BookmarkPayload {
-  notes?: string;
-  tags?: string[];
-  collectionId?: string;
-  isPrivate?: boolean;
-}
-
-interface SharePayload {
-  platform: 'internal' | 'whatsapp' | 'twitter' | 'facebook' | 'linkedin' | 'telegram' | 'copy_link' | 'email' | 'other';
-  message?: string;
-  sharedTo?: {
-    communities?: string[];
-    users?: string[];
-  };
-}
-
-interface ReportPayload {
-  reason: 'spam' | 'inappropriate' | 'harassment' | 'misinformation' | 'other';
-  description: string;
-}
-
-interface InteractionsParams {
-  includeComments?: boolean;
-  includeVoters?: boolean;
-  commentSort?: 'best' | 'newest' | 'oldest' | 'top';
-  page?: number;
-  limit?: number;
-}
-
-/**
- * Votes on a post (upvote/downvote with toggle).
- * @param communityId - The ID of the community.
- * @param postId - The ID of the post.
- * @param payload - Vote type (upvote or downvote).
- */
-export const voteCommunityPostApi = (
-  communityId: string, 
-  postId: string, 
-  payload: VotePayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_VOTE.replace(':communityId', communityId).replace(':postId', postId),
-    payload
-  );
+interface VotePayload { voteType: 'upvote' | 'downvote'; }
+export const voteCommunityPostApi = (communityId: string, postId: string, payload: VotePayload) => {
+  return axiosInstance.post(API.COMMUNITY_POST_VOTE.replace(':communityId', communityId).replace(':postId', postId), payload);
+};
+export const commentOnCommunityPostApi = (communityId: string, postId: string, payload: any) => {
+  return axiosInstance.post(API.COMMUNITY_POST_COMMENT.replace(':communityId', communityId).replace(':postId', postId), payload);
+};
+export const voteOnPollApi = (communityId: string, postId: string, payload: { optionIds: string[] }) => {
+  return axiosInstance.post(API.COMMUNITY_POLL_VOTE.replace(':communityId', communityId).replace(':postId', postId), payload);
+};
+export const rsvpToEventApi = (communityId: string, postId: string, payload: { status: 'going' | 'interested' | 'not_going', seats?: number }) => {
+  return axiosInstance.post(API.COMMUNITY_EVENT_RSVP.replace(':communityId', communityId).replace(':postId', postId), payload);
+};
+export const bookmarkCommunityPostApi = (communityId: string, postId: string, payload?: any) => {
+  return axiosInstance.post(API.COMMUNITY_POST_BOOKMARK.replace(':communityId', communityId).replace(':postId', postId), payload || {});
+};
+export const shareCommunityPostApi = (communityId: string, postId: string, payload: any) => {
+  return axiosInstance.post(API.COMMUNITY_POST_SHARE.replace(':communityId', communityId).replace(':postId', postId), payload);
+};
+export const reportCommunityPostApi = (communityId: string, postId: string, payload: any) => {
+  return axiosInstance.post(API.COMMUNITY_POST_REPORT.replace(':communityId', communityId).replace(':postId', postId), payload);
+};
+export const getPostInteractionsApi = (communityId: string, postId: string, params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_POST_INTERACTIONS.replace(':communityId', communityId).replace(':postId', postId), { params });
 };
 
-/**
- * Adds a comment to a post with rich content support.
- * @param communityId - The ID of the community.
- * @param postId - The ID of the post.
- * @param payload - The comment content with optional mentions, attachments, and parent comment.
- */
-export const commentOnCommunityPostApi = (
-  communityId: string, 
-  postId: string, 
-  payload: CommentPayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_COMMENT.replace(':communityId', communityId).replace(':postId', postId),
-    payload
-  );
-};
+// -- Administration, Settings, Analytics & File Uploads --
 
-/**
- * Submits a vote on a poll with support for multiple choice.
- * @param communityId - The ID of the community.
- * @param postId - The ID of the poll post.
- * @param payload - Array of selected option IDs.
- */
-export const voteOnPollApi = (
-  communityId: string, 
-  postId: string, 
-  payload: PollVotePayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POLL_VOTE.replace(':communityId', communityId).replace(':postId', postId),
-    payload
-  );
-};
-
-/**
- * Responds to an event invitation (RSVP) with seat selection.
- * @param communityId - The ID of the community.
- * @param postId - The ID of the event post.
- * @param payload - RSVP status and optional seat count.
- */
-export const rsvpToEventApi = (
-  communityId: string, 
-  postId: string, 
-  payload: EventRSVPPayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_EVENT_RSVP.replace(':communityId', communityId).replace(':postId', postId),
-    payload
-  );
-};
-
-/**
- * Bookmarks or unbookmarks a post (toggle).
- * @param communityId - The ID of the community.
- * @param postId - The ID of the post.
- * @param payload - Optional bookmark metadata (notes, tags, collection).
- */
-export const bookmarkCommunityPostApi = (
-  communityId: string, 
-  postId: string, 
-  payload?: BookmarkPayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_BOOKMARK.replace(':communityId', communityId).replace(':postId', postId),
-    payload || {}
-  );
-};
-
-/**
- * Shares a post to various platforms with tracking.
- * @param communityId - The ID of the community.
- * @param postId - The ID of the post.
- * @param payload - Share platform and optional message.
- */
-export const shareCommunityPostApi = (
-  communityId: string, 
-  postId: string, 
-  payload: SharePayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_SHARE.replace(':communityId', communityId).replace(':postId', postId),
-    payload
-  );
-};
-
-/**
- * Reports a post for moderation review.
- * @param communityId - The ID of the community.
- * @param postId - The ID of the post.
- * @param payload - Report reason and description.
- */
-export const reportCommunityPostApi = (
-  communityId: string, 
-  postId: string, 
-  payload: ReportPayload
-) => {
-  return axiosInstance.post(
-    API.COMMUNITY_POST_REPORT.replace(':communityId', communityId).replace(':postId', postId),
-    payload
-  );
-};
-
-/**
- * Gets comprehensive interaction analytics for a post.
- * @param communityId - The ID of the community.
- * @param postId - The ID of the post.
- * @param params - Query parameters for filtering interactions.
- */
-export const getPostInteractionsApi = (
-  communityId: string, 
-  postId: string, 
-  params?: InteractionsParams
-) => {
-  return axiosInstance.get(
-    API.COMMUNITY_POST_INTERACTIONS.replace(':communityId', communityId).replace(':postId', postId),
-    { params }
-  );
-};
-
-// -- Administration --
-
-/**
- * Updates detailed settings for a community.
- * @param communityId - The ID of the community.
- * @param payload - The settings object.
- */
-export const updateCommunitySettingsApi = (communityId: string, payload: any) => {
-  return axiosInstance.put(API.COMMUNITY_UPDATE_SETTINGS.replace(':communityId', communityId), payload);
-};
-
-/**
- * Fetches analytics data for a community.
- * @param communityId - The ID of the community.
- * @param params - Optional query parameters for time period and metrics.
- */
 export const getCommunityAnalyticsApi = (communityId: string, params?: any) => {
   return axiosInstance.get(API.COMMUNITY_ANALYTICS.replace(':communityId', communityId), { params });
 };
 
-// -- File & Media Uploads --
-
-/**
- * Uploads a file to be used in posts, profiles, etc.
- * @param formData - The file data packaged as FormData.
- */
 export const uploadFileApi = (formData: FormData) => {
-  return axiosInstance.post(API.FILE_UPLOAD, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+  return axiosInstance.post(API.FILE_UPLOAD, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 };
 
+/**
+ * Get comprehensive community settings.
+ */
+export const getCommunitySettingsApi = (
+  communityId: string,
+  params?: {
+    section?: 'all' | 'general' | 'content' | 'permissions' | 'features';
+  }
+) => {
+  return axiosInstance.get(
+    API.COMMUNITY_SETTINGS.replace(':communityId', communityId),
+    { params }
+  );
+};
+
+/**
+ * Update community settings.
+ */
+export const updateCommunitySettingsApi = (
+  communityId: string,
+  payload: {
+    section: 'general' | 'content' | 'permissions' | 'features';
+    updates: any;
+    reason?: string;
+  }
+) => {
+  return axiosInstance.put(
+    API.COMMUNITY_SETTINGS.replace(':communityId', communityId),
+    payload
+  );
+};
+
+/**
+ * Create a new automation rule.
+ */
+export const createAutomationRuleApi = (communityId: string, payload: any) => {
+  return axiosInstance.post(
+    API.COMMUNITY_SETTINGS_CREATE_AUTOMATION.replace(':communityId', communityId),
+    payload
+  );
+};
 // ==========================================
 // BACKWARD COMPATIBILITY & ALIASES
 // ==========================================

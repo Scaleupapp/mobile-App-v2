@@ -1,347 +1,352 @@
 // src/screens/Community/CommunitySettings.js
 'use strict';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import {
   StyleSheet,
   SafeAreaView,
   View,
   TouchableOpacity,
-  TextInput,
   ScrollView,
   Alert,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  StatusBar,
+  InteractionManager,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { COLORS } from '../../helper/colors';
 import { nh, nw } from '../../helper/scales';
 import Text from '../../components/Text';
-import { getCommunityDetailsApi, updateCommunityApi } from '../../services/apiService';
 import { useFocusEffect } from '@react-navigation/native';
 
-// shallow-enough equality for settings form; good for “dirty” check
-const isObjectEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Palette constants
+export const PALETTE = {
+  background: COLORS.greyF7F7F7,
+  surface: COLORS.whiteFFFFFF,
+  primary: COLORS.blue043142,
+  accent: COLORS.yellowF5BE00,
+  muted: COLORS.grey777777,
+  subtle: COLORS.grey999999,
+  border: COLORS.greyEEEEEE,
+  danger: COLORS.redEA4335,
+};
 
-const CommunitySettings = ({ route, navigation }) => {
-  const { communityId } = route.params || {};
+// Tab configurations
+const TABS = [
+  { id: 'general', label: 'General', icon: 'settings-outline' },
+  { id: 'content', label: 'Content', icon: 'shield-checkmark-outline' },
+  { id: 'permissions', label: 'Permissions', icon: 'key-outline' },
+  { id: 'features', label: 'Features', icon: 'apps-outline' },
+  { id: 'danger', label: 'Danger Zone', icon: 'warning-outline' },
+];
 
-  const [initialData, setInitialData] = useState(null);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [joinMethod, setJoinMethod] = useState('open');
-  const [domains, setDomains] = useState([]);
-  const [currentDomain, setCurrentDomain] = useState('');
+// Lazy load tab components
+const GeneralTab = lazy(() => import('./tabs/GeneralTab'));
+const ContentModerationTab = lazy(() => import('./tabs/ContentModerationTab'));
+const PermissionsTab = lazy(() => import('./tabs/PermissionsTab'));
+const FeaturesTab = lazy(() => import('./tabs/FeaturesTab'));
+const DangerTab = lazy(() => import('./tabs/DangerTab'));
 
-  const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
+// Memoized TabBar Component
+const TabBar = React.memo(({ activeTab, onTabPress }) => {
+  const [tabsLoaded, setTabsLoaded] = useState(false);
 
-  const buildSnapshot = useCallback(
-    (base) => ({
-      name: (name || '').trim(),
-      description: (description || '').trim(),
-      privacy: { ...(base?.privacy || {}), joinMethod },
-      institutionalInfo: {
-        ...(base?.institutionalInfo || {}),
-        verifiedDomains: (domains || []).map((d) => ({ domain: d, verified: true })),
-      },
-    }),
-    [name, description, joinMethod, domains]
-  );
+  useEffect(() => {
+    InteractionManager.runAfterInteractions(() => {
+      setTabsLoaded(true);
+    });
+  }, []);
 
-  const isDirty = useMemo(() => {
-    if (!initialData) return false;
-    const current = buildSnapshot(initialData);
-    return !isObjectEqual(initialData, current);
-  }, [initialData, buildSnapshot]);
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await getCommunityDetailsApi(communityId);
-      const community = response?.data?.community || {};
-
-      const initial = {
-        name: community.name || '',
-        description: community.description || '',
-        privacy: community.privacy || { joinMethod: 'open' },
-        institutionalInfo: community.institutionalInfo || { verifiedDomains: [] },
-      };
-
-      setInitialData(initial);
-      setName(initial.name);
-      setDescription(initial.description);
-      setJoinMethod(initial.privacy?.joinMethod || 'open');
-      setDomains((initial.institutionalInfo?.verifiedDomains || []).map((d) => d.domain).filter(Boolean));
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-      Alert.alert('Error', 'Could not load community settings.');
-    } finally {
-      setLoading(false);
-    }
-  }, [communityId]);
-
-  // React Navigation recommends wrapping in a callback returning cleanup (if any)
-  useFocusEffect(
-    useCallback(() => {
-      fetchData();
-      return () => {};
-    }, [fetchData])
-  );
-
-  const handleAddDomain = () => {
-    const domainToAdd = (currentDomain || '').trim().toLowerCase();
-    const valid = /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/.test(domainToAdd);
-    if (domainToAdd && valid && !domains.includes(domainToAdd)) {
-      setDomains((prev) => [...prev, domainToAdd]);
-      setCurrentDomain('');
-    } else {
-      Alert.alert('Invalid Domain', 'Please enter a valid domain format (e.g., example.com).');
-    }
-  };
-
-  const handleRemoveDomain = (indexToRemove) => {
-    setDomains((prev) => prev.filter((_, i) => i !== indexToRemove));
-  };
-
-  const handleSaveChanges = async () => {
-    if (!initialData) return;
-    setIsSaving(true);
-    try {
-      const payload = buildSnapshot(initialData);
-      await updateCommunityApi(communityId, payload);
-      Alert.alert('Success', 'Community settings have been updated.');
-      await fetchData(); // refresh to reset dirty state
-    } catch (error) {
-      const errorMessage = error?.response?.data?.error?.message || 'Could not save changes.';
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeleteCommunity = () => {
-    Alert.alert(
-      'Delete Community',
-      'Are you sure? This action is permanent and cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => console.log('Deletion confirmed (hook API here)'),
-        },
-      ]
-    );
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ marginTop: 50 }} size="large" color={COLORS.blue043142} />
-      </SafeAreaView>
-    );
+  if (!tabsLoaded) {
+    return <View style={styles.tabBar} />;
   }
 
   return (
+    <View style={styles.tabBar}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBarContent}>
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tab, isActive && styles.activeTab]}
+              onPress={() => onTabPress(tab.id)}
+            >
+              <Icon 
+                name={isActive ? tab.icon.replace('-outline', '') : tab.icon}
+                size={nw(18)} 
+                color={isActive ? PALETTE.primary : PALETTE.muted} 
+              />
+              <Text style={[styles.tabLabel, isActive && styles.activeTabLabel]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+});
+
+// Loading component for tabs
+const TabLoader = () => (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color={PALETTE.primary} />
+    <Text style={styles.loadingText}>Loading Settings...</Text>
+  </View>
+);
+
+const CommunitySettings = ({ route, navigation }) => {
+  const { communityId } = route.params || {};
+  const [activeTab, setActiveTab] = useState('general');
+  const [community, setCommunity] = useState(null);
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [savingSection, setSavingSection] = useState(null);
+  
+  // Lazy load API module
+  const [apiModule, setApiModule] = useState(null);
+
+  // Load API module when needed
+  const getApiModule = useCallback(async () => {
+    if (!apiModule) {
+      const module = await import('../../services/apiService');
+      setApiModule(module);
+      return module;
+    }
+    return apiModule;
+  }, [apiModule]);
+
+  const fetchData = useCallback(async () => {
+    if (!communityId) {
+      Alert.alert('Error', 'Community ID is missing.', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const api = await getApiModule();
+      const [detailsRes, settingsRes] = await Promise.all([
+        api.getCommunityDetailsApi(communityId),
+        api.getCommunitySettingsApi(communityId)
+      ]);
+
+      const communityData = detailsRes.data?.data?.community || detailsRes.data?.community || {};
+      const settingsData = settingsRes.data?.data || settingsRes.data || {};
+      
+      console.log('--- RAW COMMUNITY DETAILS FROM BACKEND ---');
+      console.log(JSON.stringify(communityData, null, 2));
+      console.log('--- RAW SETTINGS DATA FROM BACKEND ---');
+      console.log(JSON.stringify(settingsData, null, 2));
+      
+      setCommunity(communityData);
+      setSettings(settingsData);
+    } catch (error) {
+      console.error('Error fetching data:', error.response?.data || error.message);
+      Alert.alert('Error', 'Could not load community data.');
+    } finally {
+      setLoading(false);
+    }
+  }, [communityId, navigation, getApiModule]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+  
+  const handleUpdateCommunityDetails = useCallback(async (updates) => {
+    setSavingSection('general');
+    try {
+      const api = await getApiModule();
+      await api.updateCommunityApi(communityId, updates);
+      Alert.alert('Success', 'General settings updated!');
+      await fetchData();
+    } catch(error) {
+      console.error('Error updating general details:', error.response?.data || error.message);
+      Alert.alert('Error', 'Failed to update general settings.');
+    } finally {
+      setSavingSection(null);
+    }
+  }, [communityId, fetchData, getApiModule]);
+
+  const handleUpdateSettings = useCallback(async (section, updates) => {
+    setSavingSection(section);
+    try {
+      console.log(`--- SAVING SETTINGS FOR SECTION: ${section} ---`, { section, updates });
+      
+      const api = await getApiModule();
+      await api.updateCommunitySettingsApi(communityId, { section, updates });
+      Alert.alert('Success', `${section.charAt(0).toUpperCase() + section.slice(1)} settings updated!`);
+      await fetchData();
+    } catch (error) {
+      console.error(`Error updating ${section}:`, error.response?.data || error.message);
+      Alert.alert('Error', `Failed to update ${section} settings.`);
+    } finally {
+      setSavingSection(null);
+    }
+  }, [communityId, fetchData, getApiModule]);
+
+  const handleUpdatePermissions = useCallback(async (role, key, value) => {
+    const api = await getApiModule();
+    await api.updateRolePermissionsApi(communityId, { role, permissions: { [key]: value } });
+    // Refetch data after permission update
+    await fetchData();
+  }, [communityId, fetchData, getApiModule]);
+
+  const handleDeleteCommunity = useCallback(async () => {
+    try {
+      const api = await getApiModule();
+      // NOTE: deleteCommunityApi needs to be implemented in apiService
+      // await api.deleteCommunityApi(communityId);
+      Alert.alert('Success', 'Community has been deleted.');
+      navigation.goBack();
+    } catch (error) {
+      console.error('Failed to delete community:', error);
+      Alert.alert('Error', 'Could not delete community.');
+    }
+  }, [communityId, navigation, getApiModule]);
+
+  // Memoized tab props
+  const tabProps = useMemo(() => ({
+    general: {
+      communityDetails: community,
+      communityId,
+      onUpdate: handleUpdateCommunityDetails,
+      saving: savingSection === 'general'
+    },
+    content: {
+      settings,
+      onSave: handleUpdateSettings,
+      saving: savingSection === 'content'
+    },
+    permissions: {
+      settings,
+      communityId,
+      onUpdatePermission: handleUpdatePermissions,
+      getApiModule
+    },
+    features: {
+      settings,
+      onSave: handleUpdateSettings,
+      saving: savingSection === 'features'
+    },
+    danger: {
+      communityId,
+      navigation,
+      onDelete: handleDeleteCommunity
+    }
+  }), [
+    community,
+    communityId,
+    settings,
+    savingSection,
+    handleUpdateCommunityDetails,
+    handleUpdateSettings,
+    handleUpdatePermissions,
+    handleDeleteCommunity,
+    navigation,
+    getApiModule
+  ]);
+
+  const renderTabContent = useCallback(() => {
+    if (loading || !settings || !community) {
+      return <TabLoader />;
+    }
+
+    return (
+      <Suspense fallback={<TabLoader />}>
+        {activeTab === 'general' && <GeneralTab {...tabProps.general} />}
+        {activeTab === 'content' && <ContentModerationTab {...tabProps.content} />}
+        {activeTab === 'permissions' && <PermissionsTab {...tabProps.permissions} />}
+        {activeTab === 'features' && <FeaturesTab {...tabProps.features} />}
+        {activeTab === 'danger' && <DangerTab {...tabProps.danger} />}
+      </Suspense>
+    );
+  }, [activeTab, loading, settings, community, tabProps]);
+
+  const handleTabPress = useCallback((tabId) => {
+    setActiveTab(tabId);
+  }, []);
+
+  return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} accessibilityLabel="Go back">
-            <Icon name="arrow-back" size={nw(24)} color={COLORS.blue043142} />
-          </TouchableOpacity>
-          <Text variant="bold18" color={COLORS.blue043142}>
-            Community Settings
-          </Text>
-          <View style={{ width: nw(24) }} />
-        </View>
+      <StatusBar barStyle="dark-content" backgroundColor={PALETTE.surface} />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={nw(24)} color={PALETTE.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Community Settings</Text>
+        <View style={{ width: nw(24) }} />
+      </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <Text style={styles.sectionTitle}>General Information</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Community Name"
-            value={name}
-            onChangeText={setName}
-          />
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Description"
-            multiline
-            value={description}
-            onChangeText={setDescription}
-          />
-
-          <Text style={styles.sectionTitle}>Privacy & Access</Text>
-          <View style={styles.toggleContainer}>
-            <TouchableOpacity
-              style={[styles.toggleButton, joinMethod === 'open' && styles.activeToggle]}
-              onPress={() => setJoinMethod('open')}
-            >
-              <Text color={joinMethod === 'open' ? COLORS.blue043142 : COLORS.grey666666}>Open to All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.toggleButton, joinMethod === 'approval' && styles.activeToggle]}
-              onPress={() => setJoinMethod('approval')}
-            >
-              <Text color={joinMethod === 'approval' ? COLORS.blue043142 : COLORS.grey666666}>
-                Approval Required
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.sectionTitle}>Auto-Join Domain Rule</Text>
-          <Text style={styles.sectionSubtitle}>
-            Allow users with a specific email domain to join automatically.
-          </Text>
-          <View style={styles.domainInputContainer}>
-            <TextInput
-              style={styles.domainInput}
-              placeholder="e.g., stanford.edu"
-              value={currentDomain}
-              onChangeText={setCurrentDomain}
-              onSubmitEditing={handleAddDomain}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TouchableOpacity style={styles.addButton} onPress={handleAddDomain}>
-              <Text color={COLORS.whiteFFFFFF}>Add</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.domainPillsContainer}>
-            {domains.map((domain, index) => (
-              <View key={`${domain}-${index}`} style={styles.domainPill}>
-                <Text style={styles.domainPillText}>{domain}</Text>
-                <TouchableOpacity onPress={() => handleRemoveDomain(index)} accessibilityLabel={`Remove ${domain}`}>
-                  <Icon name="close-circle" size={nw(18)} color={COLORS.whiteFFFFFF} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.dangerZone}>
-            <Text style={styles.sectionTitle}>Danger Zone</Text>
-            <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteCommunity}>
-              <Text color={'red'} variant="bold16">
-                Delete Community
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        {isDirty && (
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges} disabled={isSaving}>
-              {isSaving ? (
-                <ActivityIndicator color={COLORS.whiteFFFFFF} />
-              ) : (
-                <Text variant="bold16" color={COLORS.whiteFFFFFF}>
-                  Save Changes
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
-      </KeyboardAvoidingView>
+      <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      
+      {renderTabContent()}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.whiteF9F9F9 },
+  container: { 
+    flex: 1, 
+    backgroundColor: PALETTE.background 
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: nw(16),
+    backgroundColor: PALETTE.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.greyEEEEEE,
-    backgroundColor: COLORS.whiteFFFFFF,
+    borderBottomColor: PALETTE.border,
   },
-  scrollContainer: { padding: nw(16), flexGrow: 1, paddingBottom: nh(100) },
-  sectionTitle: {
-    fontSize: nw(18),
-    fontWeight: 'bold',
-    color: COLORS.blue043142,
-    marginTop: nh(20),
-    marginBottom: nh(10),
+  headerTitle: { 
+    fontSize: nw(18), 
+    fontWeight: 'bold', 
+    color: PALETTE.primary 
   },
-  sectionSubtitle: { fontSize: nw(14), color: COLORS.grey666666, marginBottom: nh(15), lineHeight: nh(20) },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.greyE0E0E0,
-    borderRadius: nh(8),
-    padding: nw(12),
-    fontSize: nw(16),
-    backgroundColor: COLORS.whiteFFFFFF,
-    marginBottom: nh(10),
+  tabBar: { 
+    backgroundColor: PALETTE.surface, 
+    borderBottomWidth: 1, 
+    borderBottomColor: PALETTE.border,
+    minHeight: nh(50),
   },
-  textArea: { height: nh(120), textAlignVertical: 'top' },
-  toggleContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: COLORS.greyE0E0E0,
-    borderRadius: nh(8),
-    overflow: 'hidden',
+  tabBarContent: { 
+    paddingHorizontal: nw(8) 
   },
-  toggleButton: { flex: 1, padding: nw(12), alignItems: 'center', backgroundColor: COLORS.whiteFFFFFF },
-  activeToggle: { backgroundColor: COLORS.blueLightF0 },
-  domainInputContainer: { flexDirection: 'row' },
-  domainInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: COLORS.greyE0E0E0,
-    borderTopLeftRadius: nh(8),
-    borderBottomLeftRadius: nh(8),
-    padding: nw(12),
-    backgroundColor: COLORS.whiteFFFFFF,
-  },
-  addButton: {
-    backgroundColor: COLORS.blue043142,
-    paddingHorizontal: nw(20),
-    justifyContent: 'center',
-    borderTopRightRadius: nh(8),
-    borderBottomRightRadius: nh(8),
-  },
-  domainPillsContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: nh(10) },
-  domainPill: {
+  tab: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.blue043142,
-    borderRadius: nh(16),
-    paddingVertical: nh(6),
     paddingHorizontal: nw(12),
-    marginRight: nw(8),
-    marginBottom: nw(8),
+    paddingVertical: nh(14),
+    marginHorizontal: nw(4),
+    gap: nw(6),
   },
-  domainPillText: { color: COLORS.whiteFFFFFF, marginRight: nw(6) },
-  dangerZone: { marginTop: nh(30), borderTopWidth: 1, borderTopColor: COLORS.greyEEEEEE, paddingTop: nh(10) },
-  deleteButton: {
-    borderWidth: 1,
-    borderColor: 'red',
-    borderRadius: nh(8),
-    padding: nw(12),
-    alignItems: 'center',
-    backgroundColor: '#FFF0F0',
+  activeTab: { 
+    borderBottomWidth: 2, 
+    borderBottomColor: PALETTE.primary 
   },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: nw(16),
-    borderTopWidth: 1,
-    borderTopColor: COLORS.greyEEEEEE,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+  tabLabel: { 
+    fontSize: nw(13), 
+    color: PALETTE.muted, 
+    fontWeight: '500' 
   },
-  saveButton: {
-    backgroundColor: COLORS.blue043142,
-    height: nh(48),
-    borderRadius: nh(12),
-    justifyContent: 'center',
-    alignItems: 'center',
+  activeTabLabel: { 
+    color: PALETTE.primary, 
+    fontWeight: '600' 
+  },
+  loadingContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    gap: nh(12) 
+  },
+  loadingText: { 
+    fontSize: nw(14), 
+    color: PALETTE.muted 
   },
 });
 

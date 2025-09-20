@@ -1,7 +1,7 @@
 // src/screens/Community/CommunityDiscovery.js
 'use strict';
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,6 +15,7 @@ import {
   View,
   Alert,
   ScrollView,
+  InteractionManager,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 
@@ -47,34 +48,40 @@ const formatNumber = (value) => {
   return `${num}`;
 };
 
+const CACHE_TTL_MS = 60 * 1000; // keep cached results around for snappier repeat visits
+
 // Enhanced Tab Bar Component
-const TabBar = ({activeTab, onTabChange, counts}) => {
-  const tabs = [
-    {id: 'discover', label: 'Discover', icon: 'compass-outline'},
-    {id: 'joined', label: 'My Hubs', icon: 'people-outline'},
-    {id: 'pending', label: 'Requests', icon: 'time-outline'},
-  ];
+const TabBar = React.memo(({activeTab, onTabChange, counts}) => {
+  const tabs = useMemo(
+    () => [
+      {id: 'discover', label: 'Discover', icon: 'compass-outline'},
+      {id: 'joined', label: 'My Hubs', icon: 'people-outline'},
+      {id: 'pending', label: 'Requests', icon: 'time-outline'},
+    ],
+    [],
+  );
 
   return (
     <View style={styles.tabContainer}>
       {tabs.map(tab => {
         const isActive = activeTab === tab.id;
+        const count = counts[tab.id] || 0;
         return (
           <TouchableOpacity
             key={tab.id}
             style={[styles.tab, isActive && styles.activeTab]}
             onPress={() => onTabChange(tab.id)}>
-            <Icon 
-              name={isActive ? tab.icon.replace('-outline', '') : tab.icon} 
-              size={nw(18)} 
+            <Icon
+              name={isActive ? tab.icon.replace('-outline', '') : tab.icon}
+              size={nw(18)}
               color={isActive ? PALETTE.primary : PALETTE.muted}
             />
             <Text style={[styles.tabText, isActive && styles.activeTabText]}>
               {tab.label}
             </Text>
-            {counts[tab.id] > 0 && (
+            {count > 0 && (
               <View style={styles.tabBadge}>
-                <Text style={styles.tabBadgeText}>{counts[tab.id]}</Text>
+                <Text style={styles.tabBadgeText}>{count}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -82,47 +89,60 @@ const TabBar = ({activeTab, onTabChange, counts}) => {
       })}
     </View>
   );
-};
+});
 
 // Enhanced & "Better" Community Card Component
-const CommunityCard = ({item, onPress, onAction, actionType}) => {
+const CommunityCard = React.memo(({item, onPress, onAction, actionType}) => {
   const userRole = item?.userRole || item?.membership?.role || '';
-  
-  const getActionButton = () => {
-    switch(actionType) {
+
+  const buttonConfig = useMemo(() => {
+    switch (actionType) {
       case 'joined':
         return {
-          text: userRole.charAt(0).toUpperCase() + userRole.slice(1),
+          text: userRole ? userRole.charAt(0).toUpperCase() + userRole.slice(1) : 'Member',
           style: styles.roleButton,
           textStyle: styles.roleButtonText,
-          action: () => onPress(item),
+          actionType: 'open',
         };
       case 'pending':
         return {
           text: 'Cancel',
           style: styles.cancelButton,
           textStyle: styles.actionButtonText,
-          action: () => onAction(item, 'cancel'),
+          actionType: 'cancel',
         };
       case 'discover':
-      default:
+      default: {
         const requiresApproval = item.joinMethod === 'approval_required' || item.privacy === 'private';
         return {
           text: requiresApproval ? 'Request' : 'Join',
           style: styles.joinButton,
           textStyle: styles.actionButtonText,
-          action: () => onAction(item, requiresApproval ? 'request' : 'join'),
+          actionType: requiresApproval ? 'request' : 'join',
         };
+      }
     }
-  };
+  }, [actionType, item.joinMethod, item.privacy, userRole]);
 
-  const button = getActionButton();
+  const {text: buttonText, style: buttonStyle, textStyle: buttonTextStyle, actionType: buttonActionType} = buttonConfig;
   const avatarUri = item.avatar?.url || item.avatar;
   const memberCount = item.stats?.memberCount || item.stats?.totalMembers || item.memberCount || 0;
   const privacy = item.privacy?.charAt(0).toUpperCase() + item.privacy?.slice(1) || 'Public';
 
+  const handleCardPress = useCallback(() => {
+    onPress(item);
+  }, [item, onPress]);
+
+  const handleButtonPress = useCallback(() => {
+    if (buttonActionType === 'open') {
+      onPress(item);
+      return;
+    }
+    onAction(item, buttonActionType);
+  }, [buttonActionType, item, onAction, onPress]);
+
   return (
-    <TouchableOpacity style={styles.communityCard} onPress={() => onPress(item)} activeOpacity={0.95}>
+    <TouchableOpacity style={styles.communityCard} onPress={handleCardPress} activeOpacity={0.95}>
       {avatarUri ? (
         <Image source={{uri: avatarUri}} style={styles.cardAvatar} />
       ) : (
@@ -155,12 +175,12 @@ const CommunityCard = ({item, onPress, onAction, actionType}) => {
         </View>
       </View>
 
-      <TouchableOpacity style={[styles.actionButton, button.style]} onPress={button.action}>
-        <Text style={button.textStyle}>{button.text}</Text>
+      <TouchableOpacity style={[styles.actionButton, buttonStyle]} onPress={handleButtonPress} activeOpacity={0.8}>
+        <Text style={buttonTextStyle}>{buttonText}</Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
-};
+});
 
 // Main Component
 export default function CommunityDiscovery({navigation}) {
@@ -173,107 +193,269 @@ export default function CommunityDiscovery({navigation}) {
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [deferredQuery, setDeferredQuery] = useState('');
 
   const categories = useMemo(() => ['All', 'Academic', 'Tech', 'Creative', 'Business', 'Social'], []);
 
-  const fetchAllCommunities = async () => {
+  useEffect(() => {
+    const interaction = InteractionManager.runAfterInteractions(() => {
+      setDeferredQuery(searchQuery);
+    });
+
+    return () => interaction?.cancel?.();
+  }, [searchQuery]);
+
+  const dataCacheRef = useRef({
+    allCommunities: [],
+    joinedCommunities: [],
+    pendingCommunities: [],
+    timestamp: 0,
+    hydrated: false,
+  });
+  const prefetchedImagesRef = useRef(new Set());
+
+  const fetchAllCommunities = useCallback(async () => {
     try {
-      const response = await axiosInstance.get('communities', { params: { myCommunitiesOnly: false } });
+      const response = await axiosInstance.get('communities', {
+        params: {myCommunitiesOnly: false},
+      });
       if (response?.data?.success) {
-        setAllCommunities(response.data.data.communities || []);
+        return response.data.data.communities || [];
       }
     } catch (error) {
       console.error('Failed to fetch all communities:', error);
     }
-  };
+    return null;
+  }, []);
 
-  const fetchJoinedCommunities = async () => {
+  const fetchJoinedCommunities = useCallback(async () => {
     try {
       const response = await axiosInstance.get('communities/my-communities/list');
       if (response?.data?.success) {
-        setJoinedCommunities(response.data.data.communities || []);
+        return response.data.data.communities || [];
       }
     } catch (error) {
       console.error('Failed to fetch joined communities:', error);
     }
-  };
+    return null;
+  }, []);
 
-  const fetchPendingRequests = async () => {
+  const fetchPendingRequests = useCallback(async () => {
     try {
       const response = await axiosInstance.get('communities/my-requests/pending');
       if (response?.data?.success) {
-        setPendingCommunities(response.data.data.requests || []);
+        return response.data.data.requests || [];
       }
     } catch (error) {
       console.error('Failed to fetch pending requests:', error);
-      setPendingCommunities([]);
     }
-  };
+    return null;
+  }, []);
 
-  const handleCommunityAction = async (community, action) => {
-    const communityId = community.id || community._id;
-    try {
-      if (action === 'join' || action === 'request') {
-        const response = await axiosInstance.post(`communities/${communityId}/join`);
-        if (response?.data?.success) {
-          Alert.alert('Success', action === 'request' ? 'Join request sent!' : `Joined ${community.name}!`);
-          loadData(true);
-        }
-      } else if (action === 'cancel') {
-        await axiosInstance.delete(`communities/${communityId}/cancel-request`);
-        Alert.alert('Success', 'Request cancelled');
-        loadData(true);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadData = useCallback(
+    async (isRefresh = false) => {
+      const cache = dataCacheRef.current;
+      const now = Date.now();
+      const hasValidCache =
+        !isRefresh && cache.hydrated && cache.timestamp && now - cache.timestamp < CACHE_TTL_MS;
+
+      if (hasValidCache) {
+        setAllCommunities(cache.allCommunities);
+        setJoinedCommunities(cache.joinedCommunities);
+        setPendingCommunities(cache.pendingCommunities);
       }
-    } catch (error) {
-      console.error(`Action '${action}' failed for community ${communityId}:`, error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Operation failed');
-    }
-  };
 
-  const loadData = async (isRefresh = false) => {
-    if (!isRefresh) setLoading(true);
-    setRefreshing(true);
-    await Promise.all([
-      fetchAllCommunities(),
-      fetchJoinedCommunities(),
-      fetchPendingRequests(),
-    ]);
-    if (!isRefresh) setLoading(false);
-    setRefreshing(false);
-  };
+      if (!isRefresh) {
+        setLoading(!hasValidCache);
+      }
+      setRefreshing(isRefresh);
+
+      try {
+        const [allResult, joinedResult, pendingResult] = await Promise.allSettled([
+          fetchAllCommunities(),
+          fetchJoinedCommunities(),
+          fetchPendingRequests(),
+        ]);
+
+        const nextAll =
+          allResult.status === 'fulfilled' && Array.isArray(allResult.value)
+            ? allResult.value
+            : cache.allCommunities;
+        const nextJoined =
+          joinedResult.status === 'fulfilled' && Array.isArray(joinedResult.value)
+            ? joinedResult.value
+            : cache.joinedCommunities;
+        const nextPending =
+          pendingResult.status === 'fulfilled' && Array.isArray(pendingResult.value)
+            ? pendingResult.value
+            : cache.pendingCommunities;
+
+        const didHydrate = [allResult, joinedResult, pendingResult].some(
+          result => result.status === 'fulfilled' && Array.isArray(result.value),
+        );
+        const nextHydrated = cache.hydrated || didHydrate;
+
+        if (isMountedRef.current) {
+          setAllCommunities(nextAll);
+          setJoinedCommunities(nextJoined);
+          setPendingCommunities(nextPending);
+          dataCacheRef.current = {
+            allCommunities: nextAll,
+            joinedCommunities: nextJoined,
+            pendingCommunities: nextPending,
+            timestamp: nextHydrated ? now : cache.timestamp,
+            hydrated: nextHydrated,
+          };
+        }
+      } finally {
+        if (isMountedRef.current) {
+          if (!isRefresh) {
+            setLoading(false);
+          }
+          setRefreshing(false);
+        }
+      }
+    },
+    [fetchAllCommunities, fetchJoinedCommunities, fetchPendingRequests],
+  );
+
+  const handleCommunityAction = useCallback(
+    async (community, action) => {
+      const communityId = community.id || community._id;
+      try {
+        if (action === 'join' || action === 'request') {
+          const response = await axiosInstance.post(`communities/${communityId}/join`);
+          if (response?.data?.success) {
+            Alert.alert('Success', action === 'request' ? 'Join request sent!' : `Joined ${community.name}!`);
+            await loadData(true);
+          }
+        } else if (action === 'cancel') {
+          await axiosInstance.delete(`communities/${communityId}/cancel-request`);
+          Alert.alert('Success', 'Request cancelled');
+          await loadData(true);
+        }
+      } catch (error) {
+        console.error(
+          `Action '${action}' failed for community ${communityId}:`,
+          error.response?.data || error.message,
+        );
+        Alert.alert('Error', error.response?.data?.message || 'Operation failed');
+      }
+    },
+    [loadData],
+  );
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   const discoverList = useMemo(() => {
     const joinedIds = new Set(joinedCommunities.map(c => c.id || c._id));
     const pendingIds = new Set(pendingCommunities.map(c => c.id || c._id));
     return allCommunities.filter(c => !joinedIds.has(c.id || c._id) && !pendingIds.has(c.id || c._id));
   }, [allCommunities, joinedCommunities, pendingCommunities]);
-  
-  const filteredLists = useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    const filterFn = c => {
-      const nameMatch = c.name?.toLowerCase().includes(query);
-      const categoryMatch = selectedCategory === 'All' || (c.category?.toLowerCase() === selectedCategory.toLowerCase());
-      return nameMatch && (activeTab !== 'discover' || categoryMatch);
-    };
 
-    return {
-      discover: discoverList.filter(filterFn),
-      joined: joinedCommunities.filter(filterFn),
-      pending: pendingCommunities.filter(filterFn),
-    };
-  }, [searchQuery, selectedCategory, activeTab, discoverList, joinedCommunities, pendingCommunities]);
-  
-  const counts = {
-    discover: discoverList.length,
-    joined: joinedCommunities.length,
-    pending: pendingCommunities.length,
-  };
+  const normalizedQuery = useMemo(() => deferredQuery.trim().toLowerCase(), [deferredQuery]);
+  const selectedCategoryKey = useMemo(() => selectedCategory.toLowerCase(), [selectedCategory]);
+  const isAllCategory = selectedCategory === 'All';
 
-  const renderHeader = () => (
+  const filterCommunity = useCallback(
+    (community, listType) => {
+      const name = community.name?.toLowerCase() || '';
+      if (normalizedQuery && !name.includes(normalizedQuery)) {
+        return false;
+      }
+
+      if (listType === 'discover' && !isAllCategory) {
+        return (community.category?.toLowerCase() || '') === selectedCategoryKey;
+      }
+
+      return true;
+    },
+    [isAllCategory, normalizedQuery, selectedCategoryKey],
+  );
+
+  const currentList = useMemo(() => {
+    switch (activeTab) {
+      case 'joined':
+        return joinedCommunities.filter(item => filterCommunity(item, 'joined'));
+      case 'pending':
+        return pendingCommunities.filter(item => filterCommunity(item, 'pending'));
+      case 'discover':
+      default:
+        return discoverList.filter(item => filterCommunity(item, 'discover'));
+    }
+  }, [activeTab, discoverList, filterCommunity, joinedCommunities, pendingCommunities]);
+
+  useEffect(() => {
+    if (!currentList.length) {
+      return;
+    }
+
+    const cache = prefetchedImagesRef.current;
+    currentList
+      .slice(0, 12)
+      .map(community => community.avatar?.url || community.avatar)
+      .filter(Boolean)
+      .forEach(uri => {
+        if (!cache.has(uri)) {
+          cache.add(uri);
+          Image.prefetch(uri).catch(() => {});
+        }
+      });
+  }, [activeTab, currentList]);
+
+  const counts = useMemo(
+    () => ({
+      discover: discoverList.length,
+      joined: joinedCommunities.length,
+      pending: pendingCommunities.length,
+    }),
+    [discoverList, joinedCommunities, pendingCommunities],
+  );
+
+  const handleTabChange = useCallback(
+    tabId => {
+      setActiveTab(tabId);
+    },
+    [setActiveTab],
+  );
+
+  const handleNavigateToDetail = useCallback(
+    community => {
+      navigation.navigate(Routes.CommunityDetail, {
+        communityId: community.id || community._id,
+      });
+    },
+    [navigation],
+  );
+
+  const handleCategoryPress = useCallback(
+    cat => {
+      setSelectedCategory(cat);
+    },
+    [setSelectedCategory],
+  );
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+  }, [setSearchQuery]);
+
+  const handleRefresh = useCallback(() => {
+    loadData(true);
+  }, [loadData]);
+
+  const keyExtractor = useCallback(item => String(item.id ?? item._id), []);
+
+  const renderHeader = useCallback(() => (
     <View style={styles.listHeader}>
       <View style={styles.searchBar}>
         <Icon name="search-outline" size={nw(20)} color={PALETTE.muted} />
@@ -283,59 +465,77 @@ export default function CommunityDiscovery({navigation}) {
           placeholder="Search for community hubs..."
           placeholderTextColor={PALETTE.subtle}
           style={styles.searchInput}
+          returnKeyType="search"
+          autoCorrect={false}
         />
         {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
+          <TouchableOpacity onPress={handleClearSearch}>
             <Icon name="close-circle" size={nw(18)} color={PALETTE.subtle} />
           </TouchableOpacity>
         )}
       </View>
 
       {activeTab === 'discover' && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScroller}>
-          {categories.map(cat => (
-            <TouchableOpacity 
-              key={cat} 
-              style={[styles.categoryPill, selectedCategory === cat && styles.activeCategoryPill]}
-              onPress={() => setSelectedCategory(cat)}
-            >
-              <Text style={[styles.categoryText, selectedCategory === cat && styles.activeCategoryText]}>{cat}</Text>
-            </TouchableOpacity>
-          ))}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroller}>
+          {categories.map(cat => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.categoryPill, isSelected && styles.activeCategoryPill]}
+                onPress={() => handleCategoryPress(cat)}>
+                <Text style={[styles.categoryText, isSelected && styles.activeCategoryText]}>{cat}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       )}
     </View>
+  ), [activeTab, categories, handleCategoryPress, handleClearSearch, searchQuery, selectedCategory]);
+
+  const renderCommunity = useCallback(
+    ({item}) => (
+      <CommunityCard
+        item={item}
+        onPress={handleNavigateToDetail}
+        onAction={handleCommunityAction}
+        actionType={activeTab}
+      />
+    ),
+    [activeTab, handleCommunityAction, handleNavigateToDetail],
   );
 
-  const renderCommunity = ({item}) => (
-    <CommunityCard
-      item={item}
-      onPress={(community) => navigation.navigate(Routes.CommunityDetail, { communityId: community.id || community._id })}
-      onAction={handleCommunityAction}
-      actionType={activeTab}
-    />
-  );
-
-  const renderEmpty = () => (
+  const renderEmpty = useCallback(() => (
     <View style={styles.emptyContainer}>
       <Icon name="compass-outline" size={nw(50)} color={PALETTE.subtle} />
       <Text style={styles.emptyTitle}>
-        {activeTab === 'joined' ? "You're Not in a Hub Yet" : 
-         activeTab === 'pending' ? 'No Pending Requests' : 
-         searchQuery ? 'No Results Found' : 'Nothing to Discover'}
+        {activeTab === 'joined'
+          ? "You're Not in a Hub Yet"
+          : activeTab === 'pending'
+          ? 'No Pending Requests'
+          : searchQuery
+          ? 'No Results Found'
+          : 'Nothing to Discover'}
       </Text>
       <Text style={styles.emptySubtitle}>
-        {activeTab === 'joined' ? "Join a community hub to start connecting." : 
-         activeTab === 'pending' ? 'Your approved requests will show up in "My Hubs".' : 
-         searchQuery ? 'Try a different search term.' : 'We couldn’t find any communities to show.'}
+        {activeTab === 'joined'
+          ? 'Join a community hub to start connecting.'
+          : activeTab === 'pending'
+          ? 'Your approved requests will show up in "My Hubs".'
+          : searchQuery
+          ? 'Try a different search term.'
+          : 'We couldn’t find any communities to show.'}
       </Text>
       {activeTab !== 'discover' && (
-        <TouchableOpacity style={styles.emptyButton} onPress={() => setActiveTab('discover')}>
+        <TouchableOpacity style={styles.emptyButton} onPress={() => handleTabChange('discover')}>
           <Text style={styles.emptyButtonText}>Discover Hubs</Text>
         </TouchableOpacity>
       )}
     </View>
-  );
+  ), [activeTab, handleTabChange, searchQuery]);
 
   if (loading) {
     return (
@@ -347,8 +547,6 @@ export default function CommunityDiscovery({navigation}) {
     );
   }
 
-  const currentList = filteredLists[activeTab];
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={PALETTE.surface} />
@@ -359,20 +557,26 @@ export default function CommunityDiscovery({navigation}) {
         </TouchableOpacity>
       </View>
 
-      <TabBar activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
+      <TabBar activeTab={activeTab} onTabChange={handleTabChange} counts={counts} />
 
       <FlatList
         data={currentList}
-        keyExtractor={item => item.id || item._id}
+        keyExtractor={keyExtractor}
         renderItem={renderCommunity}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={10}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => loadData(true)}
+            onRefresh={handleRefresh}
             colors={[PALETTE.primary]}
             tintColor={PALETTE.primary}
           />
