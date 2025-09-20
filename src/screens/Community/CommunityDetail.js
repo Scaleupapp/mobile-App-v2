@@ -51,6 +51,8 @@ const HEADER_MAX_HEIGHT = nh(200);
 const HEADER_MIN_HEIGHT = nh(Platform.OS === 'ios' ? 72 : 48 + (StatusBar.currentHeight || 0));
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
 const FEED_PAGE_SIZE = 10;
+const CACHE_TTL_MS = 60 * 1000; // reuse fresh data for a minute to speed up re-entry
+const PREFETCH_LIMIT = 12;
 
 const formatNumber = (value) => {
   const num = Number(value || 0);
@@ -1410,8 +1412,49 @@ const CommunityDetail = ({ route, navigation }) => {
   const isInitialMount = useRef(true);
   const fetchingPosts = useRef(false);
   const fetchingMembers = useRef(false);
+  const detailCacheRef = useRef(new Map());
+  const imagePrefetchCacheRef = useRef(new Set());
 
   const scrollY = useSharedValue(0);
+
+  const applyCacheToState = useCallback((cache) => {
+    if (!cache) {
+      return;
+    }
+
+    setCommunity(cache.community ?? null);
+    setPosts(cache.posts ?? []);
+    setAnnouncements(cache.announcements ?? []);
+    setMembers(cache.members ?? []);
+    setMembersLoaded(Boolean(cache.membersLoaded));
+    setIsMember(Boolean(cache.isMember));
+    setIsAdmin(Boolean(cache.isAdmin));
+    setMembershipStatus(cache.membershipStatus ?? null);
+    setFeedPage(cache.feedPage ?? 1);
+    setHasMoreFeed(cache.hasMoreFeed ?? true);
+    setHasError(false);
+  }, []);
+
+  const updateCache = useCallback(
+    (updates, {touchTimestamp = false} = {}) => {
+      if (!communityId) {
+        return;
+      }
+
+      const existing = detailCacheRef.current.get(communityId) || {};
+      const nextCache = {
+        ...existing,
+        ...updates,
+      };
+
+      if (touchTimestamp) {
+        nextCache.timestamp = Date.now();
+      }
+
+      detailCacheRef.current.set(communityId, nextCache);
+    },
+    [communityId],
+  );
 
   const handleTypeToggle = useCallback((type) => {
     if (type === 'all') {
@@ -1550,39 +1593,57 @@ const CommunityDetail = ({ route, navigation }) => {
     if (fetchingPosts.current || (!isRefresh && (feedLoading || !hasMoreFeed))) {
       return;
     }
-    
+
+    const cache = detailCacheRef.current.get(communityId);
+    const now = Date.now();
+    const hasValidCache =
+      !isRefresh &&
+      cache?.feedTimestamp &&
+      now - cache.feedTimestamp < CACHE_TTL_MS;
+
+    if (hasValidCache) {
+      setPosts(cache.posts ?? []);
+      setAnnouncements(cache.announcements ?? []);
+      setHasMoreFeed(cache.hasMoreFeed ?? true);
+      setFeedPage(cache.feedPage ?? page);
+    }
+
     fetchingPosts.current = true;
-    setFeedLoading(true);
-    
+    if (isRefresh) {
+      setFeedLoading(true);
+    } else {
+      setFeedLoading(!hasValidCache);
+    }
+
     try {
       console.log('Fetching posts for community:', communityId, 'page:', page);
-      const response = await getCommunityFeedApi(communityId, { 
-        page, 
-        limit: FEED_PAGE_SIZE 
+      const response = await getCommunityFeedApi(communityId, {
+        page,
+        limit: FEED_PAGE_SIZE,
       });
-      
+
       console.log('Feed API raw response:', response?.data);
-      
+
       const feedData = response?.data?.data || response?.data || {};
       const newPosts = feedData.posts || feedData.feed || feedData.content || [];
       const announcementPosts = newPosts.filter(
-        (item) => (item?.postType || item?.type) === 'announcement'
+        item => (item?.postType || item?.type) === 'announcement',
       );
       const regularPosts = newPosts.filter(
-        (item) => (item?.postType || item?.type) !== 'announcement'
+        item => (item?.postType || item?.type) !== 'announcement',
       );
       const pagination = feedData.pagination || {};
-      
+
       console.log('Parsed feed data:', {
         postsCount: newPosts.length,
         pagination,
-        firstPost: newPosts[0]
+        firstPost: newPosts[0],
       });
-      
+
       const mergeUniqueById = (base, additions) => {
         const combined = [...base, ...additions];
         const seen = new Set();
-        return combined.filter((item) => {
+        return combined.filter(item => {
           const id = resolvePostId(item) || JSON.stringify(item);
           if (seen.has(id)) {
             return false;
@@ -1592,139 +1653,239 @@ const CommunityDetail = ({ route, navigation }) => {
         });
       };
 
-      if (isRefresh) {
-        setPosts(mergeUniqueById([], regularPosts));
-        setAnnouncements(mergeUniqueById([], announcementPosts));
-      } else {
-        setPosts((prev) => mergeUniqueById(prev, regularPosts));
-        setAnnouncements((prev) => mergeUniqueById(prev, announcementPosts));
-      }
-      
-      setHasMoreFeed(pagination.hasNext || (newPosts.length >= FEED_PAGE_SIZE && newPosts.length > 0));
-      setFeedPage(pagination.hasNext ? page + 1 : page);
+      let updatedPosts = [];
+      let updatedAnnouncements = [];
+
+      setPosts(prev => {
+        const base = isRefresh ? [] : prev;
+        updatedPosts = mergeUniqueById(base, regularPosts);
+        return updatedPosts;
+      });
+
+      setAnnouncements(prev => {
+        const base = isRefresh ? [] : prev;
+        updatedAnnouncements = mergeUniqueById(base, announcementPosts);
+        return updatedAnnouncements;
+      });
+
+      const nextHasMore =
+        pagination.hasNext || (newPosts.length >= FEED_PAGE_SIZE && newPosts.length > 0);
+      const nextFeedPage = pagination.hasNext ? page + 1 : page;
+
+      setHasMoreFeed(nextHasMore);
+      setFeedPage(nextFeedPage);
+
+      updateCache(
+        {
+          posts: updatedPosts,
+          announcements: updatedAnnouncements,
+          hasMoreFeed: nextHasMore,
+          feedPage: nextFeedPage,
+          feedTimestamp: Date.now(),
+        },
+      );
     } catch (error) {
       console.error('Error fetching posts:', error);
-      if (isRefresh || posts.length === 0) {
-        setPosts([]);
+      if (!hasValidCache) {
         if (isRefresh) {
+          setPosts([]);
           setAnnouncements([]);
+        } else if (posts.length === 0) {
+          setPosts([]);
         }
+        setHasMoreFeed(false);
       }
-      setHasMoreFeed(false);
     } finally {
       setFeedLoading(false);
       fetchingPosts.current = false;
     }
-  }, [communityId, feedLoading, hasMoreFeed, posts.length]);
+  }, [communityId, feedLoading, hasMoreFeed, posts.length, updateCache]);
 
   const fetchMembers = useCallback(async () => {
-    if (fetchingMembers.current || membersLoaded) {
+    if (fetchingMembers.current) {
       return;
     }
-    
+
+    const cache = detailCacheRef.current.get(communityId);
+    const now = Date.now();
+    const cachedMembers = Array.isArray(cache?.members) ? cache.members : [];
+    const cacheTimestamp = cache?.membersTimestamp || 0;
+    const hasFreshCache = cachedMembers.length > 0 && now - cacheTimestamp < CACHE_TTL_MS;
+
+    if (hasFreshCache) {
+      setMembers(cachedMembers);
+      setMembersLoaded(Boolean(cache.membersLoaded));
+      return;
+    }
+
+    if (cachedMembers.length && !membersLoaded) {
+      setMembers(cachedMembers);
+      setMembersLoaded(Boolean(cache.membersLoaded));
+    }
+
     fetchingMembers.current = true;
     setMembersLoading(true);
-    
+
     try {
       console.log('Fetching members for community:', communityId);
       const response = await getCommunityMembersApi(communityId);
       console.log('Members API response:', response?.data);
-      
-      const membersData = response?.data?.data?.members || 
-                         response?.data?.members || 
-                         response?.data || [];
-      setMembers(Array.isArray(membersData) ? membersData : []);
+
+      const membersData = response?.data?.data?.members ||
+        response?.data?.members ||
+        response?.data || [];
+      const normalizedMembers = Array.isArray(membersData) ? membersData : [];
+      setMembers(normalizedMembers);
       setMembersLoaded(true);
+      updateCache(
+        {
+          members: normalizedMembers,
+          membersLoaded: true,
+          membersTimestamp: Date.now(),
+        },
+      );
     } catch (error) {
       console.error('Error fetching members:', error);
-      setMembers([]);
+      if (!cachedMembers.length) {
+        setMembers([]);
+      }
     } finally {
       setMembersLoading(false);
       fetchingMembers.current = false;
     }
-  }, [communityId, membersLoaded]);
+  }, [communityId, membersLoaded, updateCache]);
 
-  const fetchInitialData = useCallback(async (isRefresh = false) => {
-    if (!isRefresh && hasError) {
-      return;
-    }
-    
-    if (!isRefresh) {
-      setLoading(true);
-    }
-    
-    try {
-      console.log('Fetching community details for:', communityId);
-      const response = await getCommunityDetailsApi(communityId);
-      console.log('Community details API response:', response?.data);
-      
-      const data = response?.data?.data || response?.data || {};
-      
-      if (!data.community && !data.name) {
-        setHasError(true);
-        setLoading(false);
-        Alert.alert('Error', 'Community not found');
-        navigation.goBack();
-        return;
+  const fetchInitialData = useCallback(
+    async (isRefresh = false) => {
+      const cache = detailCacheRef.current.get(communityId);
+      const now = Date.now();
+      const hasValidCache =
+        !isRefresh &&
+        cache?.timestamp &&
+        now - cache.timestamp < CACHE_TTL_MS &&
+        (cache.community || cache.posts?.length || cache.announcements?.length);
+
+      if (hasValidCache) {
+        applyCacheToState(cache);
       }
-      
-      setCommunity(data.community || data);
-      setHasError(false);
-      
-      const membership = data.userMembership || data.membership;
-      const userRole = membership?.role;
-      
-      console.log('User membership data:', {
-        membership,
-        userRole,
-        userId: currentUserId
-      });
-      
-      const isUserAdmin = userRole && ['owner', 'admin', 'moderator'].includes(userRole.toLowerCase());
-      const isUserMember = isUserAdmin || !!membership;
-      
-      console.log('User status:', {
-        isAdmin: isUserAdmin,
-        isMember: isUserMember,
-        membershipStatus: membership?.status
-      });
-      
-      setIsAdmin(isUserAdmin);
-      setIsMember(isUserMember);
-      setMembershipStatus(membership?.status || (isUserMember ? 'active' : null));
-      
-      const communityData = data.community || data;
-      if (communityData?.privacy === 'public' || isUserMember) {
-        await fetchPosts(1, true);
-      } else {
-        console.log('Not fetching posts - private community and not a member');
-        setPosts([]);
-        setHasMoreFeed(false);
-      }
-      
-      if (isUserMember && !membersLoaded && !isRefresh) {
-        fetchMembers();
-      }
-      
-    } catch (error) {
-      console.error('Error fetching community:', error);
-      setHasError(true);
+
       if (!isRefresh) {
-        Alert.alert('Error', 'Could not load community details');
+        setLoading(!hasValidCache);
       }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [communityId, navigation, fetchPosts, fetchMembers, hasError, membersLoaded, currentUserId]);
+      if (isRefresh) {
+        setRefreshing(true);
+      }
+
+      try {
+        console.log('Fetching community details for:', communityId);
+        const response = await getCommunityDetailsApi(communityId);
+        console.log('Community details API response:', response?.data);
+
+        const data = response?.data?.data || response?.data || {};
+
+        if (!data.community && !data.name) {
+          if (!hasValidCache) {
+            setHasError(true);
+            Alert.alert('Error', 'Community not found');
+            navigation.goBack();
+          }
+          return;
+        }
+
+        const communityData = data.community || data;
+        setCommunity(communityData);
+        setHasError(false);
+
+        const membership = data.userMembership || data.membership;
+        const userRole = membership?.role;
+
+        console.log('User membership data:', {
+          membership,
+          userRole,
+          userId: currentUserId,
+        });
+
+        const isUserAdmin = userRole && ['owner', 'admin', 'moderator'].includes(userRole.toLowerCase());
+        const isUserMember = isUserAdmin || !!membership;
+
+        console.log('User status:', {
+          isAdmin: isUserAdmin,
+          isMember: isUserMember,
+          membershipStatus: membership?.status,
+        });
+
+        const nextMembershipStatus = membership?.status || (isUserMember ? 'active' : null);
+
+        setIsAdmin(isUserAdmin);
+        setIsMember(isUserMember);
+        setMembershipStatus(nextMembershipStatus);
+
+        updateCache(
+          {
+            community: communityData,
+            isAdmin: isUserAdmin,
+            isMember: isUserMember,
+            membershipStatus: nextMembershipStatus,
+          },
+          {touchTimestamp: true},
+        );
+
+        if (communityData?.privacy === 'public' || isUserMember) {
+          await fetchPosts(1, true);
+        } else {
+          console.log('Not fetching posts - private community and not a member');
+          setPosts([]);
+          setAnnouncements([]);
+          setHasMoreFeed(false);
+          updateCache(
+            {
+              posts: [],
+              announcements: [],
+              hasMoreFeed: false,
+              feedPage: 1,
+              feedTimestamp: Date.now(),
+            },
+          );
+        }
+
+        if (isUserMember) {
+          fetchMembers();
+        }
+      } catch (error) {
+        console.error('Error fetching community:', error);
+        if (!hasValidCache) {
+          setHasError(true);
+          if (!isRefresh) {
+            Alert.alert('Error', 'Could not load community details');
+          }
+        }
+      } finally {
+        if (!isRefresh) {
+          setLoading(false);
+        }
+        setRefreshing(false);
+      }
+    },
+    [
+      applyCacheToState,
+      communityId,
+      currentUserId,
+      fetchMembers,
+      fetchPosts,
+      navigation,
+      updateCache,
+    ],
+  );
 
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       console.log('Initial mount - fetching data for community:', communityId);
-      fetchInitialData();
+    } else {
+      console.log('Community changed - reloading data for:', communityId);
     }
-  }, []);
+    fetchInitialData();
+  }, [communityId, fetchInitialData]);
 
   const onRefresh = useCallback(() => {
     console.log('Refreshing community data');
@@ -1786,6 +1947,11 @@ const CommunityDetail = ({ route, navigation }) => {
       onPostDeleted={handlePostDeleted}
     />
   ), [communityId, navigation, isMember, currentUserId, handlePostDeleted]);
+
+  const keyExtractor = useCallback(
+    (item, index) => resolvePostId(item) || item?.id || item?._id || `post-${index}`,
+    [],
+  );
 
   const ListHeaderComponent = useMemo(() => (
     <>
@@ -2135,6 +2301,49 @@ const CommunityDetail = ({ route, navigation }) => {
     }
   }, [activeTab, hasMoreFeed, feedLoading, feedPage, fetchPosts]);
 
+  useEffect(() => {
+    const coverUri = community?.coverImage?.url || community?.coverImage;
+    if (coverUri && !imagePrefetchCacheRef.current.has(coverUri)) {
+      imagePrefetchCacheRef.current.add(coverUri);
+      Image.prefetch(coverUri).catch(() => {});
+    }
+  }, [community]);
+
+  useEffect(() => {
+    if (activeTab !== 'Feed' || !filteredPosts.length) {
+      return;
+    }
+
+    const cache = imagePrefetchCacheRef.current;
+
+    filteredPosts
+      .slice(0, PREFETCH_LIMIT)
+      .forEach(post => {
+        const mediaCandidates = [];
+
+        if (Array.isArray(post?.media) && post.media.length > 0) {
+          const firstMedia = post.media[0];
+          mediaCandidates.push(firstMedia?.url || firstMedia?.uri || firstMedia);
+        } else if (post?.media?.url) {
+          mediaCandidates.push(post.media.url);
+        }
+
+        if (post?.preview?.coverImage) {
+          mediaCandidates.push(post.preview.coverImage?.url || post.preview.coverImage);
+        }
+
+        if (post?.preview?.image) {
+          mediaCandidates.push(post.preview.image?.url || post.preview.image);
+        }
+
+        const uri = mediaCandidates.find(candidate => typeof candidate === 'string' && candidate.startsWith('http'));
+        if (uri && !cache.has(uri)) {
+          cache.add(uri);
+          Image.prefetch(uri).catch(() => {});
+        }
+      });
+  }, [activeTab, filteredPosts]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -2152,7 +2361,7 @@ const CommunityDetail = ({ route, navigation }) => {
       <Animated.FlatList
         data={activeTab === 'Feed' ? filteredPosts : []}
         renderItem={renderPost}
-        keyExtractor={(item, index) => item?.id || item?._id || `post-${index}`}
+        keyExtractor={keyExtractor}
         ListHeaderComponent={ListHeaderComponent}
         ListFooterComponent={ListFooterComponent}
         onScroll={(event) => {
@@ -2169,6 +2378,12 @@ const CommunityDetail = ({ route, navigation }) => {
           />
         }
         contentContainerStyle={styles.listContent}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        windowSize={10}
+        updateCellsBatchingPeriod={50}
+        removeClippedSubviews
+        keyboardShouldPersistTaps="handled"
       />
       
       <Animated.View 
