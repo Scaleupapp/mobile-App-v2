@@ -321,11 +321,11 @@ const verifyDomainOTP = async () => {
       
       showToast({type: 'success', title: data?.message || 'Registration successful'});
 
-      // Set user profile properties
-      mixpanel.people.set({
-        $first_name: params.firstname,
-        $last_name: params.lastname,
-        $email: params.email,
+      // Set user profile properties using track events
+      mixpanel.track('User Registration Completed', {
+        first_name: params.firstname,
+        last_name: params.lastname,
+        email: params.email,
         username: params.username,
         signup_date: new Date().toISOString(),
         isInstitutionalUser: data?.userInfo?.isInstitutionalUser || false,

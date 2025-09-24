@@ -131,11 +131,7 @@ const UploadDocument = ({navigation, route}) => {
       }
       
       setSelectedFile(res);
-      if (preSelectedDeckId) {
-        setCurrentStep('upload');
-      } else {
-        setCurrentStep('review');
-      }
+      setCurrentStep('review');
     } catch (err) {
       if (!DocumentPicker.isCancel(err)) {
         showToast({
@@ -175,11 +171,7 @@ const UploadDocument = ({navigation, route}) => {
           type: asset.type,
           size: asset.fileSize,
         });
-        if (preSelectedDeckId) {
-          setCurrentStep('upload');
-        } else {
-          setCurrentStep('review');
-        }
+        setCurrentStep('review');
       }
     });
   };
@@ -201,11 +193,7 @@ const UploadDocument = ({navigation, route}) => {
           type: asset.type,
           size: asset.fileSize,
         });
-        if (preSelectedDeckId) {
-          setCurrentStep('upload');
-        } else {
-          setCurrentStep('review');
-        }
+        setCurrentStep('review');
       }
     });
   };
