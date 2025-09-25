@@ -1266,14 +1266,66 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
   const handleJoin = async () => {
     setBusy(true);
     try {
-      await joinCommunityApi(community?.id || community?._id, { 
-        acceptRules: true, 
+      const response = await joinCommunityApi(community?.id || community?._id, { 
         joinReason: reason 
       });
-      onJoinSuccess?.();
+      
+      console.log('Join community response:', response?.data);
+      
+      if (response?.data?.success) {
+        const data = response.data.data;
+        
+        if (data?.membership?.status === 'active') {
+          // Direct join successful
+          Alert.alert(
+            'Success!', 
+            `You've successfully joined ${community?.name}!`,
+            [{ text: 'OK', onPress: onJoinSuccess }]
+          );
+        } else if (data?.status === 'pending') {
+          // Join request submitted
+          Alert.alert(
+            'Request Submitted', 
+            `Your join request for ${community?.name} has been submitted. You'll be notified when it's reviewed.`,
+            [{ text: 'OK', onPress: onJoinSuccess }]
+          );
+        } else {
+          // Generic success
+          Alert.alert('Success', 'Your request has been processed successfully.');
+          onJoinSuccess?.();
+        }
+      } else {
+        throw new Error(response?.data?.message || 'Join request failed');
+      }
     } catch (err) {
       console.error('Error joining community:', err);
-      Alert.alert('Error', err?.response?.data?.message || 'Could not send join request.');
+      
+      // Handle specific error cases
+      let errorMessage = 'Could not process join request.';
+      
+      if (err?.response?.status === 400) {
+        if (err?.response?.data?.message?.includes('already a member')) {
+          errorMessage = 'You are already a member of this community.';
+        } else if (err?.response?.data?.message?.includes('pending join request')) {
+          errorMessage = 'You already have a pending join request for this community.';
+        } else {
+          errorMessage = err?.response?.data?.message || errorMessage;
+        }
+      } else if (err?.response?.status === 403) {
+        if (err?.response?.data?.message?.includes('private community')) {
+          errorMessage = 'This is a private community. You need an invitation to join.';
+        } else if (err?.response?.data?.message?.includes('banned')) {
+          errorMessage = 'You are banned from this community.';
+        } else {
+          errorMessage = err?.response?.data?.message || errorMessage;
+        }
+      } else if (err?.response?.status === 404) {
+        errorMessage = 'Community not found or inactive.';
+      } else {
+        errorMessage = err?.response?.data?.message || errorMessage;
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setBusy(false);
     }
@@ -1294,11 +1346,15 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
           <Text style={styles.modalTitle}>Join {community?.name}</Text>
           <Text style={styles.modalSubtitle}>
             {community?.privacy === 'private' 
-              ? 'This is a private community. Tell the admins why you want to join.'
+              ? 'This is a private community. You need an invitation to join.'
+              : community?.privacy === 'protected' || community?.joinMethod === 'approval_required'
+              ? 'This community requires approval. Tell the admins why you want to join.'
               : 'Welcome! You can join this community right away.'}
           </Text>
           
-          {community?.privacy === 'private' && (
+          {(community?.privacy === 'private' || 
+            community?.privacy === 'protected' || 
+            community?.joinMethod === 'approval_required') && (
             <TextInput
               value={reason}
               onChangeText={setReason}
@@ -1326,7 +1382,11 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
                 <ActivityIndicator color={COLORS.whiteFFFFFF} size="small" />
               ) : (
                 <Text style={styles.confirmButtonText}>
-                  {community?.privacy === 'private' ? 'Request to Join' : 'Join'}
+                  {community?.privacy === 'private' 
+                    ? 'Request Invitation' 
+                    : community?.privacy === 'protected' || community?.joinMethod === 'approval_required'
+                    ? 'Request to Join'
+                    : 'Join'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -1341,6 +1401,24 @@ const JoinModal = ({ visible, community, onClose, onJoinSuccess }) => {
 const CommunityDetail = ({ route, navigation }) => {
   const communityId = route.params?.communityId || route.params?.id;
   const rawUserData = useSelector((state) => state?.userData);
+
+  // Validate communityId
+  if (!communityId) {
+    console.error('No community ID provided to CommunityDetail');
+    Alert.alert('Error', 'Invalid community link', [
+      { text: 'OK', onPress: () => navigation.goBack() }
+    ]);
+    return null;
+  }
+
+  // Validate MongoDB ObjectId format (24 hex characters)
+  if (!/^[0-9a-fA-F]{24}$/.test(communityId)) {
+    console.error('Invalid community ID format:', communityId);
+    Alert.alert('Error', 'Invalid community link', [
+      { text: 'OK', onPress: () => navigation.goBack() }
+    ]);
+    return null;
+  }
 
   const parsedUserData = useMemo(() => {
     if (!rawUserData) {
@@ -1694,6 +1772,11 @@ const CommunityDetail = ({ route, navigation }) => {
           setPosts([]);
         }
         setHasMoreFeed(false);
+        
+        // Handle 404 error specifically for posts
+        if (error.response?.status === 404) {
+          console.log('Community not found when fetching posts - this is expected if community was deleted');
+        }
       }
     } finally {
       setFeedLoading(false);
@@ -1806,15 +1889,18 @@ const CommunityDetail = ({ route, navigation }) => {
         });
 
         const isUserAdmin = userRole && ['owner', 'admin', 'moderator'].includes(userRole.toLowerCase());
-        const isUserMember = isUserAdmin || !!membership;
+        const isUserMember = isUserAdmin || (membership && membership.status === 'active');
+        const membershipStatusValue = membership?.status || null;
 
         console.log('User status:', {
           isAdmin: isUserAdmin,
           isMember: isUserMember,
-          membershipStatus: membership?.status,
+          membershipStatus: membershipStatusValue,
+          userRole,
+          membership,
         });
 
-        const nextMembershipStatus = membership?.status || (isUserMember ? 'active' : null);
+        const nextMembershipStatus = membershipStatusValue;
 
         setIsAdmin(isUserAdmin);
         setIsMember(isUserMember);
@@ -1856,7 +1942,14 @@ const CommunityDetail = ({ route, navigation }) => {
         if (!hasValidCache) {
           setHasError(true);
           if (!isRefresh) {
-            Alert.alert('Error', 'Could not load community details');
+            // Handle specific error cases
+            if (error.response?.status === 404) {
+              Alert.alert('Community Not Found', 'This community does not exist or has been removed.', [
+                { text: 'OK', onPress: () => navigation.goBack() }
+              ]);
+            } else {
+              Alert.alert('Error', 'Could not load community details');
+            }
           }
         }
       } finally {
@@ -2028,18 +2121,31 @@ const CommunityDetail = ({ route, navigation }) => {
           <TouchableOpacity 
             style={[
               styles.joinButtonLarge,
-              membershipStatus === 'pending' && styles.joinButtonPending
+              membershipStatus === 'pending' && styles.joinButtonPending,
+              membershipStatus === 'banned' && styles.joinButtonBanned
             ]} 
-            onPress={() => setJoinModalVisible(true)}
-            disabled={membershipStatus === 'pending'}
+            onPress={() => {
+              if (membershipStatus === 'banned') {
+                Alert.alert('Access Denied', 'You are banned from this community.');
+                return;
+              }
+              setJoinModalVisible(true);
+            }}
+            disabled={membershipStatus === 'pending' || membershipStatus === 'banned'}
           >
             <Icon 
-              name={membershipStatus === 'pending' ? "time-outline" : "add-circle-outline"} 
+              name={
+                membershipStatus === 'pending' ? "time-outline" : 
+                membershipStatus === 'banned' ? "ban-outline" :
+                "add-circle-outline"
+              } 
               size={nw(20)} 
               color={COLORS.whiteFFFFFF} 
             />
             <Text style={styles.joinButtonText}>
-              {membershipStatus === 'pending' ? 'Request Pending' : 'Join Community'}
+              {membershipStatus === 'pending' ? 'Request Pending' : 
+               membershipStatus === 'banned' ? 'Access Denied' :
+               'Join Community'}
             </Text>
           </TouchableOpacity>
         )}
@@ -2139,17 +2245,33 @@ const CommunityDetail = ({ route, navigation }) => {
             </Text>
             {!isMember && (
               <TouchableOpacity
-                style={[styles.aboutJoinButton, membershipStatus === 'pending' && styles.aboutJoinButtonPending]}
-                onPress={() => setJoinModalVisible(true)}
-                disabled={membershipStatus === 'pending'}
+                style={[
+                  styles.aboutJoinButton, 
+                  membershipStatus === 'pending' && styles.aboutJoinButtonPending,
+                  membershipStatus === 'banned' && styles.aboutJoinButtonBanned
+                ]}
+                onPress={() => {
+                  if (membershipStatus === 'banned') {
+                    Alert.alert('Access Denied', 'You are banned from this community.');
+                    return;
+                  }
+                  setJoinModalVisible(true);
+                }}
+                disabled={membershipStatus === 'pending' || membershipStatus === 'banned'}
               >
                 <Icon
-                  name={membershipStatus === 'pending' ? 'time-outline' : 'enter-outline'}
+                  name={
+                    membershipStatus === 'pending' ? 'time-outline' : 
+                    membershipStatus === 'banned' ? 'ban-outline' :
+                    'enter-outline'
+                  }
                   size={nw(16)}
                   color={COLORS.whiteFFFFFF}
                 />
                 <Text style={styles.aboutJoinButtonText}>
-                  {membershipStatus === 'pending' ? 'Request Pending' : 'Request to Join'}
+                  {membershipStatus === 'pending' ? 'Request Pending' : 
+                   membershipStatus === 'banned' ? 'Access Denied' :
+                   'Request to Join'}
                 </Text>
               </TouchableOpacity>
             )}
@@ -2478,6 +2600,10 @@ const CommunityDetail = ({ route, navigation }) => {
         onJoinSuccess={() => {
           setJoinModalVisible(false);
           setMembersLoaded(false);
+          // Update membership status immediately
+          setIsMember(true);
+          setMembershipStatus('active');
+          // Refresh all data
           fetchInitialData(true);
         }}
       />
@@ -2598,7 +2724,7 @@ const styles = StyleSheet.create({
   stickyTitleText: {
     fontSize: nw(18),
     fontWeight: '600',
-    color: COLORS.blue043142,
+    color: COLORS.blue043142, // Already using primary blue - should be visible
   },
   
   // Join Button
@@ -2614,6 +2740,9 @@ const styles = StyleSheet.create({
   },
   joinButtonPending: {
     backgroundColor: COLORS.grey999999,
+  },
+  joinButtonBanned: {
+    backgroundColor: COLORS.redFF0000,
   },
   joinButtonText: {
     fontSize: nw(15),
@@ -2634,7 +2763,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: nw(14),
     fontWeight: '500',
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   activeTabText: {
     color: COLORS.blue043142,
@@ -2679,7 +2808,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     fontSize: nw(13),
     fontWeight: '500',
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   filterChipTextActive: {
     color: COLORS.whiteFFFFFF,
@@ -2745,7 +2874,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: nw(18),
     fontWeight: '700',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   announcementModalCloseButton: {
     padding: nw(4),
@@ -2785,7 +2914,7 @@ const styles = StyleSheet.create({
   },
   announcementModalTimeText: {
     fontSize: nw(12),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   announcementModalBody: {
     maxHeight: nh(240),
@@ -2795,7 +2924,7 @@ const styles = StyleSheet.create({
   },
   announcementModalBodyText: {
     fontSize: nw(13),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(20),
   },
   
@@ -2847,11 +2976,11 @@ const styles = StyleSheet.create({
   authorName: {
     fontSize: nw(14),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   postTime: {
     fontSize: nw(12),
-    color: COLORS.grey999999,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(2),
   },
   postBody: {
@@ -2861,12 +2990,12 @@ const styles = StyleSheet.create({
   postTitle: {
     fontSize: nw(16),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(8),
   },
   postContent: {
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(20),
   },
   readMore: {
@@ -2919,7 +3048,7 @@ const styles = StyleSheet.create({
   },
   postActionText: {
     fontSize: nw(12),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     fontWeight: '500',
   },
   postActionTextDelete: {
@@ -2943,12 +3072,12 @@ const styles = StyleSheet.create({
   pollQuestion: {
     fontSize: nw(15),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(12),
   },
   pollDescription: {
     fontSize: nw(13),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(12),
     lineHeight: nh(18),
   },
@@ -2972,7 +3101,7 @@ const styles = StyleSheet.create({
   },
   pollOptionText: {
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     flex: 1,
   },
   pollOptionTextVoted: {
@@ -3000,7 +3129,7 @@ const styles = StyleSheet.create({
   },
   pollTotalVotes: {
     fontSize: nw(12),
-    color: COLORS.grey999999,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(8),
     textAlign: 'center',
   },
@@ -3010,7 +3139,7 @@ const styles = StyleSheet.create({
   },
   pollLoadingText: {
     fontSize: nw(13),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(8),
   },
   pollLockedContainer: {
@@ -3021,7 +3150,7 @@ const styles = StyleSheet.create({
   },
   pollLockedText: {
     fontSize: nw(13),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(8),
     textAlign: 'center',
   },
@@ -3033,7 +3162,7 @@ const styles = StyleSheet.create({
   },
   pollEmptyText: {
     fontSize: nw(13),
-    color: COLORS.grey999999,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   
   // Event Styles
@@ -3043,7 +3172,7 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: nw(16),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(10),
   },
   eventDetail: {
@@ -3054,11 +3183,11 @@ const styles = StyleSheet.create({
   },
   eventDetailText: {
     fontSize: nw(13),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   eventDescription: {
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(20),
     marginTop: nh(4),
     marginBottom: nh(10),
@@ -3074,7 +3203,7 @@ const styles = StyleSheet.create({
   rsvpTitle: {
     fontSize: nw(13),
     fontWeight: '600',
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(8),
   },
   rsvpButtons: {
@@ -3125,16 +3254,16 @@ const styles = StyleSheet.create({
   },
   rsvpButtonText: {
     fontSize: nw(12),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     fontWeight: '500',
   },
   rsvpButtonTextActive: {
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     fontWeight: '700',
   },
   rsvpSummary: {
     fontSize: nw(12),
-    color: COLORS.grey999999,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(8),
     textAlign: 'center',
   },
@@ -3158,12 +3287,12 @@ const styles = StyleSheet.create({
   announcementTitle: {
     fontSize: nw(15),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(8),
   },
   announcementContent: {
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(20),
   },
   
@@ -3180,12 +3309,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: nw(18),
     fontWeight: '600',
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(16),
   },
   emptySubtitle: {
     fontSize: nw(14),
-    color: COLORS.grey999999,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     textAlign: 'center',
     marginTop: nh(8),
     lineHeight: nh(20),
@@ -3217,7 +3346,7 @@ const styles = StyleSheet.create({
   },
   aboutHeroSubtitle: {
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(22),
   },
   aboutJoinButton: {
@@ -3233,6 +3362,9 @@ const styles = StyleSheet.create({
   },
   aboutJoinButtonPending: {
     backgroundColor: COLORS.grey999999,
+  },
+  aboutJoinButtonBanned: {
+    backgroundColor: COLORS.redFF0000,
   },
   aboutJoinButtonText: {
     fontSize: nw(13),
@@ -3266,12 +3398,12 @@ const styles = StyleSheet.create({
   },
   aboutFactLabel: {
     fontSize: nw(12),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   aboutFactValue: {
     fontSize: nw(14),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   aboutSection: {
     marginBottom: nh(8),
@@ -3279,12 +3411,12 @@ const styles = StyleSheet.create({
   aboutTitle: {
     fontSize: nw(15),
     fontWeight: '600',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(10),
   },
   aboutText: {
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(22),
   },
   aboutTagList: {
@@ -3329,11 +3461,11 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: nw(14),
     fontWeight: '500',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   memberRole: {
     fontSize: nw(12),
-    color: COLORS.grey999999,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginTop: nh(2),
   },
   ownerBadge: {
@@ -3375,12 +3507,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: nw(18),
     fontWeight: '700',
-    color: COLORS.grey222222,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     marginBottom: nh(8),
   },
   modalSubtitle: {
     fontSize: nw(14),
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
     lineHeight: nh(20),
     marginBottom: nh(16),
   },
@@ -3392,7 +3524,7 @@ const styles = StyleSheet.create({
     height: nh(100),
     textAlignVertical: 'top',
     fontSize: nw(14),
-    color: COLORS.grey3A3A3A,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   modalActions: {
     flexDirection: 'row',
@@ -3413,7 +3545,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: nw(14),
     fontWeight: '500',
-    color: COLORS.grey666666,
+    color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
   },
   confirmButton: {
     backgroundColor: COLORS.blue043142,

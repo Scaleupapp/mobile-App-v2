@@ -357,11 +357,14 @@ INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
   COMMUNITY_TRENDING: 'communities/trending', // GET
   
   // -- Community Membership --
-  COMMUNITY_JOIN: 'communities/:communityId/join', // POST
-  COMMUNITY_LEAVE: 'communities/:communityId/leave', // POST
+  COMMUNITY_JOIN: 'communities/:communityId/members/join', // POST
+  COMMUNITY_LEAVE: 'communities/:communityId/members/leave', // DELETE
   COMMUNITY_MEMBERS: 'communities/:communityId/members', // GET
   COMMUNITY_UPDATE_MEMBER_ROLE: 'communities/:communityId/members/:memberId/role', // POST
   COMMUNITY_REMOVE_MEMBER: 'communities/:communityId/members/:memberId', // DELETE
+
+  // -- User's Own Requests --
+  COMMUNITY_MY_REQUESTS_PENDING: 'communities/my-requests/pending', // GET
 
   // -- Join Requests (For Admins) --
   COMMUNITY_LIST_JOIN_REQUESTS: 'communities/:communityId/requests', // GET
@@ -373,6 +376,7 @@ INTELLITEST_SEED_EXAMS: 'intellitest/test/seed-exams',
   COMMUNITY_GET_POST: 'communities/:communityId/posts/', // GET with /:postId
   COMMUNITY_UPDATE_POST: 'communities/:communityId/posts/', // PUT with /:postId
   COMMUNITY_DELETE_POST: 'communities/:communityId/posts/', // DELETE with /:postId
+  COMMUNITY_POST_UPLOAD_MEDIA: 'communities/:communityId/posts/upload-media', // POST
 
   // -- User Interactions on Content --
   COMMUNITY_POST_VOTE: 'communities/:communityId/posts/:postId/vote',

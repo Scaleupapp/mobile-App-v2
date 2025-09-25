@@ -96,8 +96,7 @@ const CreateCommunityPost = ({route, navigation}) => {
   const [showNonCritical, setShowNonCritical] = useState(false);
   const [gradientLoaded, setGradientLoaded] = useState(false);
   
-  // Lazy loaded modules
-  const [uploadModule, setUploadModule] = useState(null);
+  // Lazy loaded modules - removed uploadModule as we now import directly
   
   // Post-specific state (lazy initialized)
   const [postState, setPostState] = useState(() => ({
@@ -144,15 +143,7 @@ const CreateCommunityPost = ({route, navigation}) => {
     });
   }, []);
 
-  // Lazy load API service when needed
-  const getUploadModule = useCallback(async () => {
-    if (!uploadModule) {
-      const module = await import('../../services/apiService');
-      setUploadModule(module);
-      return module;
-    }
-    return uploadModule;
-  }, [uploadModule]);
+  // Lazy load API service when needed - removed getUploadModule as we import directly
 
   const canSubmit = useMemo(() => {
     if (submitting) return false;
@@ -174,20 +165,36 @@ const CreateCommunityPost = ({route, navigation}) => {
     if (!mediaAsset) return null;
     
     try {
-      const api = await getUploadModule();
+      console.log('Starting media upload for:', mediaAsset);
+      const { uploadCommunityMediaApi } = await import('../../services/apiService');
       const formData = new FormData();
-      formData.append('file', {
+      formData.append('files', {
         uri: mediaAsset.uri,
         type: mediaAsset.type || 'image/jpeg',
         name: mediaAsset.fileName || `media-${Date.now()}`,
       });
-      const response = await api.uploadFileApi(formData);
-      return response?.data?.file?.url || null;
+      
+      console.log('Uploading to community:', communityId);
+      const response = await uploadCommunityMediaApi(communityId, formData);
+      console.log('Upload response:', JSON.stringify(response?.data, null, 2));
+      
+      const mediaUrl = response?.data?.uploaded?.[0]?.url || null;
+      if (mediaUrl) {
+        console.log('Media uploaded successfully:', mediaUrl);
+      } else {
+        console.warn('No media URL found in response');
+      }
+      
+      return mediaUrl;
     } catch (error) {
-      console.log('Upload error:', error);
+      console.error('Upload error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       return null;
     }
-  }, [getUploadModule]);
+  }, [communityId]);
 
   const buildPayload = useCallback(async () => {
     try {
@@ -264,7 +271,7 @@ const CreateCommunityPost = ({route, navigation}) => {
     
     setSubmitting(true);
     try {
-      const api = await getUploadModule();
+      const { createCommunityPostApi } = await import('../../services/apiService');
       const payload = await buildPayload();
       
       if (!payload) {
@@ -273,7 +280,7 @@ const CreateCommunityPost = ({route, navigation}) => {
       
       console.log('Submitting payload:', JSON.stringify(payload, null, 2));
       
-      const response = await api.createCommunityPostApi(communityId, payload);
+      const response = await createCommunityPostApi(communityId, payload);
       console.log('Post created successfully:', response?.data);
       
       Alert.alert('Success', 'Your post has been published!', [
@@ -288,14 +295,13 @@ const CreateCommunityPost = ({route, navigation}) => {
     } finally {
       setSubmitting(false);
     }
-  }, [buildPayload, canSubmit, communityId, navigation, getUploadModule]);
+  }, [buildPayload, canSubmit, communityId, navigation]);
 
   // Props for child components
   const commonProps = {
     navigation,
     submitting,
-    uploadMediaIfNeeded,
-    getUploadModule
+    uploadMediaIfNeeded
   };
 
   const postProps = {

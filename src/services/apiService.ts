@@ -2282,6 +2282,14 @@ export const leaveCommunityApi = (communityId: string, payload?: any) => {
 };
 
 /**
+ * Gets all pending requests made by the current user.
+ * @param params - Optional query parameters for filtering and pagination.
+ */
+export const getUserPendingRequestsApi = (params?: any) => {
+  return axiosInstance.get(API.COMMUNITY_MY_REQUESTS_PENDING, { params });
+};
+
+/**
  * Fetches the list of members for a specific community.
  * @param communityId - The ID of the community.
  * @param params - Optional query parameters for filtering and pagination.
@@ -2422,6 +2430,19 @@ export const getCommunityAnalyticsApi = (communityId: string, params?: any) => {
 
 export const uploadFileApi = (formData: FormData) => {
   return axiosInstance.post(API.FILE_UPLOAD, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+};
+
+/**
+ * Upload media files for community posts.
+ * @param communityId - The ID of the community.
+ * @param formData - FormData containing the files to upload.
+ */
+export const uploadCommunityMediaApi = (communityId: string, formData: FormData) => {
+  return axiosInstance.post(
+    API.COMMUNITY_POST_UPLOAD_MEDIA.replace(':communityId', communityId), 
+    formData, 
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
 };
 
 /**
