@@ -1492,6 +1492,7 @@ const CommunityDetail = ({ route, navigation }) => {
   const fetchingMembers = useRef(false);
   const detailCacheRef = useRef(new Map());
   const imagePrefetchCacheRef = useRef(new Set());
+  const lastLoadMoreCall = useRef(0);
 
   const scrollY = useSharedValue(0);
 
@@ -1715,6 +1716,8 @@ const CommunityDetail = ({ route, navigation }) => {
       console.log('Parsed feed data:', {
         postsCount: newPosts.length,
         pagination,
+        hasMoreFromPagination: pagination.hasNext,
+        hasMoreFromLength: newPosts.length >= FEED_PAGE_SIZE,
         firstPost: newPosts[0],
       });
 
@@ -1746,9 +1749,17 @@ const CommunityDetail = ({ route, navigation }) => {
         return updatedAnnouncements;
       });
 
-      const nextHasMore =
-        pagination.hasNext || (newPosts.length >= FEED_PAGE_SIZE && newPosts.length > 0);
-      const nextFeedPage = pagination.hasNext ? page + 1 : page;
+      // Fix pagination logic - only set hasMore to true if we actually got a full page
+      const nextHasMore = pagination.hasNext || (newPosts.length >= FEED_PAGE_SIZE);
+      const nextFeedPage = nextHasMore ? page + 1 : page;
+
+      console.log('Pagination decision:', {
+        nextHasMore,
+        nextFeedPage,
+        currentPage: page,
+        postsReceived: newPosts.length,
+        pageSize: FEED_PAGE_SIZE
+      });
 
       setHasMoreFeed(nextHasMore);
       setFeedPage(nextFeedPage);
@@ -2417,11 +2428,33 @@ const CommunityDetail = ({ route, navigation }) => {
   ), [activeTab, feedLoading, filteredPosts.length, isMember, community, members, membersLoading, selectedContentTypes]);
 
   const handleLoadMore = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastCall = now - lastLoadMoreCall.current;
+    
+    console.log('handleLoadMore called:', {
+      activeTab,
+      hasMoreFeed,
+      feedLoading,
+      fetchingPosts: fetchingPosts.current,
+      feedPage,
+      postsCount: posts.length,
+      timeSinceLastCall
+    });
+    
+    // Debounce rapid calls (minimum 1 second between calls)
+    if (timeSinceLastCall < 1000) {
+      console.log('Skipping load more - too soon since last call');
+      return;
+    }
+    
     if (activeTab === 'Feed' && hasMoreFeed && !feedLoading && !fetchingPosts.current) {
       console.log('Loading more posts, page:', feedPage);
+      lastLoadMoreCall.current = now;
       fetchPosts(feedPage);
+    } else {
+      console.log('Skipping load more due to conditions not met');
     }
-  }, [activeTab, hasMoreFeed, feedLoading, feedPage, fetchPosts]);
+  }, [activeTab, hasMoreFeed, feedLoading, feedPage, fetchPosts, posts.length]);
 
   useEffect(() => {
     const coverUri = community?.coverImage?.url || community?.coverImage;
@@ -2491,7 +2524,7 @@ const CommunityDetail = ({ route, navigation }) => {
         }}
         scrollEventThrottle={16}
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
+        onEndReachedThreshold={0.1}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

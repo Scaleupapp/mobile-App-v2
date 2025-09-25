@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axiosInstance from '../../services/axiosinstance';
 
 import Text from '../../components/Text';
 import {COLORS} from '../../helper/colors';
@@ -199,7 +201,6 @@ const CreateCommunityPost = ({route, navigation}) => {
   const buildPayload = useCallback(async () => {
     try {
       if (postType === 'post') {
-        const mediaUrl = await uploadMediaIfNeeded(postState.mediaAsset);
         const payload = {
           postType: 'text',
           title: postState.title.trim() || undefined,
@@ -208,14 +209,7 @@ const CreateCommunityPost = ({route, navigation}) => {
           },
         };
         
-        if (mediaUrl) {
-          payload.media = {
-            images: [{
-              url: mediaUrl,
-              uploadedAt: new Date().toISOString()
-            }]
-          };
-        }
+        console.log('Post payload:', JSON.stringify(payload, null, 2));
         return payload;
       }
       
@@ -271,7 +265,6 @@ const CreateCommunityPost = ({route, navigation}) => {
     
     setSubmitting(true);
     try {
-      const { createCommunityPostApi } = await import('../../services/apiService');
       const payload = await buildPayload();
       
       if (!payload) {
@@ -280,7 +273,46 @@ const CreateCommunityPost = ({route, navigation}) => {
       
       console.log('Submitting payload:', JSON.stringify(payload, null, 2));
       
-      const response = await createCommunityPostApi(communityId, payload);
+      // Create FormData for file upload
+      const formData = new FormData();
+      
+      // Add all payload fields to FormData
+      Object.keys(payload).forEach(key => {
+        if (payload[key] !== undefined && payload[key] !== null) {
+          if (typeof payload[key] === 'object') {
+            formData.append(key, JSON.stringify(payload[key]));
+          } else {
+            formData.append(key, payload[key]);
+          }
+        }
+      });
+      
+      // Add media file if exists
+      if (postState.mediaAsset) {
+        formData.append('files', {
+          uri: postState.mediaAsset.uri,
+          type: postState.mediaAsset.type || 'image/jpeg',
+          name: postState.mediaAsset.fileName || `media-${Date.now()}`,
+        });
+        console.log('Adding media file to FormData:', postState.mediaAsset);
+      }
+      
+      // Get auth token
+      const userData = await AsyncStorage.getItem('userData');
+      const { token } = JSON.parse(userData);
+      
+      // Make the request with FormData
+      const response = await axiosInstance.post(
+        `communities/${communityId}/posts`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
       console.log('Post created successfully:', response?.data);
       
       Alert.alert('Success', 'Your post has been published!', [
@@ -295,7 +327,7 @@ const CreateCommunityPost = ({route, navigation}) => {
     } finally {
       setSubmitting(false);
     }
-  }, [buildPayload, canSubmit, communityId, navigation]);
+  }, [buildPayload, canSubmit, communityId, navigation, postState.mediaAsset]);
 
   // Props for child components
   const commonProps = {
