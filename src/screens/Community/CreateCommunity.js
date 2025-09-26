@@ -45,11 +45,13 @@ export const COMMUNITY_TYPES = [
 export const VISIBILITY_OPTIONS = [
   {key: 'public', label: 'Public', description: 'Visible to everyone in search.', icon: 'earth-outline'},
   {key: 'protected', label: 'Protected', description: 'Visible, but posts are private.', icon: 'eye-outline'},
+  {key: 'domain_restricted', label: 'Domain Restricted', description: 'Only for verified domain users.', icon: 'shield-outline'}, // ADD THIS
   {key: 'private', label: 'Private', description: 'Hidden & invite-only.', icon: 'lock-closed-outline'},
 ];
 
 export const JOIN_METHODS = [
   {key: 'open', label: 'Instant Join', description: 'Anyone can join immediately.', icon: 'flash-outline'},
+  {key: 'domain_auto', label: 'Auto-Join (Domain)', description: 'Domain users join automatically.', icon: 'key-outline'}, // ADD THIS
   {key: 'approval', label: 'Approval Required', description: 'Admins approve each request.', icon: 'shield-checkmark-outline'},
   {key: 'invite_only', label: 'Invite Only', description: 'Only invited members can join.', icon: 'mail-outline'},
 ];

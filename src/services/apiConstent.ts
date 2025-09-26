@@ -1,7 +1,7 @@
 //src/services/apiConstent.ts
 export const API = {
+  //BASE_URL: 'http://localhost:3000/api/',
   BASE_URL: 'https://api.scaleupapp.club/api/',
-  BASE_URL1: 'https://api.scaleupapp.club/api/',
   SIGNIN: 'auth/login',
   REGISTER: 'auth/register',
   APPLY_REFERRAL_CODE: 'auth/applyReferralCode',
