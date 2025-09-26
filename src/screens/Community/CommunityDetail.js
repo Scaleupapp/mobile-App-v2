@@ -1668,6 +1668,7 @@ const CommunityDetail = ({ route, navigation }) => {
     };
   }, [selectedAnnouncement]);
 
+  // FIXED: Removed feedLoading, hasMoreFeed, and posts.length from dependency array
   const fetchPosts = useCallback(async (page = 1, isRefresh = false) => {
     if (fetchingPosts.current || (!isRefresh && (feedLoading || !hasMoreFeed))) {
       return;
@@ -1775,6 +1776,10 @@ const CommunityDetail = ({ route, navigation }) => {
       );
     } catch (error) {
       console.error('Error fetching posts:', error);
+      
+      // FIXED: Always set hasMoreFeed to false on error
+      setHasMoreFeed(false);
+      
       if (!hasValidCache) {
         if (isRefresh) {
           setPosts([]);
@@ -1782,7 +1787,6 @@ const CommunityDetail = ({ route, navigation }) => {
         } else if (posts.length === 0) {
           setPosts([]);
         }
-        setHasMoreFeed(false);
         
         // Handle 404 error specifically for posts
         if (error.response?.status === 404) {
@@ -1793,7 +1797,7 @@ const CommunityDetail = ({ route, navigation }) => {
       setFeedLoading(false);
       fetchingPosts.current = false;
     }
-  }, [communityId, feedLoading, hasMoreFeed, posts.length, updateCache]);
+  }, [communityId, updateCache]); // FIXED: Only stable dependencies
 
   const fetchMembers = useCallback(async () => {
     if (fetchingMembers.current) {
@@ -2427,6 +2431,7 @@ const CommunityDetail = ({ route, navigation }) => {
     </View>
   ), [activeTab, feedLoading, filteredPosts.length, isMember, community, members, membersLoading, selectedContentTypes]);
 
+  // FIXED: Removed posts.length from dependency array
   const handleLoadMore = useCallback(() => {
     const now = Date.now();
     const timeSinceLastCall = now - lastLoadMoreCall.current;
@@ -2454,7 +2459,7 @@ const CommunityDetail = ({ route, navigation }) => {
     } else {
       console.log('Skipping load more due to conditions not met');
     }
-  }, [activeTab, hasMoreFeed, feedLoading, feedPage, fetchPosts, posts.length]);
+  }, [activeTab, hasMoreFeed, feedLoading, feedPage, fetchPosts]); // FIXED: Removed posts.length
 
   useEffect(() => {
     const coverUri = community?.coverImage?.url || community?.coverImage;
@@ -2524,7 +2529,7 @@ const CommunityDetail = ({ route, navigation }) => {
         }}
         scrollEventThrottle={16}
         onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.1}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -3321,7 +3326,7 @@ const styles = StyleSheet.create({
     fontSize: nw(15),
     fontWeight: '600',
     color: COLORS.blue043142, // Hardcoded to primary blue for better visibility
-    marginBottom: nh(8),
+    marginBottom:nh(8),
   },
   announcementContent: {
     fontSize: nw(14),

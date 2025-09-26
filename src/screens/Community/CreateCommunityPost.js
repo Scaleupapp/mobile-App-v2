@@ -265,49 +265,43 @@ const CreateCommunityPost = ({route, navigation}) => {
     
     setSubmitting(true);
     try {
+      // For regular posts with media, we need to upload the media first
+      let postMediaUrl = null;
+      if (postType === 'post' && postState.mediaAsset) {
+        console.log('Uploading media for post...');
+        postMediaUrl = await uploadMediaIfNeeded(postState.mediaAsset);
+      }
+      
+      // Build the payload (for events, this already handles media upload)
       const payload = await buildPayload();
       
       if (!payload) {
         throw new Error('Could not prepare post data.');
       }
       
-      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
-      
-      // Create FormData for file upload
-      const formData = new FormData();
-      
-      // Add all payload fields to FormData
-      Object.keys(payload).forEach(key => {
-        if (payload[key] !== undefined && payload[key] !== null) {
-          if (typeof payload[key] === 'object') {
-            formData.append(key, JSON.stringify(payload[key]));
-          } else {
-            formData.append(key, payload[key]);
-          }
-        }
-      });
-      
-      // Add media file if exists
-      if (postState.mediaAsset) {
-        formData.append('files', {
-          uri: postState.mediaAsset.uri,
-          type: postState.mediaAsset.type || 'image/jpeg',
-          name: postState.mediaAsset.fileName || `media-${Date.now()}`,
-        });
-        console.log('Adding media file to FormData:', postState.mediaAsset);
+      // Add media to post payload if it was uploaded
+      if (postType === 'post' && postMediaUrl) {
+        payload.media = {
+          images: [{
+            url: postMediaUrl,
+            uploadedAt: new Date().toISOString()
+          }]
+        };
       }
+      
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
       
       // Get auth token
       const userData = await AsyncStorage.getItem('userData');
       const { token } = JSON.parse(userData);
       
-      // Make the request with FormData
+      // Send as JSON instead of FormData
       const response = await axiosInstance.post(
         `communities/${communityId}/posts`,
-        formData,
+        payload,  // Send payload directly as JSON
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',  // Changed from multipart/form-data
             Authorization: `Bearer ${token}`,
           },
         }
@@ -327,8 +321,7 @@ const CreateCommunityPost = ({route, navigation}) => {
     } finally {
       setSubmitting(false);
     }
-  }, [buildPayload, canSubmit, communityId, navigation, postState.mediaAsset]);
-
+  }, [buildPayload, canSubmit, communityId, navigation, postType, postState.mediaAsset, uploadMediaIfNeeded]);
   // Props for child components
   const commonProps = {
     navigation,
