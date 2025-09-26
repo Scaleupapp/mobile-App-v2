@@ -23,6 +23,7 @@ import Text from '../../components/Text';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
 import axiosInstance from '../../services/axiosinstance';
+import { getUserPendingRequestsApi } from '../../services/apiService';
 import Routes from '../../helper/routes';
 
 // Consistent Color Palette
@@ -34,6 +35,7 @@ const PALETTE = {
   muted: COLORS.grey777777,
   subtle: COLORS.grey999999,
   border: COLORS.greyEEEEEE,
+  text: COLORS.blue043142, // Add missing text color - using primary blue
   success: '#2E7D32',
   warning: '#FFA000',
   danger: COLORS.redEA4335,
@@ -242,7 +244,7 @@ export default function CommunityDiscovery({navigation}) {
 
   const fetchPendingRequests = useCallback(async () => {
     try {
-      const response = await axiosInstance.get('communities/my-requests/pending');
+      const response = await getUserPendingRequestsApi();
       if (response?.data?.success) {
         return response.data.data.requests || [];
       }
@@ -650,7 +652,7 @@ const styles = StyleSheet.create({
     height: nh(44),
     marginLeft: nw(8),
     fontSize: nw(14),
-    color: PALETTE.text,
+    color: PALETTE.primary, // Use primary blue for better visibility
   },
   categoryScroller: {
     paddingHorizontal: nw(16),
@@ -719,11 +721,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: nw(15),
     fontWeight: '600',
-    color: PALETTE.primary,
+    color: PALETTE.primary, // Keep primary blue for titles
   },
   cardDescription: {
     fontSize: nw(12),
-    color: PALETTE.muted,
+    color: PALETTE.primary, // Use primary blue instead of muted for better visibility
     marginTop: nh(2),
   },
   cardStats: {
@@ -739,7 +741,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: nw(11),
-    color: PALETTE.muted,
+    color: PALETTE.primary, // Use primary blue instead of muted for better visibility
   },
   actionButton: {
     paddingHorizontal: nw(14),
@@ -781,12 +783,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: nw(18),
     fontWeight: '600',
-    color: PALETTE.text,
+    color: PALETTE.primary, // Use primary blue for better visibility
     marginTop: nh(16),
   },
   emptySubtitle: {
     fontSize: nw(14),
-    color: PALETTE.muted,
+    color: PALETTE.primary, // Use primary blue instead of muted for better visibility
     textAlign: 'center',
     marginTop: nh(8),
     lineHeight: nh(22),
