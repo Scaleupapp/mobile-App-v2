@@ -1,4 +1,4 @@
-//src/screens/Quiz/QuizScreen.js
+// src/screens/Quiz/QuizScreen.js
 import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
@@ -19,6 +19,14 @@ import {
 import {useToast} from '../../components/CustomToast';
 import {COLORS} from '../../helper/colors';
 import {nh, nw} from '../../helper/scales';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+import {
+  preventScreenshots,
+  allowScreenshots,
+  isOverlayAllowed,
+  openOverlaySettings,
+} from '../../utils/screenshotBlocker';
 
 const {width} = Dimensions.get('window');
 
@@ -37,21 +45,94 @@ const QuizScreen = ({navigation, route}) => {
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const intervalRef = useRef(null);
+  const intervalRef = useRef(null); // question timer
+  const countdownIntervalRef = useRef(null); // pre-quiz countdown
 
-  useEffect(() => {
-    startCountdownBeforeQuiz();
-    return () => clearInterval(intervalRef.current);
-  }, []);
+
+  // Focus effect: check overlays, then start secure mode and countdown
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+
+      const ensureNoOverlayAndStart = async () => {
+        try {
+          const overlayAllowed = await isOverlayAllowed();
+          if (!mounted) return;
+
+          if (overlayAllowed) {
+            // Block the quiz start until overlays disabled
+            Alert.alert(
+              'Disable Overlays',
+              'Please disable screen overlays (apps that draw on top) for this app before starting the quiz. Overlays can capture or obscure content.',
+              [
+                {
+                  text: 'Open Settings',
+                  onPress: () => {
+                    openOverlaySettings();
+                  },
+                },
+                {
+                  text: 'Cancel',
+                  style: 'cancel',
+                  onPress: () => {
+                    navigation.goBack();
+                  },
+                },
+              ],
+              { cancelable: false }
+            );
+          } else {
+            // No overlays present — secure screen and start countdown
+            preventScreenshots();
+            setCountdownVisible(true);
+            setCountdownValue(5);
+            startCountdownBeforeQuiz();
+          }
+        } catch (e) {
+          // If check fails, be conservative: block and show toast
+          showToast('Unable to verify overlay permission. Please try again.');
+          navigation.goBack();
+        }
+      };
+
+      ensureNoOverlayAndStart();
+
+      return () => {
+        mounted = false;
+        // cleanup when leaving the screen
+        allowScreenshots();
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      };
+    }, [attemptId, quizId])
+  );
 
   const startCountdownBeforeQuiz = () => {
+    // clear any previous countdown
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+
     let countdown = 5;
-    const countdownInterval = setInterval(() => {
+    setCountdownValue(countdown);
+    setCountdownVisible(true);
+
+    countdownIntervalRef.current = setInterval(() => {
       if (countdown > 0) {
-        setCountdownValue(countdown);
         countdown--;
+        setCountdownValue(countdown);
       } else {
-        clearInterval(countdownInterval);
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
+        }
         setCountdownVisible(false);
         loadNextQuestion();
       }
@@ -121,7 +202,10 @@ const QuizScreen = ({navigation, route}) => {
 
   const submitSkippedAnswer = async () => {
     try {
-      clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       setIsSubmitting(true);
 
       await submitAnswerApi(quizId, attemptId, {
@@ -149,7 +233,9 @@ const QuizScreen = ({navigation, route}) => {
   };
 
   const startQuestionTimer = () => {
-    clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
     const startTime = Date.now();
     setTimer(15);
     intervalRef.current = setInterval(() => {
@@ -160,6 +246,7 @@ const QuizScreen = ({navigation, route}) => {
 
       if (remainingTime <= 0) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
         setTimer(0);
       }
     }, 10);
@@ -172,9 +259,12 @@ const QuizScreen = ({navigation, route}) => {
   };
 
   const handleSubmitAnswer = async () => {
-    if (!selectedOption || isSubmitting) return; // Add this guard clause
+    if (!selectedOption || isSubmitting) return;
 
-    clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     setIsSubmitting(true);
 
     try {
@@ -184,7 +274,7 @@ const QuizScreen = ({navigation, route}) => {
 
       const timeTaken = parseFloat((15 - timer).toFixed(2));
 
-      const response = await submitAnswerApi(quizId, attemptId, {
+      await submitAnswerApi(quizId, attemptId, {
         questionId: currentQuestion.questionId,
         selectedOption: optionToSubmit,
         timeTaken: timeTaken,
@@ -291,7 +381,6 @@ const QuizScreen = ({navigation, route}) => {
     );
   };
 
-  // Adjust styles to use the new color palette
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -402,8 +491,6 @@ const QuizScreen = ({navigation, route}) => {
       fontWeight: 'bold',
     },
   });
-
-  // Rest of the component remains the same...
 
   return (
     <View style={styles.container}>
